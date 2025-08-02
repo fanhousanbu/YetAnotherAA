@@ -32,19 +32,23 @@ export function toSolidityArguments(
     hashedMsg: Uint8Array,
     aggSig: Uint8Array
 ): SolidityArguments {
+    // EIP-2537 format: G1 points are 128 bytes (64 bytes X + 64 bytes Y)
+    // But Solidity uint256 is only 32 bytes, so we take the lower 32 bytes of each coordinate
     const aggPkSolidity: SolidityG1Point = {
-        X: hexToBigInt(toHex(aggPk.slice(0, 64))),
-        Y: hexToBigInt(toHex(aggPk.slice(64, 128))),
+        X: hexToBigInt(toHex(aggPk.slice(32, 64))), // Take lower 32 bytes of X coordinate
+        Y: hexToBigInt(toHex(aggPk.slice(96, 128))), // Take lower 32 bytes of Y coordinate
     };
 
+    // EIP-2537 format: G2 points are 256 bytes (128 bytes X + 128 bytes Y)
+    // Each coordinate is Fp2 (64 bytes c0 + 64 bytes c1), take lower 32 bytes of each
     const hashedMsgSolidity: SolidityG2Point = {
-        X: [hexToBigInt(toHex(hashedMsg.slice(0, 64))), hexToBigInt(toHex(hashedMsg.slice(64, 128)))],
-        Y: [hexToBigInt(toHex(hashedMsg.slice(128, 192))), hexToBigInt(toHex(hashedMsg.slice(192, 256)))],
+        X: [hexToBigInt(toHex(hashedMsg.slice(32, 64))), hexToBigInt(toHex(hashedMsg.slice(96, 128)))],
+        Y: [hexToBigInt(toHex(hashedMsg.slice(160, 192))), hexToBigInt(toHex(hashedMsg.slice(224, 256)))],
     };
 
     const aggSigSolidity: SolidityG2Point = {
-        X: [hexToBigInt(toHex(aggSig.slice(0, 64))), hexToBigInt(toHex(aggSig.slice(64, 128)))],
-        Y: [hexToBigInt(toHex(aggSig.slice(128, 192))), hexToBigInt(toHex(aggSig.slice(192, 256)))],
+        X: [hexToBigInt(toHex(aggSig.slice(32, 64))), hexToBigInt(toHex(aggSig.slice(96, 128)))],
+        Y: [hexToBigInt(toHex(aggSig.slice(160, 192))), hexToBigInt(toHex(aggSig.slice(224, 256)))],
     };
 
     return {
