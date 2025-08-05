@@ -141,6 +141,45 @@ contract BLSVerifierTest is Test {
         console.log("Hash to G1: PASS");
     }
     
+    function testHashToG2() public {
+        bytes memory message1 = "Hello World";
+        bytes memory message2 = "Different Message";
+        
+        console.log("Testing hash to G2...");
+        
+        bytes memory hash1 = verifier.hashToG2(message1);
+        bytes memory hash2 = verifier.hashToG2(message2);
+        
+        assertEq(hash1.length, 256, "Hash1 should be 256 bytes");
+        assertEq(hash2.length, 256, "Hash2 should be 256 bytes");
+        
+        // 测试确定性
+        bytes memory hash1_repeat = verifier.hashToG2(message1);
+        assertEq(keccak256(hash1), keccak256(hash1_repeat), "Hash should be deterministic");
+        
+        // 测试不同消息产生不同哈希
+        assertNotEq(keccak256(hash1), keccak256(hash2), "Different messages should produce different hashes");
+        
+        console.log("Hash to G2: PASS");
+    }
+    
+    function testG1Aggregation() public {
+        bytes memory g1Gen = verifier.getG1Generator();
+        
+        bytes[] memory pubkeys = new bytes[](3);
+        pubkeys[0] = g1Gen;
+        pubkeys[1] = verifier.g1Mul(g1Gen, 2);
+        pubkeys[2] = verifier.g1Mul(g1Gen, 3);
+        
+        console.log("Testing G1 point aggregation...");
+        bytes memory aggregated = verifier.aggregateG1Points(pubkeys);
+        
+        assertEq(aggregated.length, 128, "Aggregated G1 should be 128 bytes");
+        assertFalse(isZero(aggregated), "Aggregated G1 should not be zero");
+        
+        console.log("G1 aggregation: PASS");
+    }
+    
     function testG2Aggregation() public {
         bytes memory g2Gen = verifier.getG2Generator();
         
@@ -161,8 +200,8 @@ contract BLSVerifierTest is Test {
     function testBLSSignatureInterface() public {
         console.log("Testing BLS signature verification interface...");
         
-        bytes memory mockSignature = verifier.getG1Generator();
-        bytes memory mockPubkey = verifier.getG2Generator();
+        bytes memory mockSignature = verifier.getG2Generator();  // G2签名 (256字节)
+        bytes memory mockPubkey = verifier.getG1Generator();     // G1公钥 (128字节)
         bytes memory message = "Test BLS Signature";
         
         // 这个测试预期会失败，因为我们使用的是模拟数据
@@ -181,10 +220,10 @@ contract BLSVerifierTest is Test {
     function testBLSAggregatedSignatureInterface() public {
         console.log("Testing BLS aggregated signature verification interface...");
         
-        bytes memory mockSignature = verifier.getG1Generator();
+        bytes memory mockSignature = verifier.getG2Generator();  // G2聚合签名 (256字节)
         bytes[] memory mockPubkeys = new bytes[](2);
-        mockPubkeys[0] = verifier.getG2Generator();
-        mockPubkeys[1] = verifier.getG2Generator();
+        mockPubkeys[0] = verifier.getG1Generator();              // G1公钥 (128字节)
+        mockPubkeys[1] = verifier.getG1Generator();              // G1公钥 (128字节)
         bytes memory message = "Test Aggregated BLS";
         
         try verifier.verifyAggregatedSignature(mockSignature, mockPubkeys, message) returns (bool result) {
