@@ -30,8 +30,8 @@ contract BLSVerifier {
     
     /**
      * @dev 验证BLS签名
-     * @param signature BLS签名 (G1点，128字节)
-     * @param pubkey 公钥 (G2点，256字节)
+     * @param signature BLS签名 (G2点，256字节)
+     * @param pubkey 公钥 (G1点，128字节)
      * @param message 原始消息
      * @return 验证结果
      */
@@ -40,22 +40,22 @@ contract BLSVerifier {
         bytes memory pubkey,
         bytes memory message
     ) public returns (bool) {
-        require(signature.length == 128, "Invalid signature length");
-        require(pubkey.length == 256, "Invalid pubkey length");
+        require(signature.length == 256, "Invalid signature length");
+        require(pubkey.length == 128, "Invalid pubkey length");
         
-        // 将消息哈希映射到G1
+        // 将消息哈希映射到G2
         bytes32 messageHash = keccak256(message);
-        bytes memory messageG1 = hashToG1(message);
+        bytes memory messageG2 = hashToG2(message);
         
-        // BLS验证: e(signature, G2) = e(messageG1, pubkey)
-        // 转换为配对检查: e(signature, G2) * e(-messageG1, pubkey) = 1
-        bytes memory negMessageG1 = g1Negate(messageG1);
+        // BLS验证: e(G1, signature) = e(pubkey, messageG2)
+        // 转换为配对检查: e(G1, signature) * e(-pubkey, messageG2) = 1
+        bytes memory negPubkey = g1Negate(pubkey);
         
         bytes memory pairingInput = abi.encodePacked(
-            signature,      // G1点 (128字节)
-            G2_GENERATOR,   // G2生成元 (256字节)
-            negMessageG1,   // -messageG1 (128字节)
-            pubkey          // 公钥G2点 (256字节)
+            G1_GENERATOR,   // G1生成元 (128字节)
+            signature,      // G2签名 (256字节)
+            negPubkey,      // -公钥G1点 (128字节)
+            messageG2       // messageG2 (256字节)
         );
         
         bool result = checkPairing(pairingInput);
@@ -66,8 +66,8 @@ contract BLSVerifier {
     
     /**
      * @dev 验证聚合BLS签名
-     * @param aggregatedSignature 聚合签名 (G1点，128字节)
-     * @param pubkeys 公钥数组 (每个G2点256字节)
+     * @param aggregatedSignature 聚合签名 (G2点，256字节)
+     * @param pubkeys 公钥数组 (每个G1点128字节)
      * @param message 原始消息
      * @return 验证结果
      */
@@ -76,29 +76,30 @@ contract BLSVerifier {
         bytes[] memory pubkeys,
         bytes memory message
     ) public returns (bool) {
-        require(aggregatedSignature.length == 128, "Invalid signature length");
+        require(aggregatedSignature.length == 256, "Invalid signature length");
         require(pubkeys.length > 0, "No public keys provided");
         
         // 验证所有公钥长度
         for (uint i = 0; i < pubkeys.length; i++) {
-            require(pubkeys[i].length == 256, "Invalid pubkey length");
+            require(pubkeys[i].length == 128, "Invalid pubkey length");
         }
         
         // 聚合公钥
-        bytes memory aggregatedPubkey = aggregateG2Points(pubkeys);
+        bytes memory aggregatedPubkey = aggregateG1Points(pubkeys);
         
-        // 将消息哈希映射到G1
+        // 将消息哈希映射到G2
         bytes32 messageHash = keccak256(message);
-        bytes memory messageG1 = hashToG1(message);
+        bytes memory messageG2 = hashToG2(message);
         
-        // BLS验证: e(aggregatedSignature, G2) = e(messageG1, aggregatedPubkey)
-        bytes memory negMessageG1 = g1Negate(messageG1);
+        // BLS验证: e(G1, aggregatedSignature) = e(aggregatedPubkey, messageG2)
+        // 转换为配对检查: e(G1, aggregatedSignature) * e(-aggregatedPubkey, messageG2) = 1
+        bytes memory negAggregatedPubkey = g1Negate(aggregatedPubkey);
         
         bytes memory pairingInput = abi.encodePacked(
-            aggregatedSignature, // G1点 (128字节)
-            G2_GENERATOR,        // G2生成元 (256字节)
-            negMessageG1,        // -messageG1 (128字节)
-            aggregatedPubkey     // 聚合公钥G2点 (256字节)
+            G1_GENERATOR,           // G1生成元 (128字节)
+            aggregatedSignature,    // G2聚合签名 (256字节)
+            negAggregatedPubkey,    // -聚合公钥G1点 (128字节)
+            messageG2               // messageG2 (256字节)
         );
         
         bool result = checkPairing(pairingInput);
@@ -226,7 +227,22 @@ contract BLSVerifier {
     }
     
     /**
-     * @dev 聚合多个G2点 (公钥聚合)
+     * @dev 聚合多个G1点 (公钥聚合)
+     */
+    function aggregateG1Points(bytes[] memory points) public view returns (bytes memory) {
+        require(points.length > 0, "Empty points array");
+        
+        bytes memory result = points[0];
+        
+        for (uint i = 1; i < points.length; i++) {
+            result = g1Add(result, points[i]);
+        }
+        
+        return result;
+    }
+    
+    /**
+     * @dev 聚合多个G2点 (向后兼容)
      */
     function aggregateG2Points(bytes[] memory points) public view returns (bytes memory) {
         require(points.length > 0, "Empty points array");
@@ -267,6 +283,23 @@ contract BLSVerifier {
         uint256 y = uint256(keccak256(abi.encodePacked(hash, "suffix")));
         
         return mapToG1(x, y);
+    }
+    
+    /**
+     * @dev 将消息哈希映射到G2点
+     * 使用简化的hash-to-curve实现
+     */
+    function hashToG2(bytes memory message) public view returns (bytes memory) {
+        // 使用消息的keccak256哈希作为输入
+        bytes32 hash = keccak256(message);
+        
+        // 将哈希分解为四个uint256用于G2映射
+        uint256 c00 = uint256(hash);
+        uint256 c01 = uint256(keccak256(abi.encodePacked(hash, "c01")));
+        uint256 c10 = uint256(keccak256(abi.encodePacked(hash, "c10")));
+        uint256 c11 = uint256(keccak256(abi.encodePacked(hash, "c11")));
+        
+        return mapToG2(c00, c01, c10, c11);
     }
     
     /**
