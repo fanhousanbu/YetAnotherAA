@@ -1,32 +1,37 @@
-# BLS12-381 Aggregate Signature System
+# AA Aggregate Signature Validator
 
-A complete BLS12-381 aggregate signature system for Ethereum, using EIP-2537 precompiles for on-chain verification.
+A complete aggregate signature validation system for ERC4337 Account Abstraction, using EIP-2537 precompiles for efficient on-chain verification.
 
 ## Overview
 
 This project implements:
-- **Off-chain BLS signature aggregation** using Node.js and @noble/curves
-- **On-chain signature verification** using Solidity and EIP-2537 precompiles
-- **EIP-2537 compatible data formatting** for seamless integration
+- **Off-chain signature aggregation** using Node.js and @noble/curves
+- **On-chain signature validation** using Solidity and EIP-2537 precompiles  
+- **ERC4337 compatible integration** for Account Abstraction wallets
+- **Gas-efficient multi-signature operations** for production use
 
 ## Project Structure
 
 ```
-├── bls-aggregator/          # Node.js signature aggregation tool
-│   ├── index.js            # Main aggregation script
-│   └── package.json        # Dependencies and scripts
-├── contracts/              # Solidity smart contracts
+├── signer/                 # Node.js signature aggregation tool
+│   ├── index.js           # Main aggregation script  
+│   └── package.json       # Dependencies and scripts
+├── validator/             # Solidity validation contracts
 │   ├── src/
-│   │   └── BLSAggregateVerifier.sol  # Main verification contract
-│   └── foundry.toml        # Foundry configuration
-└── README.md               # This file
+│   │   └── AggregateSignatureValidator.sol  # AA signature validator
+│   ├── foundry.toml       # Foundry configuration
+│   └── README.md          # Contract documentation
+├── EXAMPLE.md             # Usage examples and integration guide
+└── README.md              # This file
 ```
 
 ## Features
 
-✅ **Multi-signature Aggregation**: Generate m private keys, select n for aggregation  
-✅ **EIP-2537 Compatibility**: Proper encoding for Ethereum precompiles  
-✅ **Dual Verification Methods**: 768-byte pairing data or separated parameters  
+✅ **AA Multi-signature Support**: Generate m private keys, select n for aggregation  
+✅ **ERC4337 Integration**: Native support for UserOperation validation  
+✅ **EIP-2537 Compatibility**: Optimized encoding for Ethereum precompiles  
+✅ **Multiple Validation Methods**: Direct pairing, components, and UserOp validation  
+✅ **Gas Optimized**: Efficient precompile usage for production deployment  
 ✅ **Production Ready**: Clean, tested, documented code  
 
 ## Quick Start
@@ -34,68 +39,83 @@ This project implements:
 ### 1. Generate Aggregate Signatures
 
 ```bash
-cd bls-aggregator
+cd signer
 npm install
-npm run aggregate -- --message "Hello World" --m 5 --n 3
+npm run aggregate -- --message "UserOp Hash" --m 5 --n 3
 ```
 
 ### 2. Deploy Contract
 
 ```bash
-cd contracts
+cd validator
 forge build
-forge create src/BLSAggregateVerifier.sol:BLSAggregateVerifier --rpc-url <RPC_URL> --private-key <PRIVATE_KEY>
+forge create src/AggregateSignatureValidator.sol:AggregateSignatureValidator --rpc-url <RPC_URL> --private-key <PRIVATE_KEY>
 ```
 
-### 3. Verify Signatures
+### 3. Validate Signatures
 
-Use the generated data to call either:
-- `verify(bytes pairingCalldata)` - Direct 768-byte verification
-- `verifyWithNegatedPubKey(bytes, bytes, bytes)` - Separated parameters
+Use the generated data to call:
+- `validateSignature(bytes pairingData)` - Direct 768-byte validation
+- `validateComponents(bytes, bytes, bytes)` - Component-based validation  
+- `validateUserOp(bytes32, bytes)` - ERC4337 UserOp validation
 
 ## Technical Details
 
-### BLS12-381 Implementation
-- Uses **@noble/curves** library for cryptographic operations
+### Cryptographic Implementation
+- Uses **@noble/curves** library for secure cryptographic operations
 - Implements **EIP-2537** encoding format: `[16 zeros][48-byte coordinate]`
-- Supports both **G1** (public keys) and **G2** (signatures) points
+- Supports efficient aggregate signature operations for AA wallets
 
-### Smart Contract Verification
-- **Gas optimized**: Uses EIP-2537 precompiles for efficient pairing checks
-- **Dual interfaces**: Supports both direct and parameterized verification
+### Smart Contract Validation
+- **Gas optimized**: Uses EIP-2537 precompiles for efficient validation
+- **Multiple interfaces**: Direct, component, and UserOp validation methods
+- **AA focused**: Designed specifically for ERC4337 integration
 - **Security focused**: Proper input validation and error handling
 
 ### Output Format
 
-The aggregator generates:
+The aggregator generates AA-compatible validation data:
 ```json
 {
-  "aggregatedPubKey": "0x...",      // 128-byte G1 point
-  "negatedPubKey": "0x...",         // 128-byte negated G1 point
-  "aggregatedSignature": "0x...",   // 256-byte G2 point
-  "messageG2": "0x...",             // 256-byte message mapped to G2
-  "pairingCalldata": "0x..."        // 768-byte pairing verification data
+  "pairingData": "0x...",           // 768-byte direct validation data
+  "components": {
+    "aggregatedKey": "0x...",       // 128-byte processed key
+    "signature": "0x...",           // 256-byte aggregate signature
+    "messagePoint": "0x..."         // 256-byte message point
+  },
+  "userOpSignature": {
+    "direct": "0x...",              // Direct UserOp signature format
+    "components": "0x..."           // Component-based UserOp format
+  },
+  "contractMethods": {
+    "validateSignature": "validateSignature(bytes)",
+    "validateComponents": "validateComponents(bytes,bytes,bytes)",
+    "validateUserOp": "validateUserOp(bytes32,bytes)"
+  }
 }
 ```
 
 ## Usage Examples
 
-### Generate 10 keys, aggregate 3 signatures
+### Generate AA wallet signatures
 ```bash
-npm run aggregate -- --message "Transaction #123" --m 10 --n 3
+npm run aggregate -- --message "UserOp Transaction #123" --m 10 --n 3
 ```
 
-### Verify on-chain
+### Validate on-chain
 ```solidity
-// Direct verification
-bool success = verifier.verify(pairingCalldata);
+// Direct validation
+bool success = validator.validateSignature(pairingData);
 
-// Parameter verification  
-bool success = verifier.verifyWithNegatedPubKey(
-    negatedPubKey, 
-    aggregatedSignature, 
-    messageG2
+// Component validation  
+bool success = validator.validateComponents(
+    aggregatedKey, 
+    signature, 
+    messagePoint
 );
+
+// ERC4337 UserOp validation
+bool success = validator.validateUserOp(userOpHash, signatureData);
 ```
 
 ## Security Considerations
@@ -104,16 +124,19 @@ bool success = verifier.verifyWithNegatedPubKey(
 - All signatures are individually verified before aggregation
 - Contract uses proper input validation and gas limits
 - EIP-2537 precompiles provide cryptographic security guarantees
+- Designed for AA wallet security with proper UserOp validation
+- Gas limits prevent DoS attacks during validation
 
 ## Dependencies
 
-### Node.js
-- `@noble/curves`: BLS12-381 cryptographic operations
+### Node.js Signer
+- `@noble/curves`: Secure cryptographic operations
 - `@noble/hashes`: Cryptographic hash functions
 
-### Solidity
+### Solidity Validator
 - Solidity ^0.8.19
 - EIP-2537 precompiles (available on Ethereum mainnet and testnets)
+- ERC4337 compatibility
 
 ## License
 

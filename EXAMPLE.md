@@ -1,10 +1,10 @@
-# Usage Example
+# AA Aggregate Signature Validator - Usage Example
 
 ## 1. Generate Aggregate Signature
 
 ```bash
-cd bls-aggregator
-npm run aggregate -- --message "Hello Ethereum!" --m 5 --n 3
+cd signer
+npm run start -- --message "Hello Ethereum!" --m 5 --n 3
 ```
 
 **Output:**
@@ -34,8 +34,8 @@ pairingCalldata: "0x..."
 ## 2. Deploy Contract
 
 ```bash
-cd contracts
-forge create src/BLSAggregateVerifier.sol:BLSAggregateVerifier \
+cd validator
+forge create src/AggregateSignatureValidator.sol:AggregateSignatureValidator \
   --rpc-url https://sepolia.infura.io/v3/YOUR_KEY \
   --private-key YOUR_PRIVATE_KEY
 ```
@@ -48,20 +48,28 @@ Transaction hash: 0x...
 
 ## 3. Verify Signature On-Chain
 
-### Method 1: Direct Verification
+### Method 1: Direct Validation
 ```bash
 cast call --rpc-url $RPC_URL $CONTRACT_ADDRESS \
-  "verify(bytes)" \
-  "0x[768-byte-pairing-calldata]"
+  "validateSignature(bytes)" \
+  "0x[768-byte-pairing-data]"
 ```
 
-### Method 2: Parameter Verification
+### Method 2: Component Validation
 ```bash
 cast call --rpc-url $RPC_URL $CONTRACT_ADDRESS \
-  "verifyWithNegatedPubKey(bytes,bytes,bytes)" \
-  "0x[negated-pubkey]" \
-  "0x[aggregated-signature]" \
-  "0x[message-g2]"
+  "validateComponents(bytes,bytes,bytes)" \
+  "0x[aggregated-key]" \
+  "0x[signature]" \
+  "0x[message-point]"
+```
+
+### Method 3: UserOp Validation (ERC4337)
+```bash
+cast call --rpc-url $RPC_URL $CONTRACT_ADDRESS \
+  "validateUserOp(bytes32,bytes)" \
+  "0x[user-op-hash]" \
+  "0x[signature-data]"
 ```
 
 **Successful Output:**
@@ -77,16 +85,21 @@ import { ethers } from 'ethers';
 
 // Contract ABI (simplified)
 const abi = [
-  "function verify(bytes calldata pairingCalldata) external view returns (bool)",
-  "function verifyWithNegatedPubKey(bytes,bytes,bytes) external view returns (bool)"
+  "function validateSignature(bytes calldata pairingData) external view returns (bool)",
+  "function validateComponents(bytes,bytes,bytes) external view returns (bool)",
+  "function validateUserOp(bytes32,bytes) external view returns (bool)"
 ];
 
 // Connect to contract
 const contract = new ethers.Contract(contractAddress, abi, provider);
 
-// Verify signature
-const result = await contract.verify(pairingCalldata);
-console.log('Verification result:', result); // true
+// Validate signature
+const result = await contract.validateSignature(pairingData);
+console.log('Validation result:', result); // true
+
+// ERC4337 UserOp validation
+const userOpResult = await contract.validateUserOp(userOpHash, signatureData);
+console.log('UserOp validation:', userOpResult); // true
 ```
 
 ### Solidity Integration
@@ -94,13 +107,27 @@ console.log('Verification result:', result); // true
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "./BLSAggregateVerifier.sol";
+import "./AggregateSignatureValidator.sol";
 
-contract MyApp {
-    BLSAggregateVerifier public immutable verifier;
+contract AAWallet {
+    AggregateSignatureValidator public immutable validator;
     
-    constructor(address _verifier) {
-        verifier = BLSAggregateVerifier(_verifier);
+    constructor(address _validator) {
+        validator = AggregateSignatureValidator(_validator);
+    }
+    
+    function executeUserOp(
+        bytes32 userOpHash,
+        bytes calldata signatureData,
+        // ... other parameters
+    ) external {
+        require(
+            validator.validateUserOp(userOpHash, signatureData),
+            "Invalid aggregate signature"
+        );
+        
+        // Execute validated UserOperation
+        // ...
     }
     
     function processTransaction(
@@ -108,8 +135,8 @@ contract MyApp {
         // ... other parameters
     ) external {
         require(
-            verifier.verify(pairingData),
-            "Invalid BLS signature"
+            validator.validateSignature(pairingData),
+            "Invalid signature"
         );
         
         // Process verified transaction
@@ -118,33 +145,34 @@ contract MyApp {
 }
 ```
 
-## Real-world Usage Scenarios
+## Real-world AA Usage Scenarios
 
-### Multi-signature Wallet
+### ERC4337 Multi-signature Wallet
 ```bash
-# Generate 10 guardian keys, require 7 signatures
-npm run aggregate -- --message "Transfer 100 ETH to 0x..." --m 10 --n 7
+# Generate 10 guardian keys for AA wallet, require 7 signatures
+npm run start -- --message "UserOp: Transfer 100 ETH to 0x..." --m 10 --n 7
 ```
 
-### Validator Consensus
+### AA Validator Consensus
 ```bash
-# Aggregate validator signatures for block finalization
-npm run aggregate -- --message "Block #12345 Hash: 0x..." --m 100 --n 67
+# Aggregate AA validator signatures for operation approval
+npm run start -- --message "AA Operation #12345 Hash: 0x..." --m 100 --n 67
 ```
 
-### Rollup Batch Processing
+### Batch UserOp Processing
 ```bash
-# Aggregate user signatures for batch processing
-npm run aggregate -- --message "Batch #456 Merkle Root: 0x..." --m 1000 --n 800
+# Aggregate multiple AA wallet signatures for batch processing
+npm run start -- --message "Batch UserOps #456 Root: 0x..." --m 50 --n 35
 ```
 
 ## Gas Costs
 
 | Operation | Gas Cost | Notes |
 |-----------|----------|-------|
-| `verify(bytes)` | ~180,000 | Direct pairing check |
-| `verifyWithNegatedPubKey` | ~190,000 | Parameter processing + pairing |
-| Contract deployment | ~1,200,000 | One-time cost |
+| `validateSignature(bytes)` | ~180,000 | Direct pairing validation |
+| `validateComponents(bytes,bytes,bytes)` | ~190,000 | Component processing + validation |
+| `validateUserOp(bytes32,bytes)` | ~185,000 | ERC4337 UserOp validation |
+| Contract deployment | ~1,200,000 | One-time deployment cost |
 
 ## Security Best Practices
 
