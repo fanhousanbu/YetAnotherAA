@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { bls12_381 } from '@noble/curves/bls12-381.js';
-import { sha256 } from '@noble/hashes/sha256';
 import { randomBytes } from 'crypto';
 
 /**
@@ -132,6 +131,7 @@ async function main() {
     
     // 使用长签名模式 (G2签名, G1公钥)
     const bls = bls12_381;
+    const sigs = bls.longSignatures;
     
     // 1. 生成m个私钥和公钥
     console.log('\n=== 生成私钥和公钥 ===');
@@ -140,13 +140,13 @@ async function main() {
     
     for (let i = 0; i < config.m; i++) {
         const privKey = randomBytes(32);
-        const pubKey = bls.getPublicKey(privKey);
+        const pubKey = sigs.getPublicKey(privKey);
         
         privateKeys.push(privKey);
         publicKeys.push(pubKey);
         
         console.log(`私钥 ${i}: 0x${Buffer.from(privKey).toString('hex')}`);
-        console.log(`公钥 ${i}: 0x${Buffer.from(pubKey).toString('hex')}`);
+        console.log(`公钥 ${i}: 0x${Buffer.from(pubKey.toRawBytes()).toString('hex')}`);
     }
     
     // 2. 随机选择n个私钥进行聚合
@@ -166,26 +166,27 @@ async function main() {
     const selectedPrivateKeys = selectedIndices.map(i => privateKeys[i]);
     const selectedPublicKeys = selectedIndices.map(i => publicKeys[i]);
     const signatures = [];
+    const messagePoint = await bls.G2.hashToCurve(message, { DST });
     
     for (let i = 0; i < selectedPrivateKeys.length; i++) {
-        const signature = bls.sign(message, selectedPrivateKeys[i]);
+        const signature = await sigs.sign(messagePoint, selectedPrivateKeys[i]);
         signatures.push(signature);
         
         // 验证个人签名
-        const isValid = bls.verify(signature, message, selectedPublicKeys[i]);
-        console.log(`签名 ${selectedIndices[i]}: 0x${Buffer.from(signature).toString('hex')} (验证: ${isValid})`);
+        const isValid = await sigs.verify(signature, messagePoint, selectedPublicKeys[i]);
+        console.log(`签名 ${selectedIndices[i]}: 0x${Buffer.from(signature.toRawBytes()).toString('hex')} (验证: ${isValid})`);
     }
     
     // 4. 聚合签名和公钥
     console.log('\n=== 聚合签名和公钥 ===');
-    const aggregatedSignature = bls.aggregateSignatures(signatures);
-    const aggregatedPubKey = bls.aggregatePublicKeys(selectedPublicKeys);
+    const aggregatedSignature = sigs.aggregateSignatures(signatures);
+    const aggregatedPubKey = sigs.aggregatePublicKeys(selectedPublicKeys);
     
-    console.log(`聚合签名: 0x${Buffer.from(aggregatedSignature).toString('hex')}`);
-    console.log(`聚合公钥: 0x${Buffer.from(aggregatedPubKey).toString('hex')}`);
+    console.log(`聚合签名: 0x${Buffer.from(aggregatedSignature.toRawBytes()).toString('hex')}`);
+    console.log(`聚合公钥: 0x${Buffer.from(aggregatedPubKey.toRawBytes()).toString('hex')}`);
     
     // 5. 验证聚合签名
-    const isAggregatedValid = bls.verify(aggregatedSignature, message, aggregatedPubKey);
+    const isAggregatedValid = await sigs.verify(aggregatedSignature, messagePoint, aggregatedPubKey);
     console.log(`聚合签名验证: ${isAggregatedValid}`);
     
     if (!isAggregatedValid) {
@@ -197,23 +198,23 @@ async function main() {
     console.log('\n=== 生成合约验证数据 ===');
     
     // 将消息映射到G2
-    const messageG2Point = bls.G2.hashToCurve(message, DST);
+    const messageG2Point = await bls.G2.hashToCurve(message, { DST });
     
     // G1生成元
-    const g1Generator = bls.G1.ProjectivePoint.BASE;
+    const g1Generator = bls.G1.Point.BASE;
     
     // 将聚合公钥取负 (用于配对验证)
-    const negatedAggregatedPubKey = negateG1Point(bls.G1.ProjectivePoint.fromAffine(bls.G1.ProjectivePoint.fromHex(aggregatedPubKey).toAffine()));
+    const negatedAggregatedPubKey = negateG1Point(bls.G1.Point.fromHex(aggregatedPubKey.toRawBytes()));
     
     // 转换为EIP-2537格式
-    const aggregatedPubKeyEIP = encodeG1Point(bls.G1.ProjectivePoint.fromHex(aggregatedPubKey));
+    const aggregatedPubKeyEIP = encodeG1Point(bls.G1.Point.fromHex(aggregatedPubKey.toRawBytes()));
     const negatedPubKeyEIP = encodeG1Point(negatedAggregatedPubKey);
-    const aggregatedSignatureEIP = encodeG2Point(bls.G2.ProjectivePoint.fromHex(aggregatedSignature));
+    const aggregatedSignatureEIP = encodeG2Point(bls.G2.Point.fromHex(aggregatedSignature.toRawBytes()));
     const messageG2EIP = encodeG2Point(messageG2Point);
     
     // 生成配对输入数据
     const pairingCalldata = buildPairingInput(g1Generator, 
-        bls.G2.ProjectivePoint.fromHex(aggregatedSignature), 
+        bls.G2.Point.fromHex(aggregatedSignature.toRawBytes()), 
         negatedAggregatedPubKey, 
         messageG2Point);
     
@@ -246,7 +247,7 @@ async function main() {
         // ERC4337 UserOp format
         userOpSignature: {
             direct: "0x" + Buffer.from(pairingCalldata).toString('hex'),
-            components: "0x" + 
+            components: "0x" +
                 Buffer.from(negatedPubKeyEIP).toString('hex') +
                 Buffer.from(aggregatedSignatureEIP).toString('hex').slice(2) +
                 Buffer.from(messageG2EIP).toString('hex').slice(2)
