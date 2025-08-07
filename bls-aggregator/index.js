@@ -5,8 +5,12 @@ import { sha256 } from '@noble/hashes/sha256';
 import { randomBytes } from 'crypto';
 
 /**
- * BLS12-381 聚合签名生成器
- * 使用 @noble/curves 库，兼容 EIP-2537 格式
+ * BLS12-381 Aggregate Signature Generator
+ * 
+ * Generates BLS aggregate signatures compatible with EIP-2537 precompiles
+ * - Creates m private keys and selects n for aggregation
+ * - Outputs EIP-2537 formatted data for on-chain verification
+ * - Uses @noble/curves for secure cryptographic operations
  */
 
 // 命令行参数解析
