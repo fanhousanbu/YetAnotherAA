@@ -1,7 +1,7 @@
 {
-  "name": "bls-aggregator",
+  "name": "signer",
   "version": "1.0.0",
-  "description": "BLS12-381 signature aggregation for Ethereum EIP-2537 precompiles",
+  "description": "signer node for ERC4337 validator contract",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -11,7 +11,7 @@
     "@noble/curves": "^1.4.0",
     "@noble/hashes": "^1.4.0"
   },
-  "keywords": ["bls12-381", "ethereum", "signatures", "aggregation", "eip-2537", "precompiles"],
+  "keywords": ["bls12-381", "erc4337", "aa", "ethereum", "signatures", "aggregation"],
   "author": "",
   "license": "MIT"
 }
