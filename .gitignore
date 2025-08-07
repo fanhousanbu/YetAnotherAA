@@ -3,7 +3,6 @@ dist
 .env
 .DS_Store
 .vscode
-broadcast
 out
 coverage
 cache
