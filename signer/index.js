@@ -146,7 +146,7 @@ async function main() {
         publicKeys.push(pubKey);
         
         console.log(`私钥 ${i}: 0x${Buffer.from(privKey).toString('hex')}`);
-        console.log(`公钥 ${i}: 0x${Buffer.from(pubKey.toRawBytes()).toString('hex')}`);
+        console.log(`公钥 ${i}: 0x${Buffer.from(pubKey.toBytes()).toString('hex')}`);
     }
     
     // 2. 随机选择n个私钥进行聚合
@@ -174,7 +174,7 @@ async function main() {
         
         // 验证个人签名
         const isValid = await sigs.verify(signature, messagePoint, selectedPublicKeys[i]);
-        console.log(`签名 ${selectedIndices[i]}: 0x${Buffer.from(signature.toRawBytes()).toString('hex')} (验证: ${isValid})`);
+        console.log(`签名 ${selectedIndices[i]}: 0x${Buffer.from(signature.toBytes()).toString('hex')} (验证: ${isValid})`);
     }
     
     // 4. 聚合签名和公钥
@@ -182,8 +182,8 @@ async function main() {
     const aggregatedSignature = sigs.aggregateSignatures(signatures);
     const aggregatedPubKey = sigs.aggregatePublicKeys(selectedPublicKeys);
     
-    console.log(`聚合签名: 0x${Buffer.from(aggregatedSignature.toRawBytes()).toString('hex')}`);
-    console.log(`聚合公钥: 0x${Buffer.from(aggregatedPubKey.toRawBytes()).toString('hex')}`);
+    console.log(`聚合签名: 0x${Buffer.from(aggregatedSignature.toBytes()).toString('hex')}`);
+    console.log(`聚合公钥: 0x${Buffer.from(aggregatedPubKey.toBytes()).toString('hex')}`);
     
     // 5. 验证聚合签名
     const isAggregatedValid = await sigs.verify(aggregatedSignature, messagePoint, aggregatedPubKey);
@@ -204,17 +204,17 @@ async function main() {
     const g1Generator = bls.G1.Point.BASE;
     
     // 将聚合公钥取负 (用于配对验证)
-    const negatedAggregatedPubKey = negateG1Point(bls.G1.Point.fromHex(aggregatedPubKey.toRawBytes()));
+    const negatedAggregatedPubKey = negateG1Point(bls.G1.Point.fromHex(aggregatedPubKey.toBytes()));
     
     // 转换为EIP-2537格式
-    const aggregatedPubKeyEIP = encodeG1Point(bls.G1.Point.fromHex(aggregatedPubKey.toRawBytes()));
+    const aggregatedPubKeyEIP = encodeG1Point(bls.G1.Point.fromHex(aggregatedPubKey.toBytes()));
     const negatedPubKeyEIP = encodeG1Point(negatedAggregatedPubKey);
-    const aggregatedSignatureEIP = encodeG2Point(bls.G2.Point.fromHex(aggregatedSignature.toRawBytes()));
+    const aggregatedSignatureEIP = encodeG2Point(bls.G2.Point.fromHex(aggregatedSignature.toBytes()));
     const messageG2EIP = encodeG2Point(messageG2Point);
     
     // 生成配对输入数据
     const pairingCalldata = buildPairingInput(g1Generator, 
-        bls.G2.Point.fromHex(aggregatedSignature.toRawBytes()), 
+        bls.G2.Point.fromHex(aggregatedSignature.toBytes()), 
         negatedAggregatedPubKey, 
         messageG2Point);
     
