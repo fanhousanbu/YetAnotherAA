@@ -5,7 +5,6 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "aggregate": "node index.js",
     "start": "node index.js"
   },
   "dependencies": {

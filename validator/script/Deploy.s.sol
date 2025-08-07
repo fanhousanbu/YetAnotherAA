@@ -2,20 +2,25 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Script.sol";
-import "../src/ValidatorBLS.sol";
+import "../src/AggregateSignatureValidator.sol";
 
 contract DeployScript is Script {
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast();
 
-        ValidatorBLS validator = new ValidatorBLS();
+        AggregateSignatureValidator validator = new AggregateSignatureValidator();
         
-        console.log("ValidatorBLS deployed at:", address(validator));
-        console.log("Gas cost for verification (1 public key):", validator.getVerificationGasCost(1));
-        console.log("Gas cost for verification (2 public keys):", validator.getVerificationGasCost(2));
-        console.log("Gas cost for verification (3 public keys):", validator.getVerificationGasCost(3));
+        console.log("AggregateSignatureValidator deployed to:", address(validator));
+        
+        // Verify the contract is working by checking gas estimates
+        (uint256 directGas, uint256 componentGas) = validator.getGasEstimates();
+        console.log("Direct validation gas estimate:", directGas);
+        console.log("Component validation gas estimate:", componentGas);
+        
+        // Check signature format
+        string memory format = validator.getSignatureFormat();
+        console.log("Signature format:", format);
 
         vm.stopBroadcast();
     }
-} 
+}
