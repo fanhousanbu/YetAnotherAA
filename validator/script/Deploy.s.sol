@@ -13,9 +13,9 @@ contract DeployScript is Script {
         console.log("AggregateSignatureValidator deployed to:", address(validator));
         
         // Verify the contract is working by checking gas estimates
-        (uint256 directGas, uint256 componentGas) = validator.getGasEstimates();
+        (uint256 directGas, uint256 userOpGas) = validator.getGasEstimates();
         console.log("Direct validation gas estimate:", directGas);
-        console.log("Component validation gas estimate:", componentGas);
+        console.log("UserOp validation gas estimate:", userOpGas);
         
         // Check signature format
         string memory format = validator.getSignatureFormat();
