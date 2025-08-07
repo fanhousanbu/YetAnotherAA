@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -92,11 +93,18 @@ func main() {
 	selectedIndices := mathRand.Perm(m)[:n]
 	fmt.Printf("随机选择的索引: %v\n", selectedIndices)
 
-	// 聚合选中的公钥和签名
-	aggregatedPubKey := blsSon.P1{}
-	aggregatedSignature := blsSon.P2{}
+	// 聚合选中的公钥和签名 - 从第一个签名开始聚合，避免零点问题
+	firstIdx := selectedIndices[0]
+	
+	// 初始化时直接从第一个选中的点开始
+	var aggregatedPubKey blsSon.P1
+	var aggregatedSignature blsSon.P2
+	aggregatedPubKey.FromAffine(publicKeys[firstIdx])
+	aggregatedSignature.FromAffine(signatures[firstIdx])
 
-	for _, idx := range selectedIndices {
+	// 添加剩余的签名
+	for i := 1; i < len(selectedIndices); i++ {
+		idx := selectedIndices[i]
 		aggregatedPubKey.Add(publicKeys[idx])
 		aggregatedSignature.Add(signatures[idx])
 	}
@@ -113,12 +121,57 @@ func main() {
 		log.Fatalf("生成calldata失败: %v", err)
 	}
 
+	// 生成合约验证所需的数据
+	contractData, err := generateContractData(
+		selectedIndices,
+		publicKeys,
+		aggregatedSignature.ToAffine(),
+		msgG2.ToAffine(),
+		msgBytes,
+	)
+	if err != nil {
+		log.Fatalf("生成合约数据失败: %v", err)
+	}
+
 	// 输出结果
 	fmt.Printf("\n=== 结果 ===\n")
 	fmt.Printf("预编译合约 0xf 的 calldata:\n")
 	fmt.Printf("0x%s\n", hex.EncodeToString(calldata))
 	fmt.Printf("\ncalldata 长度: %d 字节\n", len(calldata))
 	fmt.Printf("配对数量: %d\n", len(calldata)/384)
+	
+	fmt.Printf("\n=== 合约验证数据 ===\n")
+	fmt.Printf("合约地址: %s\n", contractData.ContractAddress)
+	fmt.Printf("函数调用数据:\n")
+	fmt.Printf("publicKeys: [")
+	for i, pubKey := range contractData.PublicKeys {
+		if i > 0 {
+			fmt.Printf(",")
+		}
+		fmt.Printf("\n  \"0x%s\"", hex.EncodeToString(pubKey))
+	}
+	fmt.Printf("\n]\n")
+	fmt.Printf("aggregatedSignature: \"0x%s\"\n", hex.EncodeToString(contractData.AggregatedSignature))
+	fmt.Printf("messageG2: \"0x%s\"\n", hex.EncodeToString(contractData.MessageG2))
+	fmt.Printf("aggregatedPubKey: \"0x%s\"\n", hex.EncodeToString(contractData.AggregatedPubKey))
+	fmt.Printf("negatedPubKey: \"0x%s\"\n", hex.EncodeToString(contractData.NegatedPubKey))
+	
+	// 输出完整的合约调用参数JSON
+	fmt.Printf("\n=== JSON格式合约调用参数 ===\n")
+	contractParams := map[string]interface{}{
+		"publicKeys":          make([]string, len(contractData.PublicKeys)),
+		"aggregatedSignature": "0x" + hex.EncodeToString(contractData.AggregatedSignature),
+		"messageG2":          "0x" + hex.EncodeToString(contractData.MessageG2),
+		"aggregatedPubKey":   "0x" + hex.EncodeToString(contractData.AggregatedPubKey),
+		"negatedPubKey":      "0x" + hex.EncodeToString(contractData.NegatedPubKey),
+	}
+	
+	for i, pubKey := range contractData.PublicKeys {
+		contractParams["publicKeys"].([]string)[i] = "0x" + hex.EncodeToString(pubKey)
+	}
+	
+	jsonBytes, _ := json.MarshalIndent(contractParams, "", "  ")
+	fmt.Printf("%s\n", jsonBytes)
 }
 
 // generatePairingCalldata 生成 BLS 签名验证的配对数据
@@ -143,6 +196,67 @@ func generatePairingCalldata(aggregatedPubKey *blsSon.P1Affine, aggregatedSignat
 	}
 
 	return input, nil
+}
+
+// ContractData 定义合约验证所需的数据结构
+type ContractData struct {
+	ContractAddress     string   // 合约地址
+	PublicKeys          [][]byte // 参与签名的G1公钥数组 (每个128字节)
+	AggregatedSignature []byte   // G2聚合签名 (256字节)
+	MessageG2           []byte   // 消息的G2哈希 (256字节)
+	AggregatedPubKey    []byte   // 聚合后的公钥 (G1点，128字节)
+	NegatedPubKey       []byte   // 取负后的聚合公钥 (G1点，128字节) - 为合约verifyAggregatedSignature方法使用
+}
+
+// generateContractData 生成合约验证所需的数据，参考Besu实现的格式
+func generateContractData(
+	selectedIndices []int,
+	allPublicKeys []*blsSon.P1Affine,
+	aggregatedSignature *blsSon.P2Affine,
+	messageG2 *blsSon.P2Affine,
+	originalMessage []byte,
+) (*ContractData, error) {
+	// 提取选中的公钥并转换为EIP-2537格式
+	selectedPubKeys := make([][]byte, len(selectedIndices))
+	for i, idx := range selectedIndices {
+		pubKeyGnark := convertSonToG1Gnark(allPublicKeys[idx])
+		selectedPubKeys[i] = encodePointG1(pubKeyGnark)
+	}
+
+	// 编码聚合签名为EIP-2537格式
+	sigGnark := new(blsGnark.G2Affine)
+	sigGnark.SetBytes(aggregatedSignature.Compress())
+	aggregatedSigBytes := encodePointG2(sigGnark)
+
+	// 编码messageG2为EIP-2537格式
+	msgG2Gnark := new(blsGnark.G2Affine)
+	msgG2Gnark.SetBytes(messageG2.Compress())
+	messageG2Bytes := encodePointG2(msgG2Gnark)
+
+	// 同时输出链上聚合后的公钥用于简化合约
+	aggregatedPubKeyGnark := convertSonToG1Gnark(allPublicKeys[selectedIndices[0]]) // 从第一个开始
+	for i := 1; i < len(selectedIndices); i++ {
+		idx := selectedIndices[i]
+		pubKeyToAdd := convertSonToG1Gnark(allPublicKeys[idx])
+		temp := new(blsGnark.G1Affine)
+		temp.Add(aggregatedPubKeyGnark, pubKeyToAdd)
+		aggregatedPubKeyGnark = temp
+	}
+	aggregatedPubKeyBytes := encodePointG1(aggregatedPubKeyGnark)
+
+	// 生成取负的聚合公钥 (为合约verifyAggregatedSignature方法使用)
+	negatedPubKeyGnark := new(blsGnark.G1Affine)
+	negatedPubKeyGnark.Neg(aggregatedPubKeyGnark)
+	negatedPubKeyBytes := encodePointG1(negatedPubKeyGnark)
+
+	return &ContractData{
+		ContractAddress:     "0xBceAb05F67d23CBeF4118E86f56c1C2aC029B25c", // 当前部署的合约地址
+		PublicKeys:          selectedPubKeys,
+		AggregatedSignature: aggregatedSigBytes,
+		MessageG2:           messageG2Bytes,
+		AggregatedPubKey:    aggregatedPubKeyBytes, // 聚合后的公钥
+		NegatedPubKey:       negatedPubKeyBytes,    // 取负后的聚合公钥
+	}, nil
 }
 
 // === 辅助函数 (从 signer-node 复制) ===
