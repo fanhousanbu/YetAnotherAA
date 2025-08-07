@@ -1,0 +1,17 @@
+{
+  "name": "bls-aggregator",
+  "version": "1.0.0",
+  "description": "BLS12-381 signature aggregation for Ethereum EIP-2537 precompiles",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@noble/curves": "^1.4.0",
+    "@noble/hashes": "^1.4.0"
+  },
+  "keywords": ["bls12-381", "ethereum", "signatures", "aggregation", "eip-2537", "precompiles"],
+  "author": "",
+  "license": "MIT"
+}
