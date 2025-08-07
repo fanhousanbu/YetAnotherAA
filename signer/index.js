@@ -5,12 +5,13 @@ import { sha256 } from '@noble/hashes/sha256';
 import { randomBytes } from 'crypto';
 
 /**
- * BLS12-381 Aggregate Signature Generator
+ * AA Aggregate Signature Generator
  * 
- * Generates BLS aggregate signatures compatible with EIP-2537 precompiles
- * - Creates m private keys and selects n for aggregation
- * - Outputs EIP-2537 formatted data for on-chain verification
- * - Uses @noble/curves for secure cryptographic operations
+ * Generates aggregate signatures for ERC4337 Account Abstraction wallets
+ * - Multi-party signature aggregation for AA multi-sig scenarios
+ * - EIP-2537 compatible output for efficient on-chain validation
+ * - Support for validator consensus and batch operations
+ * - Integration-ready data for AggregateSignatureValidator contract
  */
 
 // 命令行参数解析
@@ -217,26 +218,50 @@ async function main() {
         messageG2Point);
     
     // 输出结果
-    console.log('\n=== 合约调用参数 ===');
-    console.log(`aggregatedPubKey: "0x${Buffer.from(aggregatedPubKeyEIP).toString('hex')}"`);
-    console.log(`negatedPubKey: "0x${Buffer.from(negatedPubKeyEIP).toString('hex')}"`);
-    console.log(`aggregatedSignature: "0x${Buffer.from(aggregatedSignatureEIP).toString('hex')}"`);
-    console.log(`messageG2: "0x${Buffer.from(messageG2EIP).toString('hex')}"`);
+    console.log('\n=== AA Signature Validation Data ===');
+    console.log('For validateSignature(bytes):');
+    console.log(`  pairingData: "0x${Buffer.from(pairingCalldata).toString('hex')}"`);
     
-    console.log('\n=== 768字节配对数据 ===');
-    console.log(`pairingCalldata: "0x${Buffer.from(pairingCalldata).toString('hex')}"`);
+    console.log('\nFor validateComponents(bytes,bytes,bytes):');
+    console.log(`  aggregatedKey: "0x${Buffer.from(negatedPubKeyEIP).toString('hex')}"`);
+    console.log(`  signature: "0x${Buffer.from(aggregatedSignatureEIP).toString('hex')}"`);
+    console.log(`  messagePoint: "0x${Buffer.from(messageG2EIP).toString('hex')}"`);
     
-    // JSON格式输出
-    const contractData = {
-        aggregatedPubKey: "0x" + Buffer.from(aggregatedPubKeyEIP).toString('hex'),
-        negatedPubKey: "0x" + Buffer.from(negatedPubKeyEIP).toString('hex'),
-        aggregatedSignature: "0x" + Buffer.from(aggregatedSignatureEIP).toString('hex'),
-        messageG2: "0x" + Buffer.from(messageG2EIP).toString('hex'),
-        pairingCalldata: "0x" + Buffer.from(pairingCalldata).toString('hex')
+    console.log('\nFor validateUserOp(bytes32,bytes):');
+    console.log(`  userOpHash: "0x[32-byte-user-op-hash]"`);
+    console.log(`  signatureData: "0x${Buffer.from(pairingCalldata).toString('hex')}" (direct mode)`);
+    
+    // JSON格式输出 - AA兼容格式
+    const aaSignatureData = {
+        // Primary validation method
+        pairingData: "0x" + Buffer.from(pairingCalldata).toString('hex'),
+        
+        // Component validation
+        components: {
+            aggregatedKey: "0x" + Buffer.from(negatedPubKeyEIP).toString('hex'),
+            signature: "0x" + Buffer.from(aggregatedSignatureEIP).toString('hex'),
+            messagePoint: "0x" + Buffer.from(messageG2EIP).toString('hex')
+        },
+        
+        // ERC4337 UserOp format
+        userOpSignature: {
+            direct: "0x" + Buffer.from(pairingCalldata).toString('hex'),
+            components: "0x" + 
+                Buffer.from(negatedPubKeyEIP).toString('hex') +
+                Buffer.from(aggregatedSignatureEIP).toString('hex').slice(2) +
+                Buffer.from(messageG2EIP).toString('hex').slice(2)
+        },
+        
+        // Contract methods
+        contractMethods: {
+            validateSignature: `validateSignature(bytes)`,
+            validateComponents: `validateComponents(bytes,bytes,bytes)`,
+            validateUserOp: `validateUserOp(bytes32,bytes)`
+        }
     };
     
-    console.log('\n=== JSON格式 ===');
-    console.log(JSON.stringify(contractData, null, 2));
+    console.log('\n=== AA Integration JSON ===');
+    console.log(JSON.stringify(aaSignatureData, null, 2));
 }
 
 // 运行主函数
