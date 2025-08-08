@@ -207,7 +207,6 @@ async function main() {
     const negatedAggregatedPubKey = negateG1Point(bls.G1.Point.fromHex(aggregatedPubKey.toBytes()));
     
     // 转换为EIP-2537格式
-    const aggregatedPubKeyEIP = encodeG1Point(bls.G1.Point.fromHex(aggregatedPubKey.toBytes()));
     const negatedPubKeyEIP = encodeG1Point(negatedAggregatedPubKey);
     const aggregatedSignatureEIP = encodeG2Point(bls.G2.Point.fromHex(aggregatedSignature.toBytes()));
     const messageG2EIP = encodeG2Point(messageG2Point);
