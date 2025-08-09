@@ -60,7 +60,7 @@ contract TestAAStarValidatorScript is Script {
         
         // Test 2: Verify aggregate signature (with events)
         console.log("\n--- Testing Signature Verification (With Events) ---");
-        try validator.verifyAggregateSignature(
+        try validator.validateAggregateSignature(
             participantKeys,
             MOCK_SIGNATURE,
             MOCK_MESSAGE_HASH
@@ -71,15 +71,6 @@ contract TestAAStarValidatorScript is Script {
         } catch Error(string memory reason) {
             console.log("verifyAggregateSignature failed:", reason);
         }
-        
-        // Test 3: Gas estimation
-        console.log("\n--- Testing Gas Estimation ---");
-        uint256 gasFor1 = validator.estimateVerificationCost(1);
-        uint256 gasFor3 = validator.estimateVerificationCost(3);
-        uint256 gasFor5 = validator.estimateVerificationCost(5);
-        console.log("Gas estimate for 1 participant:", gasFor1);
-        console.log("Gas estimate for 3 participants:", gasFor3);
-        console.log("Gas estimate for 5 participants:", gasFor5);
         
         vm.stopBroadcast();
         

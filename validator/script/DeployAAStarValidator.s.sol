@@ -15,14 +15,7 @@ contract DeployAAStarValidatorScript is Script {
         AAStarValidator validator = new AAStarValidator();
         
         console.log("AAStarValidator deployed at:", address(validator));
-        
-        // Show gas estimates for different participant counts
-        console.log("\n=== Gas Estimates ===");
-        console.log("1 participant:", validator.estimateVerificationCost(1));
-        console.log("3 participants:", validator.estimateVerificationCost(3));
-        console.log("5 participants:", validator.estimateVerificationCost(5));
-        console.log("10 participants:", validator.estimateVerificationCost(10));
-        
+
         vm.stopBroadcast();
     }
 }
