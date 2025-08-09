@@ -64,7 +64,7 @@ contract AAStarValidator {
      * @param messagePoint G2编码的消息点 (256字节)
      * @return isValid 签名验证是否成功
      */
-    function validateAggregateSignature(
+    function verifyAggregateSignature(
         bytes[] calldata publicKeys,
         bytes calldata signature,
         bytes calldata messagePoint
@@ -101,7 +101,7 @@ contract AAStarValidator {
      * @param messagePoint G2编码的消息点
      * @return isValid 签名验证是否成功
      */
-    function validateAggregateSignatureView(
+    function validateAggregateSignature(
         bytes[] calldata publicKeys,
         bytes calldata signature,
         bytes calldata messagePoint

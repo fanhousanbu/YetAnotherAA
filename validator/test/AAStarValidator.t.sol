@@ -56,7 +56,7 @@ contract AAStarValidatorTest is Test {
         participantKeys[1] = PARTICIPANT_KEY_2;
         
         // Mock预编译调用会失败，但我们测试合约逻辑
-        try validator.validateAggregateSignature(
+        try validator.verifyAggregateSignature(
             participantKeys,
             AGGREGATE_SIGNATURE,
             MESSAGE_HASH
@@ -75,7 +75,7 @@ contract AAStarValidatorTest is Test {
         bytes[] memory participantKeys = new bytes[](1);
         participantKeys[0] = PARTICIPANT_KEY_1;
         
-        try validator.validateAggregateSignatureView(
+        try validator.validateAggregateSignature(
             participantKeys,
             AGGREGATE_SIGNATURE,
             MESSAGE_HASH
@@ -93,7 +93,7 @@ contract AAStarValidatorTest is Test {
         participantKeys[1] = PARTICIPANT_KEY_2;
         participantKeys[2] = PARTICIPANT_KEY_3;
         
-        try validator.validateAggregateSignatureView(
+        try validator.validateAggregateSignature(
             participantKeys,
             AGGREGATE_SIGNATURE,
             MESSAGE_HASH
@@ -124,7 +124,7 @@ contract AAStarValidatorTest is Test {
         vm.expectEmit(true, false, false, false);
         emit SignatureValidated(expectedHash, 2, false, 0); // gasConsumed会被实际值覆盖
         
-        try validator.validateAggregateSignature(
+        try validator.verifyAggregateSignature(
             participantKeys,
             AGGREGATE_SIGNATURE,
             MESSAGE_HASH
@@ -167,7 +167,7 @@ contract AAStarValidatorTest is Test {
         bytes[] memory emptyKeys = new bytes[](0);
         
         vm.expectRevert("No public keys provided");
-        validator.validateAggregateSignatureView(
+        validator.validateAggregateSignature(
             emptyKeys,
             AGGREGATE_SIGNATURE,
             MESSAGE_HASH
@@ -181,7 +181,7 @@ contract AAStarValidatorTest is Test {
         bytes memory invalidSignature = hex"1234"; // 错误长度
         
         vm.expectRevert("Invalid signature length");
-        validator.validateAggregateSignatureView(
+        validator.validateAggregateSignature(
             participantKeys,
             invalidSignature,
             MESSAGE_HASH
@@ -195,7 +195,7 @@ contract AAStarValidatorTest is Test {
         bytes memory invalidMessage = hex"5678"; // 错误长度
         
         vm.expectRevert("Invalid message length");
-        validator.validateAggregateSignatureView(
+        validator.validateAggregateSignature(
             participantKeys,
             AGGREGATE_SIGNATURE,
             invalidMessage
@@ -207,7 +207,7 @@ contract AAStarValidatorTest is Test {
         participantKeys[0] = hex"1234"; // 错误长度，应该是128字节
         
         // 这应该在内部处理中失败，具体错误取决于G1点处理逻辑
-        try validator.validateAggregateSignatureView(
+        try validator.validateAggregateSignature(
             participantKeys,
             AGGREGATE_SIGNATURE,
             MESSAGE_HASH
@@ -232,7 +232,7 @@ contract AAStarValidatorTest is Test {
         
         // 获取validate结果（view函数）
         bool validateResult;
-        try validator.validateAggregateSignatureView(
+        try validator.validateAggregateSignature(
             participantKeys,
             AGGREGATE_SIGNATURE,
             MESSAGE_HASH
@@ -244,7 +244,7 @@ contract AAStarValidatorTest is Test {
         
         // 获取verify结果（事务函数）
         bool verifyResult;
-        try validator.validateAggregateSignature(
+        try validator.verifyAggregateSignature(
             participantKeys,
             AGGREGATE_SIGNATURE,
             MESSAGE_HASH
@@ -272,7 +272,7 @@ contract AAStarValidatorTest is Test {
             participantKeys[i] = (i % 2 == 0) ? PARTICIPANT_KEY_1 : PARTICIPANT_KEY_2;
         }
         
-        try validator.validateAggregateSignatureView(
+        try validator.validateAggregateSignature(
             participantKeys,
             AGGREGATE_SIGNATURE,
             MESSAGE_HASH
@@ -306,13 +306,13 @@ contract AAStarValidatorTest is Test {
         assertTrue(estimatedCost > 0, "Should provide gas estimate");
         
         // 2. 执行验证（view版本）
-        try validator.validateAggregateSignatureView(
+        try validator.validateAggregateSignature(
             participantKeys,
             AGGREGATE_SIGNATURE,
             MESSAGE_HASH
         ) returns (bool validateResult) {
             // 3. 执行验证（事务版本）
-            try validator.validateAggregateSignature(
+            try validator.verifyAggregateSignature(
                 participantKeys,
                 AGGREGATE_SIGNATURE,
                 MESSAGE_HASH
