@@ -3,17 +3,47 @@ pragma solidity ^0.8.19;
 
 /**
  * @title AAStarValidator
- * @dev 整合版BLS聚合签名验证器
+ * @dev 整合版BLS聚合签名验证器，支持公钥管理
  * 
  * 此合约整合了AggregateSignatureValidator和BLS12381AggregateNegation的功能，
- * 实现以下流程：
- * 1. 接受G2编码的Message，聚合后的签名，以及参与签名的公钥数组
+ * 并增加了公钥管理功能，支持以下特性：
+ * 
+ * 核心验证流程：
+ * 1. 接受G2编码的Message，聚合后的签名，以及参与签名的公钥数组或节点标识
  * 2. 通过G1Add聚合公钥数组
  * 3. 对聚合后的公钥取反
  * 4. 进行配对验证
  * 5. 输出签名验证是否成功的结果
+ * 
+ * 公钥管理功能：
+ * - 支持节点标识与公钥的映射管理
+ * - 支持公钥的注册、更新、撤销
+ * - 支持批量操作
+ * - 支持通过节点标识进行签名验证
  */
 contract AAStarValidator {
+    
+    // =============================================================
+    //                           STORAGE
+    // =============================================================
+    
+    /// @dev Mapping from node identifier to registered public key
+    mapping(bytes32 => bytes) public registeredKeys;
+    
+    /// @dev Mapping to check if a node identifier is registered
+    mapping(bytes32 => bool) public isRegistered;
+    
+    /// @dev Array of all registered node identifiers for enumeration
+    bytes32[] public registeredNodes;
+    
+    /// @dev Contract owner for administrative functions
+    address public owner;
+    
+    /// @dev Modifier to restrict access to owner only
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this function");
+        _;
+    }
     
     // =============================================================
     //                           CONSTANTS
@@ -30,6 +60,15 @@ contract AAStarValidator {
     /// @dev Generator point for the cryptographic group (EIP-2537 encoded format)
     bytes private constant GENERATOR_POINT = hex"0000000000000000000000000000000017f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb0000000000000000000000000000000008b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1";
         
+    // =============================================================
+    //                           CONSTRUCTOR
+    // =============================================================
+    
+    constructor() {
+        owner = msg.sender;
+        emit OwnershipTransferred(address(0), msg.sender);
+    }
+    
     // =============================================================
     //                           CONSTANTS
     // =============================================================
@@ -48,6 +87,26 @@ contract AAStarValidator {
         uint256 publicKeysCount,
         bool isValid,
         uint256 gasUsed
+    );
+    
+    event PublicKeyRegistered(
+        bytes32 indexed nodeId,
+        bytes publicKey
+    );
+    
+    event PublicKeyUpdated(
+        bytes32 indexed nodeId,
+        bytes oldKey,
+        bytes newKey
+    );
+    
+    event PublicKeyRevoked(
+        bytes32 indexed nodeId
+    );
+    
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
     );
     
     // =============================================================
@@ -120,6 +179,76 @@ contract AAStarValidator {
         isValid = _validateWithNegatedKey(negatedAggregatedKey, signature, messagePoint);
     }
 
+    /**
+     * @dev 使用节点标识验证聚合BLS签名 (触发事件)
+     * 
+     * @param nodeIds 参与签名的节点标识数组
+     * @param signature 聚合后的BLS签名 (256字节，G2点)
+     * @param messagePoint G2编码的消息点 (256字节)
+     * @return isValid 签名验证是否成功
+     */
+    function verifyAggregateSignatureByNodes(
+        bytes32[] calldata nodeIds,
+        bytes calldata signature,
+        bytes calldata messagePoint
+    ) external returns (bool isValid) {
+        require(nodeIds.length > 0, "No node IDs provided");
+        require(signature.length == G2_POINT_LENGTH, "Invalid signature length");
+        require(messagePoint.length == G2_POINT_LENGTH, "Invalid message length");
+        
+        uint256 gasStart = gasleft();
+        
+        // Step 1: 获取节点对应的公钥
+        bytes[] memory publicKeys = _getPublicKeysByNodes(nodeIds);
+        
+        // Step 2: 聚合公钥数组
+        bytes memory aggregatedKey = _aggregatePublicKeysFromMemory(publicKeys);
+        
+        // Step 3: 对聚合后的公钥取反
+        bytes memory negatedAggregatedKey = _negateG1Point(aggregatedKey);
+        
+        // Step 4: 构建配对数据并验证
+        isValid = _validateWithNegatedKey(negatedAggregatedKey, signature, messagePoint);
+        
+        uint256 gasUsed = gasStart - gasleft();
+        emit SignatureValidated(
+            keccak256(abi.encode(nodeIds, signature, messagePoint)),
+            nodeIds.length,
+            isValid,
+            gasUsed
+        );
+    }
+    
+    /**
+     * @dev 使用节点标识验证聚合BLS签名的视图方法 (不触发事件)
+     * 
+     * @param nodeIds 参与签名的节点标识数组
+     * @param signature 聚合后的BLS签名
+     * @param messagePoint G2编码的消息点
+     * @return isValid 签名验证是否成功
+     */
+    function validateAggregateSignatureByNodes(
+        bytes32[] calldata nodeIds,
+        bytes calldata signature,
+        bytes calldata messagePoint
+    ) external view returns (bool isValid) {
+        require(nodeIds.length > 0, "No node IDs provided");
+        require(signature.length == G2_POINT_LENGTH, "Invalid signature length");
+        require(messagePoint.length == G2_POINT_LENGTH, "Invalid message length");
+        
+        // Step 1: 获取节点对应的公钥
+        bytes[] memory publicKeys = _getPublicKeysByNodes(nodeIds);
+        
+        // Step 2: 聚合公钥数组
+        bytes memory aggregatedKey = _aggregatePublicKeysFromMemory(publicKeys);
+        
+        // Step 3: 对聚合后的公钥取反
+        bytes memory negatedAggregatedKey = _negateG1Point(aggregatedKey);
+        
+        // Step 4: 验证签名
+        isValid = _validateWithNegatedKey(negatedAggregatedKey, signature, messagePoint);
+    }
+
     // =============================================================
     //                      AGGREGATION FUNCTIONS
     // =============================================================
@@ -145,6 +274,49 @@ contract AAStarValidator {
         for (uint256 i = 1; i < publicKeys.length; i++) {
             require(publicKeys[i].length == G1_POINT_LENGTH, "Invalid key length");
             aggregatedKey = _addG1Points(aggregatedKey, publicKeys[i]);
+        }
+    }
+    
+    /**
+     * @dev Aggregates multiple G1 public keys using G1Add precompile (memory version)
+     * 
+     * @param publicKeys Array of individual G1 public keys to aggregate
+     * @return aggregatedKey The resulting aggregated public key
+     */
+    function _aggregatePublicKeysFromMemory(bytes[] memory publicKeys)
+        internal
+        view
+        returns (bytes memory aggregatedKey)
+    {
+        require(publicKeys.length > 0, "No public keys provided");
+        
+        // Start with the first public key
+        aggregatedKey = publicKeys[0];
+        require(aggregatedKey.length == G1_POINT_LENGTH, "Invalid first key length");
+        
+        // Add each subsequent public key
+        for (uint256 i = 1; i < publicKeys.length; i++) {
+            require(publicKeys[i].length == G1_POINT_LENGTH, "Invalid key length");
+            aggregatedKey = _addG1PointsFromMemory(aggregatedKey, publicKeys[i]);
+        }
+    }
+    
+    /**
+     * @dev 根据节点标识数组获取对应的公钥数组
+     * 
+     * @param nodeIds 节点标识数组
+     * @return publicKeys 对应的公钥数组
+     */
+    function _getPublicKeysByNodes(bytes32[] calldata nodeIds) 
+        internal 
+        view 
+        returns (bytes[] memory publicKeys) 
+    {
+        publicKeys = new bytes[](nodeIds.length);
+        
+        for (uint256 i = 0; i < nodeIds.length; i++) {
+            require(isRegistered[nodeIds[i]], "Node not registered");
+            publicKeys[i] = registeredKeys[nodeIds[i]];
         }
     }
 
@@ -231,6 +403,36 @@ contract AAStarValidator {
      * @return result Sum of the two G1 points
      */
     function _addG1Points(bytes memory point1, bytes calldata point2) 
+        internal 
+        view 
+        returns (bytes memory result) 
+    {
+        require(point1.length == G1_POINT_LENGTH, "Invalid point1 length");
+        require(point2.length == G1_POINT_LENGTH, "Invalid point2 length");
+        
+        // Create input: concatenate point1 and point2 (256 bytes total)
+        bytes memory input = abi.encodePacked(point1, point2);
+        require(input.length == 256, "Invalid input length");
+        
+        // Use assembly for precompile call (staticcall doesn't work properly for EIP-2537 on Sepolia)
+        result = new bytes(G1_POINT_LENGTH);
+        
+        assembly {
+            let success := staticcall(gas(), 0x0b, add(input, 0x20), mload(input), add(result, 0x20), 128)
+            if eq(success, 0) {
+                revert(0, 0)
+            }
+        }
+    }
+
+    /**
+     * @dev Adds two G1 points using the EIP-2537 precompile (memory version)
+     * 
+     * @param point1 First G1 point (128 bytes)
+     * @param point2 Second G1 point (128 bytes)
+     * @return result Sum of the two G1 points
+     */
+    function _addG1PointsFromMemory(bytes memory point1, bytes memory point2) 
         internal 
         view 
         returns (bytes memory result) 
@@ -361,6 +563,148 @@ contract AAStarValidator {
             // Store remaining 16 bytes of negated y in the correct position
             let temp := shl(128, neg_y_low) // Shift left to align the 16 bytes correctly
             mstore(add(resultPtr, 112), temp)
+        }
+    }
+    
+    // =============================================================
+    //                      KEY MANAGEMENT FUNCTIONS
+    // =============================================================
+    
+    /**
+     * @dev 注册新节点的公钥
+     * 
+     * @param nodeId 节点唯一标识
+     * @param publicKey G1公钥 (128字节)
+     */
+    function registerPublicKey(bytes32 nodeId, bytes calldata publicKey) external onlyOwner {
+        require(nodeId != bytes32(0), "Invalid node ID");
+        require(publicKey.length == G1_POINT_LENGTH, "Invalid public key length");
+        require(!isRegistered[nodeId], "Node already registered");
+        
+        registeredKeys[nodeId] = publicKey;
+        isRegistered[nodeId] = true;
+        registeredNodes.push(nodeId);
+        
+        emit PublicKeyRegistered(nodeId, publicKey);
+    }
+    
+    /**
+     * @dev 更新已注册节点的公钥
+     * 
+     * @param nodeId 节点唯一标识
+     * @param newPublicKey 新的G1公钥 (128字节)
+     */
+    function updatePublicKey(bytes32 nodeId, bytes calldata newPublicKey) external onlyOwner {
+        require(isRegistered[nodeId], "Node not registered");
+        require(newPublicKey.length == G1_POINT_LENGTH, "Invalid public key length");
+        
+        bytes memory oldKey = registeredKeys[nodeId];
+        registeredKeys[nodeId] = newPublicKey;
+        
+        emit PublicKeyUpdated(nodeId, oldKey, newPublicKey);
+    }
+    
+    /**
+     * @dev 撤销节点的公钥注册
+     * 
+     * @param nodeId 节点唯一标识
+     */
+    function revokePublicKey(bytes32 nodeId) external onlyOwner {
+        require(isRegistered[nodeId], "Node not registered");
+        
+        delete registeredKeys[nodeId];
+        isRegistered[nodeId] = false;
+        
+        // 从数组中移除节点ID
+        for (uint256 i = 0; i < registeredNodes.length; i++) {
+            if (registeredNodes[i] == nodeId) {
+                registeredNodes[i] = registeredNodes[registeredNodes.length - 1];
+                registeredNodes.pop();
+                break;
+            }
+        }
+        
+        emit PublicKeyRevoked(nodeId);
+    }
+    
+    /**
+     * @dev 批量注册多个节点的公钥
+     * 
+     * @param nodeIds 节点标识数组
+     * @param publicKeys 对应的公钥数组
+     */
+    function batchRegisterPublicKeys(
+        bytes32[] calldata nodeIds, 
+        bytes[] calldata publicKeys
+    ) external onlyOwner {
+        require(nodeIds.length == publicKeys.length, "Array length mismatch");
+        require(nodeIds.length > 0, "Empty arrays");
+        
+        for (uint256 i = 0; i < nodeIds.length; i++) {
+            require(nodeIds[i] != bytes32(0), "Invalid node ID");
+            require(publicKeys[i].length == G1_POINT_LENGTH, "Invalid public key length");
+            require(!isRegistered[nodeIds[i]], "Node already registered");
+            
+            registeredKeys[nodeIds[i]] = publicKeys[i];
+            isRegistered[nodeIds[i]] = true;
+            registeredNodes.push(nodeIds[i]);
+            
+            emit PublicKeyRegistered(nodeIds[i], publicKeys[i]);
+        }
+    }
+    
+    /**
+     * @dev 转移合约所有权
+     * 
+     * @param newOwner 新的所有者地址
+     */
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(newOwner != address(0), "Invalid new owner");
+        require(newOwner != owner, "Same owner");
+        
+        address previousOwner = owner;
+        owner = newOwner;
+        
+        emit OwnershipTransferred(previousOwner, newOwner);
+    }
+    
+    /**
+     * @dev 获取已注册的节点数量
+     * 
+     * @return count 已注册节点数量
+     */
+    function getRegisteredNodeCount() external view returns (uint256 count) {
+        return registeredNodes.length;
+    }
+    
+    /**
+     * @dev 获取指定范围内的已注册节点
+     * 
+     * @param offset 起始位置
+     * @param limit 返回数量限制
+     * @return nodeIds 节点标识数组
+     * @return publicKeys 对应的公钥数组
+     */
+    function getRegisteredNodes(uint256 offset, uint256 limit) 
+        external 
+        view 
+        returns (bytes32[] memory nodeIds, bytes[] memory publicKeys) 
+    {
+        require(offset < registeredNodes.length, "Offset out of bounds");
+        
+        uint256 end = offset + limit;
+        if (end > registeredNodes.length) {
+            end = registeredNodes.length;
+        }
+        
+        uint256 length = end - offset;
+        nodeIds = new bytes32[](length);
+        publicKeys = new bytes[](length);
+        
+        for (uint256 i = 0; i < length; i++) {
+            bytes32 nodeId = registeredNodes[offset + i];
+            nodeIds[i] = nodeId;
+            publicKeys[i] = registeredKeys[nodeId];
         }
     }
     
