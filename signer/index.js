@@ -3,6 +3,21 @@
 import { bls12_381 } from '@noble/curves/bls12-381.js';
 import { randomBytes } from 'crypto';
 
+// 轻量级 ANSI 颜色工具
+const color = {
+    reset: '\x1b[0m',
+    bold: (s) => `\x1b[1m${s}\x1b[0m`,
+    dim: (s) => `\x1b[2m${s}\x1b[0m`,
+    red: (s) => `\x1b[31m${s}\x1b[0m`,
+    green: (s) => `\x1b[32m${s}\x1b[0m`,
+    yellow: (s) => `\x1b[33m${s}\x1b[0m`,
+    blue: (s) => `\x1b[34m${s}\x1b[0m`,
+    magenta: (s) => `\x1b[35m${s}\x1b[0m`,
+    cyan: (s) => `\x1b[36m${s}\x1b[0m`,
+};
+
+const colorBool = (b) => (b ? color.green(String(b)) : color.red(String(b)));
+
 /**
  * AA Aggregate Signature Generator
  * 
@@ -21,7 +36,7 @@ function parseArgs() {
         m: 0,
         n: 0
     };
-    
+
     for (let i = 0; i < args.length; i++) {
         if (args[i] === '--message' && i + 1 < args.length) {
             config.message = args[i + 1];
@@ -34,48 +49,48 @@ function parseArgs() {
             i++;
         }
     }
-    
+
     return config;
 }
 
 // 转换为 EIP-2537 格式 (128字节G1点)
 function encodeG1Point(point) {
     const result = new Uint8Array(128);
-    
+
     // 获取仿射坐标
     const affine = point.toAffine();
-    
+
     // 将坐标转换为字节数组
     const xBytes = hexToBytes(affine.x.toString(16).padStart(96, '0'));
     const yBytes = hexToBytes(affine.y.toString(16).padStart(96, '0'));
-    
+
     // EIP-2537格式：[16个0][48字节x][16个0][48字节y]
     result.set(xBytes, 16);
     result.set(yBytes, 80);
-    
+
     return result;
 }
 
 // 转换为 EIP-2537 格式 (256字节G2点)
 function encodeG2Point(point) {
     const result = new Uint8Array(256);
-    
+
     // 获取仿射坐标
     const affine = point.toAffine();
-    
+
     // G2点的坐标是Fp2元素，每个有两个分量
     // x = x0 + x1*u, y = y0 + y1*u
     const x0Bytes = hexToBytes(affine.x.c0.toString(16).padStart(96, '0'));
     const x1Bytes = hexToBytes(affine.x.c1.toString(16).padStart(96, '0'));
     const y0Bytes = hexToBytes(affine.y.c0.toString(16).padStart(96, '0'));
     const y1Bytes = hexToBytes(affine.y.c1.toString(16).padStart(96, '0'));
-    
+
     // EIP-2537格式：[16个0][48字节x0][16个0][48字节x1][16个0][48字节y0][16个0][48字节y1]
     result.set(x0Bytes, 16);
     result.set(x1Bytes, 80);
     result.set(y0Bytes, 144);
     result.set(y1Bytes, 208);
-    
+
     return result;
 }
 
@@ -96,61 +111,58 @@ function hexToBytes(hex) {
 // 构建配对输入数据
 function buildPairingInput(g1Generator, aggregatedSignature, negatedAggregatedPubKey, messageG2) {
     const input = new Uint8Array(768); // 2个配对 × 384字节
-    
+
     // 第一个配对: (G1生成元, aggregatedSignature)
     input.set(encodeG1Point(g1Generator), 0);
     input.set(encodeG2Point(aggregatedSignature), 128);
-    
+
     // 第二个配对: (-aggregatedPubKey, messageG2)  
     input.set(encodeG1Point(negatedAggregatedPubKey), 384);
     input.set(encodeG2Point(messageG2), 512);
-    
+
     return input;
 }
 
 // 主函数
 async function main() {
     const config = parseArgs();
-    
+
     // 验证参数
     if (!config.message || config.m <= 0 || config.n <= 0 || config.n > config.m) {
-        console.error('用法: node index.js --message "hello world" --m 5 --n 3');
-        console.error('  --message: 要签名的消息');
-        console.error('  --m: 生成的私钥总数');
-        console.error('  --n: 用于聚合的私钥数量 (n <= m)');
+        console.error(color.red('用法: node index.js --message "hello world" --m 5 --n 3'));
+        console.error(color.yellow('  --message: 要签名的消息'));
+        console.error(color.yellow('  --m: 生成的私钥总数'));
+        console.error(color.yellow('  --n: 用于聚合的私钥数量 (n <= m)'));
         process.exit(1);
     }
-    
-    console.log('开始BLS签名聚合过程...');
-    console.log(`消息: ${config.message}`);
-    console.log(`生成私钥数量: ${config.m}`);
-    console.log(`聚合签名数量: ${config.n}`);
-    
+
+    console.log(color.bold(color.magenta('开始BLS签名聚合过程...')));
+    console.log(`消息: ${color.cyan(config.message)}`);
+    console.log(`生成私钥数量: ${color.cyan(String(config.m))}`);
+    console.log(`聚合签名数量: ${color.cyan(String(config.n))}`);
+
     const message = new TextEncoder().encode(config.message);
     const DST = 'BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_';
-    
+
     // 使用长签名模式 (G2签名, G1公钥)
     const bls = bls12_381;
     const sigs = bls.longSignatures;
-    
+
     // 1. 生成m个私钥和公钥
-    console.log('\n=== 生成私钥和公钥 ===');
+    console.log(color.bold(color.blue('\n=== 生成私钥和公钥 ===')));
     const privateKeys = [];
     const publicKeys = [];
-    
+
     for (let i = 0; i < config.m; i++) {
         const privKey = randomBytes(32);
         const pubKey = sigs.getPublicKey(privKey);
-        
+
         privateKeys.push(privKey);
         publicKeys.push(pubKey);
-        
-        console.log(`私钥 ${i}: 0x${Buffer.from(privKey).toString('hex')}`);
-        console.log(`公钥 ${i}: 0x${Buffer.from(pubKey.toBytes()).toString('hex')}`);
     }
-    
+
     // 2. 随机选择n个私钥进行聚合
-    console.log(`\n=== 随机选择 ${config.n} 个私钥进行聚合 ===`);
+    console.log(color.bold(color.blue(`\n=== 随机选择 ${config.n} 个私钥进行聚合 ===`)));
     const selectedIndices = [];
     while (selectedIndices.length < config.n) {
         const index = Math.floor(Math.random() * config.m);
@@ -159,90 +171,93 @@ async function main() {
         }
     }
     selectedIndices.sort((a, b) => a - b);
-    console.log(`选中的索引: [${selectedIndices.join(', ')}]`);
-    
+    console.log(`选中的索引: ${color.green('[' + selectedIndices.join(', ') + ']')}`);
+    selectedIndices.forEach(i => {
+        console.log(`公钥:${color.yellow(String(i))}: ${color.cyan(Buffer.from(encodeG1Point(publicKeys[i])).toString('hex'))}`);
+    });
+
     // 3. 使用选中的私钥生成签名
-    console.log('\n=== 生成个人签名 ===');
+    console.log(color.bold(color.blue('\n=== 生成个人签名 ===')));
     const selectedPrivateKeys = selectedIndices.map(i => privateKeys[i]);
     const selectedPublicKeys = selectedIndices.map(i => publicKeys[i]);
     const signatures = [];
     const messagePoint = await bls.G2.hashToCurve(message, { DST });
-    
+
     for (let i = 0; i < selectedPrivateKeys.length; i++) {
         const signature = await sigs.sign(messagePoint, selectedPrivateKeys[i]);
         signatures.push(signature);
-        
+
         // 验证个人签名
         const isValid = await sigs.verify(signature, messagePoint, selectedPublicKeys[i]);
-        console.log(`签名 ${selectedIndices[i]}: 0x${Buffer.from(signature.toBytes()).toString('hex')} (验证: ${isValid})`);
+        console.log(`签名 ${color.yellow(String(selectedIndices[i]))}: ${color.cyan('0x' + Buffer.from(signature.toBytes()).toString('hex'))} (验证: ${colorBool(isValid)})`);
     }
-    
+
     // 4. 聚合签名和公钥
-    console.log('\n=== 聚合签名和公钥 ===');
+    console.log(color.bold(color.blue('\n=== 聚合签名和公钥 ===')));
     const aggregatedSignature = sigs.aggregateSignatures(signatures);
     const aggregatedPubKey = sigs.aggregatePublicKeys(selectedPublicKeys);
-    
-    console.log(`聚合签名: 0x${Buffer.from(aggregatedSignature.toBytes()).toString('hex')}`);
-    console.log(`聚合公钥: 0x${Buffer.from(aggregatedPubKey.toBytes()).toString('hex')}`);
-    
+
+    console.log(`聚合签名: ${color.cyan('0x' + Buffer.from(aggregatedSignature.toBytes()).toString('hex'))}`);
+    console.log(`聚合公钥: ${color.cyan('0x' + Buffer.from(encodeG1Point(aggregatedPubKey)).toString('hex'))}`);
+
     // 5. 验证聚合签名
     const isAggregatedValid = await sigs.verify(aggregatedSignature, messagePoint, aggregatedPubKey);
-    console.log(`聚合签名验证: ${isAggregatedValid}`);
-    
+    console.log(`聚合签名验证: ${colorBool(isAggregatedValid)}`);
+
     if (!isAggregatedValid) {
-        console.error('聚合签名验证失败！');
+        console.error(color.red('聚合签名验证失败！'));
         process.exit(1);
     }
-    
+
     // 6. 生成合约验证所需的数据
-    console.log('\n=== 生成合约验证数据 ===');
-    
+    console.log(color.bold(color.blue('\n=== 生成合约验证数据 ===')));
+
     // 将消息映射到G2
     const messageG2Point = await bls.G2.hashToCurve(message, { DST });
-    
+
     // G1生成元
     const g1Generator = bls.G1.Point.BASE;
-    
+
     // 将聚合公钥取负 (用于配对验证)
     const negatedAggregatedPubKey = negateG1Point(bls.G1.Point.fromHex(aggregatedPubKey.toBytes()));
-    
+
     // 转换为EIP-2537格式
     const negatedPubKeyEIP = encodeG1Point(negatedAggregatedPubKey);
     const aggregatedSignatureEIP = encodeG2Point(bls.G2.Point.fromHex(aggregatedSignature.toBytes()));
     const messageG2EIP = encodeG2Point(messageG2Point);
-    
+
     // 生成配对输入数据
-    const pairingCalldata = buildPairingInput(g1Generator, 
-        bls.G2.Point.fromHex(aggregatedSignature.toBytes()), 
-        negatedAggregatedPubKey, 
+    const pairingCalldata = buildPairingInput(g1Generator,
+        bls.G2.Point.fromHex(aggregatedSignature.toBytes()),
+        negatedAggregatedPubKey,
         messageG2Point);
-    
+
     // 输出结果
-    console.log('\n=== AA Signature Validation Data ===');
-    console.log('For validateSignature(bytes):');
-    console.log(`  pairingData: "0x${Buffer.from(pairingCalldata).toString('hex')}"`);
-    
-    console.log('\nFor validateComponents(bytes,bytes,bytes):');
-    console.log(`  aggregatedKey: "0x${Buffer.from(negatedPubKeyEIP).toString('hex')}"`);
-    console.log(`  signature: "0x${Buffer.from(aggregatedSignatureEIP).toString('hex')}"`);
-    console.log(`  messagePoint: "0x${Buffer.from(messageG2EIP).toString('hex')}"`);
-    
-    console.log('\nFor validateUserOp(bytes32,bytes):');
-    console.log(`  userOpHash: "0x[32-byte-user-op-hash]"`);
-    console.log(`  signatureData: "0x${Buffer.from(pairingCalldata).toString('hex')}" (direct mode)`);
-    
+    console.log(color.bold(color.magenta('\n=== AA Signature Validation Data ===')));
+    console.log(color.dim('For validateSignature(bytes):'));
+    console.log(`  pairingData: ${color.cyan('"0x' + Buffer.from(pairingCalldata).toString('hex') + '"')}`);
+
+    console.log(color.dim('\nFor validateComponents(bytes,bytes,bytes):'));
+    console.log(`  aggregatedKey: ${color.cyan('"0x' + Buffer.from(negatedPubKeyEIP).toString('hex') + '"')}`);
+    console.log(`  signature: ${color.cyan('"0x' + Buffer.from(aggregatedSignatureEIP).toString('hex') + '"')}`);
+    console.log(`  messagePoint: ${color.cyan('"0x' + Buffer.from(messageG2EIP).toString('hex') + '"')}`);
+
+    console.log(color.dim('\nFor validateUserOp(bytes32,bytes):'));
+    console.log(`  userOpHash: ${color.yellow('"0x[32-byte-user-op-hash]"')}`);
+    console.log(`  signatureData: ${color.cyan('"0x' + Buffer.from(pairingCalldata).toString('hex') + '"')} ${color.dim('(direct mode)')}`);
+
     // JSON格式输出 - AA兼容格式
     const aaSignatureData = {
         // Primary validation method
         pairingData: "0x" + Buffer.from(pairingCalldata).toString('hex'),
-        
+
         // Component validation
         components: {
             aggregatedKey: "0x" + Buffer.from(negatedPubKeyEIP).toString('hex'),
             signature: "0x" + Buffer.from(aggregatedSignatureEIP).toString('hex'),
             messagePoint: "0x" + Buffer.from(messageG2EIP).toString('hex')
         },
-        
+
         // ERC4337 UserOp format
         userOpSignature: {
             direct: "0x" + Buffer.from(pairingCalldata).toString('hex'),
@@ -251,7 +266,7 @@ async function main() {
                 Buffer.from(aggregatedSignatureEIP).toString('hex').slice(2) +
                 Buffer.from(messageG2EIP).toString('hex').slice(2)
         },
-        
+
         // Contract methods
         contractMethods: {
             validateSignature: `validateSignature(bytes)`,
@@ -259,8 +274,8 @@ async function main() {
             validateUserOp: `validateUserOp(bytes32,bytes)`
         }
     };
-    
-    console.log('\n=== AA Integration JSON ===');
+
+    console.log(color.bold(color.magenta('\n=== AA Integration JSON ===')));
     console.log(JSON.stringify(aaSignatureData, null, 2));
 }
 
