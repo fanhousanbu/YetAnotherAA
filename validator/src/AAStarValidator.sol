@@ -75,8 +75,8 @@ contract AAStarValidator {
     
     /// @dev BLS12-381 field modulus (381 bits)
     /// p = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
-    uint256 private constant P_0 = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f624;
-    uint256 private constant P_1 = 0x1eabfffeb153ffffb9feffffffffaaab;
+    uint256 private constant P_HIGH = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f624;
+    uint256 private constant P_LOW = 0x1eabfffeb153ffffb9feffffffffaaab;
     
     // =============================================================
     //                           EVENTS
@@ -538,14 +538,14 @@ contract AAStarValidator {
         uint256 neg_y_high;
         uint256 neg_y_low;
         
-        if (P_1 >= y_low) {
-            neg_y_low = P_1 - y_low;
-            neg_y_high = P_0 - y_high;
+        if (P_LOW >= y_low) {
+            neg_y_low = P_LOW - y_low;
+            neg_y_high = P_HIGH - y_high;
         } else {
             // Need to borrow
             unchecked {
-                neg_y_low = P_1 - y_low + type(uint256).max + 1;
-                neg_y_high = P_0 - y_high - 1;
+                neg_y_low = P_LOW - y_low + type(uint256).max + 1;
+                neg_y_high = P_HIGH - y_high - 1;
             }
         }
         
