@@ -19,7 +19,7 @@ contract G1PointNegationTest is Test {
         negation = new G1PointNegation();
     }
     
-    function testNegateAggregatedKey() public {
+    function testNegateAggregatedKey() public view {
         console.log("=== Testing G1 Point Negation ===");
         console.log("");
         
@@ -48,7 +48,7 @@ contract G1PointNegationTest is Test {
             "Contract result should match index.js result");
     }
     
-    function testNegateGenerator() public {
+    function testNegateGenerator() public view {
         console.log("Testing generator point negation...");
         
         uint256 gasBefore = gasleft();
@@ -84,7 +84,7 @@ contract G1PointNegationTest is Test {
         assertTrue(yChanged, "Y coordinate should change");
     }
     
-    function testPointAtInfinity() public {
+    function testPointAtInfinity() public view {
         console.log("Testing point at infinity...");
         
         bytes memory infinityPoint = new bytes(128); // All zeros
@@ -108,7 +108,7 @@ contract G1PointNegationTest is Test {
         assertTrue(isZero, "Point at infinity should remain unchanged");
     }
     
-    function testBatchNegation() public {
+    function testBatchNegation() public view {
         console.log("Testing batch negation...");
         
         bytes[] memory points = new bytes[](3);
@@ -155,7 +155,7 @@ contract G1PointNegationTest is Test {
         assertFalse(invalidLength, "64-byte point should be invalid");
     }
     
-    function testGasUsage() public {
+    function testGasUsage() public view {
         console.log("=== Gas Usage Analysis ===");
         
         // Test different types of points
