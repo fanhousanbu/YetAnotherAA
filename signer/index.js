@@ -5,6 +5,7 @@
  */
 
 import { bls12_381 } from '@noble/curves/bls12-381.js';
+import { ethers } from 'ethers';
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
@@ -91,10 +92,18 @@ export async function generateContractCallParams(message, nodeIndices = [1, 2, 3
     const aggregatedSignatureEIP = encodeG2Point(bls.G2.Point.fromHex(aggregatedSignature.toBytes()));
     const messageG2EIP = encodeG2Point(messagePoint);
     
+    // Generate ECDSA signature for AA account
+    const aaAccount = contractConfig.aaAccount;
+    const wallet = new ethers.Wallet(aaAccount.privateKey);
+    const messageHash = ethers.keccak256("0x" + Buffer.from(messageG2EIP).toString('hex'));
+    const aaSignature = await wallet.signMessage(ethers.getBytes(messageHash));
+    
     return {
         nodeIds: nodeIds,
         signature: "0x" + Buffer.from(aggregatedSignatureEIP).toString('hex'),
         messagePoint: "0x" + Buffer.from(messageG2EIP).toString('hex'),
+        aaAddress: aaAccount.address,
+        aaSignature: aaSignature,
         contractAddress: contractConfig.contractAddress,
         participantNodes: selectedNodes.map(node => ({
             nodeId: node.contractNodeId,
@@ -127,6 +136,8 @@ async function main() {
         console.log(`nodeIds: [${params.nodeIds.map(id => `"${id}"`).join(', ')}]`);
         console.log(`signature: "${params.signature}"`);
         console.log(`messagePoint: "${params.messagePoint}"`);
+        console.log(`aaAddress: "${params.aaAddress}"`);
+        console.log(`aaSignature: "${params.aaSignature}"`);
         
         console.log('\n📋 Solidity code:');
         console.log(`bytes32[] memory nodeIds = new bytes32[](${params.nodeIds.length});`);
@@ -136,7 +147,9 @@ async function main() {
         console.log(`\nbool isValid = validator.verifyAggregateSignature(`);
         console.log(`  nodeIds,`);
         console.log(`  hex"${params.signature.substring(2)}",`);
-        console.log(`  hex"${params.messagePoint.substring(2)}"`);
+        console.log(`  hex"${params.messagePoint.substring(2)}",`);
+        console.log(`  ${params.aaAddress},`);
+        console.log(`  hex"${params.aaSignature.substring(2)}"`);
         console.log(`);`);
         
     } catch (error) {

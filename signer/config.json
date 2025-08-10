@@ -51,6 +51,11 @@
       "description": "Node 5 registered on contract"
     }
   ],
+  "aaAccount": {
+    "privateKey": "0x1d77a1d375df0e5ddc5d8fa18f371d1fe01f312d2a5eb7309b520e80af0cdbab",
+    "address": "0x20a2dB470BCc95f63E92A37044a1e40F602c481c",
+    "description": "EOA account for AA signature verification"
+  },
   "contractInfo": {
     "name": "AAStarValidator",
     "address": "0xFd6299F33559Ca45e0460E946a4d65b6EAc966F4",
@@ -60,8 +65,8 @@
   },
   "usage": {
     "contractFunctions": [
-      "verifyAggregateSignature(bytes32[] calldata nodeIds, bytes calldata signature, bytes calldata messagePoint)",
-      "validateAggregateSignature(bytes32[] calldata nodeIds, bytes calldata signature, bytes calldata messagePoint)",
+      "verifyAggregateSignature(bytes32[] calldata nodeIds, bytes calldata signature, bytes calldata messagePoint, address aaAddress, bytes calldata aaSignature)",
+      "validateAggregateSignature(bytes32[] calldata nodeIds, bytes calldata signature, bytes calldata messagePoint, address aaAddress, bytes calldata aaSignature)",
       "getRegisteredNodes(uint256 offset, uint256 limit)",
       "getRegisteredNodeCount()"
     ],

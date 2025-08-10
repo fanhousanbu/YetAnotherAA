@@ -5,11 +5,14 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "generate-eoa": "node generate-eoa.js",
+    "test": "node index.js 'test message' 1,2,3"
   },
   "dependencies": {
     "@noble/curves": "^1.4.0",
-    "@noble/hashes": "^1.4.0"
+    "@noble/hashes": "^1.4.0",
+    "ethers": "^6.7.0"
   },
   "keywords": ["bls12-381", "erc4337", "aa", "ethereum", "signatures", "aggregation"],
   "author": "",
