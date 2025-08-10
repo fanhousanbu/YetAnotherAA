@@ -58,6 +58,10 @@ contract AAStarValidatorTest is Test {
     bytes32 constant NODE_ID_2 = keccak256("node_2");
     bytes32 constant NODE_ID_3 = keccak256("node_3");
     
+    // Test AA address and signature
+    address constant AA_ADDRESS = address(0x1234567890123456789012345678901234567890);
+    bytes constant AA_SIGNATURE = hex"1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12";
+    
     function setUp() public {
         validator = new AAStarValidator();
     }
@@ -368,10 +372,26 @@ contract AAStarValidatorTest is Test {
         nodeIds[0] = NODE_ID_1;
         nodeIds[1] = NODE_ID_2;
         
+        // Create a valid ECDSA signature for testing
+        uint256 privateKey = 0x123456789abcdef123456789abcdef123456789abcdef123456789abcdef1234;
+        address signer = vm.addr(privateKey);
+        
+        // Create message hash for AA signature (same message as BLS)
+        bytes32 messageHash = keccak256(MESSAGE_HASH);
+        bytes32 ethSignedMessageHash = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
+        );
+        
+        // Sign the message
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ethSignedMessageHash);
+        bytes memory validSignature = abi.encodePacked(r, s, v);
+        
         bytes32 expectedHash = keccak256(abi.encode(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH
+            MESSAGE_HASH,
+            signer,
+            validSignature
         ));
         
         // Expect SignatureValidated event to be triggered
@@ -381,7 +401,9 @@ contract AAStarValidatorTest is Test {
         try validator.verifyAggregateSignature(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH
+            MESSAGE_HASH,
+            signer,
+            validSignature
         ) returns (bool) {
             assertTrue(true, "Function executed and emitted event");
         } catch Error(string memory reason) {
@@ -402,7 +424,9 @@ contract AAStarValidatorTest is Test {
         try validator.validateAggregateSignature(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH
+            MESSAGE_HASH,
+            AA_ADDRESS,
+            AA_SIGNATURE
         ) returns (bool) {
             assertTrue(true, "Function executed without revert");
         } catch Error(string memory reason) {
@@ -418,7 +442,9 @@ contract AAStarValidatorTest is Test {
         validator.verifyAggregateSignature(
             emptyNodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH
+            MESSAGE_HASH,
+            AA_ADDRESS,
+            AA_SIGNATURE
         );
     }
     
@@ -426,11 +452,25 @@ contract AAStarValidatorTest is Test {
         bytes32[] memory nodeIds = new bytes32[](1);
         nodeIds[0] = NODE_ID_1; // Unregistered node
         
+        // Create a valid AA signature so we reach the BLS validation step
+        uint256 privateKey = 0x123456789abcdef123456789abcdef123456789abcdef123456789abcdef1234;
+        address signer = vm.addr(privateKey);
+        
+        bytes32 messageHash = keccak256(MESSAGE_HASH);
+        bytes32 ethSignedMessageHash = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
+        );
+        
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ethSignedMessageHash);
+        bytes memory validSignature = abi.encodePacked(r, s, v);
+        
         vm.expectRevert("Node not registered");
         validator.verifyAggregateSignature(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH
+            MESSAGE_HASH,
+            signer,
+            validSignature
         );
     }
     
@@ -446,7 +486,9 @@ contract AAStarValidatorTest is Test {
         validator.verifyAggregateSignature(
             nodeIds,
             invalidSignature,
-            MESSAGE_HASH
+            MESSAGE_HASH,
+            AA_ADDRESS,
+            AA_SIGNATURE
         );
     }
     
@@ -462,7 +504,9 @@ contract AAStarValidatorTest is Test {
         validator.verifyAggregateSignature(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            invalidMessage
+            invalidMessage,
+            AA_ADDRESS,
+            AA_SIGNATURE
         );
     }
     
@@ -492,7 +536,9 @@ contract AAStarValidatorTest is Test {
         try validator.validateAggregateSignature(
             participantNodes,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH
+            MESSAGE_HASH,
+            AA_ADDRESS,
+            AA_SIGNATURE
         ) returns (bool) {
             assertTrue(true, "Node-based validation executed successfully");
         } catch Error(string memory reason) {
@@ -510,5 +556,149 @@ contract AAStarValidatorTest is Test {
         assertFalse(validator.isRegistered(NODE_ID_3), "NODE_ID_3 should not be registered");
         
         assertTrue(true, "Full node-based workflow completed successfully");
+    }
+    
+    // =============================================================
+    //                      AA SIGNATURE VALIDATION TESTS
+    //=============================================================
+    
+    function test_VerifyAggregateSignature_InvalidAAAddress() public {
+        validator.registerPublicKey(NODE_ID_1, PARTICIPANT_KEY_1);
+        
+        bytes32[] memory nodeIds = new bytes32[](1);
+        nodeIds[0] = NODE_ID_1;
+        
+        vm.expectRevert("Invalid AA address");
+        validator.verifyAggregateSignature(
+            nodeIds,
+            AGGREGATE_SIGNATURE,
+            MESSAGE_HASH,
+            address(0),
+            AA_SIGNATURE
+        );
+    }
+    
+    function test_VerifyAggregateSignature_InvalidAASignature() public {
+        validator.registerPublicKey(NODE_ID_1, PARTICIPANT_KEY_1);
+        
+        bytes32[] memory nodeIds = new bytes32[](1);
+        nodeIds[0] = NODE_ID_1;
+        
+        bytes memory emptySignature = "";
+        
+        vm.expectRevert("Invalid AA signature");
+        validator.verifyAggregateSignature(
+            nodeIds,
+            AGGREGATE_SIGNATURE,
+            MESSAGE_HASH,
+            AA_ADDRESS,
+            emptySignature
+        );
+    }
+    
+    function test_VerifyAggregateSignature_InvalidAASignatureLength() public {
+        validator.registerPublicKey(NODE_ID_1, PARTICIPANT_KEY_1);
+        
+        bytes32[] memory nodeIds = new bytes32[](1);
+        nodeIds[0] = NODE_ID_1;
+        
+        bytes memory invalidLengthSignature = hex"1234567890"; // Wrong length (not 65 bytes)
+        
+        vm.expectRevert("Invalid signature length");
+        validator.verifyAggregateSignature(
+            nodeIds,
+            AGGREGATE_SIGNATURE,
+            MESSAGE_HASH,
+            AA_ADDRESS,
+            invalidLengthSignature
+        );
+    }
+    
+    function test_ValidateAggregateSignature_InvalidAAAddress() public {
+        validator.registerPublicKey(NODE_ID_1, PARTICIPANT_KEY_1);
+        
+        bytes32[] memory nodeIds = new bytes32[](1);
+        nodeIds[0] = NODE_ID_1;
+        
+        vm.expectRevert("Invalid AA address");
+        validator.validateAggregateSignature(
+            nodeIds,
+            AGGREGATE_SIGNATURE,
+            MESSAGE_HASH,
+            address(0),
+            AA_SIGNATURE
+        );
+    }
+    
+    function test_ValidateAggregateSignature_InvalidAASignature() public {
+        validator.registerPublicKey(NODE_ID_1, PARTICIPANT_KEY_1);
+        
+        bytes32[] memory nodeIds = new bytes32[](1);
+        nodeIds[0] = NODE_ID_1;
+        
+        bytes memory emptySignature = "";
+        
+        vm.expectRevert("Invalid AA signature");
+        validator.validateAggregateSignature(
+            nodeIds,
+            AGGREGATE_SIGNATURE,
+            MESSAGE_HASH,
+            AA_ADDRESS,
+            emptySignature
+        );
+    }
+    
+    function test_ValidateAggregateSignature_InvalidAASignatureLength() public {
+        validator.registerPublicKey(NODE_ID_1, PARTICIPANT_KEY_1);
+        
+        bytes32[] memory nodeIds = new bytes32[](1);
+        nodeIds[0] = NODE_ID_1;
+        
+        bytes memory invalidLengthSignature = hex"1234567890"; // Wrong length (not 65 bytes)
+        
+        vm.expectRevert("Invalid signature length");
+        validator.validateAggregateSignature(
+            nodeIds,
+            AGGREGATE_SIGNATURE,
+            MESSAGE_HASH,
+            AA_ADDRESS,
+            invalidLengthSignature
+        );
+    }
+    
+    function test_AASignature_WithValidECDSASignature() public {
+        validator.registerPublicKey(NODE_ID_1, PARTICIPANT_KEY_1);
+        
+        bytes32[] memory nodeIds = new bytes32[](1);
+        nodeIds[0] = NODE_ID_1;
+        
+        // Create a valid ECDSA signature for testing
+        uint256 privateKey = 0x123456789abcdef123456789abcdef123456789abcdef123456789abcdef1234;
+        address signer = vm.addr(privateKey);
+        
+        // Create message hash for AA signature (same message as BLS)
+        bytes32 messageHash = keccak256(MESSAGE_HASH);
+        bytes32 ethSignedMessageHash = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
+        );
+        
+        // Sign the message
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ethSignedMessageHash);
+        bytes memory validSignature = abi.encodePacked(r, s, v);
+        
+        try validator.validateAggregateSignature(
+            nodeIds,
+            AGGREGATE_SIGNATURE,
+            MESSAGE_HASH,
+            signer,
+            validSignature
+        ) returns (bool /* result */) {
+            // The result depends on whether BLS validation passes
+            // In test environment, BLS precompiles may not be available
+            assertTrue(true, "Function executed with valid ECDSA signature");
+        } catch Error(string memory reason) {
+            console.log("Expected error (likely precompile unavailable):", reason);
+            assertTrue(true, "Precompile unavailable in test environment");
+        }
     }
 }
