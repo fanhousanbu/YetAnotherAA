@@ -15,10 +15,18 @@ This project implements a complete BLS signature aggregation and validation syst
 ## Project Structure
 
 ```
-├── signer/                     # BLS signature generation toolkit
-│   ├── index.js               # Main signature aggregation script
-│   ├── package.json           # Node.js dependencies
-│   └── README.md              # Signer documentation
+├── signer/                     # BLS Signer Service (NestJS microservice)
+│   ├── src/                   # Source code
+│   │   ├── modules/           # Feature modules
+│   │   │   ├── bls/          # BLS cryptography operations
+│   │   │   ├── blockchain/   # Ethereum contract interactions
+│   │   │   ├── node/         # Node identity management
+│   │   │   └── signature/    # Signature generation services
+│   │   ├── interfaces/        # TypeScript interfaces
+│   │   └── utils/            # BLS utilities
+│   ├── node_dev_*.json       # Development node configurations
+│   ├── package.json          # NestJS dependencies
+│   └── README.md             # Service documentation
 ├── validator/                  # Smart contract validation system
 │   ├── src/
 │   │   └── AAStarValidator.sol # Main BLS validator contract
@@ -26,7 +34,7 @@ This project implements a complete BLS signature aggregation and validation syst
 │   │   └── AAStarValidator.t.sol # Comprehensive test suite
 │   ├── script/
 │   │   ├── DeployAAStarValidator.s.sol # Deployment script
-│   │   └── TestAAStarValidator.s.sol   # Testing script
+│   │   └── RegisterKeys.s.sol          # Node registration script
 │   ├── foundry.toml           # Foundry configuration
 │   └── README.md              # Contract documentation
 └── README.md                  # This file
@@ -34,27 +42,38 @@ This project implements a complete BLS signature aggregation and validation syst
 
 ## ✨ Features
 
-- **🔑 Multi-Signature Support**: Generate m keys, aggregate n signatures
+### Signer Service
+- **🎯 Independent Nodes**: Each service instance is a stateful node with unique identity
+- **🔐 BLS12-381 Signatures**: Generate secure signatures compatible with AAStarValidator
+- **🌐 REST API**: Clean endpoints for signature operations and node management
+- **⚡ Real Blockchain Integration**: On-chain node registration using ethers.js
+- **🧪 Development Ready**: Fixed development nodes for consistent debugging
+
+### Smart Contract
+- **🔑 Multi-Signature Support**: Validate aggregate signatures from multiple nodes
 - **🚀 EIP-2537 Optimized**: Native BLS12-381 precompile integration
 - **💰 Gas Efficient**: Optimized for minimal transaction costs
 - **🏛️ Multiple Validation Methods**: Flexible validation interfaces
 - **🛡️ Security Focused**: Comprehensive input validation and error handling
 - **📈 Event Monitoring**: Built-in analytics and gas tracking
-- **🔄 Account Abstraction Native**: ERC-4337 UserOperation compatible
 
 ## 🚀 Quick Start
 
-### 1. Generate BLS Aggregate Signatures
+### 1. Start BLS Signer Service
 
 ```bash
 cd signer
 npm install
+npm run build
 
-# Generate signatures using default nodes (1,2,3)
-node index.js "Hello World"
+# Start single node
+npm start
 
-# Generate signatures with specific nodes
-node index.js "Test Message" 1,2,4
+# Or use VSCode launch configs for multi-node debugging
+# Available endpoints:
+# GET  /node/info      - Node information
+# POST /node/register  - Register on blockchain
+# POST /signature/sign - Generate BLS signature
 ```
 
 ### 2. Deploy Validator Contract
@@ -308,13 +327,18 @@ cd YetAnotherAA
 cd validator
 forge install
 
-# Install signer dependencies  
+# Install signer service dependencies  
 cd ../signer
 npm install
 
-# Run tests
+# Run contract tests
 cd ../validator
 forge test
+
+# Start signer service
+cd ../signer
+npm run build
+npm start
 ```
 
 ### Contribution Guidelines

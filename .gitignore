@@ -6,3 +6,10 @@ dist
 out
 coverage
 cache
+
+# Node state files (contains private keys)
+signer/node_*.json
+node_*.json
+
+# But allow development node files
+!signer/node_dev_*.json

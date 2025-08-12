@@ -1,0 +1,12 @@
+{
+  "nodeId": "0x123e4567e89b12d3a456426614174001",
+  "nodeName": "dev_node_001",
+  "privateKey": "0x0c4ffef91ea42998981de3de7f1241e03aa1bc61770158867d761aa19cd028a2",
+  "publicKey": "0x000000000000000000000000000000000052464ad7afdeaa9416263fb0eb72925b77957796973ecb7fcda5d4fc733c4a2eb01ba15edeff51b1a0f08530f3bf4a0000000000000000000000000000000008db250fe656f5334bedca95ceb0ce9b1030928be39bce6d547146bc7335c1dee0eebce4b8129d42cb5ed2432a98e8de",
+  "contractNodeId": "0xf26f8bdca182790bad5481c1f0eac3e7ffb135ab33037dd02b8d98a1066c6e5d",
+  "registrationStatus": "registered",
+  "registeredAt": "2025-08-12T14:28:06.663Z",
+  "contractAddress": "0x0bC9DD7BCa3115198a59D367423E1535104A5882",
+  "createdAt": "2025-08-12T13:45:00.000Z",
+  "description": "Development Node 001 - Fixed for debugging"
+}

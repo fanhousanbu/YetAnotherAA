@@ -1,87 +1,156 @@
-# AAStarValidator Off-chain Signature Tool
+# BLS Signer Service
 
-Focused on off-chain BLS aggregate signature generation and ECDSA AA signature generation for on-chain contract call parameters.
+A NestJS-based microservice for BLS12-381 signature generation and on-chain node registration for the AAStarValidator system.
 
 ## Features
 
-- Generate BLS aggregate signatures using registered nodes
-- Generate ECDSA signatures for AA account verification
-- Output AAStarValidator contract call parameters with dual signatures
-- Support custom messages and node combinations
-- Built-in EOA account management
+- **Individual Node Identity**: Each service instance runs as an independent node with unique BLS key pairs
+- **BLS12-381 Signatures**: Generate BLS signatures compatible with AAStarValidator contract
+- **On-chain Registration**: Real blockchain integration for node registration using ethers.js
+- **RESTful API**: Clean REST endpoints for signature operations and node management
+- **Development Ready**: Fixed development nodes for consistent debugging experience
 
-## File Description
+## Architecture
 
-- `index.js` - Core signature tool, supports CLI and module import
-- `config.json` - Node key configuration (5 generated key pairs) + EOA account
-- `generate-eoa.js` - Generate new random EOA account
-- `README.md` - This documentation file
+Each signer service instance is a stateful node with:
+- Unique node ID and BLS key pair
+- Local state persistence in `node_*.json` files
+- Independent blockchain registration capability
+- Self-contained signing operations
 
-## Usage
+## Quick Start
 
-### CLI Usage
+### Environment Setup
+
+Set environment variables (or use project root `.env`):
+
 ```bash
-# Generate new EOA account (updates config.json)
-npm run generate-eoa
+# Node Configuration
+NODE_STATE_FILE=./node_dev_001.json
+PORT=3001
 
-# Sign with default nodes (1,2,3)
-node index.js "Hello World"
-
-# Specify node combination
-node index.js "Test Message" 1,2,4,5
-
-# Using npm scripts
-npm run test  # Test with default message
-npm start -- "Custom Message" 1,2  # Custom message and nodes
+# Blockchain Configuration
+VALIDATOR_CONTRACT_ADDRESS=0x0bC9DD7BCa3115198a59D367423E1535104A5882
+ETH_RPC_URL=https://sepolia.infura.io/v3/7051eb377c77490881070faaf93aef20
+ETH_PRIVATE_KEY=0x72966a3f12beed253d475a19f4c8c73e5f7c14f2280bcda4499f72602b4d6c1a
 ```
 
-### Module Import
-```javascript
-import { generateContractCallParams } from './index.js';
+### Development
 
-const params = await generateContractCallParams("Hello World", [1, 2, 3]);
-console.log(params.signature);    // BLS aggregate signature
-console.log(params.messagePoint); // Message point
-console.log(params.nodeIds);      // Node ID array
-console.log(params.aaAddress);    // AA account address
-console.log(params.aaSignature);  // ECDSA signature
+```bash
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+
+# Start development server
+npm start
+
+# Or use VSCode launch configurations for multi-node debugging
 ```
 
-## Output Format
+## API Endpoints
 
-```javascript
+### Node Management
+
+- `GET /node/info` - Get current node information
+- `POST /node/register` - Register node on AAStarValidator contract
+
+### Signature Operations
+
+- `POST /signature/sign` - Generate BLS signature for message
+- `POST /signature/aggregate` - Generate aggregate signature format
+
+### Documentation
+
+- `GET /api` - Swagger API documentation
+
+## Node Startup Modes
+
+The service supports three initialization modes:
+
+### 1. Specific Node ID (Highest Priority)
+```bash
+NODE_ID=0x123e4567e89b12d3a456426614174001 npm start
+```
+
+### 2. State File Path
+```bash
+NODE_STATE_FILE=/path/to/node_state.json npm start
+```
+
+### 3. Auto Discovery (Default)
+```bash
+npm start  # Discovers existing node files automatically
+```
+
+## Development Nodes
+
+Three fixed development nodes are provided for consistent debugging:
+
+- **node_dev_001.json**: Port 3001, Node ID `0x123e4567e89b12d3a456426614174001`
+- **node_dev_002.json**: Port 3002, Node ID `0x123e4567e89b12d3a456426614174002`  
+- **node_dev_003.json**: Port 3003, Node ID `0x123e4567e89b12d3a456426614174003`
+
+VSCode launch configurations are provided for single or multi-node debugging.
+
+## Blockchain Integration
+
+### On-chain Registration
+
+The `/node/register` endpoint performs real blockchain transactions:
+
+1. Check if node is already registered via `isRegistered()`
+2. Call `registerPublicKey()` on AAStarValidator contract
+3. Wait for transaction confirmation
+4. Update local node state
+
+### Requirements
+
+- Contract owner private key (`ETH_PRIVATE_KEY`)
+- Sufficient ETH balance for gas fees
+- Valid RPC endpoint (`ETH_RPC_URL`)
+
+### Response Example
+
+```json
 {
-  nodeIds: ["0x..."],           // Node ID array for contract calls
-  signature: "0x...",           // BLS aggregate signature (256 bytes)
-  messagePoint: "0x...",        // Message G2 point (256 bytes)
-  aaAddress: "0x...",           // AA account owner address
-  aaSignature: "0x...",         // ECDSA signature (65 bytes)
-  contractAddress: "0x...",     // Contract address
-  participantNodes: [...]       // Participant node information
+  "success": true,
+  "message": "Node registered successfully on-chain",
+  "nodeId": "0x123e4567e89b12d3a456426614174001",
+  "txHash": "0x1234...abcd",
+  "contractAddress": "0x0bC9DD7BCa3115198a59D367423E1535104A5882"
 }
 ```
 
-## Contract Call Example
+## File Structure
 
-The generated parameters can be directly used to call the AAStarValidator contract:
+```
+src/
+├── interfaces/          # TypeScript interfaces
+├── modules/
+│   ├── bls/            # BLS cryptography operations  
+│   ├── blockchain/     # Ethereum contract interactions
+│   ├── node/           # Node identity and state management
+│   └── signature/      # Signature generation services
+├── utils/              # BLS utilities and helpers
+└── main.ts             # Application entry point
 
-```solidity
-bool isValid = validator.verifyAggregateSignature(
-    nodeIds,      // Node ID array
-    signature,    // BLS aggregate signature
-    messagePoint, // Message point
-    aaAddress,    // AA account owner address
-    aaSignature   // ECDSA signature
-);
+node_dev_*.json         # Development node state files (tracked)
+node_*.json             # Dynamic node files (ignored)
 ```
 
-## EOA Account Management
+## Security
 
-The tool includes built-in EOA account management for AA signature verification:
+- Private keys are never exposed in API responses
+- Node state files contain sensitive keys and should be protected
+- Development node files use test keys only
+- Production deployments should use secure key management
 
-```bash
-# Generate a new random EOA account
-npm run generate-eoa
-```
+## Contract Compatibility
 
-This will update `config.json` with a new randomly generated EOA account that will be used for all future signature generation.
+Compatible with AAStarValidator contract functions:
+- `registerPublicKey(bytes32 nodeId, bytes calldata publicKey)`
+- `isRegistered(bytes32 nodeId) returns (bool)`
+- `verifyAggregateSignature(...)` - via signature generation endpoints
