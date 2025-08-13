@@ -48,6 +48,7 @@ This project implements a complete BLS signature aggregation and validation syst
 - **🌐 REST API**: Clean endpoints for signature operations and node management
 - **⚡ Real Blockchain Integration**: On-chain node registration using ethers.js
 - **🧪 Development Ready**: Fixed development nodes for consistent debugging
+- **🔀 External Signature Aggregation**: Aggregate signatures and public keys from multiple external nodes
 
 ### Smart Contract
 - **🔑 Multi-Signature Support**: Validate aggregate signatures from multiple nodes
@@ -71,9 +72,10 @@ npm start
 
 # Or use VSCode launch configs for multi-node debugging
 # Available endpoints:
-# GET  /node/info      - Node information
-# POST /node/register  - Register on blockchain
-# POST /signature/sign - Generate BLS signature
+# GET  /node/info         - Node information
+# POST /node/register     - Register on blockchain
+# POST /signature/sign    - Generate BLS signature
+# POST /signature/aggregate - Aggregate external signatures
 ```
 
 ### 2. Deploy Validator Contract
