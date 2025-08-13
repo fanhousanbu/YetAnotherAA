@@ -27,6 +27,10 @@ export class BlsService {
     return { aggregatedSignature, aggregatedPubKey };
   }
 
+  async aggregateSignaturesOnly(signatures: any[]): Promise<any> {
+    return sigs.aggregateSignatures(signatures);
+  }
+
   async verifySignature(signature: any, messagePoint: any, publicKey: any): Promise<boolean> {
     return await sigs.verify(signature, messagePoint, publicKey);
   }
@@ -37,8 +41,26 @@ export class BlsService {
   }
 
   encodeToEIP2537(point: any): string {
+    // Match demo.js implementation exactly: encodeG2Point(bls.G2.Point.fromHex(aggregatedSignature.toBytes()))
     const encoded = encodeG2Point(bls.G2.Point.fromHex(point.toBytes()));
     return "0x" + Buffer.from(encoded).toString('hex');
+  }
+
+  encodePublicKeyToEIP2537(publicKey: any): string {
+    const encoded = this.encodeG1Point(publicKey);
+    return "0x" + Buffer.from(encoded).toString('hex');
+  }
+
+  private encodeG1Point(point: any): Uint8Array {
+    const result = new Uint8Array(128);
+    const affine = point.toAffine();
+    
+    const xBytes = this.hexToBytes(affine.x.toString(16).padStart(96, '0'));
+    const yBytes = this.hexToBytes(affine.y.toString(16).padStart(96, '0'));
+    
+    result.set(xBytes, 16); // Skip 16 zero bytes at start
+    result.set(yBytes, 80); // Skip 16 zero bytes at start
+    return result;
   }
 
   async getPublicKeyFromPrivateKey(privateKey: string): Promise<string> {

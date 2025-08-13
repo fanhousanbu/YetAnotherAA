@@ -60,7 +60,7 @@ npm start
 ### Signature Operations
 
 - `POST /signature/sign` - Generate BLS signature for message
-- `POST /signature/aggregate` - Generate aggregate signature format
+- `POST /signature/aggregate` - Aggregate external signatures from multiple nodes
 
 ### Documentation
 
@@ -147,6 +147,74 @@ node_*.json             # Dynamic node files (ignored)
 - Node state files contain sensitive keys and should be protected
 - Development node files use test keys only
 - Production deployments should use secure key management
+
+## Signature Aggregation Workflow
+
+The aggregation system follows a distributed workflow where nodes operate independently:
+
+### 1. Individual Node Signing
+Each node signs messages independently:
+
+```bash
+curl -X POST http://localhost:3001/signature/sign \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello World"}'
+```
+
+Response:
+```json
+{
+  "nodeId": "0xf26f8bdca182790bad5481c1f0eac3e7ffb135ab33037dd02b8d98a1066c6e5d",
+  "signature": "afc696360a866979fb4b4e6757af4d1621616b5d928061be5aa2243c0b8ded9b...",
+  "publicKey": "8052464ad7afdeaa9416263fb0eb72925b77957796973ecb7fcda5d4fc733c4a...",
+  "message": "Hello World"
+}
+```
+
+### 2. Central Collection
+A central coordinator collects signatures from multiple nodes. Each node only knows about itself, not other nodes.
+
+### 3. Signature Aggregation
+Any node can aggregate the collected external signatures. BLS aggregation requires signatures and their corresponding public keys:
+
+```bash
+curl -X POST http://localhost:3001/signature/aggregate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "signatures": [
+      {
+        "nodeId": "0x123e4567e89b12d3a456426614174001",
+        "signature": "0xafc696360a866979fb4b4e6757af4d1621616b5d928061be5aa2243c0b8ded9b...",
+        "publicKey": "0x8052464ad7afdeaa9416263fb0eb72925b77957796973ecb7fcda5d4fc733c4a..."
+      },
+      {
+        "nodeId": "0x123e4567e89b12d3a456426614174002", 
+        "signature": "0xdef789abc123456789def123456789abc456789def123456789def123456789...",
+        "publicKey": "0x9876543210fedcbafedcba0987654321098765432109876543210987654321..."
+      }
+    ]
+  }'
+```
+
+Response:
+```json
+{
+  "nodeIds": [
+    "0x123e4567e89b12d3a456426614174001",
+    "0x123e4567e89b12d3a456426614174002"
+  ],
+  "aggregateSignature": "0x000000000000000000000000000000000b74054fd1bd02d6f1d83d35c472490c...",
+  "aggregatePublicKey": "0x000000000000000000000000000000000052464ad7afdeaa9416263fb0eb72925b..."
+}
+```
+
+### Key Properties
+
+- **Efficient BLS Aggregation**: Aggregates signatures and public keys using BLS12-381 mathematics
+- **Stateless Operation**: Nodes don't need access to other nodes' private keys or registration data  
+- **Flexible Coordination**: Any node can perform aggregation with provided external signatures
+- **Complete Output**: Returns both aggregated signature and aggregated public key
+- **EIP-2537 Format**: All outputs are formatted for direct use with AAStarValidator contract
 
 ## Contract Compatibility
 

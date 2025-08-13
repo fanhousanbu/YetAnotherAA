@@ -9,14 +9,6 @@ export class SignMessageDto {
   @IsString()
   @IsNotEmpty()
   message: string;
-
-  @ApiProperty({
-    description: 'The ID of the node that should sign the message',
-    example: 'node1'
-  })
-  @IsString()
-  @IsNotEmpty()
-  nodeId: string;
 }
 
 export class AggregateSignatureDto {

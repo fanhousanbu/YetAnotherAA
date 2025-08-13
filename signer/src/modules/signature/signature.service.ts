@@ -2,7 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { BlsService } from '../bls/bls.service.js';
 import { NodeService } from '../node/node.service.js';
 import { SignatureResult, AggregateSignatureResult } from '../../interfaces/signature.interface.js';
-import { sigs } from '../../utils/bls.util.js';
+import { sigs, bls } from '../../utils/bls.util.js';
 
 @Injectable()
 export class SignatureService {
@@ -11,39 +11,35 @@ export class SignatureService {
     private readonly nodeService: NodeService
   ) {}
 
-  async signMessage(message: string, nodeId?: string): Promise<SignatureResult> {
+  async signMessage(message: string): Promise<SignatureResult> {
     const node = this.nodeService.getNodeForSigning();
     return await this.blsService.signMessage(message, node);
   }
 
-  async aggregateSignatures(message: string, nodeIds?: string[]): Promise<AggregateSignatureResult> {
-    const node = this.nodeService.getNodeForSigning();
-    const messagePoint = await this.blsService.hashMessageToCurve(message);
-    
-    const privateKeyBytes = this.hexToBytes(node.privateKey.substring(2));
-    const publicKey = sigs.getPublicKey(privateKeyBytes);
-    const signature = await sigs.sign(messagePoint as any, privateKeyBytes);
-    
-    const signatures = [signature];
-    const publicKeys = [publicKey];
-    const participantNodes = [{
-      nodeId: node.contractNodeId,
-      nodeName: node.nodeName
-    }];
-
-    const { aggregatedSignature, aggregatedPubKey } = await this.blsService.aggregateSignatures(signatures, publicKeys);
-    
-    const isValid = await this.blsService.verifySignature(aggregatedSignature, messagePoint, aggregatedPubKey);
-    if (!isValid) {
-      throw new Error('Signature verification failed');
+  async aggregateExternalSignatures(signatureStrings: string[]): Promise<AggregateSignatureResult> {
+    if (signatureStrings.length < 1) {
+      throw new BadRequestException('At least 1 signature is required for aggregation');
     }
 
+    const signatures = [];
+
+    for (const sigHex of signatureStrings) {
+      // Convert hex strings to BLS signature format
+      const signature = this.hexToBlsSignature(sigHex);
+      signatures.push(signature);
+    }
+
+    // Aggregate signatures only
+    const aggregatedSignature = await this.blsService.aggregateSignaturesOnly(signatures);
+
     return {
-      nodeIds: [node.contractNodeId],
-      signature: this.blsService.encodeToEIP2537(aggregatedSignature),
-      messagePoint: this.blsService.encodeToEIP2537(messagePoint),
-      participantNodes
+      signature: this.blsService.encodeToEIP2537(aggregatedSignature)
     };
+  }
+
+  private hexToBlsSignature(hex: string): any {
+    const cleanHex = hex.startsWith('0x') ? hex.substring(2) : hex;
+    return sigs.Signature.fromHex(cleanHex);
   }
 
   private hexToBytes(hex: string): Uint8Array {
