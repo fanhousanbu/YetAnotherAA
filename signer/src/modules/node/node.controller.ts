@@ -60,4 +60,29 @@ export class NodeController {
       contractAddress: nodeState.contractAddress
     };
   }
+
+  @ApiOperation({ summary: 'Health check endpoint' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Node health status',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', description: 'Node status' },
+        timestamp: { type: 'number', description: 'Current timestamp' },
+        nodeId: { type: 'string', description: 'Node identifier' },
+        uptime: { type: 'number', description: 'Uptime in milliseconds' }
+      }
+    }
+  })
+  @Get('health')
+  getHealth() {
+    const nodeState = this.nodeService.getCurrentNode();
+    return {
+      status: 'active',
+      timestamp: Date.now(),
+      nodeId: nodeState?.nodeId || 'unknown',
+      uptime: process.uptime() * 1000
+    };
+  }
 }

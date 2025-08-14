@@ -259,4 +259,8 @@ export class NodeService implements OnModuleInit {
   getContractAddress(): string {
     return this.contractAddress;
   }
+
+  getNodeState(): NodeState | null {
+    return this.nodeState || null;
+  }
 }

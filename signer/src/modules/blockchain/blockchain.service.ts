@@ -15,14 +15,21 @@ export class BlockchainService {
     const rpcUrl = process.env.ETH_RPC_URL || 'https://sepolia.infura.io/v3/7051eb377c77490881070faaf93aef20';
     const privateKey = process.env.ETH_PRIVATE_KEY;
 
-    if (!privateKey) {
-      this.logger.warn('ETH_PRIVATE_KEY not set, blockchain operations will be disabled');
+    // 创建provider（只读连接）
+    this.provider = new ethers.JsonRpcProvider(rpcUrl);
+
+    if (!privateKey || privateKey === 'your_eth_private_key_here') {
+      this.logger.warn('ETH_PRIVATE_KEY not set or using placeholder, blockchain operations will be disabled');
       return;
     }
 
-    this.provider = new ethers.JsonRpcProvider(rpcUrl);
-    this.wallet = new ethers.Wallet(privateKey, this.provider);
-    this.logger.log(`Blockchain service initialized with wallet: ${this.wallet.address}`);
+    try {
+      this.wallet = new ethers.Wallet(privateKey, this.provider);
+      this.logger.log(`Blockchain service initialized with wallet: ${this.wallet.address}`);
+    } catch (error: any) {
+      this.logger.error(`Invalid private key provided: ${error.message}`);
+      this.logger.warn('Blockchain write operations will be disabled');
+    }
   }
 
   async registerNodeOnChain(
