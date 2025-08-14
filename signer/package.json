@@ -10,10 +10,6 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-        "start:node1": "nest start --watch --env-file .env.dev1",
-    "start:node2": "nest start --watch --env-file .env.dev2", 
-    "start:node3": "nest start --watch --env-file .env.dev3",
-    "demo": "node demo/demo.js",
     "generate-eoa": "node demo/generate-eoa.js"
   },
   "dependencies": {
