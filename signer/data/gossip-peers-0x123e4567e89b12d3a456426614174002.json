@@ -1,0 +1,47 @@
+[
+  {
+    "nodeId": "0x123e4567e89b12d3a456426614174003",
+    "publicKey": "0xb32f3a1540910e1d0d249a9498af5fa87ee8e84b839d1129bbe28db2423ff29e667b6169347e0d377bcfc94c03eee4d4",
+    "apiEndpoint": "http://localhost:3003",
+    "gossipEndpoint": "ws://localhost:8003",
+    "status": "active",
+    "lastSeen": "2025-08-14T15:05:43.539Z",
+    "region": "local",
+    "capabilities": [
+      "bls-signing",
+      "message-aggregation"
+    ],
+    "version": "1.0.0",
+    "heartbeatCount": 9
+  },
+  {
+    "nodeId": "0x123e4567e89b12d3a456426614174001",
+    "publicKey": "0xb2d7b7dc74d9fd28b055e3718be570b0d3867d60bb7e484d49597c05f5a80ecd105ffcf425264199c20ea0cef791b5dd",
+    "apiEndpoint": "http://localhost:3001",
+    "gossipEndpoint": "ws://localhost:8001",
+    "status": "active",
+    "lastSeen": "2025-08-14T15:05:43.537Z",
+    "region": "local",
+    "capabilities": [
+      "bls-signing",
+      "message-aggregation"
+    ],
+    "version": "1.0.0",
+    "heartbeatCount": 9
+  },
+  {
+    "nodeId": "0x123e4567e89b12d3a456426614174004",
+    "publicKey": "0x86b4d9c4c671ef28c99a8e160a2d4c2f62aee192b545b776c518e820dda8f8c95d522b567844aa6fb5c6a048aec47cb8",
+    "apiEndpoint": "http://localhost:3004",
+    "gossipEndpoint": "ws://localhost:8004",
+    "status": "active",
+    "lastSeen": "2025-08-14T15:05:49.692Z",
+    "region": "local",
+    "capabilities": [
+      "bls-signing",
+      "message-aggregation"
+    ],
+    "version": "1.0.0",
+    "heartbeatCount": 0
+  }
+]
