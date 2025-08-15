@@ -3,6 +3,33 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { SignatureService } from './signature.service.js';
 import { SignMessageDto } from '../../dto/sign.dto.js';
 import { AggregateSignatureDto } from '../../dto/aggregate.dto.js';
+import { IsString, IsArray } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class VerifySignatureDto {
+  @ApiProperty({
+    description: 'The aggregated BLS signature to verify',
+    example: '0x1234567890abcdef...'
+  })
+  @IsString()
+  signature: string;
+
+  @ApiProperty({
+    description: 'Array of public keys used in the aggregated signature',
+    type: [String],
+    example: ['0x8052464ad7afdeaa...', '0x8338213c412750cf...']
+  })
+  @IsArray()
+  @IsString({ each: true })
+  publicKeys: string[];
+
+  @ApiProperty({
+    description: 'The original message that was signed',
+    example: 'Hello, BLS signatures!'
+  })
+  @IsString()
+  message: string;
+}
 
 @ApiTags('signature')
 @Controller('signature')
@@ -46,5 +73,28 @@ export class SignatureController {
   @Post('aggregate')
   async aggregateSignatures(@Body(ValidationPipe) aggregateDto: AggregateSignatureDto) {
     return await this.signatureService.aggregateExternalSignatures(aggregateDto.signatures);
+  }
+
+  @ApiOperation({ summary: 'Verify an aggregated BLS signature' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Signature verification result',
+    schema: {
+      type: 'object',
+      properties: {
+        valid: { type: 'boolean', description: 'Whether the signature is valid' },
+        message: { type: 'string', description: 'Verification message' }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiBody({ type: VerifySignatureDto })
+  @Post('verify')
+  async verifySignature(@Body(ValidationPipe) verifyDto: VerifySignatureDto) {
+    return await this.signatureService.verifyAggregatedSignature(
+      verifyDto.signature,
+      verifyDto.publicKeys,
+      verifyDto.message
+    );
   }
 }

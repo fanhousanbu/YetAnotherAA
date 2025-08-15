@@ -1,12 +1,12 @@
 import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
-import { GossipDiscoveryService } from './gossip-discovery.service';
-import { BlsNode, GossipStats } from '../../interfaces/bls-node.interface';
+import { BlsNodeDiscoveryService } from './gossip-discovery.service';
+import { BlsNode } from '../../interfaces/bls-node.interface';
 
-@ApiTags('Gossip Network')
-@Controller('gossip')
-export class GossipController {
-  constructor(private readonly gossipDiscoveryService: GossipDiscoveryService) {}
+@ApiTags('BLS Node Discovery')
+@Controller('discovery')
+export class DiscoveryController {
+  constructor(private readonly discoveryService: BlsNodeDiscoveryService) {}
 
   @Get('nodes')
   @ApiOperation({ summary: 'Get all discovered BLS nodes' })
@@ -40,7 +40,7 @@ export class GossipController {
     }
   })
   getAllNodes(): { success: boolean; nodes: BlsNode[]; count: number } {
-    const nodes = this.gossipDiscoveryService.getAllKnownNodes();
+    const nodes = this.discoveryService.getAllKnownNodes();
     return {
       success: true,
       nodes,
@@ -81,7 +81,7 @@ export class GossipController {
   })
   async getActiveNodes(): Promise<{ success: boolean; nodes: BlsNode[]; count: number }> {
     try {
-      const nodes = await this.gossipDiscoveryService.getAvailableNodes();
+      const nodes = await this.discoveryService.getAvailableNodes();
       return {
         success: true,
         nodes,
@@ -97,10 +97,10 @@ export class GossipController {
   }
 
   @Get('stats')
-  @ApiOperation({ summary: 'Get gossip network statistics' })
+  @ApiOperation({ summary: 'Get discovery statistics' })
   @ApiResponse({ 
     status: 200, 
-    description: 'Gossip network statistics',
+    description: 'Discovery statistics',
     schema: {
       type: 'object',
       properties: {
@@ -108,20 +108,18 @@ export class GossipController {
         stats: {
           type: 'object',
           properties: {
-            totalPeers: { type: 'number' },
-            activePeers: { type: 'number' },
-            suspectedPeers: { type: 'number' },
-            messagesSent: { type: 'number' },
-            messagesReceived: { type: 'number' },
-            gossipRounds: { type: 'number' },
-            lastGossipTime: { type: 'string', format: 'date-time', nullable: true }
+            totalNodes: { type: 'number' },
+            activeNodes: { type: 'number' },
+            suspectedNodes: { type: 'number' },
+            discoveryRounds: { type: 'number' },
+            lastDiscoveryTime: { type: 'string', format: 'date-time', nullable: true }
           }
         }
       }
     }
   })
-  getStats(): { success: boolean; stats: GossipStats } {
-    const stats = this.gossipDiscoveryService.getStats();
+  getStats(): { success: boolean; stats: any } {
+    const stats = this.discoveryService.getStats();
     return {
       success: true,
       stats,
@@ -129,10 +127,10 @@ export class GossipController {
   }
 
   @Get('health')
-  @ApiOperation({ summary: 'Get gossip network health status' })
+  @ApiOperation({ summary: 'Get discovery service health status' })
   @ApiResponse({ 
     status: 200, 
-    description: 'Health status of the gossip network',
+    description: 'Health status of the discovery service',
     schema: {
       type: 'object',
       properties: {
@@ -142,7 +140,7 @@ export class GossipController {
           properties: {
             status: { type: 'string', enum: ['healthy', 'degraded', 'isolated'] },
             timestamp: { type: 'string', format: 'date-time' },
-            peers: {
+            nodes: {
               type: 'object',
               properties: {
                 total: { type: 'number' },
@@ -150,20 +148,18 @@ export class GossipController {
                 suspected: { type: 'number' }
               }
             },
-            gossip: {
+            discovery: {
               type: 'object',
               properties: {
                 rounds: { type: 'number' },
-                messagesSent: { type: 'number' },
-                messagesReceived: { type: 'number' },
-                lastGossipTime: { type: 'string', format: 'date-time', nullable: true }
+                lastDiscoveryTime: { type: 'string', format: 'date-time', nullable: true }
               }
             },
             connectivity: {
               type: 'object',
               properties: {
-                hasActivePeers: { type: 'boolean' },
-                isGossiping: { type: 'boolean' }
+                hasActiveNodes: { type: 'boolean' },
+                isDiscovering: { type: 'boolean' }
               }
             }
           }
@@ -172,32 +168,30 @@ export class GossipController {
     }
   })
   getHealth(): { success: boolean; health: any } {
-    const stats = this.gossipDiscoveryService.getStats();
+    const stats = this.discoveryService.getStats();
     
     const health = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      peers: {
-        total: stats.totalPeers,
-        active: stats.activePeers,
-        suspected: stats.suspectedPeers,
+      nodes: {
+        total: stats.totalNodes,
+        active: stats.activeNodes,
+        suspected: stats.suspectedNodes,
       },
-      gossip: {
-        rounds: stats.gossipRounds,
-        messagesSent: stats.messagesSent,
-        messagesReceived: stats.messagesReceived,
-        lastGossipTime: stats.lastGossipTime,
+      discovery: {
+        rounds: stats.discoveryRounds,
+        lastDiscoveryTime: stats.lastDiscoveryTime,
       },
       connectivity: {
-        hasActivePeers: stats.activePeers > 0,
-        isGossiping: stats.lastGossipTime !== null,
+        hasActiveNodes: stats.activeNodes > 0,
+        isDiscovering: stats.lastDiscoveryTime !== null,
       },
     };
 
     // 确定整体健康状态
-    if (stats.activePeers === 0) {
+    if (stats.activeNodes === 0) {
       health.status = 'isolated';
-    } else if (stats.suspectedPeers > stats.activePeers) {
+    } else if (stats.suspectedNodes > stats.activeNodes) {
       health.status = 'degraded';
     }
 
@@ -243,7 +237,7 @@ export class GossipController {
   @ApiResponse({ status: 400, description: 'Insufficient signers available' })
   async selectSigners(@Param('count', ParseIntPipe) count: number): Promise<{ success: boolean; signers?: BlsNode[]; count?: number; message: string }> {
     try {
-      const signers = await this.gossipDiscoveryService.selectSigners(count);
+      const signers = await this.discoveryService.selectSigners(count);
       return {
         success: true,
         signers,

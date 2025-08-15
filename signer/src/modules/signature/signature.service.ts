@@ -37,6 +37,43 @@ export class SignatureService {
     };
   }
 
+  async verifyAggregatedSignature(
+    signatureHex: string, 
+    publicKeyHexes: string[], 
+    message: string
+  ): Promise<{ valid: boolean; message?: string }> {
+    try {
+      // Convert hex signature to BLS signature
+      const signature = this.hexToBlsSignature(signatureHex.startsWith('0x') ? signatureHex.substring(2) : signatureHex);
+      
+      // Convert hex public keys to BLS public keys
+      const publicKeys = [];
+      for (const pubKeyHex of publicKeyHexes) {
+        const cleanHex = pubKeyHex.startsWith('0x') ? pubKeyHex.substring(2) : pubKeyHex;
+        const pubKey = bls.G1.fromHex(cleanHex);
+        publicKeys.push(pubKey);
+      }
+
+      // Aggregate public keys
+      const aggregatedPubKey = publicKeys.reduce((acc, pubKey) => acc.add(pubKey));
+
+      // Verify the aggregated signature
+      const messageBytes = new TextEncoder().encode(message);
+      const valid = await bls.verify(signature, messageBytes, aggregatedPubKey);
+
+      return {
+        valid,
+        message: valid ? 'Signature is valid' : 'Signature verification failed'
+      };
+    } catch (error) {
+      console.error('BLS verification error:', error);
+      return {
+        valid: false,
+        message: `Verification error: ${error.message}`
+      };
+    }
+  }
+
   private hexToBlsSignature(hex: string): any {
     const cleanHex = hex.startsWith('0x') ? hex.substring(2) : hex;
     return sigs.Signature.fromHex(cleanHex);

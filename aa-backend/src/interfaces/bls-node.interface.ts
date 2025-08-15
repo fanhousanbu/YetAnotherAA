@@ -24,23 +24,3 @@ export interface ExtendedNodeInfo extends ContractNodeInfo {
   lastSeen: Date;
 }
 
-export interface GossipMessage {
-  type: 'gossip' | 'sync' | 'heartbeat' | 'join' | 'leave' | 'peer_discovery';
-  from: string;
-  to?: string; // Optional: for directed messages
-  data: any;
-  timestamp: number;
-  ttl: number; // Time to live for message propagation
-  messageId: string; // Unique message identifier
-  version: number; // Version for conflict resolution
-}
-
-export interface GossipStats {
-  totalPeers: number;
-  activePeers: number;
-  suspectedPeers: number;
-  messagesSent: number;
-  messagesReceived: number;
-  gossipRounds: number;
-  lastGossipTime: Date | null;
-}
