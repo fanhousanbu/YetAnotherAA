@@ -1,0 +1,63 @@
+// 用户类型
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  walletAddress: string;  // ETH 钱包地址
+  hasPasskey: boolean;
+  createdAt: string;     // 注册时间
+  credentialId?: string; // Passkey凭证ID
+  credentialPublicKey?: string; // Passkey公钥（base64编码）
+  counter?: number;      // Passkey计数器
+}
+
+// 联系人类型
+export interface Contact {
+  id: string;
+  userId: string;        // 所属用户ID
+  walletAddress?: string; // ETH 钱包地址（可选）
+  email?: string;        // 邮箱地址（可选）
+  name: string;          // 备注名
+  createdAt: string;
+}
+
+// 转账记录类型
+export interface Transfer {
+  id: string;
+  fromAddress: string;    // 发送方钱包地址
+  toAddress: string;      // 接收方钱包地址
+  amount: number;
+  status: 'pending' | 'completed' | 'failed';
+  description?: string;
+  createdAt: string;
+  txHash?: string;        // 交易哈希
+}
+
+// 登录方式
+export type LoginMethod = 'email' | 'passkey';
+
+// 注册表单数据
+export interface RegisterFormData {
+  email: string;
+  name: string;
+}
+
+// 登录表单数据
+export interface LoginFormData {
+  email: string;
+}
+
+// 添加联系人表单数据
+export interface ContactFormData {
+  walletAddress?: string;
+  email?: string;
+  name: string;
+  contactType: 'wallet' | 'email'; // 添加联系人类型
+}
+
+// 转账表单数据
+export interface TransferFormData {
+  toAddress: string;
+  amount: number;
+  description?: string;
+} 
