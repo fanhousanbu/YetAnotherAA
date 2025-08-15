@@ -6,7 +6,7 @@ import type {
 } from '@simplewebauthn/types';
 
 // API 基础配置
-const API_BASE = 'http://localhost:3000'; // 指向后端服务器
+const API_BASE = ''; // 使用相对路径，通过 Next.js rewrites 代理到后端 // 指向后端服务器
 
 // API 错误类型
 export class ApiError extends Error {
