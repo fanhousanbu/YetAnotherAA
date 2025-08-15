@@ -50,7 +50,7 @@ export class SignatureService {
       const publicKeys = [];
       for (const pubKeyHex of publicKeyHexes) {
         const cleanHex = pubKeyHex.startsWith('0x') ? pubKeyHex.substring(2) : pubKeyHex;
-        const pubKey = bls.G1.fromHex(cleanHex);
+        const pubKey = bls.G1.ProjectivePoint.fromHex(cleanHex);
         publicKeys.push(pubKey);
       }
 
@@ -69,7 +69,7 @@ export class SignatureService {
       console.error('BLS verification error:', error);
       return {
         valid: false,
-        message: `Verification error: ${error.message}`
+        message: `Verification error: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   }
