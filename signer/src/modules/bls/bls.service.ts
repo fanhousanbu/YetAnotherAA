@@ -42,7 +42,7 @@ export class BlsService {
 
   encodeToEIP2537(point: any): string {
     // Match demo.js implementation exactly: encodeG2Point(bls.G2.Point.fromHex(aggregatedSignature.toBytes()))
-    const encoded = encodeG2Point(bls.G2.ProjectivePoint.fromHex(point.toBytes()));
+    const encoded = encodeG2Point(bls.G2.Point.fromHex(point.toBytes()));
     return "0x" + Buffer.from(encoded).toString('hex');
   }
 
