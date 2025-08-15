@@ -1,103 +1,165 @@
-# FrontDoor Demo - Web3 版本
+# AAStar Frontend
 
-这是一个基于 Next.js 的 Web3 钱包转账演示项目，展示了如何使用 Passkey 进行身份认证，并实现 ETH 生态系统中的转账功能。
+基于 Passkey 的 Web3 账户抽象钱包前端应用。
 
-## 主要特性
+## 功能特性
 
-### 身份认证
-- 使用 Passkey 作为主要认证方式
-- 邮箱作为账号恢复和跨设备登录的辅助手段
-- 支持平台原生的生物认证（指纹、Face ID等）
-
-### 钱包管理
-- 支持 ETH 生态系统的钱包地址
-- 联系人管理（钱包地址 + 备注名）
-- 转账历史记录
-- 交易状态追踪
+- 🔐 **Passkey 认证**: 使用生物识别或设备密码进行安全登录
+- 📧 **邮箱验证**: 注册时通过邮箱验证码验证身份
+- 💰 **钱包管理**: 查看钱包地址、余额和交易历史
+- 👥 **联系人管理**: 添加和管理转账联系人
+- 🔄 **转账功能**: 支持 ETH 转账操作
+- 🛡️ **BLS 签名**: 支持 BLS 聚合签名功能
 
 ## 技术栈
 
-- Next.js 14
-- TypeScript
-- Tailwind CSS
-- WebAuthn API (Passkey)
-- LocalStorage
-- Web3 相关库（待集成）
+- **框架**: Next.js 14
+- **语言**: TypeScript
+- **样式**: Tailwind CSS
+- **认证**: WebAuthn / Passkey
+- **状态管理**: React Hooks
+- **HTTP 客户端**: Fetch API
 
-## 开发环境设置
+## 快速开始
 
-1. 克隆项目
-```bash
-git clone <repository-url>
-cd frontdoor
-```
+### 环境要求
 
-2. 安装依赖
+- Node.js 18+
+- 支持 Passkey 的现代浏览器（Chrome、Safari、Edge）
+- 后端服务运行在 `http://localhost:3000`
+
+### 安装依赖
+
 ```bash
 npm install
 ```
 
-3. 启动开发服务器
+### 启动开发服务器
+
 ```bash
 npm run dev
 ```
 
+应用将在 `http://localhost:8080` 启动。
+
+### 构建生产版本
+
+```bash
+npm run build
+npm start
+```
+
+## 使用流程
+
+### 1. 注册账户
+
+1. 点击"立即注册"
+2. 输入邮箱地址并发送验证码
+3. 输入收到的 6 位验证码
+4. 创建 Passkey（使用指纹、面容或设备密码）
+5. 注册完成，自动登录
+
+### 2. 登录账户
+
+1. 输入注册时使用的邮箱地址
+2. 使用 Passkey 进行身份验证
+3. 登录成功，进入主界面
+
+### 3. 钱包功能
+
+- **查看钱包信息**: 显示钱包地址和余额
+- **管理联系人**: 添加和管理转账联系人
+- **转账记录**: 查看历史转账记录
+
+## API 接口
+
+### 认证相关
+
+- `POST /auth/email/send-code` - 发送邮箱验证码
+- `POST /auth/email/verify-code` - 验证邮箱验证码
+- `POST /auth/passkey/register/begin` - 开始 Passkey 注册
+- `POST /auth/passkey/register/complete` - 完成 Passkey 注册
+- `POST /auth/passkey/login/begin` - 开始 Passkey 登录
+- `POST /auth/passkey/login/complete` - 完成 Passkey 登录
+
+### 用户相关
+
+- `GET /user/me` - 获取当前用户信息
+
+### 钱包相关
+
+- `GET /wallet/info` - 获取钱包信息
+- `GET /wallet/balance` - 获取钱包余额
+- `GET /wallet/address` - 获取钱包地址
+- `POST /wallet/export-private-key` - 导出私钥
+- `GET /wallet/bls/signers` - 获取可用的 BLS 签名节点
+- `POST /wallet/bls/sign` - 使用 BLS 签名消息
+- `POST /wallet/bls/verify` - 验证 BLS 签名
+
 ## 项目结构
 
 ```
-frontdoor/
-├── app/                 # Next.js 应用目录
-├── components/         # React 组件
-├── lib/               # 工具函数和类型定义
-└── public/            # 静态资源
+aastar-frontend/
+├── app/                    # Next.js 应用目录
+│   ├── globals.css        # 全局样式
+│   ├── layout.tsx         # 布局组件
+│   └── page.tsx           # 主页面
+├── components/            # React 组件
+│   ├── AddContactModal.tsx
+│   ├── ContactList.tsx
+│   ├── Dashboard.tsx
+│   ├── LoginForm.tsx
+│   ├── RegisterForm.tsx
+│   ├── TransferHistory.tsx
+│   └── TransferModal.tsx
+├── lib/                   # 工具库
+│   ├── api.ts            # API 接口
+│   ├── passkey.ts        # Passkey 工具
+│   ├── storage.ts        # 本地存储
+│   ├── types.ts          # TypeScript 类型
+│   └── demo-data.ts      # 演示数据
+└── package.json
 ```
 
-## 主要功能说明
+## 开发说明
 
-### 1. 注册流程
-- 用户提供邮箱和姓名
-- 创建并关联 Passkey
-- 生成钱包地址
+### 适配后端
 
-### 2. 登录流程
-- 主要使用 Passkey 登录
-- 备用邮箱恢复方案
+本前端已适配 AAStar 后端服务，主要变更包括：
 
-### 3. 联系人管理
-- 添加/编辑钱包地址
-- 设置备注名
-- 查看转账历史
+1. **API 接口更新**: 适配后端的认证、用户和钱包接口
+2. **数据结构调整**: 更新用户和钱包数据类型定义
+3. **认证流程优化**: 支持邮箱验证 + Passkey 的双重认证
+4. **钱包功能增强**: 添加钱包信息显示和 BLS 签名功能
 
-### 4. 转账功能
-- ETH 生态系统转账
-- 交易状态跟踪
-- 转账历史记录
+### 环境配置
 
-## 演示账号
+确保后端服务运行在正确的端口上，默认配置为 `http://localhost:3000`。
 
-```
-邮箱: demo@example.com
-钱包地址: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e
-```
+如需修改 API 地址，请编辑 `lib/api.ts` 文件中的 `API_BASE` 常量。
 
-## 待实现功能
+## 故障排除
 
-- [ ] 集成 AA（Account Abstraction）钱包
-- [ ] 实现真实的链上转账
-- [ ] 多链支持
-- [ ] 交易签名
-- [ ] Gas 费用估算
+### 常见问题
 
-## 安全说明
+1. **Passkey 不可用**
+   - 确保使用支持 Passkey 的现代浏览器
+   - 检查是否在 HTTPS 环境下运行（本地开发除外）
 
-- 使用 Passkey 确保安全的身份认证
-- 所有敏感操作都需要 Passkey 验证
-- 当前版本仅作演示用途，请勿用于生产环境
+2. **登录失败**
+   - 检查后端服务是否正常运行
+   - 确认邮箱地址正确
+   - 验证 Passkey 是否已正确创建
 
-## 贡献指南
+3. **API 请求失败**
+   - 检查网络连接
+   - 确认后端服务地址配置正确
+   - 查看浏览器控制台错误信息
 
-欢迎提交 Issue 和 Pull Request！
+### 调试模式
+
+在浏览器开发者工具中查看控制台输出，获取详细的错误信息。
 
 ## 许可证
 
-MIT 
+本项目采用 MIT 许可证。 

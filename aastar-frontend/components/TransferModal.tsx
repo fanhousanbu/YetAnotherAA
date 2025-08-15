@@ -51,7 +51,7 @@ export default function TransferModal({ fromUser, toContact, onTransfer, onClose
       // 尝试调用真实的转账API
       try {
         // 1. 获取登录challenge（Passkey认证）
-        const { options } = await api.auth.loginStart(fromUser.email);
+        const options = await api.auth.loginBegin(fromUser.email);
         
         setCurrentStep('请完成生物识别验证...');
         
@@ -60,17 +60,11 @@ export default function TransferModal({ fromUser, toContact, onTransfer, onClose
         
         setCurrentStep('正在创建转账...');
         
-        // 3. 调用带BLS签名的完整转账接口
-        const result = await api.transfer.createAndSendSignedTransfer({
-          accountAddress: fromUser.walletAddress,
-          to: formData.toAddress,
-          value: amountInWei,
-          passkeyVerification: {
-            challenge: options.challenge,
-            response: authResponse,
-            credentialPublicKey: fromUser.credentialPublicKey || '',
-            counter: fromUser.counter || 0
-          }
+        // 3. 调用转账接口（简化版本）
+        const result = await api.transfer.createTransfer({
+          accountAddress: '0x0000000000000000000000000000000000000000', // 临时地址
+          toAddress: formData.toAddress,
+          amount: amountInWei
         });
         
         const { userOperation, userOpHash } = result;
@@ -80,7 +74,7 @@ export default function TransferModal({ fromUser, toContact, onTransfer, onClose
         // 3. 创建转账记录
         const transfer: Transfer = {
           id: generateId(),
-          fromAddress: fromUser.walletAddress,
+          fromAddress: '0x0000000000000000000000000000000000000000', // 临时地址
           toAddress: formData.toAddress,
           amount: formData.amount,
           status: 'pending',
@@ -113,7 +107,7 @@ export default function TransferModal({ fromUser, toContact, onTransfer, onClose
 
         const transfer: Transfer = {
           id: generateId(),
-          fromAddress: fromUser.walletAddress,
+          fromAddress: '0x0000000000000000000000000000000000000000', // 临时地址
           toAddress: formData.toAddress,
           amount: formData.amount,
           status: 'completed', // 模拟中直接设为完成

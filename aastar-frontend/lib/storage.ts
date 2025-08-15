@@ -55,10 +55,8 @@ export const userStorage = {
 
   // 通过钱包地址获取用户
   getUserByAddress(address: string): User | null {
-    const currentUser = this.getCurrentUser();
-    if (currentUser && currentUser.walletAddress.toLowerCase() === address.toLowerCase()) {
-      return currentUser;
-    }
+    // 由于用户对象现在没有 walletAddress，暂时返回 null
+    // 这个功能需要从钱包信息中获取
     return null;
   },
 

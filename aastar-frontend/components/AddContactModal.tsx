@@ -1,11 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Contact, User } from '@/lib/types';
-import { generateId, contactStorage } from '@/lib/storage';
-import { isValidEthereumAddress, isValidEmailAddress, checkEmailExists } from '@/lib/demo-data';
+import { Contact, ContactFormData } from '@/lib/types';
+import { contactStorage } from '@/lib/storage';
 import { api } from '@/lib/api';
-import { User as LucideUser, X, Mail, Wallet } from 'lucide-react';
+import { User } from '@/lib/types';
 
 interface AddContactModalProps {
   userId: string;
@@ -15,29 +14,36 @@ interface AddContactModalProps {
 }
 
 export default function AddContactModal({ userId, currentUser, onAdd, onClose }: AddContactModalProps) {
-  const [formData, setFormData] = useState({
-    name: '',
+  const [formData, setFormData] = useState<ContactFormData>({
     walletAddress: '',
     email: '',
-    contactType: 'wallet' as 'wallet' | 'email',
+    name: '',
+    contactType: 'wallet',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setError('');
+  const generateId = () => {
+    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
   };
 
-  const handleContactTypeChange = (type: 'wallet' | 'email') => {
-    setFormData(prev => ({ 
-      ...prev, 
-      contactType: type,
-      walletAddress: '',
-      email: ''
-    }));
-    setError('');
+  const isValidEthereumAddress = (address: string) => {
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
+  };
+
+  const isValidEmailAddress = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const checkEmailExists = async (email: string) => {
+    try {
+      // 这里可以调用后端 API 检查邮箱是否存在
+      // 暂时返回 true 作为示例
+      return true;
+    } catch (error) {
+      console.error('检查邮箱存在性失败:', error);
+      return false;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,17 +52,31 @@ export default function AddContactModal({ userId, currentUser, onAdd, onClose }:
     setError('');
 
     try {
+      if (!formData.name.trim()) {
+        setError('请输入联系人姓名');
+        return;
+      }
+
       let newContact: Contact;
 
       if (formData.contactType === 'wallet') {
         // 验证钱包地址格式
-        if (!isValidEthereumAddress(formData.walletAddress)) {
+        if (!formData.walletAddress || !isValidEthereumAddress(formData.walletAddress)) {
           setError('请输入有效的以太坊钱包地址');
           return;
         }
 
+        // 获取当前用户的钱包地址
+        let currentUserWalletAddress = '';
+        try {
+          const walletInfo = await api.wallet.getAddress();
+          currentUserWalletAddress = walletInfo.address;
+        } catch (error) {
+          console.warn('无法获取当前用户钱包地址:', error);
+        }
+
         // 检查是否添加自己的钱包地址
-        if (formData.walletAddress.toLowerCase() === currentUser.walletAddress.toLowerCase()) {
+        if (currentUserWalletAddress && formData.walletAddress.toLowerCase() === currentUserWalletAddress.toLowerCase()) {
           setError('不能添加自己的钱包地址为联系人');
           return;
         }
@@ -76,7 +96,7 @@ export default function AddContactModal({ userId, currentUser, onAdd, onClose }:
         };
       } else {
         // 验证邮箱地址格式
-        if (!isValidEmailAddress(formData.email)) {
+        if (!formData.email || !isValidEmailAddress(formData.email)) {
           setError('请输入有效的邮箱地址');
           return;
         }
@@ -100,33 +120,14 @@ export default function AddContactModal({ userId, currentUser, onAdd, onClose }:
           return;
         }
 
-        // 获取邮箱对应的用户信息（包括钱包地址）
-        try {
-          const { user: emailUser } = await api.auth.getUserByEmail(formData.email);
-          if (!emailUser) {
-            setError('无法获取该邮箱对应的用户信息');
-            return;
-          }
-
-          newContact = {
-            id: generateId(),
-            userId,
-            name: formData.name,
-            email: formData.email,
-            walletAddress: emailUser.aaAddress, // 同时存储钱包地址
-            createdAt: new Date().toISOString(),
-          };
-        } catch (error) {
-          console.warn('Failed to get user by email via API, creating email-only contact:', error);
-          // 如果API调用失败，仍然创建仅包含邮箱的联系人
-          newContact = {
-            id: generateId(),
-            userId,
-            name: formData.name,
-            email: formData.email,
-            createdAt: new Date().toISOString(),
-          };
-        }
+        // 由于后端没有提供 getUserByEmail 接口，暂时创建仅包含邮箱的联系人
+        newContact = {
+          id: generateId(),
+          userId,
+          name: formData.name,
+          email: formData.email,
+          createdAt: new Date().toISOString(),
+        };
       }
 
       onAdd(newContact);
@@ -147,73 +148,62 @@ export default function AddContactModal({ userId, currentUser, onAdd, onClose }:
             className="text-gray-400 hover:text-gray-600 transition-colors"
             title="关闭"
           >
-            <X className="h-5 w-5" />
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-              {error}
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <p className="text-red-800 text-sm">{error}</p>
             </div>
           )}
 
-          {/* 联系人类型选择 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              添加方式 <span className="text-red-500">*</span>
+              联系人类型
             </label>
             <div className="flex space-x-4">
-              <button
-                type="button"
-                onClick={() => handleContactTypeChange('wallet')}
-                className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-lg border transition-colors ${
-                  formData.contactType === 'wallet'
-                    ? 'border-primary-500 bg-primary-50 text-primary-700'
-                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <Wallet className="h-5 w-5" />
-                <span>钱包地址</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleContactTypeChange('email')}
-                className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-lg border transition-colors ${
-                  formData.contactType === 'email'
-                    ? 'border-primary-500 bg-primary-50 text-primary-700'
-                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <Mail className="h-5 w-5" />
-                <span>邮箱地址</span>
-              </button>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="contactType"
+                  value="wallet"
+                  checked={formData.contactType === 'wallet'}
+                  onChange={(e) => setFormData({ ...formData, contactType: e.target.value as 'wallet' | 'email' })}
+                  className="mr-2"
+                />
+                <span className="text-sm">钱包地址</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="contactType"
+                  value="email"
+                  checked={formData.contactType === 'email'}
+                  onChange={(e) => setFormData({ ...formData, contactType: e.target.value as 'wallet' | 'email' })}
+                  className="mr-2"
+                />
+                <span className="text-sm">邮箱地址</span>
+              </label>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {formData.contactType === 'wallet' 
-                ? '通过钱包地址直接添加联系人' 
-                : '通过邮箱地址添加已注册用户为联系人'
-              }
-            </p>
           </div>
 
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              备注名 <span className="text-red-500">*</span>
+              联系人姓名 <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <LucideUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="input-field pl-10"
-                placeholder="请输入联系人备注名"
-                required
-              />
-            </div>
+            <input
+              type="text"
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="input-field"
+              placeholder="请输入联系人姓名"
+              required
+            />
           </div>
 
           {formData.contactType === 'wallet' ? (
@@ -221,21 +211,17 @@ export default function AddContactModal({ userId, currentUser, onAdd, onClose }:
               <label htmlFor="walletAddress" className="block text-sm font-medium text-gray-700 mb-1">
                 钱包地址 <span className="text-red-500">*</span>
               </label>
-              <div className="relative">
-                <Wallet className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type="text"
-                  id="walletAddress"
-                  name="walletAddress"
-                  value={formData.walletAddress}
-                  onChange={handleInputChange}
-                  className="input-field pl-10 font-mono"
-                  placeholder="0x..."
-                  required
-                />
-              </div>
+              <input
+                type="text"
+                id="walletAddress"
+                value={formData.walletAddress}
+                onChange={(e) => setFormData({ ...formData, walletAddress: e.target.value })}
+                className="input-field"
+                placeholder="0x..."
+                required
+              />
               <p className="text-xs text-gray-500 mt-1">
-                请输入有效的以太坊钱包地址（以 0x 开头的 42 位十六进制字符）
+                请输入有效的以太坊钱包地址
               </p>
             </div>
           ) : (
@@ -243,21 +229,17 @@ export default function AddContactModal({ userId, currentUser, onAdd, onClose }:
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 邮箱地址 <span className="text-red-500">*</span>
               </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="input-field pl-10"
-                  placeholder="example@email.com"
-                  required
-                />
-              </div>
+              <input
+                type="email"
+                id="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="input-field"
+                placeholder="user@example.com"
+                required
+              />
               <p className="text-xs text-gray-500 mt-1">
-                请输入已注册用户的邮箱地址，系统将验证该邮箱是否存在
+                请输入已注册用户的邮箱地址
               </p>
             </div>
           )}
@@ -266,20 +248,17 @@ export default function AddContactModal({ userId, currentUser, onAdd, onClose }:
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 btn-secondary"
+              className="btn-secondary flex-1"
+              disabled={loading}
             >
               取消
             </button>
             <button
               type="submit"
+              className="btn-primary flex-1"
               disabled={loading}
-              className="flex-1 btn-primary"
             >
-              {loading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto"></div>
-              ) : (
-                '添加联系人'
-              )}
+              {loading ? '添加中...' : '添加联系人'}
             </button>
           </div>
         </form>

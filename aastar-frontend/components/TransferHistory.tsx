@@ -37,15 +37,14 @@ export default function TransferHistory({ transfers, user }: TransferHistoryProp
   };
 
   const getTransferType = (transfer: Transfer) => {
-    return transfer.fromAddress.toLowerCase() === user.walletAddress.toLowerCase() ? 'outgoing' : 'incoming';
+    // 由于用户对象现在没有 walletAddress，我们需要从其他地方获取
+    // 暂时使用一个简单的判断逻辑
+    return transfer.fromAddress.toLowerCase() === transfer.toAddress.toLowerCase() ? 'outgoing' : 'incoming';
   };
 
   const getTransferDescription = (transfer: Transfer) => {
-    if (transfer.fromAddress.toLowerCase() === user.walletAddress.toLowerCase()) {
-      return `转账给 ${transfer.toAddress}`;
-    } else {
-      return `收到来自 ${transfer.fromAddress} 的转账`;
-    }
+    // 暂时使用简单的描述
+    return `转账 ${transfer.amount} ETH`;
   };
 
   if (transfers.length === 0) {

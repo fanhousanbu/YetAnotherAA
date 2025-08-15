@@ -7,9 +7,7 @@ export function initializeDemoData(): void {
   const demoUser: User = {
     id: 'demo1',
     email: 'demo@example.com',
-    name: 'Demo User',
-    walletAddress: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-    hasPasskey: false,
+    credentialCount: 1,
     createdAt: new Date().toISOString()
   };
 
@@ -70,7 +68,7 @@ export function initializeDemoData(): void {
   // 创建演示转账记录
   const transfer1: Transfer = {
     id: generateId(),
-    fromAddress: demoUser.walletAddress,
+    fromAddress: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
     toAddress: contact1.walletAddress!,
     amount: 1.5,
     status: 'completed',
@@ -81,7 +79,7 @@ export function initializeDemoData(): void {
 
   const transfer2: Transfer = {
     id: generateId(),
-    fromAddress: demoUser.walletAddress,
+    fromAddress: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
     toAddress: contact2.walletAddress!,
     amount: 0.5,
     status: 'completed',
@@ -93,7 +91,7 @@ export function initializeDemoData(): void {
   const transfer3: Transfer = {
     id: generateId(),
     fromAddress: contact3.walletAddress!,
-    toAddress: demoUser.walletAddress,
+    toAddress: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
     amount: 0.8,
     status: 'completed',
     description: '收到来自 Charlie 的转账',
@@ -112,9 +110,7 @@ export function getDemoUsers(): User[] {
   return [{
     id: 'demo1',
     email: 'demo@example.com',
-    name: 'Demo User',
-    walletAddress: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-    hasPasskey: false,
+    credentialCount: 1,
     createdAt: new Date().toISOString()
   }];
 }
@@ -133,12 +129,6 @@ export function isValidEmailAddress(email: string): boolean {
 // 检查邮箱是否已注册
 export async function checkEmailExists(email: string): Promise<boolean> {
   try {
-    // 尝试调用后端API
-    const { exists } = await api.auth.checkEmailExists(email);
-    return exists;
-  } catch (error) {
-    console.warn('Failed to check email via API, falling back to mock data:', error);
-    
     // 模拟网络延迟
     await new Promise(resolve => setTimeout(resolve, 500));
     
@@ -152,6 +142,9 @@ export async function checkEmailExists(email: string): Promise<boolean> {
     ];
     
     return registeredEmails.includes(email.toLowerCase());
+  } catch (error) {
+    console.warn('Failed to check email:', error);
+    return false;
   }
 }
 
