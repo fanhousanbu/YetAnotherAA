@@ -105,10 +105,67 @@ src/
 2. **生产环境**: 需要配置真实的 SMTP 服务和安全的 JWT 密钥
 3. **Passkey 支持**: 需要 HTTPS 环境（本地开发可使用 localhost）
 
+## Gossip 网络集成
+
+### 新功能
+
+- 🌐 **Gossip 协议**: 替换了原有的 P2P 发现机制，使用更健壮的 gossip 协议
+- 🔍 **节点发现**: 自动发现和连接到 BLS 签名节点
+- 📊 **网络监控**: 提供详细的网络统计和健康状态监控
+- 🎯 **智能选择**: 基于节点健康状态和负载的智能签名者选择
+
+### Gossip API 接口
+
+- `GET /gossip/nodes` - 获取所有已发现的 BLS 节点
+- `GET /gossip/nodes/active` - 获取活跃的 BLS 节点
+- `GET /gossip/stats` - 获取 gossip 网络统计信息
+- `GET /gossip/health` - 获取 gossip 网络健康状态
+- `GET /gossip/signers/:count` - 选择最优的签名节点
+
+### 环境配置
+
+新增 gossip 协议相关配置：
+
+```bash
+# Gossip Protocol Configuration
+GOSSIP_BOOTSTRAP_NODES=ws://localhost:8001,ws://localhost:8002,ws://localhost:8003
+GOSSIP_INTERVAL=30000                    # Gossip round interval (ms)
+GOSSIP_HEARTBEAT_INTERVAL=15000          # Heartbeat frequency (ms)
+GOSSIP_RECONNECT_INTERVAL=60000          # Reconnection attempt interval (ms)
+GOSSIP_SUSPICION_TIMEOUT=45000           # Time before marking peer as suspected (ms)
+GOSSIP_CLEANUP_TIMEOUT=120000            # Time before removing inactive peers (ms)
+GOSSIP_MAX_MESSAGE_HISTORY=1000          # Maximum messages to keep in history
+GOSSIP_MAX_TTL=5                         # Maximum message propagation hops
+```
+
+### 与 Signer 节点集成
+
+1. **启动 Signer 节点**:
+   ```bash
+   cd ../signer
+   npm start
+   ```
+
+2. **启动 AA Backend**:
+   ```bash
+   npm run start:dev
+   ```
+
+3. **测试集成**:
+   ```bash
+   node test-gossip-integration.js
+   ```
+
+### 监控和调试
+
+- 访问 `http://localhost:3000/gossip/health` 查看网络健康状态
+- 访问 `http://localhost:3000/gossip/stats` 查看网络统计信息
+- 访问 `http://localhost:3000/api` 查看完整的 API 文档
+
 ## 后续计划
 
+- [x] BLS 签名聚合集成 (Gossip 协议支持)
 - [ ] MongoDB 数据库集成
 - [ ] ERC-4337 UserOperation 支持
-- [ ] BLS 签名聚合集成
 - [ ] 邮件转账功能
 - [ ] 安全性增强
