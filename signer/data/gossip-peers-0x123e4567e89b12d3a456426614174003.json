@@ -5,14 +5,14 @@
     "apiEndpoint": "http://localhost:3001",
     "gossipEndpoint": "ws://localhost:8001",
     "status": "active",
-    "lastSeen": "2025-08-14T15:27:29.570Z",
+    "lastSeen": "2025-08-21T12:08:14.476Z",
     "region": "local",
     "capabilities": [
       "bls-signing",
       "message-aggregation"
     ],
     "version": "1.0.0",
-    "heartbeatCount": 1
+    "heartbeatCount": 0
   },
   {
     "nodeId": "0x123e4567e89b12d3a456426614174002",
@@ -20,7 +20,7 @@
     "apiEndpoint": "http://localhost:3002",
     "gossipEndpoint": "ws://localhost:8002",
     "status": "active",
-    "lastSeen": "2025-08-14T15:27:29.768Z",
+    "lastSeen": "2025-08-21T12:08:14.473Z",
     "region": "local",
     "capabilities": [
       "bls-signing",
