@@ -6,16 +6,9 @@ import { firstValueFrom } from 'rxjs';
 export interface BlsNode {
   nodeId: string;
   publicKey: string;
-  address?: string;
-  port?: number;
-  apiEndpoint?: string;
-  gossipEndpoint?: string;
+  address: string;
+  port: number;
   status: 'active' | 'inactive';
-  lastSeen?: string;
-  region?: string;
-  capabilities?: string[];
-  version?: string;
-  heartbeatCount?: number;
 }
 
 export interface SignatureRequest {
@@ -130,8 +123,7 @@ export class BlsService {
 
       // 并行请求所有节点的签名
       const signaturePromises = targetNodes.map(async (node) => {
-        // 使用apiEndpoint或构造URL
-        const nodeUrl = node.apiEndpoint || `http://localhost:${node.port || node.nodeId.slice(-4)}`;
+        const nodeUrl = `http://${node.address}:${node.port}`;
         try {
           return await this.getSignatureFromNode(nodeUrl, message);
         } catch (error) {
@@ -173,19 +165,17 @@ export class BlsService {
       
       const response = await firstValueFrom(
         this.httpService.post(`${this.seedNodeUrl}/signature/aggregate`, {
-          signatures: signatures.map(sig => sig.signature),
+          message,
+          signatures: signatures.map(sig => ({
+            nodeId: sig.nodeId,
+            signature: sig.signature,
+            publicKey: sig.publicKey,
+          })),
         })
       );
 
       this.logger.log('签名聚合完成');
-      
-      // 转换返回格式
-      return {
-        aggregatedSignature: response.data.signature,
-        aggregatedPublicKey: signatures.map(s => s.publicKey).join(','), // 临时处理
-        participatingNodes: signatures.map(s => s.nodeId),
-        message: message
-      };
+      return response.data;
     } catch (error) {
       this.logger.error(`签名聚合失败: ${error.message}`);
       throw new HttpException(

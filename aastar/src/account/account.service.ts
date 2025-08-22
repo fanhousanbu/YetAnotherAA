@@ -24,7 +24,7 @@ export class AccountService {
     try {
       const wallet = new ethers.Wallet(privateKey);
       const factoryAddress = useAAStarValidator 
-        ? this.configService.get('SIMPLIFIED_FACTORY_ADDRESS')  // 使用简化版工厂
+        ? this.configService.get('AASTAR_ACCOUNT_FACTORY_ADDRESS')
         : this.configService.get('ENHANCED_FACTORY_ADDRESS');
       
       const validatorAddress = useAAStarValidator 
@@ -97,7 +97,7 @@ export class AccountService {
     salt: string
   ): Promise<string> {
     const factoryAddress = useAAStarValidator 
-      ? this.configService.get('SIMPLIFIED_FACTORY_ADDRESS')  // 使用简化版工厂
+      ? this.configService.get('AASTAR_ACCOUNT_FACTORY_ADDRESS')
       : this.configService.get('ENHANCED_FACTORY_ADDRESS');
 
     if (!factoryAddress) {

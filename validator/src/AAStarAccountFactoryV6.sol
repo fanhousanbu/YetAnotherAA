@@ -97,8 +97,7 @@ contract AAStarAccountFactoryV6 {
                         owner, aaStarValidator, useAAStarValidator
                     )
                 )
-            )),
-            address(this)
+            ))
         );
     }
 

@@ -144,7 +144,7 @@ export class TransferService {
       initCode,
       callData,
       callGasLimit: '0x55555',
-      verificationGasLimit: useAAStarValidator ? '0x100000' : '0x55555', // AAStarValidator需要更多gas
+      verificationGasLimit: '0x55555',
       preVerificationGas: '0x55555',
       maxFeePerGas: '0x' + (feeData.maxFeePerGas?.toString(16) || '0'),
       maxPriorityFeePerGas: '0x' + (feeData.maxPriorityFeePerGas?.toString(16) || '0'),
@@ -173,7 +173,7 @@ export class TransferService {
     salt: string
   ): Promise<string> {
     const factoryAddress = useAAStarValidator
-      ? this.configService.get('SIMPLIFIED_FACTORY_ADDRESS')  // 使用简化版工厂
+      ? this.configService.get('AASTAR_ACCOUNT_FACTORY_ADDRESS')
       : this.configService.get('ENHANCED_FACTORY_ADDRESS');
 
     if (!factoryAddress) {
@@ -222,7 +222,7 @@ export class TransferService {
     salt: string
   ): Promise<string> {
     const factoryAddress = useAAStarValidator
-      ? this.configService.get('SIMPLIFIED_FACTORY_ADDRESS')  // 使用简化版工厂
+      ? this.configService.get('AASTAR_ACCOUNT_FACTORY_ADDRESS')
       : this.configService.get('ENHANCED_FACTORY_ADDRESS');
 
     const factoryAbi = [
@@ -313,12 +313,9 @@ export class TransferService {
           throw new Error('BLS签名服务不可用，请检查signer服务是否启动');
         }
 
-        // 2. 简化版签名逻辑：BLS和ECDSA都对userOpHash签名
-        this.logger.log('使用简化版签名策略：BLS和ECDSA都对userOpHash签名');
-        
-        // BLS签名：直接对userOpHash签名
+        // 2. 调用BLS签名服务进行签名聚合
         const blsResult = await this.blsService.signMessage(
-          userOpHash,  // BLS对userOpHash签名
+          userOpHash,
           nodeIds
         );
         
@@ -326,53 +323,27 @@ export class TransferService {
 
         // 3. 构造AAStarValidator签名格式: [nodeIdsLength][nodeIds...][blsSignature][aaSignature]
         const participatingNodeIds = blsResult.participatingNodes;
-        
-        // 确保nodeIdsLength编码为32字节
         const nodeIdsLength = ethers.AbiCoder.defaultAbiCoder().encode(
           ['uint256'], 
           [participatingNodeIds.length]
         );
         
-        // 确保每个nodeId都是32字节的bytes32格式
         const nodeIdsData = participatingNodeIds.length > 0 ? 
           ethers.concat(
-            participatingNodeIds.map(id => {
-              // 确保nodeId是完整的32字节
-              if (id.startsWith('0x')) {
-                return id.length === 66 ? id : '0x' + id.slice(2).padStart(64, '0');
-              } else {
-                return '0x' + id.padStart(64, '0');
-              }
-            })
+            participatingNodeIds.map(id => 
+              id.length === 66 ? id : '0x' + id.padStart(64, '0')
+            )
           ) : 
           '0x';
         
-        // 使用聚合签名结果 - 确保是256字节
+        // 使用聚合签名结果
         const blsSignature = blsResult.aggregatedSignature;
-        this.logger.log(`BLS签名长度: ${ethers.getBytes(blsSignature).length} 字节`);
         
-        // AA签名 - 简化版：也对userOpHash进行ECDSA签名
+        // AA签名 (ECDSA签名userOpHash)
         const aaSignature = await wallet.signMessage(ethers.getBytes(userOpHash));
         
-        // 验证签名长度
-        const aaSignatureBytes = ethers.getBytes(aaSignature);
-        this.logger.log(`ECDSA签名长度: ${aaSignatureBytes.length} 字节`);
-        
-        if (aaSignatureBytes.length !== 65) {
-          throw new Error(`ECDSA签名长度错误，期望65字节，实际${aaSignatureBytes.length}字节`);
-        }
-        
-        // 构造最终签名
-        const finalSignature = ethers.concat([nodeIdsLength, nodeIdsData, blsSignature, aaSignature]);
-        
-        this.logger.log('AAStarValidator签名格式构造完成:');
-        this.logger.log(`  - nodeIdsLength: ${ethers.getBytes(nodeIdsLength).length} 字节`);
-        this.logger.log(`  - nodeIdsData: ${ethers.getBytes(nodeIdsData).length} 字节`);
-        this.logger.log(`  - blsSignature: ${ethers.getBytes(blsSignature).length} 字节`);
-        this.logger.log(`  - aaSignature: ${ethers.getBytes(aaSignature).length} 字节`);
-        this.logger.log(`  - 总长度: ${ethers.getBytes(finalSignature).length} 字节`);
-        
-        return finalSignature;
+        this.logger.log('AAStarValidator签名格式构造完成');
+        return ethers.concat([nodeIdsLength, nodeIdsData, blsSignature, aaSignature]);
         
       } catch (error) {
         this.logger.error(`AAStarValidator签名失败: ${error.message}`);
@@ -383,28 +354,5 @@ export class TransferService {
       // 标准ECDSA签名
       return await wallet.signMessage(ethers.getBytes(userOpHash));
     }
-  }
-
-  /**
-   * 生成G2 messagePoint (与合约_hashToCurveG2保持一致)
-   * 这是简化实现，与AAStarAccountV6.sol中的实现相同
-   */
-  private hashToCurveG2(hash: string): string {
-    // 创建256字节的messagePoint
-    const messagePoint = new Uint8Array(256);
-    
-    // 基于hash生成确定性seed
-    const seed = ethers.keccak256(ethers.concat([hash, ethers.toUtf8Bytes("BLS_G2_POINT")]));
-    
-    // 使用确定性数据填充G2点结构
-    for (let i = 0; i < 8; i++) {
-      const chunk = ethers.keccak256(ethers.concat([seed, ethers.toBeHex(i, 32)]));
-      const chunkBytes = ethers.getBytes(chunk);
-      for (let j = 0; j < 32; j++) {
-        messagePoint[i * 32 + j] = chunkBytes[j];
-      }
-    }
-    
-    return ethers.hexlify(messagePoint);
   }
 }
