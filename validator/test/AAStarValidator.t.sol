@@ -58,9 +58,6 @@ contract AAStarValidatorTest is Test {
     bytes32 constant NODE_ID_2 = keccak256("node_2");
     bytes32 constant NODE_ID_3 = keccak256("node_3");
     
-    // Test AA address and signature
-    address constant AA_ADDRESS = address(0x1234567890123456789012345678901234567890);
-    bytes constant AA_SIGNATURE = hex"1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12";
     
     function setUp() public {
         validator = new AAStarValidator();
@@ -401,9 +398,7 @@ contract AAStarValidatorTest is Test {
         try validator.verifyAggregateSignature(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH,
-            signer,
-            validSignature
+            MESSAGE_HASH
         ) returns (bool) {
             assertTrue(true, "Function executed and emitted event");
         } catch Error(string memory reason) {
@@ -424,9 +419,7 @@ contract AAStarValidatorTest is Test {
         try validator.validateAggregateSignature(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH,
-            AA_ADDRESS,
-            AA_SIGNATURE
+            MESSAGE_HASH
         ) returns (bool) {
             assertTrue(true, "Function executed without revert");
         } catch Error(string memory reason) {
@@ -442,9 +435,7 @@ contract AAStarValidatorTest is Test {
         validator.verifyAggregateSignature(
             emptyNodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH,
-            AA_ADDRESS,
-            AA_SIGNATURE
+            MESSAGE_HASH
         );
     }
     
@@ -468,9 +459,7 @@ contract AAStarValidatorTest is Test {
         validator.verifyAggregateSignature(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH,
-            signer,
-            validSignature
+            MESSAGE_HASH
         );
     }
     
@@ -486,9 +475,7 @@ contract AAStarValidatorTest is Test {
         validator.verifyAggregateSignature(
             nodeIds,
             invalidSignature,
-            MESSAGE_HASH,
-            AA_ADDRESS,
-            AA_SIGNATURE
+            MESSAGE_HASH
         );
     }
     
@@ -504,9 +491,7 @@ contract AAStarValidatorTest is Test {
         validator.verifyAggregateSignature(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            invalidMessage,
-            AA_ADDRESS,
-            AA_SIGNATURE
+            invalidMessage
         );
     }
     
@@ -536,9 +521,7 @@ contract AAStarValidatorTest is Test {
         try validator.validateAggregateSignature(
             participantNodes,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH,
-            AA_ADDRESS,
-            AA_SIGNATURE
+            MESSAGE_HASH
         ) returns (bool) {
             assertTrue(true, "Node-based validation executed successfully");
         } catch Error(string memory reason) {
@@ -572,9 +555,7 @@ contract AAStarValidatorTest is Test {
         validator.verifyAggregateSignature(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH,
-            address(0),
-            AA_SIGNATURE
+            MESSAGE_HASH
         );
     }
     
@@ -590,9 +571,7 @@ contract AAStarValidatorTest is Test {
         validator.verifyAggregateSignature(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH,
-            AA_ADDRESS,
-            emptySignature
+            MESSAGE_HASH
         );
     }
     
@@ -608,9 +587,7 @@ contract AAStarValidatorTest is Test {
         validator.verifyAggregateSignature(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH,
-            AA_ADDRESS,
-            invalidLengthSignature
+            MESSAGE_HASH
         );
     }
     
@@ -624,9 +601,7 @@ contract AAStarValidatorTest is Test {
         validator.validateAggregateSignature(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH,
-            address(0),
-            AA_SIGNATURE
+            MESSAGE_HASH
         );
     }
     
@@ -642,9 +617,7 @@ contract AAStarValidatorTest is Test {
         validator.validateAggregateSignature(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH,
-            AA_ADDRESS,
-            emptySignature
+            MESSAGE_HASH
         );
     }
     
@@ -660,9 +633,7 @@ contract AAStarValidatorTest is Test {
         validator.validateAggregateSignature(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH,
-            AA_ADDRESS,
-            invalidLengthSignature
+            MESSAGE_HASH
         );
     }
     
@@ -689,9 +660,7 @@ contract AAStarValidatorTest is Test {
         try validator.validateAggregateSignature(
             nodeIds,
             AGGREGATE_SIGNATURE,
-            MESSAGE_HASH,
-            signer,
-            validSignature
+            MESSAGE_HASH
         ) returns (bool /* result */) {
             // The result depends on whether BLS validation passes
             // In test environment, BLS precompiles may not be available

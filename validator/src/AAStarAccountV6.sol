@@ -211,9 +211,7 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         return aaStarValidator.validateAggregateSignature(
             nodeIds,
             blsSignature,
-            messagePoint,
-            owner,
-            aaSignature
+            messagePoint
         );
     }
 

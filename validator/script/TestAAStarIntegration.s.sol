@@ -43,14 +43,14 @@ contract TestAAStarIntegration is Script {
         
         // Step 3: Test the hashToCurve function
         console.log("\n3. Testing hashToCurve function...");
-        bytes memory messagePoint = testHashToCurve(address(account), TEST_USER_OP_HASH);
+        bytes memory messagePoint = testHashToCurve(TEST_USER_OP_HASH);
         console.log("Generated messagePoint length:", messagePoint.length);
         console.log("MessagePoint (first 32 bytes):");
         logBytes32(bytes32(bytes32(messagePoint)));
         
         // Step 4: Test signature parsing
         console.log("\n4. Testing signature parsing...");
-        testSignatureParsing(address(account));
+        testSignatureParsing();
         
         // Step 5: Verify configuration
         console.log("\n5. Verifying account configuration...");
@@ -64,7 +64,7 @@ contract TestAAStarIntegration is Script {
         console.log("\n=== Integration Test Complete ===");
     }
     
-    function testHashToCurve(address accountAddress, bytes32 userOpHash) internal returns (bytes memory) {
+    function testHashToCurve(bytes32 userOpHash) internal pure returns (bytes memory) {
         // We need to call the internal _hashToCurveG2 function
         // Since it's internal, we'll create a test wrapper function
         console.log("Testing hashToCurve for userOpHash:", vm.toString(userOpHash));
@@ -74,7 +74,7 @@ contract TestAAStarIntegration is Script {
         return hex""; // Placeholder
     }
     
-    function testSignatureParsing(address accountAddress) internal {
+    function testSignatureParsing() pure internal {
         console.log("Testing signature parsing...");
         
         // Create a sample signature with the new format
@@ -105,7 +105,7 @@ contract TestAAStarIntegration is Script {
 contract AAStarAccountV6TestWrapper is AAStarAccountV6 {
     constructor(IEntryPoint anEntryPoint) AAStarAccountV6(anEntryPoint) {}
     
-    function testHashToCurveG2(bytes32 hash) external view returns (bytes memory) {
+    function testHashToCurveG2(bytes32 hash) external pure returns (bytes memory) {
         return _hashToCurveG2(hash);
     }
     
