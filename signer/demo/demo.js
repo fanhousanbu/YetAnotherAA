@@ -38,8 +38,45 @@ function hexToBytes(hex) {
     return bytes;
 }
 
+// Generate simulated ERC-4337 userOpHash
+function generateMockUserOpHash() {
+    // Simulate a typical ERC-4337 UserOperation structure
+    const mockUserOp = {
+        sender: "0x1234567890123456789012345678901234567890",
+        nonce: "0x1",
+        initCode: "0x",
+        callData: "0xabcdef1234567890",
+        callGasLimit: "0x5208",
+        verificationGasLimit: "0x5208",
+        preVerificationGas: "0x5208",
+        maxFeePerGas: "0x3b9aca00",
+        maxPriorityFeePerGas: "0x3b9aca00",
+        paymasterAndData: "0x",
+        signature: "0x"
+    };
+    
+    // Create userOpHash using ethers.js keccak256
+    const packedUserOp = ethers.solidityPacked(
+        ["address", "uint256", "bytes", "bytes", "uint256", "uint256", "uint256", "uint256", "uint256", "bytes"],
+        [
+            mockUserOp.sender,
+            mockUserOp.nonce,
+            mockUserOp.initCode,
+            mockUserOp.callData,
+            mockUserOp.callGasLimit,
+            mockUserOp.verificationGasLimit,
+            mockUserOp.preVerificationGas,
+            mockUserOp.maxFeePerGas,
+            mockUserOp.maxPriorityFeePerGas,
+            mockUserOp.paymasterAndData
+        ]
+    );
+    
+    return ethers.keccak256(packedUserOp);
+}
+
 // Main function: Generate on-chain verification parameters
-export async function generateContractCallParams(message, nodeIndices = [1, 2, 3]) {
+export async function generateContractCallParams(userOpHash = null, nodeIndices = [1, 2, 3]) {
     // Read registered node configuration
     const contractConfig = JSON.parse(readFileSync(join(__dirname, 'config.json'), 'utf8'));
     
@@ -54,8 +91,14 @@ export async function generateContractCallParams(message, nodeIndices = [1, 2, 3
     // Get selected nodes
     const selectedNodes = indices.map(i => contractConfig.keyPairs[i]);
     
+    // Generate userOpHash if not provided
+    if (!userOpHash) {
+        userOpHash = generateMockUserOpHash();
+    }
+    
     // BLS signature parameters
-    const messageBytes = new TextEncoder().encode(message);
+    const messageBytes = ethers.getBytes(userOpHash);
+    // const messageBytes = new TextEncoder().encode(userOpHash);
     const DST = 'BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_';
     const bls = bls12_381;
     const sigs = bls.longSignatures;
@@ -72,6 +115,8 @@ export async function generateContractCallParams(message, nodeIndices = [1, 2, 3
         const privateKeyBytes = hexToBytes(node.privateKey.substring(2));
         const publicKey = sigs.getPublicKey(privateKeyBytes);
         const signature = await sigs.sign(messagePoint, privateKeyBytes);
+        
+        console.log(`🔑 节点 ${node.nodeName} (ID: ${node.contractNodeId}) 生成的签名:`, signature.toHex());
         
         signatures.push(signature);
         publicKeys.push(publicKey);
@@ -105,6 +150,7 @@ export async function generateContractCallParams(message, nodeIndices = [1, 2, 3
         aaAddress: aaAccount.address,
         aaSignature: aaSignature,
         contractAddress: contractConfig.contractAddress,
+        userOpHash: userOpHash,
         participantNodes: selectedNodes.map(node => ({
             nodeId: node.contractNodeId,
             nodeName: node.nodeName
@@ -115,21 +161,28 @@ export async function generateContractCallParams(message, nodeIndices = [1, 2, 3
 // CLI interface
 async function main() {
     const args = process.argv.slice(2);
-    if (args.length === 0) {
-        console.log('Usage: node index.js "message content" [node indices]');
-        console.log('Example: node index.js "Hello World" 1,2,3');
-        return;
+    
+    let userOpHash = null;
+    let nodeIndicesStr = '1,2,3';
+    
+    if (args.length > 0) {
+        if (args[0].startsWith('0x')) {
+            // First argument is a userOpHash
+            userOpHash = args[0];
+            nodeIndicesStr = args[1] || '1,2,3';
+        } else {
+            // First argument is node indices
+            nodeIndicesStr = args[0];
+        }
     }
-
-    const message = args[0];
-    const nodeIndicesStr = args[1] || '1,2,3';
+    
     const nodeIndices = nodeIndicesStr.split(',').map(n => parseInt(n.trim()));
     
     try {
-        const params = await generateContractCallParams(message, nodeIndices);
+        const params = await generateContractCallParams(userOpHash, nodeIndices);
         
         console.log('🔐 On-chain verification parameters generated successfully\n');
-        console.log(`📝 Message: "${message}"`);
+        console.log(`🧾 UserOpHash: "${params.userOpHash}"`);
         console.log(`👥 Nodes: ${nodeIndices.join(', ')}\n`);
         
         console.log('💻 Contract call parameters:');

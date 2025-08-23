@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ethers } from 'ethers';
 import { bls, sigs, BLS_DST, encodeG2Point } from '../../utils/bls.util.js';
 import { SignatureResult } from '../../interfaces/signature.interface.js';
 import { NodeKeyPair } from '../../interfaces/node.interface.js';
@@ -6,7 +7,7 @@ import { NodeKeyPair } from '../../interfaces/node.interface.js';
 @Injectable()
 export class BlsService {
   async signMessage(message: string, node: NodeKeyPair): Promise<SignatureResult> {
-    const messageBytes = new TextEncoder().encode(message);
+    const messageBytes = ethers.getBytes(message);
     const messagePoint = await bls.G2.hashToCurve(messageBytes, { DST: BLS_DST });
     
     const privateKeyBytes = this.hexToBytes(node.privateKey.substring(2));
@@ -36,7 +37,7 @@ export class BlsService {
   }
 
   async hashMessageToCurve(message: string): Promise<any> {
-    const messageBytes = new TextEncoder().encode(message);
+    const messageBytes = ethers.getBytes(message);
     return await bls.G2.hashToCurve(messageBytes, { DST: BLS_DST });
   }
 

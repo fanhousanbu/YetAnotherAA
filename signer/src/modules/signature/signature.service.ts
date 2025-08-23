@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { ethers } from 'ethers';
 import { BlsService } from '../bls/bls.service.js';
 import { NodeService } from '../node/node.service.js';
 import { SignatureResult, AggregateSignatureResult } from '../../interfaces/signature.interface.js';
@@ -58,7 +59,7 @@ export class SignatureService {
       const aggregatedPubKey = publicKeys.reduce((acc, pubKey) => acc.add(pubKey));
 
       // Verify the aggregated signature
-      const messageBytes = new TextEncoder().encode(message);
+      const messageBytes = ethers.getBytes(message);
       const valid = await bls.verify(signature, messageBytes, aggregatedPubKey);
 
       return {
