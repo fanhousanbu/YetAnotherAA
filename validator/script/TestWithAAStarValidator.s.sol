@@ -10,7 +10,7 @@ import "../src/AAStarValidator.sol";
  * @dev Test integration with deployed AAStarValidator on Sepolia
  */
 contract TestWithAAStarValidator is Script {
-    address constant VALIDATOR_CONTRACT_ADDRESS = 0x0bC9DD7BCa3115198a59D367423E1535104A5882;
+    address constant VALIDATOR_CONTRACT_ADDRESS = 0x1E0c95946801ef4Fc294eA1F8214faB2357bFF9C;
     address constant TEST_WRAPPER_ADDRESS = 0x3Ef479D1def610f53E64217C3B46c00A9475D8aa;
     
     function run() external view {

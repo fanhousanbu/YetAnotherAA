@@ -30,7 +30,7 @@ NODE_STATE_FILE=./node_dev_001.json
 PORT=3001
 
 # Blockchain Configuration
-VALIDATOR_CONTRACT_ADDRESS=0x0bC9DD7BCa3115198a59D367423E1535104A5882
+VALIDATOR_CONTRACT_ADDRESS=0x1E0c95946801ef4Fc294eA1F8214faB2357bFF9C
 ETH_RPC_URL=https://sepolia.infura.io/v3/7051eb377c77490881070faaf93aef20
 ETH_PRIVATE_KEY=0x72966a3f12beed253d475a19f4c8c73e5f7c14f2280bcda4499f72602b4d6c1a
 ```
@@ -120,7 +120,7 @@ The `/node/register` endpoint performs real blockchain transactions:
   "message": "Node registered successfully on-chain",
   "nodeId": "0x123e4567e89b12d3a456426614174001",
   "txHash": "0x1234...abcd",
-  "contractAddress": "0x0bC9DD7BCa3115198a59D367423E1535104A5882"
+  "contractAddress": "0x1E0c95946801ef4Fc294eA1F8214faB2357bFF9C"
 }
 ```
 

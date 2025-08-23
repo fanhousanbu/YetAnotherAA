@@ -13,7 +13,7 @@ import "../src/AAStarValidator.sol";
  */
 contract TestAAStarIntegration is Script {
     // From .env file
-    address constant VALIDATOR_CONTRACT_ADDRESS = 0x0bC9DD7BCa3115198a59D367423E1535104A5882;
+    address constant VALIDATOR_CONTRACT_ADDRESS = 0x1E0c95946801ef4Fc294eA1F8214faB2357bFF9C;
     address constant ENTRY_POINT_ADDRESS = 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789;
     
     // Test parameters

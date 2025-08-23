@@ -11,7 +11,7 @@ import "../src/AAStarAccountFactoryV6.sol";
  * @dev Deploy test wrapper and test hashToCurve functionality
  */
 contract DeployAndTest is Script {
-    address constant VALIDATOR_CONTRACT_ADDRESS = 0x0bC9DD7BCa3115198a59D367423E1535104A5882;
+    address constant VALIDATOR_CONTRACT_ADDRESS = 0x1E0c95946801ef4Fc294eA1F8214faB2357bFF9C;
     address constant ENTRY_POINT_ADDRESS = 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789;
 
     function run() external {
@@ -55,7 +55,7 @@ contract DeployAndTest is Script {
         vm.stopBroadcast();
     }
     
-    function testSignatureParsing(AAStarAccountV6TestWrapper wrapper) internal {
+    function testSignatureParsing(AAStarAccountV6TestWrapper wrapper) internal pure {
         // Create test signature: [nodeIdsLength(32)][nodeIds...][blsSignature(256)][aaSignature(65)]
         bytes memory testSig = abi.encodePacked(
             uint256(2), // 2 node IDs
@@ -96,7 +96,7 @@ contract DeployAndTest is Script {
 contract AAStarAccountV6TestWrapper is AAStarAccountV6 {
     constructor(IEntryPoint anEntryPoint) AAStarAccountV6(anEntryPoint) {}
     
-    function testHashToCurveG2(bytes32 hash) external view returns (bytes memory) {
+    function testHashToCurveG2(bytes32 hash) external pure returns (bytes memory) {
         return _hashToCurveG2(hash);
     }
     

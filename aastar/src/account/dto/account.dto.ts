@@ -86,7 +86,7 @@ export class UpdateValidatorDto {
 
   @ApiProperty({ 
     description: '验证器地址', 
-    example: '0x0bC9DD7BCa3115198a59D367423E1535104A5882' 
+    example: '0x1E0c95946801ef4Fc294eA1F8214faB2357bFF9C' 
   })
   @IsString()
   @IsNotEmpty()
