@@ -301,5 +301,79 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
     }
 
 
+    // =============================================================
+    //                    TESTING FUNCTIONS
+    // =============================================================
+    
+    /**
+     * @dev Public test function for signature parsing - bypasses access controls
+     * FOR TESTING ONLY - DO NOT USE IN PRODUCTION
+     */
+    function testParseAAStarSignature(bytes calldata signature) 
+        external 
+        pure 
+        returns (
+            bytes32[] memory nodeIds,
+            bytes memory blsSignature,
+            bytes memory messagePoint,
+            bytes memory aaSignature
+        ) 
+    {
+        return _parseAAStarSignature(signature);
+    }
+
+    /**
+     * @dev Public test function for signature validation - bypasses access controls  
+     * FOR TESTING ONLY - DO NOT USE IN PRODUCTION
+     */
+    function testValidateAAStarSignature(
+        bytes calldata signature,
+        bytes32 userOpHash
+    ) external view returns (bool isValid) {
+        // Parse signature components
+        (
+            bytes32[] memory nodeIds,
+            bytes memory blsSignature,
+            bytes memory messagePoint,
+            bytes memory aaSignature
+        ) = _parseAAStarSignature(signature);
+        
+        // SECURITY: AA signature must validate userOpHash (ensures binding to specific userOp)
+        bytes32 hash = userOpHash.toEthSignedMessageHash();
+        address recoveredSigner = ECDSA.recover(hash, aaSignature);
+        
+        // Validate that the AA signature is from the owner
+        if (recoveredSigner != owner) {
+            return false;
+        }
+        
+        // Use AAStarValidator for BLS validation (if enabled)
+        if (useAAStarValidator && address(aaStarValidator) != address(0)) {
+            return aaStarValidator.validateAggregateSignature(
+                nodeIds,
+                blsSignature,
+                messagePoint
+            );
+        }
+        
+        return false; // No BLS validation available
+    }
+
+    /**
+     * @dev Test function to get recovered address from signature
+     * FOR TESTING ONLY - DO NOT USE IN PRODUCTION
+     */
+    function testRecoverAAAddress(
+        bytes calldata signature,
+        bytes32 userOpHash
+    ) external pure returns (address recoveredAddress) {
+        // Parse signature to get AA signature
+        (, , , bytes memory aaSignature) = _parseAAStarSignature(signature);
+        
+        // Recover address from userOpHash
+        bytes32 hash = userOpHash.toEthSignedMessageHash();
+        return ECDSA.recover(hash, aaSignature);
+    }
+
     receive() external payable {}
 }

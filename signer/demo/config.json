@@ -52,9 +52,9 @@
     }
   ],
   "aaAccount": {
-    "privateKey": "0x1d77a1d375df0e5ddc5d8fa18f371d1fe01f312d2a5eb7309b520e80af0cdbab",
-    "address": "0x20a2dB470BCc95f63E92A37044a1e40F602c481c",
-    "description": "EOA account for AA signature verification"
+    "privateKey": "0x72966a3f12beed253d475a19f4c8c73e5f7c14f2280bcda4499f72602b4d6c1a",
+    "address": "0x075F227E25a63417Bf66F6e751b376B09Fd43928",
+    "description": "EOA account for AA signature verification (same as contract owner)"
   },
   "contractInfo": {
     "name": "AAStarValidator",

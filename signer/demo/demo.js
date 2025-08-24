@@ -137,18 +137,35 @@ export async function generateContractCallParams(userOpHash = null, nodeIndices 
     const aggregatedSignatureEIP = encodeG2Point(bls.G2.Point.fromHex(aggregatedSignature.toBytes()));
     const messageG2EIP = encodeG2Point(messagePoint);
     
-    // Generate ECDSA signature for AA account
+    // Generate ECDSA signature for AA account (sign userOpHash for security binding)
     const aaAccount = contractConfig.aaAccount;
     const wallet = new ethers.Wallet(aaAccount.privateKey);
-    const messageHash = ethers.keccak256("0x" + Buffer.from(messageG2EIP).toString('hex'));
-    const aaSignature = await wallet.signMessage(ethers.getBytes(messageHash));
+    // SECURITY: AA signature must validate userOpHash (ensures binding to specific userOp)
+    const aaSignature = await wallet.signMessage(ethers.getBytes(userOpHash));
     
+    // Pack signature according to contract format:
+    // [nodeIdsLength(32)][nodeIds...][blsSignature(256)][messagePoint(256)][aaSignature(65)]
+    const nodeIdsLength = nodeIds.length;
+    const nodeIdsLengthBytes = ethers.solidityPacked(["uint256"], [nodeIdsLength]);
+    const nodeIdsBytes = ethers.solidityPacked(nodeIds.map(() => "bytes32"), nodeIds);
+    const packedSignature = ethers.solidityPacked(
+        ["bytes", "bytes", "bytes", "bytes", "bytes"],
+        [
+            nodeIdsLengthBytes,
+            nodeIdsBytes,
+            "0x" + Buffer.from(aggregatedSignatureEIP).toString('hex'),
+            "0x" + Buffer.from(messageG2EIP).toString('hex'),
+            aaSignature
+        ]
+    );
+
     return {
         nodeIds: nodeIds,
         signature: "0x" + Buffer.from(aggregatedSignatureEIP).toString('hex'),
         messagePoint: "0x" + Buffer.from(messageG2EIP).toString('hex'),
         aaAddress: aaAccount.address,
         aaSignature: aaSignature,
+        packedSignature: packedSignature,  // 新增：打包后的签名
         contractAddress: contractConfig.contractAddress,
         userOpHash: userOpHash,
         participantNodes: selectedNodes.map(node => ({
