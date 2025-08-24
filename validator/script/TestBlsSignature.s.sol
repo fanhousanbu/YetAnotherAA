@@ -13,8 +13,8 @@ contract TestBlsSignature is Script {
     AAStarValidator public validator;
     
     function run() external {
-        // Contract address (update this to your deployed contract)
-        address validatorAddress = 0x1E0c95946801ef4Fc294eA1F8214faB2357bFF9C;
+        // Contract address (newly deployed)
+        address validatorAddress = 0x6f5F51654eeDfDBba5E053d022A7282f63ec8687;
         validator = AAStarValidator(validatorAddress);
         
         console.log("=== Testing Bls Signature Verification ===");

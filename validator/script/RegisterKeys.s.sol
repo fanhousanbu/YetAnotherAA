@@ -8,12 +8,13 @@ contract RegisterKeys is Script {
     AAStarValidator public validator;
     
     function run() external {
-        // Contract address
-        address validatorAddress = 0x1E0c95946801ef4Fc294eA1F8214faB2357bFF9C;
+        // Contract address (newly deployed)
+        address validatorAddress = 0x6f5F51654eeDfDBba5E053d022A7282f63ec8687;
         validator = AAStarValidator(validatorAddress);
         
-        // Start broadcasting transactions
-        vm.startBroadcast();
+        // Start broadcasting transactions with owner's private key
+        uint256 deployerPrivateKey = 0x72966a3f12beed253d475a19f4c8c73e5f7c14f2280bcda4499f72602b4d6c1a;
+        vm.startBroadcast(deployerPrivateKey);
         
         // Node ID and public key data (from config.json)
         bytes32[] memory nodeIds = new bytes32[](5);

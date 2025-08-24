@@ -10,7 +10,7 @@ import "../src/AAStarValidator.sol";
  * @dev View registered BLS nodes in AAStarValidator
  */
 contract ViewRegisteredNodes is Script {
-    address constant VALIDATOR_CONTRACT_ADDRESS = 0x1E0c95946801ef4Fc294eA1F8214faB2357bFF9C;
+    address constant VALIDATOR_CONTRACT_ADDRESS = 0x6f5F51654eeDfDBba5E053d022A7282f63ec8687;
     
     function run() external view {
         console.log("=== Viewing Registered BLS Nodes ===");
