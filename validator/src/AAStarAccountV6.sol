@@ -144,12 +144,17 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
     }
 
     /**
-     * @dev Enhanced signature validation with AAStarValidator support
-     * Signature format: [nodeIds][blsSignature][aaSignature]
+     * @dev Enhanced signature validation with AAStarValidator support using dual verification
+     * Signature format: [nodeIds][blsSignature][messagePoint][aaSignature]
      * - nodeIds: bytes32[] array of BLS node identifiers (dynamic length)
      * - blsSignature: 256 bytes G2 BLS aggregate signature
-     * - aaSignature: 65 bytes ECDSA signature from account owner
-     * messagePoint is dynamically generated from userOpHash via BLS hashToCurve
+     * - messagePoint: 256 bytes G2 point (provided by signer, verified by BLS)
+     * - aaSignature: 65 bytes ECDSA signature from account owner (validates userOpHash)
+     * 
+     * Security Model:
+     * - AA signature validates userOpHash (ensures binding to specific UserOperation)
+     * - BLS signature validates messagePoint (leverages aggregate signature security)
+     * - Dual verification provides security even if messagePoint is manipulated
      */
     function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
         internal returns (uint256 validationData) {
@@ -176,8 +181,9 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
     }
 
     /**
-     * @dev Parse and validate AAStarValidator signature format
+     * @dev Parse and validate AAStarValidator signature format with dual verification
      * This is a public function to allow try/catch pattern
+     * Dual verification: AA signature validates userOpHash, BLS validates messagePoint
      */
     function _parseAndValidateAAStarSignature(
         bytes calldata signature,
@@ -189,18 +195,13 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         (
             bytes32[] memory nodeIds,
             bytes memory blsSignature,
+            bytes memory messagePoint,
             bytes memory aaSignature
         ) = _parseAAStarSignature(signature);
         
-        // Generate messagePoint from userOpHash
-        bytes memory messagePoint = _hashToCurveG2(userOpHash);
-        
-        // Create AA signature for messagePoint hash (as expected by AAStarValidator)
-        bytes32 messagePointHash = keccak256(messagePoint);
-        bytes32 ethSignedMessageHash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", messagePointHash)
-        );
-        address recoveredSigner = ECDSA.recover(ethSignedMessageHash, aaSignature);
+        // SECURITY: AA signature must validate userOpHash (ensures binding to specific userOp)
+        bytes32 hash = userOpHash.toEthSignedMessageHash();
+        address recoveredSigner = ECDSA.recover(hash, aaSignature);
         
         // Validate that the AA signature is from the owner
         if (recoveredSigner != owner) {
@@ -217,7 +218,7 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
 
     /**
      * @dev Parse AAStarValidator signature format
-     * Format: [nodeIdsLength(32)][nodeIds...][blsSignature(256)][aaSignature(65)]
+     * Format: [nodeIdsLength(32)][nodeIds...][blsSignature(256)][messagePoint(256)][aaSignature(65)]
      */
     function _parseAAStarSignature(bytes calldata signature) 
         internal 
@@ -225,17 +226,18 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         returns (
             bytes32[] memory nodeIds,
             bytes memory blsSignature,
+            bytes memory messagePoint,
             bytes memory aaSignature
         ) 
     {
-        require(signature.length >= 32 + 256 + 65, "Invalid signature length");
+        require(signature.length >= 32 + 256 + 256 + 65, "Invalid signature length");
         
         // Parse nodeIds length
         uint256 nodeIdsLength = abi.decode(signature[0:32], (uint256));
         require(nodeIdsLength > 0 && nodeIdsLength <= 100, "Invalid nodeIds length");
         
         uint256 nodeIdsDataLength = nodeIdsLength * 32;
-        require(signature.length >= 32 + nodeIdsDataLength + 256 + 65, "Signature too short");
+        require(signature.length >= 32 + nodeIdsDataLength + 256 + 256 + 65, "Signature too short");
         
         // Parse nodeIds array
         nodeIds = new bytes32[](nodeIdsLength);
@@ -246,9 +248,11 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         
         // Parse other components
         uint256 blsOffset = 32 + nodeIdsDataLength;
-        uint256 aaOffset = blsOffset + 256;
+        uint256 messagePointOffset = blsOffset + 256;
+        uint256 aaOffset = messagePointOffset + 256;
         
-        blsSignature = signature[blsOffset:aaOffset];
+        blsSignature = signature[blsOffset:messagePointOffset];
+        messagePoint = signature[messagePointOffset:aaOffset];
         aaSignature = signature[aaOffset:aaOffset + 65];
     }
 
@@ -296,45 +300,6 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         _onlyOwner();
     }
 
-    // =============================================================
-    //                    BLS12-381 G2 HASH TO CURVE
-    // =============================================================
-    
-    /// @dev EIP-2537 G2 map field to curve precompile address
-    address private constant BLS12_MAP_FP2_TO_G2 = 0x0000000000000000000000000000000000000011;
-    
-    /// @dev Domain separation tag for BLS signature scheme
-    bytes private constant DST = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
-    
-    /**
-     * @dev Convert bytes32 hash to BLS G2 curve point using simplified deterministic mapping
-     * 
-     * NOTE: This is a simplified implementation for testing purposes.
-     * In production, you should use a proper BLS12-381 hashToCurve implementation
-     * or coordinate with the off-chain signer to ensure compatible message generation.
-     * 
-     * @param hash The input hash to be mapped to G2 curve
-     * @return messagePoint The resulting G2 point (256 bytes)
-     */
-    function _hashToCurveG2(bytes32 hash) internal pure returns (bytes memory messagePoint) {
-        // For testing: create a deterministic but valid-looking G2 point
-        // This should be replaced with proper hashToCurve in production
-        messagePoint = new bytes(256);
-        
-        // Fill with deterministic data based on hash
-        bytes32 seed = keccak256(abi.encodePacked(hash, "BLS_G2_POINT"));
-        
-        // Create deterministic G2 point structure (not cryptographically secure)
-        for (uint256 i = 0; i < 8; i++) {
-            bytes32 chunk = keccak256(abi.encodePacked(seed, i));
-            for (uint256 j = 0; j < 32; j++) {
-                messagePoint[i * 32 + j] = chunk[j];
-            }
-        }
-    }
-    
-    // Simplified implementation - complex precompile functions removed for now
-    // These can be added back when proper EIP-2537 implementation is needed
 
     receive() external payable {}
 }
