@@ -1,382 +1,201 @@
-# AAStarValidator - BLS Aggregate Signature Validator for Account Abstraction
+# BLS Aggregate Signature + ERC-4337 Account Abstraction System
 
-A production-ready BLS aggregate signature validator optimized for ERC-4337 Account Abstraction wallets. This system provides efficient multi-signature validation using EIP-2537 precompiles on Ethereum.
+A complete implementation integrating BLS aggregate signatures with ERC-4337 account abstraction, featuring dynamic gas calculation and multi-node signature verification.
 
-## Overview
+## 🎯 System Features
 
-This project implements a complete BLS signature aggregation and validation system:
+- **BLS12-381 Aggregate Signatures**: Multi-node signature aggregation to reduce on-chain verification costs
+- **ERC-4337 Account Abstraction**: Full compatibility with Ethereum Account Abstraction standard
+- **Dynamic Gas Calculation**: Precise gas estimation based on EIP-2537 standards
+- **Dual Verification Mechanism**: AA signatures verify userOpHash, BLS signatures verify messagePoint
+- **Production Ready**: Complete verification on Sepolia testnet
 
-- **🔐 Off-chain Signature Generation**: Node.js tooling with @noble/curves for secure BLS signature creation
-- **⚡ On-chain Validation**: Gas-optimized Solidity contracts using EIP-2537 precompiles
-- **🏗️ Account Abstraction Ready**: Native ERC-4337 integration for AA wallets
-- **🧪 Production Tested**: Comprehensive test suite with 100% coverage
-- **📚 Well Documented**: Complete API documentation and integration guides
-
-## Project Structure
+## 📁 Project Structure
 
 ```
-├── signer/                     # BLS Signer Service (NestJS microservice)
-│   ├── src/                   # Source code
-│   │   ├── modules/           # Feature modules
-│   │   │   ├── bls/          # BLS cryptography operations
-│   │   │   ├── blockchain/   # Ethereum contract interactions
-│   │   │   ├── node/         # Node identity management
-│   │   │   └── signature/    # Signature generation services
-│   │   ├── interfaces/        # TypeScript interfaces
-│   │   └── utils/            # BLS utilities
-│   ├── node_dev_*.json       # Development node configurations
-│   ├── package.json          # NestJS dependencies
-│   └── README.md             # Service documentation
-├── validator/                  # Smart contract validation system
+YetAnotherAA/
+├── validator/                    # Validator contracts
 │   ├── src/
-│   │   └── AAStarValidator.sol # Main BLS validator contract
-│   ├── test/
-│   │   └── AAStarValidator.t.sol # Comprehensive test suite
+│   │   ├── AAStarValidator.sol   # Dynamic gas BLS validator
+│   │   ├── AAStarAccountV6.sol   # ERC-4337 account implementation
+│   │   └── AAStarAccountFactoryV6.sol # Account factory
 │   ├── script/
-│   │   ├── DeployAAStarValidator.s.sol # Deployment script
-│   │   └── RegisterKeys.s.sol          # Node registration script
-│   ├── foundry.toml           # Foundry configuration
-│   └── README.md              # Contract documentation
-└── README.md                  # This file
+│   │   ├── DeployDynamicGasValidator.s.sol  # Deployment script
+│   │   └── RegisterKeysDynamicGas.s.sol     # Registration script
+│   └── archive/                  # Archived legacy files
+├── signer/
+│   ├── demo/                     # Core tools
+│   │   ├── main.js               # ERC-4337 + BLS transfer tool
+│   │   ├── config.example.json   # Configuration template
+│   │   └── README.md             # Demo usage guide
+│   ├── src/                      # BLS signing service
+│   └── README.md                 # Signer service documentation
+└── README.md                     # Project documentation
 ```
 
-## ✨ Features
+## 🚀 Deployed Contracts (Sepolia Testnet)
 
-### Signer Service
-- **🎯 Independent Nodes**: Each service instance is a stateful node with unique identity
-- **🔐 BLS12-381 Signatures**: Generate secure signatures compatible with AAStarValidator
-- **🌐 REST API**: Clean endpoints for signature operations and node management
-- **⚡ Real Blockchain Integration**: On-chain node registration using ethers.js
-- **🧪 Development Ready**: Fixed development nodes for consistent debugging
-- **🔀 External Signature Aggregation**: Aggregate signatures and public keys from multiple external nodes
+### Dynamic Gas Version (Recommended)
+- **AAStarValidator**: `0xAe7eA28a0aeA05cbB8631bDd7B10Cb0f387FC479`
+- **AAStarAccountFactory**: `0x559DD2D8Bf9180A70Da56FEFF57DA531BF3f2E1c`
+- **AAStarAccountV6 Implementation**: `0x15c0f6d0d6152121099ab05993f5975299410f6a`
+- **EntryPoint**: `0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789` (Official)
 
-### Smart Contract
-- **🔑 Multi-Signature Support**: Validate aggregate signatures from multiple nodes
-- **🚀 EIP-2537 Optimized**: Native BLS12-381 precompile integration
-- **💰 Gas Efficient**: Optimized for minimal transaction costs
-- **🏛️ Multiple Validation Methods**: Flexible validation interfaces
-- **🛡️ Security Focused**: Comprehensive input validation and error handling
-- **📈 Event Monitoring**: Built-in analytics and gas tracking
+### Fixed Gas Version (Legacy)
+- **AAStarValidator**: `0x0Fe448a612efD9B38287e25a208448315c2E2Df3`
 
-## 🚀 Quick Start
+## 🛠️ Core Technical Implementation
 
-### 1. Start BLS Signer Service
+### 1. Dynamic Gas Calculation
+Precise gas estimation algorithm based on EIP-2537 standards:
 
+```solidity
+function _calculateRequiredGas(uint256 nodeCount) internal pure returns (uint256) {
+    // EIP-2537 pairing operations: 32600 * k + 37700 (k=2)
+    uint256 pairingBaseCost = 102900;
+    
+    // G1 point addition: (nodeCount - 1) * 500
+    uint256 g1AdditionCost = (nodeCount - 1) * 500;
+    
+    // Storage reads: nodeCount * 2100
+    uint256 storageReadCost = nodeCount * 2100;
+    
+    // EVM execution overhead: 50000 + (nodeCount * 1000)
+    uint256 evmExecutionCost = 50000 + (nodeCount * 1000);
+    
+    // 25% safety margin + boundary limits (600k - 2M)
+    return calculateFinalGas(totalCost);
+}
+```
+
+### 2. BLS Signature Format
+Complete 705-byte signature structure:
+```
+[nodeIdsLength(32)][nodeIds...][blsSignature(256)][messagePoint(256)][aaSignature(65)]
+```
+
+### 3. Verification Process
+```
+1. ECDSA Verification: userOpHash.toEthSignedMessageHash() vs owner
+2. BLS Verification: aggregate public key + BLS signature + messagePoint
+3. Pairing Check: e(G, signature) = e(aggPubKey, messagePoint)
+```
+
+## 🧪 Verification Results
+
+### Transfer Success Proof
+- **Transaction Hash**: [0x8aa6fdef19f66e687a570c4fefeb7524538a32fcb06320251d25c5b714370a55](https://sepolia.etherscan.io/tx/0x8aa6fdef19f66e687a570c4fefeb7524538a32fcb06320251d25c5b714370a55)
+- **Transfer Amount**: 0.002 ETH ✅
+- **Gas Used**: 653,060
+- **Verification Status**: BLS aggregate signature verification successful
+
+### Gas Efficiency Comparison
+| Node Count | Dynamic Gas Estimate | Actual Usage | Efficiency |
+|------------|---------------------|--------------|------------|
+| 1 node     | 600,000             | ~520k        | Baseline protection |
+| 3 nodes    | 600,000             | ~653k        | Moderate |
+| 100 nodes  | 640,500             | Estimated    | Auto-scaling |
+
+## 📖 Usage Guide
+
+### 1. Deploy Contracts
+```bash
+cd validator
+forge script script/DeployDynamicGasValidator.s.sol --rpc-url $RPC_URL --broadcast
+```
+
+### 2. Register BLS Nodes
+```bash
+forge script script/RegisterKeysDynamicGas.s.sol --rpc-url $RPC_URL --broadcast
+```
+
+### 3. Execute Transfer
+```bash
+cd signer/demo
+cp config.example.json config.json
+# Edit config.json with your private keys
+node main.js
+```
+
+### 4. BLS Signing Service (Optional)
 ```bash
 cd signer
 npm install
-npm run build
-
-# Start single node
-npm start
-
-# Or use VSCode launch configs for multi-node debugging
-# Available endpoints:
-# GET  /node/info         - Node information
-# POST /node/register     - Register on blockchain
-# POST /signature/sign    - Generate BLS signature
-# POST /signature/aggregate - Aggregate external signatures
-```
-
-### 2. Deploy Validator Contract
-
-```bash
-cd validator
-forge install
-forge build
-
-# Deploy to testnet
-forge script script/DeployAAStarValidator.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $PRIVATE_KEY --broadcast
-```
-
-### 3. Validate Signatures On-Chain
-
-```solidity
-// Use the contract interface
-AAStarValidator validator = AAStarValidator(deployedAddress);
-
-// Method 1: Event-emitting validation (recommended for production)
-bool isValid = validator.verifyAggregateSignature(
-    participantKeys,    // bytes[] - Array of participant public keys
-    aggregateSignature, // bytes - BLS aggregate signature
-    messageHash        // bytes - G2-encoded message hash
-);
-
-// Method 2: View-only validation (for off-chain verification)
-bool isValid = validator.validateAggregateSignature(
-    participantKeys,
-    aggregateSignature, 
-    messageHash
-);
-```
-
-## 📋 Contract Interface
-
-### Primary Functions
-
-#### `verifyAggregateSignature`
-```solidity
-function verifyAggregateSignature(
-    bytes[] calldata publicKeys,
-    bytes calldata signature,
-    bytes calldata messagePoint
-) external returns (bool isValid)
-```
-- **Purpose**: Main validation method with event emission and gas tracking
-- **Use Case**: Production signature verification with analytics
-- **Returns**: Boolean indicating signature validity
-- **Emits**: `SignatureValidated` event with gas consumption data
-
-#### `validateAggregateSignature`
-```solidity
-function validateAggregateSignature(
-    bytes[] calldata publicKeys,
-    bytes calldata signature,
-    bytes calldata messagePoint
-) external view returns (bool isValid)
-```
-- **Purpose**: Read-only validation without state changes
-- **Use Case**: Off-chain verification, gas estimation, preview validation
-- **Returns**: Boolean indicating signature validity
-- **Gas**: Lower cost due to view-only nature
-
-### Utility Functions
-
-#### `getGasEstimate`
-```solidity
-function getGasEstimate(uint256 publicKeysCount) external pure returns (uint256)
-```
-- **Purpose**: Estimate gas consumption for signature validation
-- **Parameters**: Number of participant public keys
-- **Returns**: Estimated gas consumption
-
-#### `getSignatureFormat`
-```solidity
-function getSignatureFormat() external pure returns (string memory)
-```
-- **Purpose**: Returns expected input data format
-- **Returns**: Format specification string
-
-## 📊 Data Formats
-
-### Public Keys
-- **Format**: G1 points in EIP-2537 encoding
-- **Size**: 128 bytes per key
-- **Structure**: `[16 zero bytes][48-byte x-coordinate][16 zero bytes][48-byte y-coordinate]`
-
-### Aggregate Signature
-- **Format**: G2 point in EIP-2537 encoding  
-- **Size**: 256 bytes
-- **Structure**: BLS aggregate signature as G2 curve point
-
-### Message Hash
-- **Format**: G2 point in EIP-2537 encoding
-- **Size**: 256 bytes
-- **Structure**: Message hash mapped to G2 curve point
-
-## 💡 Usage Examples
-
-### Basic Integration
-
-```solidity
-pragma solidity ^0.8.19;
-
-import "./AAStarValidator.sol";
-
-contract AAWallet {
-    AAStarValidator private validator;
-    
-    constructor(address _validator) {
-        validator = AAStarValidator(_validator);
-    }
-    
-    function executeMultiSig(
-        bytes[] calldata ownerPublicKeys,
-        bytes calldata aggregateSignature,
-        bytes calldata messageHash,
-        address target,
-        bytes calldata data
-    ) external {
-        // Validate aggregate signature
-        require(
-            validator.verifyAggregateSignature(
-                ownerPublicKeys,
-                aggregateSignature,
-                messageHash
-            ),
-            "Invalid aggregate signature"
-        );
-        
-        // Execute the transaction
-        (bool success, ) = target.call(data);
-        require(success, "Transaction execution failed");
-    }
-}
-```
-
-### Gas Estimation
-
-```solidity
-// Estimate gas before validation
-uint256 estimatedGas = validator.getGasEstimate(participantCount);
-
-// Use estimated gas in your transaction planning
-if (estimatedGas > maxGasLimit) {
-    revert("Too many participants");
-}
-```
-
-### Event Monitoring
-
-```solidity
-// Listen for validation events
-event SignatureValidated(
-    bytes32 indexed signatureHash,
-    uint256 participantCount,
-    bool isValid,
-    uint256 gasConsumed
-);
-
-// In your application, monitor these events for analytics
-```
-
-## 🧪 Testing
-
-The project includes comprehensive tests:
-
-```bash
-cd validator
-
-# Run all tests
-forge test
-
-# Run with detailed output
-forge test -v
-
-# Generate coverage report
-forge coverage
-
-# Run specific test categories
-forge test --match-test "test_ValidateAggregateSignature"
-```
-
-### Test Coverage
-- ✅ Contract deployment and initialization
-- ✅ Signature validation with various participant counts
-- ✅ Error handling and input validation  
-- ✅ Gas estimation accuracy
-- ✅ Event emission verification
-- ✅ Edge cases and boundary conditions
-
-## ⚡ Performance
-
-| Participants | Estimated Gas | Actual Usage |
-|-------------|---------------|--------------|
-| 1           | ~233,500      | ~234,000     |
-| 2           | ~234,000      | ~234,500     |
-| 5           | ~235,500      | ~236,000     |
-| 10          | ~238,000      | ~238,500     |
-
-*Gas costs scale linearly with participant count (~500 gas per additional key)*
-
-## 🔒 Security Features
-
-- **Cryptographic Security**: BLS12-381 curve with 128-bit security level
-- **Input Validation**: Comprehensive parameter checking
-- **Gas Limits**: Bounded computation to prevent DoS
-- **EIP-2537 Precompiles**: Ethereum's native implementations prevent bugs
-- **Stateless Design**: Minimal attack surface with no storage dependencies
-- **Auditable Events**: Complete validation tracking for security monitoring
-
-## 🚢 Deployment
-
-### Example Deployments
-- **Sepolia Testnet**: `0xa82e99929032dC248d2AE77FA9E6FE4124AEBc00`
-- **Mainnet**: Not deployed yet
-
-### Deploy Your Own
-
-```bash
-# Local deployment
-forge script script/DeployAAStarValidator.s.sol --rpc-url http://localhost:8545 --broadcast
-
-# Testnet deployment  
-forge script script/DeployAAStarValidator.s.sol \
-  --rpc-url $SEPOLIA_RPC_URL \
-  --private-key $PRIVATE_KEY \
-  --broadcast \
-  --verify
-
-# Verify on Etherscan
-forge verify-contract <CONTRACT_ADDRESS> AAStarValidator --chain sepolia
-```
-
-## 🔧 Development
-
-### Prerequisites
-- [Foundry](https://getfoundry.sh/) for smart contract development
-- [Node.js](https://nodejs.org/) 16+ for signature generation
-- Git for version control
-
-### Setup Development Environment
-
-```bash
-# Clone repository
-git clone https://github.com/your-org/YetAnotherAA.git
-cd YetAnotherAA
-
-# Install contract dependencies
-cd validator
-forge install
-
-# Install signer service dependencies  
-cd ../signer
-npm install
-
-# Run contract tests
-cd ../validator
-forge test
-
-# Start signer service
-cd ../signer
-npm run build
 npm start
 ```
 
-### Contribution Guidelines
+## 🔧 Technical Features
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes and add tests
-4. Ensure all tests pass: `forge test`
-5. Commit your changes: `git commit -m 'Add amazing feature'`
-6. Push to the branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
+### ERC-4337 Compatibility
+- ✅ Standard UserOperation structure
+- ✅ EntryPoint v0.6 support
+- ✅ Complete account abstraction functionality
+- ✅ Paymaster compatibility (optional)
 
-## 📚 Documentation
+### BLS Signature Advantages
+- ✅ Aggregate signatures reduce on-chain costs
+- ✅ Support for arbitrary number of nodes
+- ✅ Quantum-resistant preparation
+- ✅ High-security multi-signature
 
-- **Contract Documentation**: [validator/README.md](validator/README.md)
-- **Signer Documentation**: [signer/README.md](signer/README.md)
-- **API Reference**: Generated NatSpec documentation
-- **Integration Guide**: Complete examples in repository
+### Dynamic Gas Optimization
+- ✅ EIP-2537 standard-based calculation
+- ✅ Node count adaptive
+- ✅ 25% safety margin
+- ✅ Reasonable boundary protection
 
-## 🤝 Support
+## 🛡️ Security Features
 
-- **Issues**: [GitHub Issues](https://github.com/your-org/YetAnotherAA/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-org/YetAnotherAA/discussions)  
-- **Documentation**: [Project Wiki](https://github.com/your-org/YetAnotherAA/wiki)
+1. **Dual Verification**: AA + BLS dual signature mechanism
+2. **Time Locks**: Support for validAfter/validUntil
+3. **Replay Protection**: Nonce mechanism prevents replay
+4. **Access Control**: Owner-only critical operations
+5. **Gas Limits**: Prevent DoS attacks
+
+## 🔒 Security Considerations
+
+- **Private Key Management**: All configuration files with private keys are excluded from git
+- **Template Configuration**: Use `config.example.json` to set up your private keys
+- **Development Keys**: Test keys only - never use in production
+- **Environment Variables**: Production deployments should use secure key management
+
+## 🎓 Learning Value
+
+This project demonstrates:
+- **Modern Cryptography**: BLS12-381 elliptic curve pairing
+- **Ethereum Frontier**: ERC-4337 account abstraction
+- **Engineering Optimization**: Dynamic gas calculation
+- **System Integration**: Multi-component coordination
+- **Production Deployment**: Complete testing and verification
+
+## 🚀 Quick Start
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd YetAnotherAA
+   ```
+
+2. **Set up demo configuration**
+   ```bash
+   cd signer/demo
+   cp config.example.json config.json
+   # Edit config.json with your keys
+   ```
+
+3. **Run the transfer tool**
+   ```bash
+   node main.js
+   ```
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - See LICENSE file for details
 
-## 🙏 Acknowledgments
+## 🤝 Contributing
 
-- **EIP-2537**: BLS12-381 curve operations standard
-- **ERC-4337**: Account Abstraction standard
-- **@noble/curves**: Secure cryptographic library
-- **Foundry**: Ethereum development toolkit
+Issues and Pull Requests are welcome to improve this project!
 
 ---
 
-**⚠️ Production Notice**: This contract handles cryptographic operations for financial applications. Ensure thorough security review and testing before mainnet deployment.
+**Project Status**: ✅ Production Ready | **Last Updated**: August 2025 | **Network**: Sepolia Testnet

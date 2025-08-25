@@ -30,7 +30,7 @@ NODE_STATE_FILE=./node_dev_001.json
 PORT=3001
 
 # Blockchain Configuration
-VALIDATOR_CONTRACT_ADDRESS=0x1E0c95946801ef4Fc294eA1F8214faB2357bFF9C
+VALIDATOR_CONTRACT_ADDRESS=0xAe7eA28a0aeA05cbB8631bDd7B10Cb0f387FC479
 ETH_RPC_URL=https://sepolia.infura.io/v3/7051eb377c77490881070faaf93aef20
 ETH_PRIVATE_KEY=0x72966a3f12beed253d475a19f4c8c73e5f7c14f2280bcda4499f72602b4d6c1a
 ```
@@ -120,7 +120,7 @@ The `/node/register` endpoint performs real blockchain transactions:
   "message": "Node registered successfully on-chain",
   "nodeId": "0x123e4567e89b12d3a456426614174001",
   "txHash": "0x1234...abcd",
-  "contractAddress": "0x1E0c95946801ef4Fc294eA1F8214faB2357bFF9C"
+  "contractAddress": "0xAe7eA28a0aeA05cbB8631bDd7B10Cb0f387FC479"
 }
 ```
 
@@ -137,16 +137,17 @@ src/
 ├── utils/              # BLS utilities and helpers
 └── main.ts             # Application entry point
 
-node_dev_*.json         # Development node state files (tracked)
-node_*.json             # Dynamic node files (ignored)
+node_dev_*.json         # Development node state files (REMOVED from git - contain private keys)
+node_*.json             # Dynamic node files (ignored by git)
 ```
 
 ## Security
 
 - Private keys are never exposed in API responses
 - Node state files contain sensitive keys and should be protected
-- Development node files use test keys only
-- Production deployments should use secure key management
+- **IMPORTANT**: All `node_*.json` files contain private keys and are excluded from git
+- Development node files have been removed from version control for security
+- Production deployments should use secure key management and environment variables
 
 ## Signature Aggregation Workflow
 
@@ -215,6 +216,16 @@ Response:
 - **Flexible Coordination**: Any node can perform aggregation with provided external signatures
 - **Complete Output**: Returns both aggregated signature and aggregated public key
 - **EIP-2537 Format**: All outputs are formatted for direct use with AAStarValidator contract
+
+## Demo Tool
+
+A complete ERC-4337 + BLS transfer tool is available in the `demo/` directory:
+
+- **`demo/main.js`** - Complete transfer tool with integrated BLS signing
+- **`demo/config.example.json`** - Configuration template for setup
+- **`demo/README.md`** - Setup and usage instructions
+
+The demo tool provides a complete end-to-end example of using the BLS signer service for ERC-4337 account abstraction transfers.
 
 ## Contract Compatibility
 
