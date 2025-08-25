@@ -1,15 +1,15 @@
 {
-  "description": "AAStarValidator已注册节点配置",
-  "contractAddress": "0xFd6299F33559Ca45e0460E946a4d65b6EAc966F4",
+  "description": "AAStarValidator registered nodes configuration",
+  "contractAddress": "0xAe7eA28a0aeA05cbB8631bDd7B10Cb0f387FC479",
   "registeredAt": "2025-08-09T16:30:00.000Z",
   "totalNodes": 5,
-  "owner": "0x075F227E25a63417Bf66F6e751b376B09Fd43928",
+  "owner": "YOUR_OWNER_ADDRESS",
   "keyPairs": [
     {
       "originalNodeId": "0x123e4567e89b12d3a456426614174001",
       "contractNodeId": "0xf26f8bdca182790bad5481c1f0eac3e7ffb135ab33037dd02b8d98a1066c6e5d",
       "nodeName": "node_1",
-      "privateKey": "0x0c4ffef91ea42998981de3de7f1241e03aa1bc61770158867d761aa19cd028a2",
+      "privateKey": "YOUR_BLS_NODE_1_PRIVATE_KEY",
       "publicKey": "0x000000000000000000000000000000000052464ad7afdeaa9416263fb0eb72925b77957796973ecb7fcda5d4fc733c4a2eb01ba15edeff51b1a0f08530f3bf4a0000000000000000000000000000000008db250fe656f5334bedca95ceb0ce9b1030928be39bce6d547146bc7335c1dee0eebce4b8129d42cb5ed2432a98e8de",
       "registrationStatus": "registered",
       "description": "Node 1 registered on contract"
@@ -18,7 +18,7 @@
       "originalNodeId": "0x123e4567e89b12d3a456426614174002",
       "contractNodeId": "0xc0e74ed91b71668dd2619e1bacaccfcc495bdbbd0a1b2a64295550c701762272",
       "nodeName": "node_2",
-      "privateKey": "0xa1f242f30724f205fd18e204302ea67601ff091dc412cbcce5ea9a2dbd81888d",
+      "privateKey": "YOUR_BLS_NODE_2_PRIVATE_KEY",
       "publicKey": "0x000000000000000000000000000000000338213c412750cf16925dd3d85ac8f5ec32bc1133ce8261959d6afcdcc3ce0155ecbddb8692eea2b49e88c2d71f0c76000000000000000000000000000000000793efb79bb1624d6d3ab6c6b6b3e1d6a098bce76d91ae01e22940c1c57d85109cb20cccf7f189dfdc1014c271c0a1fc",
       "registrationStatus": "registered",
       "description": "Node 2 registered on contract"
@@ -27,7 +27,7 @@
       "originalNodeId": "0x123e4567e89b12d3a456426614174003",
       "contractNodeId": "0xa3cf2ced5807ceca64db9f9ca94cecdee7ffed22803f26b7ee26a438624dd15b",
       "nodeName": "node_3",
-      "privateKey": "0xc761b990f758f5c56fccd9ce4bec16cc52a2587a5c49b83f1f737ef5540a0218",
+      "privateKey": "YOUR_BLS_NODE_3_PRIVATE_KEY",
       "publicKey": "0x000000000000000000000000000000000932ae492c94f0e8302b8a59871e9b62dd0d451c7dcff31ba201cf9c7ace3085fe52a3887054483d2492b4f3884476f4000000000000000000000000000000001075d2cd423b4c3534415c1b64179ee02f371def5122279131c8a6dde6e0333ef8fb31198f252ba48524b52701c35177",
       "registrationStatus": "registered",
       "description": "Node 3 registered on contract"
@@ -36,7 +36,7 @@
       "originalNodeId": "0x123e4567e89b12d3a456426614174004",
       "contractNodeId": "0x41defc00c28336b45595c24b26e1d0a83ad4ea6832f1a276dcf42a1d43a72681",
       "nodeName": "node_4",
-      "privateKey": "0x2a91d8559853b19762af27c3765a6044775653c44378cbf6fd381e06eda0988f",
+      "privateKey": "YOUR_BLS_NODE_4_PRIVATE_KEY",
       "publicKey": "0x0000000000000000000000000000000010502ac5cfcfda2477a767ce762410bc9fb90c069e9b07826b189fba3b4096b559d1fc390e23e5efa39f5191dffc64b9000000000000000000000000000000001579fc08b75f8ec4eb05d339ecb9d46ab3954b5459fd4ce454befefccc16d7b2b86758054c81eb8c32976302e9c85d65",
       "registrationStatus": "registered",
       "description": "Node 4 registered on contract"
@@ -45,22 +45,38 @@
       "originalNodeId": "0x123e4567e89b12d3a456426614174005",
       "contractNodeId": "0x4dc85a434ba7af786ce05d388df756cae4d8d7236edd2c2a36991d5660ee36d7",
       "nodeName": "node_5",
-      "privateKey": "0x76f569eb1cf0d5799fef2397db0a28cca792134a71d63a7864329338b1c6ce4c",
+      "privateKey": "YOUR_BLS_NODE_5_PRIVATE_KEY",
       "publicKey": "0x0000000000000000000000000000000009372b17ab3e93075183c40a024206cecb573f56c513759fba67800fc8c6ec3fa2cc1784e3ba0152a87500f953f1760d0000000000000000000000000000000011998d83b339db015eb501cb6cad165d7065a3035a43ec3a7d3b36e3e45b9d8a2bcb4f4b96e8af3ecd2bc84bad2f04de",
       "registrationStatus": "registered",
       "description": "Node 5 registered on contract"
     }
   ],
   "aaAccount": {
-    "privateKey": "0x72966a3f12beed253d475a19f4c8c73e5f7c14f2280bcda4499f72602b4d6c1a",
-    "address": "0x075F227E25a63417Bf66F6e751b376B09Fd43928",
+    "privateKey": "YOUR_EOA_PRIVATE_KEY",
+    "address": "YOUR_EOA_ADDRESS",
     "description": "EOA account for AA signature verification (same as contract owner)"
   },
   "contractInfo": {
-    "name": "AAStarValidator",
-    "address": "0xFd6299F33559Ca45e0460E946a4d65b6EAc966F4",
+    "validator": {
+      "name": "AAStarValidator",
+      "address": "0xAe7eA28a0aeA05cbB8631bDd7B10Cb0f387FC479",
+      "version": "Dynamic Gas Version"
+    },
+    "accountFactory": {
+      "name": "AAStarAccountFactoryV6", 
+      "address": "0x559DD2D8Bf9180A70Da56FEFF57DA531BF3f2E1c"
+    },
+    "accountImplementation": {
+      "name": "AAStarAccountV6",
+      "address": "0x15c0f6d0d6152121099ab05993f5975299410f6a",
+      "description": "UUPS proxy implementation contract"
+    },
+    "entryPoint": {
+      "name": "EntryPoint v0.6",
+      "address": "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"
+    },
     "network": "Sepolia Testnet",
-    "owner": "0x075F227E25a63417Bf66F6e751b376B09Fd43928",
+    "owner": "YOUR_OWNER_ADDRESS",
     "registeredNodes": 5
   },
   "usage": {

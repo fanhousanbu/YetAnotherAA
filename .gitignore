@@ -17,8 +17,11 @@ build/
 signer/node_*.json
 node_*.json
 
-# But allow development node files
-!signer/node_dev_*.json
+# Configuration files with private keys
+signer/demo/config.json
+
+# Development node files also contain private keys - do not allow
+# !signer/node_dev_*.json  # REMOVED: these files contain private keys
 
 # Logs
 logs
