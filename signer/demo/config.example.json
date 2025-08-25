@@ -51,10 +51,22 @@
       "description": "Node 5 registered on contract"
     }
   ],
+  "ownerAccount": {
+    "privateKey": "YOUR_OWNER_PRIVATE_KEY",
+    "address": "YOUR_OWNER_ADDRESS",
+    "description": "Contract owner account for deployment and funding operations"
+  },
   "aaAccount": {
     "privateKey": "YOUR_EOA_PRIVATE_KEY",
     "address": "YOUR_EOA_ADDRESS",
     "description": "EOA account for AA signature verification (same as contract owner)"
+  },
+  "rpcConfig": {
+    "ethRpcUrl": "https://sepolia.infura.io/v3/YOUR_INFURA_API_KEY",
+    "bundlerRpcUrl": "https://api.pimlico.io/v2/11155111/rpc?apikey=YOUR_PIMLICO_API_KEY",
+    "network": "Sepolia Testnet",
+    "chainId": 11155111,
+    "description": "RPC endpoints for Ethereum and ERC-4337 bundler services"
   },
   "contractInfo": {
     "validator": {

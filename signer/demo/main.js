@@ -12,18 +12,24 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// Load configuration from config.json
+const configData = JSON.parse(readFileSync(join(__dirname, 'config.json'), 'utf8'));
+
 // Configuration
 const CONFIG = {
-    rpc: "https://sepolia.infura.io/v3/YOUR_INFURA_API_KEY",
-    privateKey: "YOUR_PRIVATE_KEY_HERE",
-    entryPoint: "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
-    factory: "0x559DD2D8Bf9180A70Da56FEFF57DA531BF3f2E1c",
-    validator: "0xAe7eA28a0aeA05cbB8631bDd7B10Cb0f387FC479",
+    rpc: configData.rpcConfig.ethRpcUrl,
+    bundlerRpc: configData.rpcConfig.bundlerRpcUrl,
+    privateKey: configData.ownerAccount.privateKey, // Owner private key for funding and deployment
+    aaPrivateKey: configData.aaAccount.privateKey, // AA account private key for signatures
+    aaAddress: configData.aaAccount.address, // AA account address
+    entryPoint: configData.contractInfo.entryPoint.address,
+    factory: configData.contractInfo.accountFactory.address,
+    validator: configData.contractInfo.validator.address,
     receiver: "0x962753056921000790fb7Fe7C2dCA3006bA605f3",
     selectedNodes: [
-        "0xf26f8bdca182790bad5481c1f0eac3e7ffb135ab33037dd02b8d98a1066c6e5d",
-        "0xc0e74ed91b71668dd2619e1bacaccfcc495bdbbd0a1b2a64295550c701762272",
-        "0xa3cf2ced5807ceca64db9f9ca94cecdee7ffed22803f26b7ee26a438624dd15b"
+        configData.keyPairs[0].contractNodeId,
+        configData.keyPairs[1].contractNodeId,
+        configData.keyPairs[2].contractNodeId
     ]
 };
 
@@ -162,7 +168,7 @@ class ERC4337Transfer {
         console.log("🏭 Creating or getting account...");
         
         const salt = 12345;
-        const owner = this.wallet.address;
+        const owner = CONFIG.aaAddress; // Use AA account address as owner
         
         const accountAddress = await this.factory["getAddress(address,address,bool,uint256)"](
             owner,
