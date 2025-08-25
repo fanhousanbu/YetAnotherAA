@@ -9,8 +9,8 @@ const CONFIG = {
     
     // Contract addresses from deployment
     entryPoint: "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
-    factory: "0x10a3253338D1E6Eb4ec6a35459Ad1C3BDb3E522c",
-    validator: "0x6f5F51654eeDfDBba5E053d022A7282f63ec8687",
+    factory: "0xCA837737D80574E041a35F5395D7032E55E27D62",
+    validator: "0x91Fc1Ff9646A2e5F09525837769F25c87777A07F",
     testAccount: "0xb2078908379f8B32E6bD692dc48ed3627773f091",
     
     // BLS signing services

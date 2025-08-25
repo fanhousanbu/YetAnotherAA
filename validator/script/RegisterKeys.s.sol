@@ -9,7 +9,7 @@ contract RegisterKeys is Script {
     
     function run() external {
         // Contract address (newly deployed)
-        address validatorAddress = 0x6f5F51654eeDfDBba5E053d022A7282f63ec8687;
+        address validatorAddress = 0x0Fe448a612efD9B38287e25a208448315c2E2Df3;
         validator = AAStarValidator(validatorAddress);
         
         // Start broadcasting transactions with owner's private key

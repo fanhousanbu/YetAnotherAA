@@ -247,22 +247,24 @@ contract AAStarValidator {
         // Negate the aggregated public key
         bytes memory negatedAggregatedKey = _negateG1Point(aggregatedKey);
         
-        // Verify signature
-        return _validateWithNegatedKey(negatedAggregatedKey, signature, messagePoint);
+        // Verify signature with dynamic gas calculation
+        return _validateWithNegatedKey(negatedAggregatedKey, signature, messagePoint, nodeIds.length);
     }
     
     /**
-     * @dev Perform pairing verification using negated public key
+     * @dev Perform pairing verification using negated public key with dynamic gas calculation
      * 
      * @param negatedAggregatedKey Negated aggregated public key
      * @param signature Aggregate signature
      * @param messagePoint Message point
+     * @param nodeCount Number of nodes participating (for dynamic gas calculation)
      * @return isValid Whether verification is successful
      */
     function _validateWithNegatedKey(
         bytes memory negatedAggregatedKey,
         bytes calldata signature,
-        bytes calldata messagePoint
+        bytes calldata messagePoint,
+        uint256 nodeCount
     ) internal view returns (bool isValid) {
         bytes memory pairingData = _buildPairingDataFromComponents(
             negatedAggregatedKey,
@@ -270,8 +272,11 @@ contract AAStarValidator {
             messagePoint
         );
         
+        // Calculate required gas dynamically based on operation complexity
+        uint256 requiredGas = _calculateRequiredGas(nodeCount);
+        
         (bool callSuccess, bytes memory result) = PAIRING_PRECOMPILE.staticcall{
-            gas: 200000
+            gas: requiredGas
         }(pairingData);
         
         if (!callSuccess) {
@@ -639,16 +644,54 @@ contract AAStarValidator {
     // =============================================================
     
     /**
-     * @dev Get gas estimation
+     * @dev Calculate required gas for BLS validation based on EIP-2537 and operational complexity
      * 
-     * @param publicKeysCount Number of public keys
+     * @param nodeCount Number of nodes participating in the signature
+     * @return requiredGas Calculated gas requirement
+     */
+    function _calculateRequiredGas(uint256 nodeCount) internal pure returns (uint256 requiredGas) {
+        if (nodeCount == 0) return 0;
+        
+        // EIP-2537 pairing check: 32600 * k + 37700, where k = 2 (two pairings)
+        uint256 pairingBaseCost = 32600 * 2 + 37700; // 102,900
+        
+        // G1 point addition cost: (nodeCount - 1) * 500 (EIP-2537 G1 addition)
+        // Each additional node requires one G1 point addition for aggregation
+        uint256 g1AdditionCost = (nodeCount - 1) * 500;
+        
+        // Storage read cost: nodeCount * 2100 (cold SLOAD for public keys)
+        // Each node requires reading its public key from storage
+        uint256 storageReadCost = nodeCount * 2100;
+        
+        // EVM execution overhead: data preparation, memory operations, loops
+        // Includes: memory allocation, data copying, point negation, validation checks
+        uint256 evmExecutionCost = 50000 + (nodeCount * 1000); // Base + per-node overhead
+        
+        // Calculate total with components breakdown
+        uint256 totalBaseCost = pairingBaseCost + g1AdditionCost + storageReadCost + evmExecutionCost;
+        
+        // Safety margin: 25% buffer to handle network variations and unexpected costs
+        requiredGas = totalBaseCost * 125 / 100;
+        
+        // Minimum gas floor: ensure at least the proven working amount for small node counts
+        if (requiredGas < 600000) {
+            requiredGas = 600000;
+        }
+        
+        // Maximum gas cap: prevent excessive gas usage for very large node counts
+        if (requiredGas > 2000000) {
+            requiredGas = 2000000;
+        }
+    }
+    
+    /**
+     * @dev Get gas estimation (public interface for external callers)
+     * 
+     * @param nodeCount Number of nodes participating in signature
      * @return gasEstimate Estimated gas consumption
      */
-    function getGasEstimate(uint256 publicKeysCount) external pure returns (uint256 gasEstimate) {
-        if (publicKeysCount == 0) return 0;
-        
-        // Base cost + aggregation cost + negation cost + pairing verification cost
-        return 50000 + (publicKeysCount * 500) + 3000 + 180000;
+    function getGasEstimate(uint256 nodeCount) external pure returns (uint256 gasEstimate) {
+        return _calculateRequiredGas(nodeCount);
     }
     
     /**
