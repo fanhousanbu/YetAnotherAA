@@ -14,8 +14,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Configuration
 const CONFIG = {
-    rpc: "https://sepolia.infura.io/v3/7051eb377c77490881070faaf93aef20",
-    privateKey: "0x72966a3f12beed253d475a19f4c8c73e5f7c14f2280bcda4499f72602b4d6c1a",
+    rpc: "https://sepolia.infura.io/v3/YOUR_INFURA_API_KEY",
+    privateKey: "YOUR_PRIVATE_KEY_HERE",
     entryPoint: "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
     factory: "0x559DD2D8Bf9180A70Da56FEFF57DA531BF3f2E1c",
     validator: "0xAe7eA28a0aeA05cbB8631bDd7B10Cb0f387FC479",
