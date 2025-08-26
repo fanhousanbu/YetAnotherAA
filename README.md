@@ -6,7 +6,7 @@ A complete implementation integrating BLS aggregate signatures with ERC-4337 acc
 
 - **BLS12-381 Aggregate Signatures**: Multi-node signature aggregation to reduce on-chain verification costs
 - **ERC-4337 Account Abstraction**: Full compatibility with Ethereum Account Abstraction standard
-- **Dynamic Gas Calculation**: Precise gas estimation based on EIP-2537 standards
+- **Gas Optimization**: Precise gas estimation based on EIP-2537 standards
 - **Dual Verification Mechanism**: AA signatures verify userOpHash, BLS signatures verify messagePoint
 - **Production Ready**: Complete verification on Sepolia testnet
 
@@ -16,12 +16,12 @@ A complete implementation integrating BLS aggregate signatures with ERC-4337 acc
 YetAnotherAA/
 ├── validator/                    # Validator contracts
 │   ├── src/
-│   │   ├── AAStarValidator.sol   # Dynamic gas BLS validator
+│   │   ├── AAStarValidator.sol   # BLS validator with gas optimization
 │   │   ├── AAStarAccountV6.sol   # ERC-4337 account implementation
 │   │   └── AAStarAccountFactoryV6.sol # Account factory
 │   ├── script/
-│   │   ├── DeployDynamicGasValidator.s.sol  # Deployment script
-│   │   └── RegisterKeysDynamicGas.s.sol     # Registration script
+│   │   ├── DeployValidator.s.sol      # Deployment script
+│   │   └── RegisterKeys.s.sol         # Registration script
 │   └── archive/                  # Archived legacy files
 ├── signer/
 │   ├── demo/                     # Core tools
@@ -101,12 +101,12 @@ Complete 705-byte signature structure:
 ### 1. Deploy Contracts
 ```bash
 cd validator
-forge script script/DeployDynamicGasValidator.s.sol --rpc-url $RPC_URL --broadcast
+forge script script/DeployValidator.s.sol --rpc-url $RPC_URL --broadcast
 ```
 
 ### 2. Register BLS Nodes
 ```bash
-forge script script/RegisterKeysDynamicGas.s.sol --rpc-url $RPC_URL --broadcast
+forge script script/RegisterKeys.s.sol --rpc-url $RPC_URL --broadcast
 ```
 
 ### 3. Execute Transfer

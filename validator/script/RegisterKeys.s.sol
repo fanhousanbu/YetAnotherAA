@@ -4,16 +4,16 @@ pragma solidity ^0.8.19;
 import "forge-std/Script.sol";
 import "../src/AAStarValidator.sol";
 
-contract RegisterKeysDynamicGas is Script {
+contract RegisterKeys is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address validatorAddress = 0xAe7eA28a0aeA05cbB8631bDd7B10Cb0f387FC479; // 动态gas版本
+        address validatorAddress = 0xAe7eA28a0aeA05cbB8631bDd7B10Cb0f387FC479;
         
         vm.startBroadcast(deployerPrivateKey);
         
         AAStarValidator validator = AAStarValidator(validatorAddress);
         
-        console.log("==== Registering BLS Keys to Dynamic Gas Validator ====");
+        console.log("==== Registering BLS Keys to Validator ====");
         console.log("Validator address:", validatorAddress);
         
         // Same 5 BLS keys as before
