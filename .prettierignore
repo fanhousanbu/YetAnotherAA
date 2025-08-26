@@ -1,0 +1,82 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+out/
+**/dist/
+**/build/
+**/out/
+
+# Logs
+*.log
+logs/
+
+# Coverage
+coverage/
+**/coverage/
+
+# Cache
+.cache/
+**/.cache/
+
+# Foundry
+cache/
+broadcast/
+**/cache/
+**/broadcast/
+
+# Git
+.git/
+
+# Environment files
+.env
+.env.*
+*.env
+
+# Config files that shouldn't be formatted
+config.json
+**/config.json
+config.example.json
+**/config.example.json
+
+# Claude Code settings
+.claude/
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+
+# Generated files
+*.generated.*
+**/*.generated.*
+
+# Vendor/Library files
+lib/
+**/lib/
+
+# Temporary files
+tmp/
+temp/
+**/tmp/
+**/temp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Forge std library
+**/forge-std/
+**/openzeppelin-contracts/

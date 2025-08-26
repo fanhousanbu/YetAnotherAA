@@ -1,0 +1,35 @@
+{
+  "name": "yet-another-aa",
+  "version": "0.0.4",
+  "description": "BLS Aggregate Signature + ERC-4337 Account Abstraction System",
+  "private": true,
+  "workspaces": [
+    "signer",
+    "aastar",
+    "aastar-frontend"
+  ],
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "prettier --check .",
+    "lint:fix": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "prettier-plugin-solidity": "^1.4.1"
+  },
+  "keywords": [
+    "bls",
+    "erc4337",
+    "account-abstraction",
+    "ethereum",
+    "crypto",
+    "signature-aggregation"
+  ],
+  "author": "YetAnotherAA Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fanhousanbu/YetAnotherAA.git"
+  }
+}
