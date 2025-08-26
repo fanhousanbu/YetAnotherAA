@@ -1,0 +1,98 @@
+import axios from 'axios';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor to add auth token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/auth/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Auth API
+export const authAPI = {
+  register: (data: { email: string; password: string; username?: string }) =>
+    api.post('/auth/register', data),
+  
+  login: (data: { email: string; password: string }) =>
+    api.post('/auth/login', data),
+  
+  getProfile: () =>
+    api.get('/auth/profile'),
+};
+
+// Account API
+export const accountAPI = {
+  create: (data: { deploy?: boolean; fundAmount?: string; salt?: number }) =>
+    api.post('/account/create', data),
+  
+  getAccount: () =>
+    api.get('/account'),
+  
+  getBalance: () =>
+    api.get('/account/balance'),
+  
+  getNonce: () =>
+    api.get('/account/nonce'),
+  
+  fundAccount: (data: { amount: string }) =>
+    api.post('/account/fund', data),
+};
+
+// Transfer API
+export const transferAPI = {
+  execute: (data: { 
+    to: string; 
+    amount: string; 
+    data?: string; 
+    nodeIndices?: number[] 
+  }) =>
+    api.post('/transfer/execute', data),
+  
+  estimate: (data: { 
+    to: string; 
+    amount: string; 
+    data?: string; 
+    nodeIndices?: number[] 
+  }) =>
+    api.post('/transfer/estimate', data),
+  
+  getStatus: (id: string) =>
+    api.get(`/transfer/status/${id}`),
+  
+  getHistory: (page: number = 1, limit: number = 10) =>
+    api.get(`/transfer/history?page=${page}&limit=${limit}`),
+};
+
+// BLS API
+export const blsAPI = {
+  getNodes: () =>
+    api.get('/bls/nodes'),
+  
+  generateSignature: (data: { userOpHash: string; nodeIndices?: number[] }) =>
+    api.post('/bls/sign', data),
+};
+
+export default api;
