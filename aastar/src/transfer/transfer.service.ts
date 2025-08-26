@@ -42,11 +42,10 @@ export class TransferService {
     // Get UserOp hash
     const userOpHash = await this.ethereumService.getUserOpHash(userOp);
 
-    // Generate BLS signature
+    // Generate BLS signature using active signer nodes
     const blsData = await this.blsService.generateBLSSignature(
       userId,
       userOpHash,
-      transferDto.nodeIndices || [1, 2, 3],
     );
 
     // Pack signature
@@ -63,7 +62,7 @@ export class TransferService {
       data: transferDto.data,
       userOpHash,
       status: 'pending',
-      nodeIndices: transferDto.nodeIndices || [1, 2, 3],
+      nodeIndices: [], // Auto-selected by gossip network
       createdAt: new Date().toISOString(),
     };
 
@@ -133,9 +132,9 @@ export class TransferService {
     // Get gas estimates
     const gasEstimates = await this.ethereumService.estimateUserOperationGas(formattedUserOp);
 
-    // Get validator gas estimate for selected nodes
+    // Get validator gas estimate for automatic node selection (default 3 nodes)
     const validatorContract = this.ethereumService.getValidatorContract();
-    const nodeCount = estimateDto.nodeIndices?.length || 3;
+    const nodeCount = 3; // Automatic selection uses 3 nodes
     const validatorGasEstimate = await validatorContract.getGasEstimate(nodeCount);
 
     return {

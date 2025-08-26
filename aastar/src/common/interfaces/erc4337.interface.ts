@@ -19,9 +19,12 @@ export interface GasEstimate {
 }
 
 export interface BlsSignatureData {
-  nodeIds: string[];
+  nodeIds?: string[];
+  signatures?: string[];
+  publicKeys?: string[];
   signature: string;
   messagePoint: string;
-  aaAddress: string;
-  aaSignature: string;
+  aaAddress?: string;
+  aaSignature?: string;
+  aggregatedSignature?: string;
 }

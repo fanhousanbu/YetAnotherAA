@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
-import { accountAPI, transferAPI, blsAPI } from '@/lib/api';
-import { Account, BlsNode, GasEstimate } from '@/lib/types';
+import { accountAPI, transferAPI } from '@/lib/api';
+import { Account, GasEstimate } from '@/lib/types';
 import toast from 'react-hot-toast';
 import {
   ArrowUpIcon,
@@ -14,11 +14,9 @@ import {
 
 export default function TransferPage() {
   const [account, setAccount] = useState<Account | null>(null);
-  const [nodes, setNodes] = useState<BlsNode[]>([]);
   const [formData, setFormData] = useState({
     to: '',
     amount: '',
-    nodeIndices: [1, 2, 3],
   });
   const [gasEstimate, setGasEstimate] = useState<GasEstimate | null>(null);
   const [loading, setLoading] = useState({
@@ -39,10 +37,6 @@ export default function TransferPage() {
       // Load account
       const accountResponse = await accountAPI.getAccount();
       setAccount(accountResponse.data);
-
-      // Load BLS nodes
-      const nodesResponse = await blsAPI.getNodes();
-      setNodes(nodesResponse.data);
 
       if (!accountResponse.data.deployed) {
         toast.error('Account must be deployed before making transfers');
@@ -69,19 +63,6 @@ export default function TransferPage() {
     }
   };
 
-  const handleNodeChange = (nodeIndex: number) => {
-    setFormData(prev => ({
-      ...prev,
-      nodeIndices: prev.nodeIndices.includes(nodeIndex)
-        ? prev.nodeIndices.filter(idx => idx !== nodeIndex)
-        : [...prev.nodeIndices, nodeIndex],
-    }));
-    
-    // Clear gas estimate when node selection changes
-    if (gasEstimate) {
-      setGasEstimate(null);
-    }
-  };
 
   const estimateGas = async () => {
     if (!formData.to || !formData.amount) {
@@ -94,7 +75,6 @@ export default function TransferPage() {
       const response = await transferAPI.estimate({
         to: formData.to,
         amount: formData.amount,
-        nodeIndices: formData.nodeIndices,
       });
       setGasEstimate(response.data);
       toast.success('Gas estimated successfully');
@@ -112,17 +92,12 @@ export default function TransferPage() {
       return;
     }
 
-    if (formData.nodeIndices.length < 3) {
-      toast.error('Please select at least 3 nodes for BLS signature');
-      return;
-    }
 
     setLoading(prev => ({ ...prev, transfer: true }));
     try {
       const response = await transferAPI.execute({
         to: formData.to,
         amount: formData.amount,
-        nodeIndices: formData.nodeIndices,
       });
       
       setTransferResult(response.data);
@@ -132,7 +107,6 @@ export default function TransferPage() {
       setFormData({
         to: '',
         amount: '',
-        nodeIndices: [1, 2, 3],
       });
       setGasEstimate(null);
     } catch (error: any) {
@@ -274,30 +248,6 @@ export default function TransferPage() {
               />
             </div>
 
-            {/* BLS Nodes Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                BLS Signature Nodes (Select at least 3)
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {nodes.map((node) => (
-                  <label key={node.index} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.nodeIndices.includes(node.index)}
-                      onChange={() => handleNodeChange(node.index)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <span className="ml-2 text-sm text-gray-900">
-                      {node.nodeName}
-                    </span>
-                  </label>
-                ))}
-              </div>
-              <p className="mt-1 text-sm text-gray-500">
-                Selected: {formData.nodeIndices.length} nodes
-              </p>
-            </div>
 
             {/* Gas Estimation */}
             {gasEstimate && (
@@ -354,8 +304,7 @@ export default function TransferPage() {
                 disabled={
                   loading.transfer || 
                   !formData.to || 
-                  !formData.amount || 
-                  formData.nodeIndices.length < 3
+                  !formData.amount
                 }
                 className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -380,7 +329,7 @@ export default function TransferPage() {
               </h3>
               <div className="mt-2 text-sm text-blue-700">
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Select at least 3 BLS nodes for signature aggregation</li>
+                  <li>BLS nodes are automatically selected from the gossip network</li>
                   <li>Estimate gas costs before sending</li>
                   <li>Transaction uses ERC-4337 UserOperation</li>
                   <li>BLS signatures reduce verification costs</li>

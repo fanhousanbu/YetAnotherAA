@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
+import CopyButton from '@/components/CopyButton';
 import { accountAPI, transferAPI } from '@/lib/api';
 import { Account, Transfer, User } from '@/lib/types';
 import { getStoredAuth } from '@/lib/auth';
@@ -152,9 +153,10 @@ export default function DashboardPage() {
                       <div className="mt-2 space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-gray-500">Address:</span>
-                          <span className="text-sm font-mono">
-                            {truncateAddress(account.address)}
-                          </span>
+                          <CopyButton 
+                            text={account.address}
+                            className="flex-shrink-0"
+                          />
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-gray-500">Balance:</span>
@@ -276,9 +278,13 @@ export default function DashboardPage() {
                         {getStatusIcon(transfer.status)}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          To: {truncateAddress(transfer.to)}
-                        </p>
+                        <div className="flex items-center space-x-1">
+                          <span className="text-sm font-medium text-gray-900">To:</span>
+                          <CopyButton 
+                            text={transfer.to}
+                            className="text-sm"
+                          />
+                        </div>
                         <p className="text-sm text-gray-500">
                           {new Date(transfer.createdAt).toLocaleDateString()}
                         </p>

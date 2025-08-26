@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
+import CopyButton from '@/components/CopyButton';
 import { transferAPI } from '@/lib/api';
 import { Transfer } from '@/lib/types';
 import toast from 'react-hot-toast';
@@ -171,9 +172,10 @@ export default function TransferHistoryPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 font-mono">
-                            {truncateAddress(transfer.to)}
-                          </div>
+                          <CopyButton 
+                            text={transfer.to}
+                            className="text-sm"
+                          />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-semibold text-gray-900">
@@ -190,9 +192,10 @@ export default function TransferHistoryPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {transfer.transactionHash ? (
-                            <div className="text-sm text-gray-900 font-mono">
-                              {truncateHash(transfer.transactionHash)}
-                            </div>
+                            <CopyButton 
+                              text={transfer.transactionHash}
+                              className="text-sm"
+                            />
                           ) : (
                             <div className="text-sm text-gray-400">
                               Pending...

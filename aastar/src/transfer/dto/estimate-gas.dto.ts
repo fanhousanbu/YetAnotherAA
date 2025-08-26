@@ -14,13 +14,4 @@ export class EstimateGasDto {
   @IsOptional()
   @IsString()
   data?: string;
-
-  @ApiProperty({
-    description: 'Node indices for BLS signature (1-based)',
-    example: [1, 2, 3],
-    required: false,
-  })
-  @IsOptional()
-  @IsArray()
-  nodeIndices?: number[];
 }
