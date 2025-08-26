@@ -2,6 +2,8 @@
 
 A complete implementation integrating BLS aggregate signatures with ERC-4337 account abstraction, featuring dynamic gas calculation and multi-node signature verification.
 
+> **⚠️ Security Notice**: This repository provides reference implementations and example deployments for educational and testing purposes. For production use, you should deploy your own contracts and manage your own private keys. Do not rely on the reference contract addresses provided in this documentation for production applications.
+
 ## 🎯 System Features
 
 - **BLS12-381 Aggregate Signatures**: Multi-node signature aggregation to reduce on-chain verification costs
@@ -33,16 +35,21 @@ YetAnotherAA/
 └── README.md                     # Project documentation
 ```
 
-## 🚀 Deployed Contracts (Sepolia Testnet)
+## 📋 Contract Deployment
 
-### Dynamic Gas Version (Recommended)
-- **AAStarValidator**: `0xAe7eA28a0aeA05cbB8631bDd7B10Cb0f387FC479`
+**⚠️ Important**: You should deploy your own contracts for production use. The addresses below are reference examples from our testnet deployment.
+
+### Required Contracts
+- **AAStarValidator**: Your deployed validator contract
+- **AAStarAccountFactory**: Your deployed account factory  
+- **AAStarAccountV6 Implementation**: Your deployed account implementation
+- **EntryPoint**: `0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789` (Official ERC-4337 EntryPoint)
+
+### Reference Deployment (Sepolia Testnet)
+For testing and reference purposes only:
+- **AAStarValidator**: `0xAe7eA28a0aeA05cbB8631bDd7B10Cb0f387FC479` 
 - **AAStarAccountFactory**: `0x559DD2D8Bf9180A70Da56FEFF57DA531BF3f2E1c`
 - **AAStarAccountV6 Implementation**: `0x15c0f6d0d6152121099ab05993f5975299410f6a`
-- **EntryPoint**: `0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789` (Official)
-
-### Fixed Gas Version (Legacy)
-- **AAStarValidator**: `0x0Fe448a612efD9B38287e25a208448315c2E2Df3`
 
 ## 🛠️ Core Technical Implementation
 
@@ -98,22 +105,34 @@ Complete 705-byte signature structure:
 
 ## 📖 Usage Guide
 
-### 1. Deploy Contracts
+### 1. Deploy Your Own Contracts
+**Important**: Deploy your own contracts for security and control.
+
 ```bash
 cd validator
+# Set up your environment variables
+export PRIVATE_KEY=your_private_key_here
+export RPC_URL=your_rpc_url_here
+
+# Deploy validator contracts
 forge script script/DeployValidator.s.sol --rpc-url $RPC_URL --broadcast
 ```
 
-### 2. Register BLS Nodes
+### 2. Register Your BLS Nodes
 ```bash
+# Update RegisterKeys.s.sol with your deployed validator address
+# Then register your BLS public keys
 forge script script/RegisterKeys.s.sol --rpc-url $RPC_URL --broadcast
 ```
 
-### 3. Execute Transfer
+### 3. Configure and Run Demo
 ```bash
 cd signer/demo
 cp config.example.json config.json
-# Edit config.json with your private keys
+# Edit config.json with:
+# - Your deployed contract addresses
+# - Your private keys
+# - Your BLS node configurations
 node main.js
 ```
 
@@ -176,17 +195,28 @@ This project demonstrates:
    cd YetAnotherAA
    ```
 
-2. **Set up demo configuration**
+2. **Deploy your contracts**
+   ```bash
+   cd validator
+   # Set up environment variables first
+   export PRIVATE_KEY=your_private_key_here
+   export RPC_URL=your_rpc_url_here
+   forge script script/DeployValidator.s.sol --rpc-url $RPC_URL --broadcast
+   ```
+
+3. **Configure demo with your contracts**
    ```bash
    cd signer/demo
    cp config.example.json config.json
-   # Edit config.json with your keys
+   # Edit config.json with YOUR deployed contract addresses and keys
    ```
 
-3. **Run the transfer tool**
+4. **Run the transfer tool**
    ```bash
    node main.js
    ```
+
+**Note**: For quick testing, you can use our reference contracts on Sepolia, but deploy your own for production use.
 
 ## 📄 License
 
