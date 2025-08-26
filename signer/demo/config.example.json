@@ -72,7 +72,7 @@
     "validator": {
       "name": "AAStarValidator",
       "address": "0xAe7eA28a0aeA05cbB8631bDd7B10Cb0f387FC479",
-      "version": "Dynamic Gas Version"
+      "version": "v1.0"
     },
     "accountFactory": {
       "name": "AAStarAccountFactoryV6", 

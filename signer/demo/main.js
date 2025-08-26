@@ -219,7 +219,7 @@ class ERC4337Transfer {
         
         // Show gas estimation
         const gasEstimate = await this.validator.getGasEstimate(CONFIG.selectedNodes.length);
-        console.log(`Dynamic gas estimate (${CONFIG.selectedNodes.length} nodes):`, Number(gasEstimate).toLocaleString());
+        console.log(`Gas estimate (${CONFIG.selectedNodes.length} nodes):`, Number(gasEstimate).toLocaleString());
         
         const account = new ethers.Contract(accountAddress, ACCOUNT_ABI, this.provider);
         const nonce = await this.entryPoint.getNonce(accountAddress, 0);
@@ -433,7 +433,7 @@ class ERC4337Transfer {
     async run() {
         console.log("🎯 ERC-4337 + BLS Aggregate Signature Transfer");
         console.log("=".repeat(50));
-        console.log("Dynamic Gas Validator:", CONFIG.validator);
+        console.log("Validator:", CONFIG.validator);
         
         try {
             const accountAddress = await this.createOrGetAccount();
@@ -443,7 +443,7 @@ class ERC4337Transfer {
                 console.log("\n🏆 Transfer successful!");
                 console.log("✅ ERC-4337 account abstraction working properly");
                 console.log("✅ BLS aggregate signature verification passed");
-                console.log("✅ Dynamic gas calculation optimization active");
+                console.log("✅ Gas optimization active");
                 console.log("✅ Pimlico bundler integration successful");
             } else {
                 console.log("\n❌ Transfer amount mismatch");
