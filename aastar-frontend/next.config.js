@@ -6,41 +6,41 @@ const nextConfig = {
     return [
       // 代理所有 API 请求到后端
       {
-        source: '/api/:path*',
-        destination: 'http://localhost:3000/api/:path*',
+        source: "/api/:path*",
+        destination: "http://localhost:3000/api/:path*",
       },
       // 代理认证相关请求
       {
-        source: '/auth/:path*',
-        destination: 'http://localhost:3000/auth/:path*',
+        source: "/auth/:path*",
+        destination: "http://localhost:3000/auth/:path*",
       },
       // 代理用户相关请求
       {
-        source: '/user/:path*',
-        destination: 'http://localhost:3000/user/:path*',
+        source: "/user/:path*",
+        destination: "http://localhost:3000/user/:path*",
       },
       // 代理钱包相关请求
       {
-        source: '/wallet/:path*',
-        destination: 'http://localhost:3000/wallet/:path*',
+        source: "/wallet/:path*",
+        destination: "http://localhost:3000/wallet/:path*",
       },
       // 代理转账相关请求
       {
-        source: '/transfer/:path*',
-        destination: 'http://localhost:3000/transfer/:path*',
+        source: "/transfer/:path*",
+        destination: "http://localhost:3000/transfer/:path*",
       },
       // 代理区块链相关请求
       {
-        source: '/blockchain/:path*',
-        destination: 'http://localhost:3000/blockchain/:path*',
+        source: "/blockchain/:path*",
+        destination: "http://localhost:3000/blockchain/:path*",
       },
       // 代理存储相关请求
       {
-        source: '/storage/:path*',
-        destination: 'http://localhost:3000/storage/:path*',
+        source: "/storage/:path*",
+        destination: "http://localhost:3000/storage/:path*",
       },
     ];
-  }
+  },
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;

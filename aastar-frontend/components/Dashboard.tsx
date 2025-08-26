@@ -1,32 +1,32 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { User, Contact, Transfer, WalletInfo } from '@/lib/types';
-import { contactStorage, transferStorage, formatCurrency, formatDate } from '@/lib/storage';
-import { api, ApiError } from '@/lib/api';
-import ContactList from './ContactList';
-import AddContactModal from './AddContactModal';
-import TransferModal from './TransferModal';
-import TransferHistory from './TransferHistory';
-import { Users, Plus, LogOut, Wallet, User as UserIcon, RefreshCw } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { User, Contact, Transfer, WalletInfo } from "@/lib/types";
+import { contactStorage, transferStorage, formatCurrency, formatDate } from "@/lib/storage";
+import { api, ApiError } from "@/lib/api";
+import ContactList from "./ContactList";
+import AddContactModal from "./AddContactModal";
+import TransferModal from "./TransferModal";
+import TransferHistory from "./TransferHistory";
+import { Users, Plus, LogOut, Wallet, User as UserIcon, RefreshCw } from "lucide-react";
 
 interface DashboardProps {
   user: User;
   onLogout: () => void;
 }
 
-type TabType = 'wallet' | 'contacts' | 'transfers';
+type TabType = "wallet" | "contacts" | "transfers";
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('wallet');
+  const [activeTab, setActiveTab] = useState<TabType>("wallet");
   const [showAddContact, setShowAddContact] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     loadContacts();
@@ -46,17 +46,17 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
   const loadWalletInfo = async () => {
     setLoading(true);
-    setError('');
-    
+    setError("");
+
     try {
       const wallet = await api.wallet.getWalletInfo();
       setWalletInfo(wallet);
     } catch (error) {
-      console.error('加载钱包信息失败:', error);
+      console.error("加载钱包信息失败:", error);
       if (error instanceof ApiError) {
         setError(error.message);
       } else {
-        setError('加载钱包信息失败');
+        setError("加载钱包信息失败");
       }
     } finally {
       setLoading(false);
@@ -68,7 +68,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       ...contact,
       id: Date.now().toString(),
       userId: user.id,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
     contactStorage.saveContact(newContact);
     loadContacts();
@@ -84,8 +84,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     const newTransfer: Transfer = {
       ...transfer,
       id: Date.now().toString(),
-      status: 'pending',
-      createdAt: new Date().toISOString()
+      status: "pending",
+      createdAt: new Date().toISOString(),
     };
     transferStorage.saveTransfer(newTransfer);
     loadTransfers();
@@ -116,7 +116,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
             <div className="flex items-center">
               <h1 className="text-xl font-semibold text-gray-900">AAStar Demo</h1>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2 text-sm text-gray-600">
                 <UserIcon className="h-4 w-4" />
@@ -144,17 +144,11 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">欢迎回来！</h2>
               <p className="text-gray-600">{user.email}</p>
-              <p className="text-sm text-gray-500 mt-1">
-                注册时间：{formatDate(user.createdAt)}
-              </p>
-              <p className="text-sm text-gray-500">
-                Passkey 凭证数量：{user.credentialCount}
-              </p>
+              <p className="text-sm text-gray-500 mt-1">注册时间：{formatDate(user.createdAt)}</p>
+              <p className="text-sm text-gray-500">Passkey 凭证数量：{user.credentialCount}</p>
             </div>
             <div className="text-right">
-              <div className="text-3xl font-bold text-primary-600">
-                {contacts.length}
-              </div>
+              <div className="text-3xl font-bold text-primary-600">{contacts.length}</div>
               <div className="text-sm text-gray-500">联系人</div>
             </div>
           </div>
@@ -163,33 +157,33 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         {/* 标签页导航 */}
         <div className="flex space-x-1 bg-white rounded-lg p-1 shadow-sm mb-6">
           <button
-            onClick={() => setActiveTab('wallet')}
+            onClick={() => setActiveTab("wallet")}
             className={`flex-1 flex items-center justify-center space-x-2 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'wallet'
-                ? 'bg-primary-600 text-white'
-                : 'text-gray-600 hover:text-gray-900'
+              activeTab === "wallet"
+                ? "bg-primary-600 text-white"
+                : "text-gray-600 hover:text-gray-900"
             }`}
           >
             <Wallet className="h-4 w-4" />
             <span>钱包</span>
           </button>
           <button
-            onClick={() => setActiveTab('contacts')}
+            onClick={() => setActiveTab("contacts")}
             className={`flex-1 flex items-center justify-center space-x-2 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'contacts'
-                ? 'bg-primary-600 text-white'
-                : 'text-gray-600 hover:text-gray-900'
+              activeTab === "contacts"
+                ? "bg-primary-600 text-white"
+                : "text-gray-600 hover:text-gray-900"
             }`}
           >
             <Users className="h-4 w-4" />
             <span>联系人管理</span>
           </button>
           <button
-            onClick={() => setActiveTab('transfers')}
+            onClick={() => setActiveTab("transfers")}
             className={`flex-1 flex items-center justify-center space-x-2 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'transfers'
-                ? 'bg-primary-600 text-white'
-                : 'text-gray-600 hover:text-gray-900'
+              activeTab === "transfers"
+                ? "bg-primary-600 text-white"
+                : "text-gray-600 hover:text-gray-900"
             }`}
           >
             <Wallet className="h-4 w-4" />
@@ -198,7 +192,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         </div>
 
         {/* 标签页内容 */}
-        {activeTab === 'wallet' && (
+        {activeTab === "wallet" && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900">钱包信息</h3>
@@ -207,7 +201,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                 disabled={loading}
                 className="btn-secondary flex items-center space-x-2"
               >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                 <span>刷新</span>
               </button>
             </div>
@@ -250,9 +244,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                   <div className="text-3xl font-bold text-primary-600">
                     {formatBalance(walletInfo.balance)}
                   </div>
-                  <p className="text-sm text-gray-500 mt-2">
-                    原始余额：{walletInfo.balance} wei
-                  </p>
+                  <p className="text-sm text-gray-500 mt-2">原始余额：{walletInfo.balance} wei</p>
                 </div>
               </div>
             ) : (
@@ -265,7 +257,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           </div>
         )}
 
-        {activeTab === 'contacts' && (
+        {activeTab === "contacts" && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900">联系人列表</h3>
@@ -286,7 +278,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           </div>
         )}
 
-        {activeTab === 'transfers' && (
+        {activeTab === "transfers" && (
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">转账记录</h3>
             <TransferHistory transfers={transfers} user={user} />
@@ -317,4 +309,4 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       )}
     </div>
   );
-} 
+}

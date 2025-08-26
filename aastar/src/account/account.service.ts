@@ -1,16 +1,16 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { ethers } from 'ethers';
-import { EthereumService } from '../ethereum/ethereum.service';
-import { AccountInfo, ValidationConfig } from '../common/interfaces/erc4337.interface';
+import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { ethers } from "ethers";
+import { EthereumService } from "../ethereum/ethereum.service";
+import { AccountInfo, ValidationConfig } from "../common/interfaces/erc4337.interface";
 
 @Injectable()
 export class AccountService {
   private readonly logger = new Logger(AccountService.name);
-  
+
   constructor(
     private configService: ConfigService,
-    private ethereumService: EthereumService,
+    private ethereumService: EthereumService
   ) {}
 
   /**
@@ -19,17 +19,17 @@ export class AccountService {
   async getAccountInfo(
     privateKey: string,
     useAAStarValidator: boolean = false,
-    salt: string = '12345'
+    salt: string = "12345"
   ): Promise<AccountInfo> {
     try {
       const wallet = new ethers.Wallet(privateKey);
-      const factoryAddress = useAAStarValidator 
-        ? this.configService.get('AASTAR_ACCOUNT_FACTORY_ADDRESS')
-        : this.configService.get('ENHANCED_FACTORY_ADDRESS');
-      
-      const validatorAddress = useAAStarValidator 
-        ? this.configService.get('VALIDATOR_CONTRACT_ADDRESS')
-        : this.configService.get('ECDSA_VALIDATOR_ADDRESS');
+      const factoryAddress = useAAStarValidator
+        ? this.configService.get("AASTAR_ACCOUNT_FACTORY_ADDRESS")
+        : this.configService.get("ENHANCED_FACTORY_ADDRESS");
+
+      const validatorAddress = useAAStarValidator
+        ? this.configService.get("VALIDATOR_CONTRACT_ADDRESS")
+        : this.configService.get("ECDSA_VALIDATOR_ADDRESS");
 
       // 获取账户地址
       const accountAddress = await this.getAccountAddress(
@@ -72,14 +72,14 @@ export class AccountService {
   async createAccount(
     privateKey: string,
     useAAStarValidator: boolean = false,
-    salt: string = '12345'
+    salt: string = "12345"
   ): Promise<AccountInfo> {
     try {
       this.logger.log(`创建账户: useAAStarValidator=${useAAStarValidator}`);
-      
+
       // 验证私钥格式
       const wallet = new ethers.Wallet(privateKey);
-      
+
       return await this.getAccountInfo(privateKey, useAAStarValidator, salt);
     } catch (error) {
       this.logger.error(`创建账户失败: ${error.message}`);
@@ -96,17 +96,19 @@ export class AccountService {
     validatorAddress: string,
     salt: string
   ): Promise<string> {
-    const factoryAddress = useAAStarValidator 
-      ? this.configService.get('AASTAR_ACCOUNT_FACTORY_ADDRESS')
-      : this.configService.get('ENHANCED_FACTORY_ADDRESS');
+    const factoryAddress = useAAStarValidator
+      ? this.configService.get("AASTAR_ACCOUNT_FACTORY_ADDRESS")
+      : this.configService.get("ENHANCED_FACTORY_ADDRESS");
 
     if (!factoryAddress) {
-      throw new Error(`Factory地址未配置: ${useAAStarValidator ? 'AAStarAccountFactory' : 'EnhancedFactory'}`);
+      throw new Error(
+        `Factory地址未配置: ${useAAStarValidator ? "AAStarAccountFactory" : "EnhancedFactory"}`
+      );
     }
 
     const factoryAbi = [
-      'function getAddress(address owner, uint256 salt) view returns (address)',
-      'function getAddress(address owner, address validator, bool useCustomValidator, uint256 salt) view returns (address)'
+      "function getAddress(address owner, uint256 salt) view returns (address)",
+      "function getAddress(address owner, address validator, bool useCustomValidator, uint256 salt) view returns (address)",
     ];
 
     const factory = new ethers.Contract(
@@ -116,14 +118,14 @@ export class AccountService {
     );
 
     if (useAAStarValidator) {
-      return await factory['getAddress(address,address,bool,uint256)'](
+      return await factory["getAddress(address,address,bool,uint256)"](
         ownerAddress,
         validatorAddress,
         true,
         salt
       );
     } else {
-      return await factory['getAddress(address,uint256)'](ownerAddress, salt);
+      return await factory["getAddress(address,uint256)"](ownerAddress, salt);
     }
   }
 
@@ -132,7 +134,7 @@ export class AccountService {
    */
   private async isAccountDeployed(address: string): Promise<boolean> {
     const code = await this.ethereumService.getCode(address);
-    return code !== '0x';
+    return code !== "0x";
   }
 
   /**
@@ -156,7 +158,7 @@ export class AccountService {
 
     try {
       const accountAbi = [
-        'function getValidationConfig() view returns (address validator, bool isCustom, address accountOwner)'
+        "function getValidationConfig() view returns (address validator, bool isCustom, address accountOwner)",
       ];
 
       const account = new ethers.Contract(
@@ -191,23 +193,19 @@ export class AccountService {
   ): Promise<void> {
     try {
       const wallet = new ethers.Wallet(privateKey, this.ethereumService.getProvider());
-      
+
       // 获取账户信息
       const accountInfo = await this.getAccountInfo(privateKey);
-      
+
       if (!accountInfo.isDeployed) {
-        throw new Error('账户尚未部署，无法更新验证器配置');
+        throw new Error("账户尚未部署，无法更新验证器配置");
       }
 
       const accountAbi = [
-        'function setSignatureValidator(address _signatureValidator, bool _useCustomValidator)'
+        "function setSignatureValidator(address _signatureValidator, bool _useCustomValidator)",
       ];
 
-      const account = new ethers.Contract(
-        accountInfo.address,
-        accountAbi,
-        wallet
-      );
+      const account = new ethers.Contract(accountInfo.address, accountAbi, wallet);
 
       const tx = await account.setSignatureValidator(validatorAddress, useCustomValidator);
       await tx.wait();

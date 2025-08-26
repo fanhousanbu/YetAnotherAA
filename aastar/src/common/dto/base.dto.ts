@@ -1,20 +1,20 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean } from 'class-validator';
+import { ApiProperty } from "@nestjs/swagger";
+import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean } from "class-validator";
 
 export class BaseResponseDto<T = any> {
-  @ApiProperty({ description: '是否成功' })
+  @ApiProperty({ description: "是否成功" })
   success: boolean;
 
-  @ApiProperty({ description: '响应消息' })
+  @ApiProperty({ description: "响应消息" })
   message: string;
 
-  @ApiProperty({ description: '响应数据' })
+  @ApiProperty({ description: "响应数据" })
   data?: T;
 
-  @ApiProperty({ description: '错误代码', required: false })
+  @ApiProperty({ description: "错误代码", required: false })
   errorCode?: string;
 
-  @ApiProperty({ description: '时间戳' })
+  @ApiProperty({ description: "时间戳" })
   timestamp: string;
 
   constructor(success: boolean, message: string, data?: T, errorCode?: string) {
@@ -25,7 +25,7 @@ export class BaseResponseDto<T = any> {
     this.timestamp = new Date().toISOString();
   }
 
-  static success<T>(data: T, message: string = '操作成功'): BaseResponseDto<T> {
+  static success<T>(data: T, message: string = "操作成功"): BaseResponseDto<T> {
     return new BaseResponseDto(true, message, data);
   }
 

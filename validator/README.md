@@ -1,16 +1,24 @@
 # AAStarValidator
 
-A production-ready BLS aggregate signature validator optimized for Account Abstraction (AA) scenarios. This contract implements efficient BLS signature aggregation and verification using EIP-2537 precompiles on Ethereum.
+A production-ready BLS aggregate signature validator optimized for Account
+Abstraction (AA) scenarios. This contract implements efficient BLS signature
+aggregation and verification using EIP-2537 precompiles on Ethereum.
 
 ## Overview
 
-AAStarValidator provides secure, gas-optimized BLS signature validation for multi-party signing scenarios. It's specifically designed for Account Abstraction wallets that need to aggregate signatures from multiple participants before executing transactions.
+AAStarValidator provides secure, gas-optimized BLS signature validation for
+multi-party signing scenarios. It's specifically designed for Account
+Abstraction wallets that need to aggregate signatures from multiple participants
+before executing transactions.
 
 ### Key Features
 
-- **BLS Signature Aggregation**: Combines multiple individual signatures into a single aggregate signature
-- **EIP-2537 Integration**: Leverages Ethereum's BLS12-381 precompiles for optimal performance  
-- **Gas Optimization**: Minimized gas costs through efficient cryptographic operations
+- **BLS Signature Aggregation**: Combines multiple individual signatures into a
+  single aggregate signature
+- **EIP-2537 Integration**: Leverages Ethereum's BLS12-381 precompiles for
+  optimal performance
+- **Gas Optimization**: Minimized gas costs through efficient cryptographic
+  operations
 - **Event Monitoring**: Comprehensive event emission for analytics and debugging
 - **Production Ready**: Thoroughly tested with 100% test coverage
 - **Account Abstraction Compatible**: Designed for ERC-4337 integration
@@ -19,10 +27,13 @@ AAStarValidator provides secure, gas-optimized BLS signature validation for mult
 
 The validator implements the complete BLS signature verification workflow:
 
-1. **Key Aggregation**: Aggregates multiple G1 public keys using elliptic curve addition
-2. **Key Negation**: Negates the aggregated public key for verification purposes  
-3. **Pairing Construction**: Builds pairing input data for cryptographic verification
-4. **Signature Verification**: Executes BLS signature validation via pairing check
+1. **Key Aggregation**: Aggregates multiple G1 public keys using elliptic curve
+   addition
+2. **Key Negation**: Negates the aggregated public key for verification purposes
+3. **Pairing Construction**: Builds pairing input data for cryptographic
+   verification
+4. **Signature Verification**: Executes BLS signature validation via pairing
+   check
 
 ```mermaid
 graph TD
@@ -38,6 +49,7 @@ graph TD
 ### Main Functions
 
 #### `verifyAggregateSignature`
+
 ```solidity
 function verifyAggregateSignature(
     bytes[] calldata publicKeys,
@@ -45,9 +57,11 @@ function verifyAggregateSignature(
     bytes calldata messageHash
 ) external returns (bool isValid)
 ```
+
 Primary validation method with event emission and gas tracking.
 
-#### `validateAggregateSignature`  
+#### `validateAggregateSignature`
+
 ```solidity
 function validateAggregateSignature(
     bytes[] calldata publicKeys,
@@ -55,36 +69,45 @@ function validateAggregateSignature(
     bytes calldata messageHash
 ) external view returns (bool isValid)
 ```
+
 Read-only validation for off-chain verification.
 
 ### Utility Functions
 
 #### `getGasEstimate`
+
 ```solidity
 function getGasEstimate(uint256 publicKeysCount) external pure returns (uint256 gasEstimate)
 ```
+
 Provides gas cost estimation for transaction planning.
 
 #### `getSignatureFormat`
+
 ```solidity
 function getSignatureFormat() external pure returns (string memory format)
 ```
+
 Returns expected signature format documentation.
 
 ## Data Formats
 
 ### Public Keys
+
 - Format: G1 points in EIP-2537 encoding
 - Length: 128 bytes per key
-- Structure: `[16 zero bytes][48 bytes x-coordinate][16 zero bytes][48 bytes y-coordinate]`
+- Structure:
+  `[16 zero bytes][48 bytes x-coordinate][16 zero bytes][48 bytes y-coordinate]`
 
-### Aggregate Signature  
+### Aggregate Signature
+
 - Format: G2 point in EIP-2537 encoding
 - Length: 256 bytes
 - Structure: BLS aggregate signature as G2 curve point
 
 ### Message Hash
-- Format: G2 point in EIP-2537 encoding  
+
+- Format: G2 point in EIP-2537 encoding
 - Length: 256 bytes
 - Structure: Message hash mapped to G2 curve
 
@@ -92,7 +115,8 @@ Returns expected signature format documentation.
 
 ### Prerequisites
 
-- [Foundry](https://book.getfoundry.sh/getting-started/installation) (forge, cast, anvil)
+- [Foundry](https://book.getfoundry.sh/getting-started/installation) (forge,
+  cast, anvil)
 - Node.js 16+ (for signature generation tools)
 - Git
 
@@ -132,7 +156,7 @@ bytes memory messageHash = hashedMessage;    // 256 bytes
 // Validate signature
 bool isValid = validator.verifyAggregateSignature(
     publicKeys,
-    signature, 
+    signature,
     messageHash
 );
 ```
@@ -149,24 +173,28 @@ uint256 estimatedGas = validator.getGasEstimate(5);
 
 ```solidity
 contract AAWallet {
-    AAStarValidator private validator;
-    
-    function executeWithMultiSig(
-        bytes[] calldata ownerKeys,
-        bytes calldata aggregateSignature,
-        bytes calldata messageHash,
-        bytes calldata callData
-    ) external {
-        // Validate aggregate signature
-        require(
-            validator.verifyAggregateSignature(ownerKeys, aggregateSignature, messageHash),
-            "Invalid signature"
-        );
-        
-        // Execute transaction
-        (bool success,) = target.call(callData);
-        require(success, "Execution failed");
-    }
+  AAStarValidator private validator;
+
+  function executeWithMultiSig(
+    bytes[] calldata ownerKeys,
+    bytes calldata aggregateSignature,
+    bytes calldata messageHash,
+    bytes calldata callData
+  ) external {
+    // Validate aggregate signature
+    require(
+      validator.verifyAggregateSignature(
+        ownerKeys,
+        aggregateSignature,
+        messageHash
+      ),
+      "Invalid signature"
+    );
+
+    // Execute transaction
+    (bool success, ) = target.call(callData);
+    require(success, "Execution failed");
+  }
 }
 ```
 
@@ -181,7 +209,7 @@ forge test
 # Run with verbosity
 forge test -v
 
-# Generate coverage report  
+# Generate coverage report
 forge coverage
 
 # Run specific test
@@ -201,23 +229,27 @@ forge test --match-test test_ValidateAggregateSignature
 
 ## Gas Costs
 
-| Operation | Participants | Estimated Gas |
-|-----------|-------------|---------------|
-| Validation | 1 | ~233,500 |
-| Validation | 2 | ~234,000 |  
-| Validation | 5 | ~235,500 |
-| Validation | 10 | ~238,000 |
+| Operation  | Participants | Estimated Gas |
+| ---------- | ------------ | ------------- |
+| Validation | 1            | ~233,500      |
+| Validation | 2            | ~234,000      |
+| Validation | 5            | ~235,500      |
+| Validation | 10           | ~238,000      |
 
-*Gas costs include base verification (~233k) + aggregation overhead (~500 gas per additional key)*
+_Gas costs include base verification (~233k) + aggregation overhead (~500 gas
+per additional key)_
 
 ## Security Considerations
 
 ### Cryptographic Security
 
-- **BLS12-381 Curve**: Industry-standard elliptic curve with 128-bit security level
-- **EIP-2537 Precompiles**: Ethereum's native implementations prevent implementation bugs
+- **BLS12-381 Curve**: Industry-standard elliptic curve with 128-bit security
+  level
+- **EIP-2537 Precompiles**: Ethereum's native implementations prevent
+  implementation bugs
 - **Point Validation**: All inputs validated for correct format and length
-- **Infinity Point Handling**: Proper handling of edge cases in elliptic curve operations
+- **Infinity Point Handling**: Proper handling of edge cases in elliptic curve
+  operations
 
 ### Smart Contract Security
 
@@ -228,7 +260,8 @@ forge test --match-test test_ValidateAggregateSignature
 
 ### Known Limitations
 
-- **Precompile Availability**: Requires EIP-2537 support (Ethereum mainnet post-Cancun upgrade)
+- **Precompile Availability**: Requires EIP-2537 support (Ethereum mainnet
+  post-Cancun upgrade)
 - **Fixed Key Format**: Only supports EIP-2537 encoded BLS keys
 - **Gas Costs**: Higher gas costs compared to ECDSA due to pairing operations
 
@@ -238,7 +271,8 @@ forge test --match-test test_ValidateAggregateSignature
 
 The contract is deployed and verified on:
 
-- **Sepolia Testnet**: `0xa82e99929032dC248d2AE77FA9E6FE4124AEBc00` (Previous version)
+- **Sepolia Testnet**: `0xa82e99929032dC248d2AE77FA9E6FE4124AEBc00` (Previous
+  version)
 - **Mainnet**: TBD
 
 ### Deployment Scripts
@@ -266,8 +300,9 @@ node index.js --message "hello world" --m 3 --n 2
 ```
 
 This outputs:
+
 - Individual participant public keys
-- Aggregate signature  
+- Aggregate signature
 - Message hash (G2 encoded)
 - Validation data formatted for contract calls
 
@@ -276,7 +311,7 @@ This outputs:
 ### For Wallet Developers
 
 1. **Key Generation**: Generate BLS keypairs for wallet owners
-2. **Message Hashing**: Hash transaction data to G2 curve point  
+2. **Message Hashing**: Hash transaction data to G2 curve point
 3. **Signature Creation**: Create individual BLS signatures
 4. **Aggregation**: Combine signatures into single aggregate
 5. **Validation**: Call `verifyAggregateSignature` before execution
@@ -294,7 +329,7 @@ We welcome contributions! Please:
 
 1. Fork the repository
 2. Create a feature branch
-3. Add tests for new functionality  
+3. Add tests for new functionality
 4. Ensure all tests pass
 5. Submit a pull request
 
@@ -316,14 +351,16 @@ forge test --gas-report
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for
+details.
 
 ## Support
 
 For questions and support:
 
 - **Issues**: [GitHub Issues](https://github.com/your-org/YetAnotherAA/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-org/YetAnotherAA/discussions)
+- **Discussions**:
+  [GitHub Discussions](https://github.com/your-org/YetAnotherAA/discussions)
 - **Documentation**: [Full Documentation](https://docs.your-site.com)
 
 ## Acknowledgments
@@ -335,4 +372,5 @@ For questions and support:
 
 ---
 
-**⚠️ Important**: This contract handles cryptographic operations and digital signatures. Ensure thorough security review and testing before production use.
+**⚠️ Important**: This contract handles cryptographic operations and digital
+signatures. Ensure thorough security review and testing before production use.

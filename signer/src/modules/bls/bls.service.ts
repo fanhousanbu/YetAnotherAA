@@ -1,24 +1,24 @@
-import { Injectable } from '@nestjs/common';
-import { ethers } from 'ethers';
-import { bls, sigs, BLS_DST, encodeG2Point } from '../../utils/bls.util.js';
-import { SignatureResult } from '../../interfaces/signature.interface.js';
-import { NodeKeyPair } from '../../interfaces/node.interface.js';
+import { Injectable } from "@nestjs/common";
+import { ethers } from "ethers";
+import { bls, sigs, BLS_DST, encodeG2Point } from "../../utils/bls.util.js";
+import { SignatureResult } from "../../interfaces/signature.interface.js";
+import { NodeKeyPair } from "../../interfaces/node.interface.js";
 
 @Injectable()
 export class BlsService {
   async signMessage(message: string, node: NodeKeyPair): Promise<SignatureResult> {
     const messageBytes = ethers.getBytes(message);
     const messagePoint = await bls.G2.hashToCurve(messageBytes, { DST: BLS_DST });
-    
+
     const privateKeyBytes = this.hexToBytes(node.privateKey.substring(2));
     const publicKey = sigs.getPublicKey(privateKeyBytes);
     const signature = await sigs.sign(messagePoint as any, privateKeyBytes);
-    
+
     return {
       nodeId: node.contractNodeId,
       signature: signature.toHex(),
       publicKey: publicKey.toHex(),
-      message: message
+      message: message,
     };
   }
 
@@ -44,21 +44,21 @@ export class BlsService {
   encodeToEIP2537(point: any): string {
     // Match demo.js implementation exactly: encodeG2Point(bls.G2.Point.fromHex(aggregatedSignature.toBytes()))
     const encoded = encodeG2Point(bls.G2.Point.fromHex(point.toBytes()));
-    return "0x" + Buffer.from(encoded).toString('hex');
+    return "0x" + Buffer.from(encoded).toString("hex");
   }
 
   encodePublicKeyToEIP2537(publicKey: any): string {
     const encoded = this.encodeG1Point(publicKey);
-    return "0x" + Buffer.from(encoded).toString('hex');
+    return "0x" + Buffer.from(encoded).toString("hex");
   }
 
   private encodeG1Point(point: any): Uint8Array {
     const result = new Uint8Array(128);
     const affine = point.toAffine();
-    
-    const xBytes = this.hexToBytes(affine.x.toString(16).padStart(96, '0'));
-    const yBytes = this.hexToBytes(affine.y.toString(16).padStart(96, '0'));
-    
+
+    const xBytes = this.hexToBytes(affine.x.toString(16).padStart(96, "0"));
+    const yBytes = this.hexToBytes(affine.y.toString(16).padStart(96, "0"));
+
     result.set(xBytes, 16); // Skip 16 zero bytes at start
     result.set(yBytes, 80); // Skip 16 zero bytes at start
     return result;
@@ -67,7 +67,7 @@ export class BlsService {
   async getPublicKeyFromPrivateKey(privateKey: string): Promise<string> {
     const privateKeyBytes = this.hexToBytes(privateKey.substring(2));
     const publicKey = sigs.getPublicKey(privateKeyBytes);
-    return '0x' + publicKey.toHex();
+    return "0x" + publicKey.toHex();
   }
 
   private hexToBytes(hex: string): Uint8Array {

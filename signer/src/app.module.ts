@@ -1,11 +1,10 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { BlsModule } from './modules/bls/bls.module.js';
-import { NodeModule } from './modules/node/node.module.js';
-import { SignatureModule } from './modules/signature/signature.module.js';
-import { BlockchainModule } from './modules/blockchain/blockchain.module.js';
-import { GossipModule } from './modules/gossip/gossip.module.js';
-
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { BlsModule } from "./modules/bls/bls.module.js";
+import { NodeModule } from "./modules/node/node.module.js";
+import { SignatureModule } from "./modules/signature/signature.module.js";
+import { BlockchainModule } from "./modules/blockchain/blockchain.module.js";
+import { GossipModule } from "./modules/gossip/gossip.module.js";
 
 @Module({
   imports: [

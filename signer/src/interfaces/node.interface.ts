@@ -14,7 +14,7 @@ export interface NodeState {
   privateKey: string;
   publicKey: string;
   contractNodeId: string;
-  registrationStatus: 'pending' | 'registered' | 'failed';
+  registrationStatus: "pending" | "registered" | "failed";
   registeredAt?: string;
   contractAddress?: string;
   createdAt: string;

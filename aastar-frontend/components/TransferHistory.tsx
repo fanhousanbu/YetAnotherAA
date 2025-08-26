@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { User, Transfer } from '@/lib/types';
-import { formatCurrency, formatDate } from '@/lib/storage';
-import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { User, Transfer } from "@/lib/types";
+import { formatCurrency, formatDate } from "@/lib/storage";
+import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle } from "lucide-react";
 
 interface TransferHistoryProps {
   transfers: Transfer[];
@@ -10,36 +10,38 @@ interface TransferHistoryProps {
 }
 
 export default function TransferHistory({ transfers, user }: TransferHistoryProps) {
-  const getStatusIcon = (status: Transfer['status']) => {
+  const getStatusIcon = (status: Transfer["status"]) => {
     switch (status) {
-      case 'completed':
+      case "completed":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'pending':
+      case "pending":
         return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'failed':
+      case "failed":
         return <XCircle className="h-4 w-4 text-red-500" />;
       default:
         return <Clock className="h-4 w-4 text-gray-400" />;
     }
   };
 
-  const getStatusText = (status: Transfer['status']) => {
+  const getStatusText = (status: Transfer["status"]) => {
     switch (status) {
-      case 'completed':
-        return '已完成';
-      case 'pending':
-        return '处理中';
-      case 'failed':
-        return '失败';
+      case "completed":
+        return "已完成";
+      case "pending":
+        return "处理中";
+      case "failed":
+        return "失败";
       default:
-        return '未知';
+        return "未知";
     }
   };
 
   const getTransferType = (transfer: Transfer) => {
     // 由于用户对象现在没有 walletAddress，我们需要从其他地方获取
     // 暂时使用一个简单的判断逻辑
-    return transfer.fromAddress.toLowerCase() === transfer.toAddress.toLowerCase() ? 'outgoing' : 'incoming';
+    return transfer.fromAddress.toLowerCase() === transfer.toAddress.toLowerCase()
+      ? "outgoing"
+      : "incoming";
   };
 
   const getTransferDescription = (transfer: Transfer) => {
@@ -59,16 +61,18 @@ export default function TransferHistory({ transfers, user }: TransferHistoryProp
 
   return (
     <div className="space-y-4">
-      {transfers.map((transfer) => {
-        const isOutgoing = getTransferType(transfer) === 'outgoing';
-        
+      {transfers.map(transfer => {
+        const isOutgoing = getTransferType(transfer) === "outgoing";
+
         return (
           <div key={transfer.id} className="card">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  isOutgoing ? 'bg-red-100' : 'bg-green-100'
-                }`}>
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    isOutgoing ? "bg-red-100" : "bg-green-100"
+                  }`}
+                >
                   {isOutgoing ? (
                     <ArrowUpRight className="h-5 w-5 text-red-600" />
                   ) : (
@@ -76,31 +80,26 @@ export default function TransferHistory({ transfers, user }: TransferHistoryProp
                   )}
                 </div>
                 <div>
-                  <h4 className="font-medium text-gray-900">
-                    {getTransferDescription(transfer)}
-                  </h4>
-                  <p className="text-sm text-gray-500">
-                    {formatDate(transfer.createdAt)}
-                  </p>
+                  <h4 className="font-medium text-gray-900">{getTransferDescription(transfer)}</h4>
+                  <p className="text-sm text-gray-500">{formatDate(transfer.createdAt)}</p>
                   {transfer.description && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      {transfer.description}
-                    </p>
+                    <p className="text-sm text-gray-600 mt-1">{transfer.description}</p>
                   )}
                 </div>
               </div>
-              
+
               <div className="text-right">
-                <div className={`text-lg font-semibold ${
-                  isOutgoing ? 'text-red-600' : 'text-green-600'
-                }`}>
-                  {isOutgoing ? '-' : '+'}{formatCurrency(transfer.amount)}
+                <div
+                  className={`text-lg font-semibold ${
+                    isOutgoing ? "text-red-600" : "text-green-600"
+                  }`}
+                >
+                  {isOutgoing ? "-" : "+"}
+                  {formatCurrency(transfer.amount)}
                 </div>
                 <div className="flex items-center space-x-1 mt-1">
                   {getStatusIcon(transfer.status)}
-                  <span className="text-xs text-gray-500">
-                    {getStatusText(transfer.status)}
-                  </span>
+                  <span className="text-xs text-gray-500">{getStatusText(transfer.status)}</span>
                 </div>
               </div>
             </div>
@@ -109,4 +108,4 @@ export default function TransferHistory({ transfers, user }: TransferHistoryProp
       })}
     </div>
   );
-} 
+}

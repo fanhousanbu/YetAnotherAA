@@ -54,4 +54,3 @@ export interface TransferRequest {
   useAAStarValidator?: boolean;
   nodeIds?: string[];
 }
-

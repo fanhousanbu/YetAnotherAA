@@ -1,8 +1,8 @@
-import { Module, forwardRef } from '@nestjs/common';
-import { BlsService } from './bls.service.js';
+import { Module, forwardRef } from "@nestjs/common";
+import { BlsService } from "./bls.service.js";
 
 @Module({
   providers: [BlsService],
-  exports: [BlsService]
+  exports: [BlsService],
 })
 export class BlsModule {}

@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
-import { GossipService } from './gossip.service.js';
-import { PeerInfo, GossipStats } from './gossip.interfaces.js';
+import { Controller, Get, Post, Body, Param } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from "@nestjs/swagger";
+import { GossipService } from "./gossip.service.js";
+import { PeerInfo, GossipStats } from "./gossip.interfaces.js";
 
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from "class-validator";
 
 export class SetDataDto {
   @IsString()
@@ -14,14 +14,14 @@ export class SetDataDto {
   value?: any;
 }
 
-@ApiTags('gossip')
-@Controller('gossip')
+@ApiTags("gossip")
+@Controller("gossip")
 export class GossipController {
   constructor(private readonly gossipService: GossipService) {}
 
-  @Get('peers')
-  @ApiOperation({ summary: 'Get all nodes in the gossip network including self' })
-  @ApiResponse({ status: 200, description: 'List of all active nodes including current node' })
+  @Get("peers")
+  @ApiOperation({ summary: "Get all nodes in the gossip network including self" })
+  @ApiResponse({ status: 200, description: "List of all active nodes including current node" })
   getPeers(): { success: boolean; peers: PeerInfo[] } {
     return {
       success: true,
@@ -29,9 +29,9 @@ export class GossipController {
     };
   }
 
-  @Get('stats')
-  @ApiOperation({ summary: 'Get gossip network statistics' })
-  @ApiResponse({ status: 200, description: 'Gossip network statistics' })
+  @Get("stats")
+  @ApiOperation({ summary: "Get gossip network statistics" })
+  @ApiResponse({ status: 200, description: "Gossip network statistics" })
   getStats(): { success: boolean; stats: GossipStats } {
     return {
       success: true,
@@ -39,27 +39,27 @@ export class GossipController {
     };
   }
 
-  @Get('data')
-  @ApiOperation({ summary: 'Get all gossip data' })
-  @ApiResponse({ status: 200, description: 'All gossip data' })
+  @Get("data")
+  @ApiOperation({ summary: "Get all gossip data" })
+  @ApiResponse({ status: 200, description: "All gossip data" })
   getAllData(): { success: boolean; data: Record<string, any> } {
     const dataMap = this.gossipService.getAllData();
     const dataObject = Object.fromEntries(dataMap.entries());
-    
+
     return {
       success: true,
       data: dataObject,
     };
   }
 
-  @Get('data/:key')
-  @ApiOperation({ summary: 'Get specific gossip data by key' })
-  @ApiParam({ name: 'key', description: 'Data key' })
-  @ApiResponse({ status: 200, description: 'Gossip data for the specified key' })
-  @ApiResponse({ status: 404, description: 'Key not found' })
-  getData(@Param('key') key: string): { success: boolean; data?: any; message?: string } {
+  @Get("data/:key")
+  @ApiOperation({ summary: "Get specific gossip data by key" })
+  @ApiParam({ name: "key", description: "Data key" })
+  @ApiResponse({ status: 200, description: "Gossip data for the specified key" })
+  @ApiResponse({ status: 404, description: "Key not found" })
+  getData(@Param("key") key: string): { success: boolean; data?: any; message?: string } {
     const value = this.gossipService.getData(key);
-    
+
     if (value !== undefined) {
       return {
         success: true,
@@ -73,36 +73,36 @@ export class GossipController {
     }
   }
 
-  @Post('data')
-  @ApiOperation({ summary: 'Set gossip data' })
-  @ApiBody({ 
+  @Post("data")
+  @ApiOperation({ summary: "Set gossip data" })
+  @ApiBody({
     type: SetDataDto,
-    description: 'Key-value pair to set in gossip state',
+    description: "Key-value pair to set in gossip state",
     examples: {
       example1: {
-        summary: 'Set node status',
+        summary: "Set node status",
         value: {
-          key: 'node-status',
-          value: { status: 'active', timestamp: Date.now() }
-        }
-      }
-    }
+          key: "node-status",
+          value: { status: "active", timestamp: Date.now() },
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 200, description: 'Data set successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid request body' })
+  @ApiResponse({ status: 200, description: "Data set successfully" })
+  @ApiResponse({ status: 400, description: "Invalid request body" })
   setData(@Body() setDataDto: SetDataDto): { success: boolean; message: string } {
     try {
       const { key, value } = setDataDto;
-      
+
       if (!key) {
         return {
           success: false,
-          message: 'Key is required',
+          message: "Key is required",
         };
       }
 
       this.gossipService.setData(key, value);
-      
+
       return {
         success: true,
         message: `Data set for key '${key}'`,
@@ -115,12 +115,12 @@ export class GossipController {
     }
   }
 
-  @Get('state')
-  @ApiOperation({ summary: 'Get current node state' })
-  @ApiResponse({ status: 200, description: 'Current node state including version and data' })
+  @Get("state")
+  @ApiOperation({ summary: "Get current node state" })
+  @ApiResponse({ status: 200, description: "Current node state including version and data" })
   getNodeState(): { success: boolean; state: any } {
     const state = this.gossipService.getNodeState();
-    
+
     return {
       success: true,
       state: {
@@ -133,15 +133,15 @@ export class GossipController {
     };
   }
 
-  @Get('health')
-  @ApiOperation({ summary: 'Get gossip service health status' })
-  @ApiResponse({ status: 200, description: 'Health status of the gossip service' })
+  @Get("health")
+  @ApiOperation({ summary: "Get gossip service health status" })
+  @ApiResponse({ status: 200, description: "Health status of the gossip service" })
   getHealth(): { success: boolean; health: any } {
     const stats = this.gossipService.getStats();
     const peers = this.gossipService.getPeers();
-    
+
     const health = {
-      status: 'healthy',
+      status: "healthy",
       timestamp: new Date().toISOString(),
       peers: {
         total: stats.totalPeers,
@@ -162,9 +162,9 @@ export class GossipController {
 
     // Determine overall health status
     if (stats.activePeers === 0) {
-      health.status = 'isolated';
+      health.status = "isolated";
     } else if (stats.suspectedPeers > stats.activePeers) {
-      health.status = 'degraded';
+      health.status = "degraded";
     }
 
     return {

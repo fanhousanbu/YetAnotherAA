@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ethers } from 'ethers';
+import { Injectable, Logger } from "@nestjs/common";
+import { ethers } from "ethers";
 
 @Injectable()
 export class BlockchainService {
@@ -12,14 +12,17 @@ export class BlockchainService {
   }
 
   private initializeProvider(): void {
-    const rpcUrl = process.env.ETH_RPC_URL || 'https://sepolia.infura.io/v3/7051eb377c77490881070faaf93aef20';
+    const rpcUrl =
+      process.env.ETH_RPC_URL || "https://sepolia.infura.io/v3/7051eb377c77490881070faaf93aef20";
     const privateKey = process.env.ETH_PRIVATE_KEY;
 
     // 创建provider（只读连接）
     this.provider = new ethers.JsonRpcProvider(rpcUrl);
 
-    if (!privateKey || privateKey === 'your_eth_private_key_here') {
-      this.logger.warn('ETH_PRIVATE_KEY not set or using placeholder, blockchain operations will be disabled');
+    if (!privateKey || privateKey === "your_eth_private_key_here") {
+      this.logger.warn(
+        "ETH_PRIVATE_KEY not set or using placeholder, blockchain operations will be disabled"
+      );
       return;
     }
 
@@ -28,7 +31,7 @@ export class BlockchainService {
       this.logger.log(`Blockchain service initialized with wallet: ${this.wallet.address}`);
     } catch (error: any) {
       this.logger.error(`Invalid private key provided: ${error.message}`);
-      this.logger.warn('Blockchain write operations will be disabled');
+      this.logger.warn("Blockchain write operations will be disabled");
     }
   }
 
@@ -38,12 +41,12 @@ export class BlockchainService {
     publicKey: string
   ): Promise<string> {
     if (!this.wallet) {
-      throw new Error('Blockchain not configured. Set ETH_PRIVATE_KEY environment variable.');
+      throw new Error("Blockchain not configured. Set ETH_PRIVATE_KEY environment variable.");
     }
 
     const abi = [
       "function registerPublicKey(bytes32 nodeId, bytes calldata publicKey) external",
-      "function isRegistered(bytes32 nodeId) external view returns (bool)"
+      "function isRegistered(bytes32 nodeId) external view returns (bool)",
     ];
 
     const contract = new ethers.Contract(contractAddress, abi, this.wallet);
@@ -53,19 +56,19 @@ export class BlockchainService {
       const isAlreadyRegistered = await contract.isRegistered(nodeId);
       if (isAlreadyRegistered) {
         this.logger.warn(`Node ${nodeId} is already registered on-chain`);
-        return 'already_registered';
+        return "already_registered";
       }
 
       this.logger.log(`Registering node ${nodeId} on contract ${contractAddress}`);
-      
+
       // Call registerPublicKey function
       const tx = await contract.registerPublicKey(nodeId, publicKey);
       this.logger.log(`Transaction submitted: ${tx.hash}`);
-      
+
       // Wait for transaction confirmation
       const receipt = await tx.wait();
       this.logger.log(`Transaction confirmed in block: ${receipt.blockNumber}`);
-      
+
       return tx.hash;
     } catch (error: any) {
       this.logger.error(`Failed to register node on-chain: ${error.message}`);
@@ -75,12 +78,10 @@ export class BlockchainService {
 
   async checkNodeRegistration(contractAddress: string, nodeId: string): Promise<boolean> {
     if (!this.provider) {
-      throw new Error('Blockchain provider not configured');
+      throw new Error("Blockchain provider not configured");
     }
 
-    const abi = [
-      "function isRegistered(bytes32 nodeId) external view returns (bool)"
-    ];
+    const abi = ["function isRegistered(bytes32 nodeId) external view returns (bool)"];
 
     const contract = new ethers.Contract(contractAddress, abi, this.provider);
 
@@ -95,12 +96,10 @@ export class BlockchainService {
 
   async getRegisteredNodeCount(contractAddress: string): Promise<number> {
     if (!this.provider) {
-      throw new Error('Blockchain provider not configured');
+      throw new Error("Blockchain provider not configured");
     }
 
-    const abi = [
-      "function getRegisteredNodeCount() external view returns (uint256)"
-    ];
+    const abi = ["function getRegisteredNodeCount() external view returns (uint256)"];
 
     const contract = new ethers.Contract(contractAddress, abi, this.provider);
 

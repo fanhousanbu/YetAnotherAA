@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { User, Contact } from '@/lib/types';
-import { contactStorage, formatAddress } from '@/lib/storage';
-import { UserPlus, Trash2, Send, Mail, Wallet } from 'lucide-react';
-import AddContactModal from './AddContactModal';
-import TransferModal from './TransferModal';
+import { useState } from "react";
+import { User, Contact } from "@/lib/types";
+import { contactStorage, formatAddress } from "@/lib/storage";
+import { UserPlus, Trash2, Send, Mail, Wallet } from "lucide-react";
+import AddContactModal from "./AddContactModal";
+import TransferModal from "./TransferModal";
 
 interface ContactListProps {
   contacts: Contact[];
@@ -15,7 +15,7 @@ interface ContactListProps {
 
 export default function ContactList({ contacts, onDelete, onTransfer }: ContactListProps) {
   const handleDeleteContact = (id: string) => {
-    if (confirm('确定要删除这个联系人吗？')) {
+    if (confirm("确定要删除这个联系人吗？")) {
       onDelete(id);
     }
   };
@@ -25,19 +25,19 @@ export default function ContactList({ contacts, onDelete, onTransfer }: ContactL
       return {
         icon: <Wallet className="h-4 w-4 text-blue-500" />,
         value: formatAddress(contact.walletAddress),
-        type: '钱包地址'
+        type: "钱包地址",
       };
     } else if (contact.email) {
       return {
         icon: <Mail className="h-4 w-4 text-green-500" />,
         value: contact.email,
-        type: '邮箱地址'
+        type: "邮箱地址",
       };
     }
     return {
       icon: <UserPlus className="h-4 w-4 text-gray-500" />,
-      value: '未知类型',
-      type: '未知'
+      value: "未知类型",
+      type: "未知",
     };
   };
 
@@ -53,7 +53,7 @@ export default function ContactList({ contacts, onDelete, onTransfer }: ContactL
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {contacts.map((contact) => {
+      {contacts.map(contact => {
         const displayInfo = getContactDisplayInfo(contact);
         return (
           <div key={contact.id} className="card">
@@ -66,9 +66,7 @@ export default function ContactList({ contacts, onDelete, onTransfer }: ContactL
                     {displayInfo.value}
                   </span>
                 </div>
-                <div className="text-xs text-gray-400 mt-1">
-                  {displayInfo.type}
-                </div>
+                <div className="text-xs text-gray-400 mt-1">{displayInfo.type}</div>
               </div>
               <div className="flex space-x-2 ml-4">
                 <button
@@ -77,7 +75,9 @@ export default function ContactList({ contacts, onDelete, onTransfer }: ContactL
                   title="转账"
                   disabled={!contact.walletAddress}
                 >
-                  <Send className={`h-5 w-5 ${!contact.walletAddress ? 'opacity-50 cursor-not-allowed' : ''}`} />
+                  <Send
+                    className={`h-5 w-5 ${!contact.walletAddress ? "opacity-50 cursor-not-allowed" : ""}`}
+                  />
                 </button>
                 <button
                   onClick={() => handleDeleteContact(contact.id)}
@@ -98,4 +98,4 @@ export default function ContactList({ contacts, onDelete, onTransfer }: ContactL
       })}
     </div>
   );
-} 
+}

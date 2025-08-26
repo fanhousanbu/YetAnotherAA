@@ -1,10 +1,16 @@
 # Gossip Protocol Implementation
 
-This module implements a gossip protocol for distributed peer-to-peer communication in the BLS signer network. The gossip protocol replaces the previous WebSocket-based P2P implementation with a more robust and scalable approach.
+This module implements a gossip protocol for distributed peer-to-peer
+communication in the BLS signer network. The gossip protocol replaces the
+previous WebSocket-based P2P implementation with a more robust and scalable
+approach.
 
 ## Overview
 
-The gossip protocol is a probabilistic communication protocol that ensures eventual consistency across a distributed network. It works by having nodes periodically exchange information with randomly selected peers, similar to how rumors spread in social networks.
+The gossip protocol is a probabilistic communication protocol that ensures
+eventual consistency across a distributed network. It works by having nodes
+periodically exchange information with randomly selected peers, similar to how
+rumors spread in social networks.
 
 ## Key Features
 
@@ -52,29 +58,37 @@ GOSSIP_MAX_MESSAGE_HISTORY=1000     # Maximum messages to keep in history
 ## API Endpoints
 
 ### GET /gossip/peers
+
 Get all known active peers in the gossip network.
 
 ### GET /gossip/stats
+
 Get gossip network statistics including message counts and peer counts.
 
 ### GET /gossip/data
+
 Get all gossip data stored in the local node.
 
 ### GET /gossip/data/:key
+
 Get specific data by key from the gossip state.
 
 ### POST /gossip/data
+
 Set key-value data that will be propagated through the gossip network.
 
 ### GET /gossip/state
+
 Get the current node state including version and data.
 
 ### GET /gossip/health
+
 Get health status of the gossip service.
 
 ## Usage Examples
 
 ### Setting Data
+
 ```bash
 curl -X POST http://localhost:3001/gossip/data \
   -H "Content-Type: application/json" \
@@ -82,11 +96,13 @@ curl -X POST http://localhost:3001/gossip/data \
 ```
 
 ### Getting Data
+
 ```bash
 curl http://localhost:3001/gossip/data/node-status
 ```
 
 ### Monitoring Network
+
 ```bash
 curl http://localhost:3001/gossip/stats
 curl http://localhost:3001/gossip/peers
@@ -95,30 +111,39 @@ curl http://localhost:3001/gossip/health
 
 ## How It Works
 
-1. **Node Startup**: When a node starts, it connects to bootstrap peers and announces itself
-2. **Peer Discovery**: Nodes learn about other peers through join messages and peer lists
-3. **Gossip Rounds**: Every `GOSSIP_INTERVAL` ms, each node selects random peers and gossips data
-4. **Message Propagation**: Messages are forwarded to other peers with decreasing TTL
-5. **Health Monitoring**: Heartbeats track peer health, inactive peers are eventually removed
-6. **State Synchronization**: Nodes exchange their complete state to ensure consistency
+1. **Node Startup**: When a node starts, it connects to bootstrap peers and
+   announces itself
+2. **Peer Discovery**: Nodes learn about other peers through join messages and
+   peer lists
+3. **Gossip Rounds**: Every `GOSSIP_INTERVAL` ms, each node selects random peers
+   and gossips data
+4. **Message Propagation**: Messages are forwarded to other peers with
+   decreasing TTL
+5. **Health Monitoring**: Heartbeats track peer health, inactive peers are
+   eventually removed
+6. **State Synchronization**: Nodes exchange their complete state to ensure
+   consistency
 
 ## Differences from Previous P2P Implementation
 
-| Aspect | Old P2P | New Gossip |
-|--------|---------|------------|
-| Communication Pattern | Direct WebSocket connections | Probabilistic gossip rounds |
-| Consistency Model | Immediate propagation | Eventual consistency |
-| Failure Handling | Connection-based | Health monitoring with suspicion |
-| Scalability | Limited by connection count | Scales with network size |
-| Message Deduplication | Basic | Advanced with message history |
-| Data Versioning | None | Version-based conflict resolution |
+| Aspect                | Old P2P                      | New Gossip                        |
+| --------------------- | ---------------------------- | --------------------------------- |
+| Communication Pattern | Direct WebSocket connections | Probabilistic gossip rounds       |
+| Consistency Model     | Immediate propagation        | Eventual consistency              |
+| Failure Handling      | Connection-based             | Health monitoring with suspicion  |
+| Scalability           | Limited by connection count  | Scales with network size          |
+| Message Deduplication | Basic                        | Advanced with message history     |
+| Data Versioning       | None                         | Version-based conflict resolution |
 
 ## Benefits
 
-1. **Better Scalability**: Gossip protocols scale logarithmically with network size
+1. **Better Scalability**: Gossip protocols scale logarithmically with network
+   size
 2. **Improved Fault Tolerance**: Can handle network partitions and node failures
-3. **Reduced Network Load**: Probabilistic propagation reduces redundant messages
-4. **Eventual Consistency**: Guarantees all nodes will eventually have the same data
+3. **Reduced Network Load**: Probabilistic propagation reduces redundant
+   messages
+4. **Eventual Consistency**: Guarantees all nodes will eventually have the same
+   data
 5. **Self-Healing**: Network automatically adapts to topology changes
 
 ## Monitoring and Debugging
@@ -130,6 +155,7 @@ curl http://localhost:3001/gossip/health
 ```
 
 This will show:
+
 - Number of active/suspected peers
 - Gossip statistics (rounds, messages sent/received)
 - Connectivity status
@@ -137,7 +163,8 @@ This will show:
 
 ## Migration from P2P
 
-The gossip implementation maintains API compatibility with the previous P2P implementation while providing enhanced functionality. The main differences are:
+The gossip implementation maintains API compatibility with the previous P2P
+implementation while providing enhanced functionality. The main differences are:
 
 1. Configuration variables now use `GOSSIP_` prefix instead of `P2P_`
 2. Additional configuration options for gossip-specific parameters

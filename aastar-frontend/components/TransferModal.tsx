@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { User, Contact, Transfer, TransferFormData } from '@/lib/types';
-import { transferStorage, generateId, formatAddress } from '@/lib/storage';
-import { api } from '@/lib/api';
-import { verifyPasskeyCredential } from '@/lib/passkey';
-import { ethers } from 'ethers';
-import { DollarSign, User as UserIcon, X, Send, Shield } from 'lucide-react';
+import { useState } from "react";
+import { User, Contact, Transfer, TransferFormData } from "@/lib/types";
+import { transferStorage, generateId, formatAddress } from "@/lib/storage";
+import { api } from "@/lib/api";
+import { verifyPasskeyCredential } from "@/lib/passkey";
+import { ethers } from "ethers";
+import { DollarSign, User as UserIcon, X, Send, Shield } from "lucide-react";
 
 interface TransferModalProps {
   fromUser: User;
@@ -15,29 +15,34 @@ interface TransferModalProps {
   onClose: () => void;
 }
 
-export default function TransferModal({ fromUser, toContact, onTransfer, onClose }: TransferModalProps) {
+export default function TransferModal({
+  fromUser,
+  toContact,
+  onTransfer,
+  onClose,
+}: TransferModalProps) {
   const [formData, setFormData] = useState<TransferFormData>({
-    toAddress: toContact.walletAddress || '',
+    toAddress: toContact.walletAddress || "",
     amount: 0,
-    description: '',
+    description: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [currentStep, setCurrentStep] = useState('');
+  const [error, setError] = useState("");
+  const [currentStep, setCurrentStep] = useState("");
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    setError('');
+    setError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     if (!formData.amount || formData.amount <= 0) {
-      setError('请输入有效的转账金额');
+      setError("请输入有效的转账金额");
       setLoading(false);
       return;
     }
@@ -45,85 +50,87 @@ export default function TransferModal({ fromUser, toContact, onTransfer, onClose
     try {
       // 将 ETH 数量转换为 Wei
       const amountInWei = ethers.parseEther(formData.amount.toString()).toString();
-      
-      setCurrentStep('正在进行身份验证...');
-      
+
+      setCurrentStep("正在进行身份验证...");
+
       // 尝试调用真实的转账API
       try {
         // 1. 获取登录challenge（Passkey认证）
         const options = await api.auth.loginBegin(fromUser.email);
-        
-        setCurrentStep('请完成生物识别验证...');
-        
+
+        setCurrentStep("请完成生物识别验证...");
+
         // 2. 执行Passkey认证
         const authResponse = await verifyPasskeyCredential(options);
-        
-        setCurrentStep('正在创建转账...');
-        
+
+        setCurrentStep("正在创建转账...");
+
         // 3. 调用转账接口（简化版本）
         const result = await api.transfer.createTransfer({
-          accountAddress: '0x0000000000000000000000000000000000000000', // 临时地址
+          accountAddress: "0x0000000000000000000000000000000000000000", // 临时地址
           toAddress: formData.toAddress,
-          amount: amountInWei
+          amount: amountInWei,
         });
-        
+
         const { userOperation, userOpHash } = result;
 
-        setCurrentStep('转账已发送，等待确认...');
+        setCurrentStep("转账已发送，等待确认...");
 
         // 3. 创建转账记录
         const transfer: Transfer = {
           id: generateId(),
-          fromAddress: '0x0000000000000000000000000000000000000000', // 临时地址
+          fromAddress: "0x0000000000000000000000000000000000000000", // 临时地址
           toAddress: formData.toAddress,
           amount: formData.amount,
-          status: 'pending',
+          status: "pending",
           description: formData.description || undefined,
           createdAt: new Date().toISOString(),
-          txHash: userOpHash
+          txHash: userOpHash,
         };
 
         transferStorage.saveTransfer(transfer);
         onTransfer(transfer);
-        
       } catch (apiError: any) {
-        console.warn('Real transfer API failed, falling back to simulation:', apiError);
-        
+        console.warn("Real transfer API failed, falling back to simulation:", apiError);
+
         // 检查是否是Passkey认证错误
-        if (apiError.message?.includes('User cancelled') || apiError.message?.includes('AbortError')) {
-          setError('用户取消了生物识别验证');
+        if (
+          apiError.message?.includes("User cancelled") ||
+          apiError.message?.includes("AbortError")
+        ) {
+          setError("用户取消了生物识别验证");
           return;
-        } else if (apiError.message?.includes('NotAllowedError')) {
-          setError('生物识别验证失败，请重试');
+        } else if (apiError.message?.includes("NotAllowedError")) {
+          setError("生物识别验证失败，请重试");
           return;
         }
-        
-        setCurrentStep('转账API不可用，使用模拟模式...');
-        
+
+        setCurrentStep("转账API不可用，使用模拟模式...");
+
         // 后备方案：模拟转账
         const txHash = `0x${Array.from(crypto.getRandomValues(new Uint8Array(32)))
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('')}`;
+          .map(b => b.toString(16).padStart(2, "0"))
+          .join("")}`;
 
         const transfer: Transfer = {
           id: generateId(),
-          fromAddress: '0x0000000000000000000000000000000000000000', // 临时地址
+          fromAddress: "0x0000000000000000000000000000000000000000", // 临时地址
           toAddress: formData.toAddress,
           amount: formData.amount,
-          status: 'completed', // 模拟中直接设为完成
+          status: "completed", // 模拟中直接设为完成
           description: formData.description || undefined,
           createdAt: new Date().toISOString(),
-          txHash
+          txHash,
         };
 
         transferStorage.saveTransfer(transfer);
         onTransfer(transfer);
       }
     } catch (error) {
-      setError('转账失败，请重试');
+      setError("转账失败，请重试");
     } finally {
       setLoading(false);
-      setCurrentStep('');
+      setCurrentStep("");
     }
   };
 
@@ -158,7 +165,7 @@ export default function TransferModal({ fromUser, toContact, onTransfer, onClose
               <div>
                 <p className="font-medium text-gray-900">{toContact.name}</p>
                 <p className="text-sm text-gray-500 font-mono">
-                  {toContact.walletAddress ? formatAddress(toContact.walletAddress) : '无钱包地址'}
+                  {toContact.walletAddress ? formatAddress(toContact.walletAddress) : "无钱包地址"}
                 </p>
               </div>
             </div>
@@ -214,22 +221,14 @@ export default function TransferModal({ fromUser, toContact, onTransfer, onClose
           </div>
 
           <div className="flex space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 btn-secondary"
-            >
+            <button type="button" onClick={onClose} className="flex-1 btn-secondary">
               取消
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 btn-primary"
-            >
+            <button type="submit" disabled={loading} className="flex-1 btn-primary">
               {loading ? (
                 <div className="flex items-center justify-center space-x-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span className="text-sm">{currentStep || '处理中...'}</span>
+                  <span className="text-sm">{currentStep || "处理中..."}</span>
                 </div>
               ) : (
                 <>
@@ -243,4 +242,4 @@ export default function TransferModal({ fromUser, toContact, onTransfer, onClose
       </div>
     </div>
   );
-} 
+}

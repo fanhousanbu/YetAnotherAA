@@ -1,12 +1,19 @@
-import { Injectable, NotFoundException, OnModuleInit, Logger, Inject, forwardRef } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { NodeKeyPair, SignerConfig, NodeState } from '../../interfaces/node.interface.js';
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { BlsService } from '../bls/bls.service.js';
-import { BlockchainService } from '../blockchain/blockchain.service.js';
-import { randomBytes, createHash } from 'crypto';
+import {
+  Injectable,
+  NotFoundException,
+  OnModuleInit,
+  Logger,
+  Inject,
+  forwardRef,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { NodeKeyPair, SignerConfig, NodeState } from "../../interfaces/node.interface.js";
+import { readFileSync, writeFileSync, existsSync, readdirSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+import { BlsService } from "../bls/bls.service.js";
+import { BlockchainService } from "../blockchain/blockchain.service.js";
+import { randomBytes, createHash } from "crypto";
 
 @Injectable()
 export class NodeService implements OnModuleInit {
@@ -40,8 +47,9 @@ export class NodeService implements OnModuleInit {
 
   private loadContractAddress(): void {
     // 优先使用环境变量中的合约地址
-    this.contractAddress = process.env.VALIDATOR_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS || '';
-    
+    this.contractAddress =
+      process.env.VALIDATOR_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS || "";
+
     if (this.contractAddress) {
       this.logger.log(`Using contract address from environment: ${this.contractAddress}`);
       return;
@@ -49,22 +57,22 @@ export class NodeService implements OnModuleInit {
 
     // 回退到配置文件
     const currentDir = dirname(fileURLToPath(import.meta.url));
-    const configPath = join(currentDir, '../../../demo/config.json');
-    
+    const configPath = join(currentDir, "../../../demo/config.json");
+
     try {
-      const configData = readFileSync(configPath, 'utf8');
+      const configData = readFileSync(configPath, "utf8");
       const config: SignerConfig = JSON.parse(configData);
       this.contractAddress = config.contractAddress;
       this.logger.log(`Using contract address from config: ${this.contractAddress}`);
     } catch (error: any) {
       this.logger.warn(`Could not load shared config: ${error.message}`);
-      this.contractAddress = '';
+      this.contractAddress = "";
     }
   }
 
   private async initializeWithSpecificNodeId(nodeId: string): Promise<void> {
     this.nodeStateFilePath = join(process.cwd(), `node_${nodeId}.json`);
-    
+
     if (existsSync(this.nodeStateFilePath)) {
       this.loadExistingNodeState();
       this.logger.log(`Loaded existing node state for ${this.nodeState.nodeId}`);
@@ -76,7 +84,7 @@ export class NodeService implements OnModuleInit {
 
   private async initializeWithStateFile(stateFilePath: string): Promise<void> {
     this.nodeStateFilePath = stateFilePath;
-    
+
     if (existsSync(this.nodeStateFilePath)) {
       this.loadExistingNodeState();
       this.logger.log(`Loaded node state from file: ${stateFilePath}`);
@@ -87,7 +95,7 @@ export class NodeService implements OnModuleInit {
 
   private async initializeWithAutoDiscovery(): Promise<void> {
     const existingNodeFiles = this.discoverExistingNodeFiles();
-    
+
     if (existingNodeFiles.length === 0) {
       const newNodeId = this.generateNodeId();
       this.nodeStateFilePath = join(process.cwd(), `node_${newNodeId}.json`);
@@ -98,9 +106,9 @@ export class NodeService implements OnModuleInit {
       this.loadExistingNodeState();
       this.logger.log(`Auto-discovered and loaded node: ${this.nodeState.nodeId}`);
     } else {
-      this.logger.error(`Multiple node files found: ${existingNodeFiles.join(', ')}`);
-      this.logger.error('Please specify NODE_ID or NODE_STATE_FILE environment variable');
-      throw new Error('Ambiguous node selection: multiple node state files found');
+      this.logger.error(`Multiple node files found: ${existingNodeFiles.join(", ")}`);
+      this.logger.error("Please specify NODE_ID or NODE_STATE_FILE environment variable");
+      throw new Error("Ambiguous node selection: multiple node state files found");
     }
   }
 
@@ -108,7 +116,7 @@ export class NodeService implements OnModuleInit {
     try {
       const files = readdirSync(process.cwd());
       return files
-        .filter(file => file.startsWith('node_') && file.endsWith('.json'))
+        .filter(file => file.startsWith("node_") && file.endsWith(".json"))
         .map(file => join(process.cwd(), file));
     } catch (error) {
       this.logger.warn(`Error reading directory: ${error}`);
@@ -117,12 +125,12 @@ export class NodeService implements OnModuleInit {
   }
 
   private generateNodeId(): string {
-    return '0x' + randomBytes(16).toString('hex');
+    return "0x" + randomBytes(16).toString("hex");
   }
 
   private loadExistingNodeState(): void {
     try {
-      const stateData = readFileSync(this.nodeStateFilePath, 'utf8');
+      const stateData = readFileSync(this.nodeStateFilePath, "utf8");
       this.nodeState = JSON.parse(stateData);
     } catch (error: any) {
       throw new Error(`Failed to load node state: ${error.message}`);
@@ -131,7 +139,7 @@ export class NodeService implements OnModuleInit {
 
   private async createNewNodeState(nodeId: string): Promise<void> {
     const privateKeyBytes = randomBytes(32);
-    const privateKey = '0x' + privateKeyBytes.toString('hex');
+    const privateKey = "0x" + privateKeyBytes.toString("hex");
     const publicKey = await this.blsService.getPublicKeyFromPrivateKey(privateKey);
     const contractNodeId = this.generateContractNodeId(nodeId);
 
@@ -141,22 +149,22 @@ export class NodeService implements OnModuleInit {
       privateKey,
       publicKey,
       contractNodeId,
-      registrationStatus: 'pending',
+      registrationStatus: "pending",
       contractAddress: this.contractAddress,
       createdAt: new Date().toISOString(),
-      description: `Autonomous node ${nodeId}`
+      description: `Autonomous node ${nodeId}`,
     };
 
     this.saveNodeState();
   }
 
   private generateContractNodeId(nodeId: string): string {
-    return '0x' + createHash('sha256').update(nodeId).digest('hex');
+    return "0x" + createHash("sha256").update(nodeId).digest("hex");
   }
 
   private saveNodeState(): void {
     try {
-      writeFileSync(this.nodeStateFilePath, JSON.stringify(this.nodeState, null, 2), 'utf8');
+      writeFileSync(this.nodeStateFilePath, JSON.stringify(this.nodeState, null, 2), "utf8");
     } catch (error: any) {
       throw new Error(`Failed to save node state: ${error.message}`);
     }
@@ -164,7 +172,7 @@ export class NodeService implements OnModuleInit {
 
   getCurrentNode(): NodeState {
     if (!this.nodeState) {
-      throw new Error('Node not initialized');
+      throw new Error("Node not initialized");
     }
     return { ...this.nodeState };
   }
@@ -178,80 +186,81 @@ export class NodeService implements OnModuleInit {
       privateKey: currentNode.privateKey,
       publicKey: currentNode.publicKey,
       registrationStatus: currentNode.registrationStatus,
-      description: currentNode.description
+      description: currentNode.description,
     };
   }
 
   async registerOnChain(): Promise<{ success: boolean; txHash?: string; message: string }> {
     if (!this.blockchainService.isConfigured()) {
-      throw new Error('Blockchain service not configured. Set ETH_PRIVATE_KEY and ETH_RPC_URL environment variables.');
+      throw new Error(
+        "Blockchain service not configured. Set ETH_PRIVATE_KEY and ETH_RPC_URL environment variables."
+      );
     }
 
     try {
       // Check current registration status on-chain
       const isRegistered = await this.blockchainService.checkNodeRegistration(
-        this.contractAddress, 
+        this.contractAddress,
         this.nodeState.contractNodeId
       );
 
       if (isRegistered) {
-        this.nodeState.registrationStatus = 'registered';
+        this.nodeState.registrationStatus = "registered";
         this.nodeState.registeredAt = new Date().toISOString();
         this.saveNodeState();
-        
+
         return {
           success: true,
-          message: `Node ${this.nodeState.nodeId} is already registered on-chain`
+          message: `Node ${this.nodeState.nodeId} is already registered on-chain`,
         };
       }
 
       // Perform actual registration
       this.logger.log(`Registering node ${this.nodeState.nodeId} on-chain...`);
-      
+
       const txHash = await this.blockchainService.registerNodeOnChain(
         this.contractAddress,
         this.nodeState.contractNodeId,
         this.nodeState.publicKey
       );
 
-      if (txHash === 'already_registered') {
-        this.nodeState.registrationStatus = 'registered';
+      if (txHash === "already_registered") {
+        this.nodeState.registrationStatus = "registered";
         this.nodeState.registeredAt = new Date().toISOString();
         this.saveNodeState();
-        
+
         return {
           success: true,
-          message: 'Node was already registered on-chain'
+          message: "Node was already registered on-chain",
         };
       }
 
       // Update local state
-      this.nodeState.registrationStatus = 'registered';
+      this.nodeState.registrationStatus = "registered";
       this.nodeState.registeredAt = new Date().toISOString();
       this.saveNodeState();
-      
+
       this.logger.log(`Node ${this.nodeState.nodeId} registered successfully. TX: ${txHash}`);
-      
+
       return {
         success: true,
         txHash,
-        message: `Node registered successfully on-chain`
+        message: `Node registered successfully on-chain`,
       };
-      
     } catch (error: any) {
       this.logger.error(`Failed to register node on-chain: ${error.message}`);
-      
-      this.nodeState.registrationStatus = 'failed';
+
+      this.nodeState.registrationStatus = "failed";
       this.saveNodeState();
-      
+
       return {
         success: false,
-        message: `Registration failed: ${error.message}`
+        message: `Registration failed: ${error.message}`,
       };
     }
   }
 
-  updateRegistrationStatus(status: 'pending' | 'registered' | 'failed'): void {
+  updateRegistrationStatus(status: "pending" | "registered" | "failed"): void {
     this.nodeState.registrationStatus = status;
     this.saveNodeState();
   }

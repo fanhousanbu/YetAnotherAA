@@ -1,6 +1,7 @@
 # AAstar ERC-4337 后端服务
 
-基于NestJS开发的ERC-4337账户抽象和聚合签名转账服务，支持Enhanced Account和AAStarValidator两种验证模式。
+基于NestJS开发的ERC-4337账户抽象和聚合签名转账服务，支持Enhanced
+Account和AAStarValidator两种验证模式。
 
 ## 🌟 主要特性
 
@@ -185,11 +186,13 @@ src/
 ## 🔐 验证器说明
 
 ### ECDSA验证器 (Enhanced Account)
+
 - 标准的ECDSA签名验证
 - 兼容传统的以太坊签名方案
 - Gas消耗相对较低
 
 ### AAStarValidator (BLS聚合签名)
+
 - 支持BLS聚合签名验证
 - 多节点参与签名验证
 - 更高的安全性，但Gas消耗较高
@@ -200,7 +203,7 @@ src/
 2. **私钥安全**: 请勿在生产环境中硬编码私钥
 3. **AAStarValidator**: BLS签名功能需要配合链上的AAStarValidator合约
 4. **Gas费用**: AAStarValidator验证消耗的Gas更多，请确保账户有足够余额
-5. **BLS签名服务依赖**: 
+5. **BLS签名服务依赖**:
    - 使用AAStarValidator前，请确保signer服务已启动 (默认端口3001)
    - 种子节点必须可用才能进行节点发现和签名聚合
    - BLS签名需要多个节点协作，请确保有足够的活跃节点

@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { ethers } from 'ethers';
+import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { ethers } from "ethers";
 
 @Injectable()
 export class EthereumService {
@@ -8,7 +8,7 @@ export class EthereumService {
   private provider: ethers.JsonRpcProvider;
 
   constructor(private configService: ConfigService) {
-    const rpcUrl = this.configService.get<string>('ETH_RPC_URL');
+    const rpcUrl = this.configService.get<string>("ETH_RPC_URL");
     this.provider = new ethers.JsonRpcProvider(rpcUrl);
     this.logger.log(`连接到以太坊网络: ${rpcUrl}`);
   }
@@ -30,16 +30,10 @@ export class EthereumService {
   }
 
   async getNonce(address: string, entryPointAddress: string): Promise<bigint> {
-    const entryPointAbi = [
-      "function getNonce(address, uint192) view returns (uint256)"
-    ];
-    
-    const entryPoint = new ethers.Contract(
-      entryPointAddress,
-      entryPointAbi,
-      this.provider
-    );
-    
+    const entryPointAbi = ["function getNonce(address, uint192) view returns (uint256)"];
+
+    const entryPoint = new ethers.Contract(entryPointAddress, entryPointAbi, this.provider);
+
     return await entryPoint.getNonce(address, 0);
   }
 
@@ -56,27 +50,24 @@ export class EthereumService {
    * 发送UserOperation到Bundler
    */
   async sendUserOperationToBundler(userOp: any): Promise<string> {
-    const bundlerUrl = this.configService.get<string>('BUNDLER_RPC_URL');
-    
+    const bundlerUrl = this.configService.get<string>("BUNDLER_RPC_URL");
+
     try {
       const response = await fetch(bundlerUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          jsonrpc: '2.0',
+          jsonrpc: "2.0",
           id: 1,
-          method: 'eth_sendUserOperation',
-          params: [
-            userOp,
-            this.configService.get<string>('ENTRY_POINT_ADDRESS')
-          ],
+          method: "eth_sendUserOperation",
+          params: [userOp, this.configService.get<string>("ENTRY_POINT_ADDRESS")],
         }),
       });
 
       const result = await response.json();
-      
+
       if (result.error) {
         throw new Error(`Bundler错误: ${result.error.message}`);
       }
@@ -92,21 +83,21 @@ export class EthereumService {
    * 等待UserOperation执行结果
    */
   async waitForUserOperationReceipt(userOpHash: string): Promise<any> {
-    const bundlerUrl = this.configService.get<string>('BUNDLER_RPC_URL');
+    const bundlerUrl = this.configService.get<string>("BUNDLER_RPC_URL");
     const maxAttempts = 60; // 最多等待60次，每次2秒
     const delay = 2000;
 
     for (let i = 0; i < maxAttempts; i++) {
       try {
         const response = await fetch(bundlerUrl, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            jsonrpc: '2.0',
+            jsonrpc: "2.0",
             id: 1,
-            method: 'eth_getUserOperationReceipt',
+            method: "eth_getUserOperationReceipt",
             params: [userOpHash],
           }),
         });
@@ -129,6 +120,6 @@ export class EthereumService {
       }
     }
 
-    throw new Error('UserOperation执行超时');
+    throw new Error("UserOperation执行超时");
   }
 }

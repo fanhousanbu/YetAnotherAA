@@ -1,5 +1,5 @@
 export interface GossipMessage {
-  type: 'gossip' | 'sync' | 'heartbeat' | 'join' | 'leave';
+  type: "gossip" | "sync" | "heartbeat" | "join" | "leave";
   from: string;
   to?: string; // Optional: for directed messages
   data: any;
@@ -14,7 +14,7 @@ export interface PeerInfo {
   publicKey: string;
   apiEndpoint: string;
   gossipEndpoint: string;
-  status: 'active' | 'inactive' | 'suspected';
+  status: "active" | "inactive" | "suspected";
   lastSeen: Date;
   region?: string;
   capabilities?: string[];

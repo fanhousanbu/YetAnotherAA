@@ -8,8 +8,11 @@ import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "./AAStarValidator.sol";
 
 interface IAccount {
-    function validateUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 missingAccountFunds)
-        external returns (uint256 validationData);
+    function validateUserOp(
+        UserOperation calldata userOp,
+        bytes32 userOpHash,
+        uint256 missingAccountFunds
+    ) external returns (uint256 validationData);
 }
 
 struct UserOperation {
@@ -42,10 +45,10 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
 
     // Account owner (for ECDSA validation part)
     address public owner;
-    
+
     // AAStarValidator contract for BLS aggregate signature validation
     AAStarValidator public aaStarValidator;
-    
+
     // Flag to enable/disable AAStarValidator
     bool public useAAStarValidator;
 
@@ -88,29 +91,22 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         _initialize(anOwner, address(0), false);
     }
 
-    function _initialize(
-        address anOwner,
-        address _aaStarValidator,
-        bool _useAAStarValidator
-    ) internal virtual {
+    function _initialize(address anOwner, address _aaStarValidator, bool _useAAStarValidator) internal virtual {
         owner = anOwner;
-        
+
         if (_aaStarValidator != address(0)) {
             aaStarValidator = AAStarValidator(_aaStarValidator);
             useAAStarValidator = _useAAStarValidator;
             emit AAStarValidatorSet(_aaStarValidator, _useAAStarValidator);
         }
-        
+
         emit AccountInitialized(_entryPoint, owner);
     }
 
     /**
      * @dev Set AAStarValidator
      */
-    function setAAStarValidator(
-        address _aaStarValidator,
-        bool _useAAStarValidator
-    ) external onlyOwner {
+    function setAAStarValidator(address _aaStarValidator, bool _useAAStarValidator) external onlyOwner {
         if (_aaStarValidator != address(0)) {
             aaStarValidator = AAStarValidator(_aaStarValidator);
         }
@@ -135,8 +131,11 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         return _entryPoint;
     }
 
-    function validateUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 missingAccountFunds)
-        external virtual override returns (uint256 validationData) {
+    function validateUserOp(
+        UserOperation calldata userOp,
+        bytes32 userOpHash,
+        uint256 missingAccountFunds
+    ) external virtual override returns (uint256 validationData) {
         _requireFromEntryPoint();
         validationData = _validateSignature(userOp, userOpHash);
         _validateNonce(userOp.nonce);
@@ -150,21 +149,21 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
      * - blsSignature: 256 bytes G2 BLS aggregate signature
      * - messagePoint: 256 bytes G2 point (provided by signer, verified by BLS)
      * - aaSignature: 65 bytes ECDSA signature from account owner (validates userOpHash)
-     * 
+     *
      * Security Model:
      * - AA signature validates userOpHash (ensures binding to specific UserOperation)
      * - BLS signature validates messagePoint (leverages aggregate signature security)
      * - Dual verification provides security even if messagePoint is manipulated
      */
-    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
-        internal returns (uint256 validationData) {
-        
+    function _validateSignature(
+        UserOperation calldata userOp,
+        bytes32 userOpHash
+    ) internal returns (uint256 validationData) {
         bytes32 hash = userOpHash.toEthSignedMessageHash();
-        
+
         // Use AAStarValidator if enabled and available
         if (useAAStarValidator && address(aaStarValidator) != address(0)) {
-            try this._parseAndValidateAAStarSignature(userOp.signature, userOpHash) 
-                returns (bool isValid) {
+            try this._parseAndValidateAAStarSignature(userOp.signature, userOpHash) returns (bool isValid) {
                 emit AAStarValidationUsed(address(aaStarValidator), isValid);
                 return isValid ? 0 : 1;
             } catch {
@@ -172,7 +171,7 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
                 // Fall back to default ECDSA validation if AAStarValidator fails
             }
         }
-        
+
         // Default ECDSA validation
         if (owner != hash.recover(userOp.signature)) {
             return 1;
@@ -190,7 +189,7 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         bytes32 userOpHash
     ) external view returns (bool isValid) {
         require(msg.sender == address(this), "Only self can call");
-        
+
         // Parse signature components
         (
             bytes32[] memory nodeIds,
@@ -198,59 +197,57 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
             bytes memory messagePoint,
             bytes memory aaSignature
         ) = _parseAAStarSignature(signature);
-        
+
         // SECURITY: AA signature must validate userOpHash (ensures binding to specific userOp)
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         address recoveredSigner = ECDSA.recover(hash, aaSignature);
-        
+
         // Validate that the AA signature is from the owner
         if (recoveredSigner != owner) {
             return false;
         }
-        
+
         // Use AAStarValidator for BLS validation
-        return aaStarValidator.validateAggregateSignature(
-            nodeIds,
-            blsSignature,
-            messagePoint
-        );
+        return aaStarValidator.validateAggregateSignature(nodeIds, blsSignature, messagePoint);
     }
 
     /**
      * @dev Parse AAStarValidator signature format
      * Format: [nodeIdsLength(32)][nodeIds...][blsSignature(256)][messagePoint(256)][aaSignature(65)]
      */
-    function _parseAAStarSignature(bytes calldata signature) 
-        internal 
-        pure 
+    function _parseAAStarSignature(
+        bytes calldata signature
+    )
+        internal
+        pure
         returns (
             bytes32[] memory nodeIds,
             bytes memory blsSignature,
             bytes memory messagePoint,
             bytes memory aaSignature
-        ) 
+        )
     {
         require(signature.length >= 32 + 256 + 256 + 65, "Invalid signature length");
-        
+
         // Parse nodeIds length
         uint256 nodeIdsLength = abi.decode(signature[0:32], (uint256));
         require(nodeIdsLength > 0 && nodeIdsLength <= 100, "Invalid nodeIds length");
-        
+
         uint256 nodeIdsDataLength = nodeIdsLength * 32;
         require(signature.length >= 32 + nodeIdsDataLength + 256 + 256 + 65, "Signature too short");
-        
+
         // Parse nodeIds array
         nodeIds = new bytes32[](nodeIdsLength);
         for (uint256 i = 0; i < nodeIdsLength; i++) {
             uint256 offset = 32 + i * 32;
             nodeIds[i] = bytes32(signature[offset:offset + 32]);
         }
-        
+
         // Parse other components
         uint256 blsOffset = 32 + nodeIdsDataLength;
         uint256 messagePointOffset = blsOffset + 256;
         uint256 aaOffset = messagePointOffset + 256;
-        
+
         blsSignature = signature[blsOffset:messagePointOffset];
         messagePoint = signature[messagePointOffset:aaOffset];
         aaSignature = signature[aaOffset:aaOffset + 65];
@@ -259,11 +256,11 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
     /**
      * @dev Get current validation mode and validator
      */
-    function getValidationConfig() external view returns (
-        address validator,
-        bool isAAStarEnabled,
-        address accountOwner
-    ) {
+    function getValidationConfig()
+        external
+        view
+        returns (address validator, bool isAAStarEnabled, address accountOwner)
+    {
         return (address(aaStarValidator), useAAStarValidator, owner);
     }
 
@@ -273,13 +270,13 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
 
     function _payPrefund(uint256 missingAccountFunds) internal virtual {
         if (missingAccountFunds != 0) {
-            (bool success,) = payable(msg.sender).call{value: missingAccountFunds, gas: type(uint256).max}("");
+            (bool success, ) = payable(msg.sender).call{ value: missingAccountFunds, gas: type(uint256).max }("");
             (success);
         }
     }
 
     function _call(address target, uint256 value, bytes memory data) internal {
-        (bool success, bytes memory result) = target.call{value: value}(data);
+        (bool success, bytes memory result) = target.call{ value: value }(data);
         if (!success) {
             assembly {
                 revert(add(result, 32), mload(result))
@@ -300,30 +297,31 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         _onlyOwner();
     }
 
-
     // =============================================================
     //                    TESTING FUNCTIONS
     // =============================================================
-    
+
     /**
      * @dev Public test function for signature parsing - bypasses access controls
      * FOR TESTING ONLY - DO NOT USE IN PRODUCTION
      */
-    function testParseAAStarSignature(bytes calldata signature) 
-        external 
-        pure 
+    function testParseAAStarSignature(
+        bytes calldata signature
+    )
+        external
+        pure
         returns (
             bytes32[] memory nodeIds,
             bytes memory blsSignature,
             bytes memory messagePoint,
             bytes memory aaSignature
-        ) 
+        )
     {
         return _parseAAStarSignature(signature);
     }
 
     /**
-     * @dev Public test function for signature validation - bypasses access controls  
+     * @dev Public test function for signature validation - bypasses access controls
      * FOR TESTING ONLY - DO NOT USE IN PRODUCTION
      */
     function testValidateAAStarSignature(
@@ -337,25 +335,21 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
             bytes memory messagePoint,
             bytes memory aaSignature
         ) = _parseAAStarSignature(signature);
-        
+
         // SECURITY: AA signature must validate userOpHash (ensures binding to specific userOp)
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         address recoveredSigner = ECDSA.recover(hash, aaSignature);
-        
+
         // Validate that the AA signature is from the owner
         if (recoveredSigner != owner) {
             return false;
         }
-        
+
         // Use AAStarValidator for BLS validation (if enabled)
         if (useAAStarValidator && address(aaStarValidator) != address(0)) {
-            return aaStarValidator.validateAggregateSignature(
-                nodeIds,
-                blsSignature,
-                messagePoint
-            );
+            return aaStarValidator.validateAggregateSignature(nodeIds, blsSignature, messagePoint);
         }
-        
+
         return false; // No BLS validation available
     }
 
@@ -369,7 +363,7 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
     ) external pure returns (address recoveredAddress) {
         // Parse signature to get AA signature
         (, , , bytes memory aaSignature) = _parseAAStarSignature(signature);
-        
+
         // Recover address from userOpHash
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         return ECDSA.recover(hash, aaSignature);

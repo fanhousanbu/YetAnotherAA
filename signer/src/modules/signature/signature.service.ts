@@ -1,9 +1,9 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { ethers } from 'ethers';
-import { BlsService } from '../bls/bls.service.js';
-import { NodeService } from '../node/node.service.js';
-import { SignatureResult, AggregateSignatureResult } from '../../interfaces/signature.interface.js';
-import { sigs, bls } from '../../utils/bls.util.js';
+import { Injectable, BadRequestException } from "@nestjs/common";
+import { ethers } from "ethers";
+import { BlsService } from "../bls/bls.service.js";
+import { NodeService } from "../node/node.service.js";
+import { SignatureResult, AggregateSignatureResult } from "../../interfaces/signature.interface.js";
+import { sigs, bls } from "../../utils/bls.util.js";
 
 @Injectable()
 export class SignatureService {
@@ -19,7 +19,7 @@ export class SignatureService {
 
   async aggregateExternalSignatures(signatureStrings: string[]): Promise<AggregateSignatureResult> {
     if (signatureStrings.length < 1) {
-      throw new BadRequestException('At least 1 signature is required for aggregation');
+      throw new BadRequestException("At least 1 signature is required for aggregation");
     }
 
     const signatures = [];
@@ -34,23 +34,25 @@ export class SignatureService {
     const aggregatedSignature = await this.blsService.aggregateSignaturesOnly(signatures);
 
     return {
-      signature: this.blsService.encodeToEIP2537(aggregatedSignature)
+      signature: this.blsService.encodeToEIP2537(aggregatedSignature),
     };
   }
 
   async verifyAggregatedSignature(
-    signatureHex: string, 
-    publicKeyHexes: string[], 
+    signatureHex: string,
+    publicKeyHexes: string[],
     message: string
   ): Promise<{ valid: boolean; message?: string }> {
     try {
       // Convert hex signature to BLS signature
-      const signature = this.hexToBlsSignature(signatureHex.startsWith('0x') ? signatureHex.substring(2) : signatureHex);
-      
+      const signature = this.hexToBlsSignature(
+        signatureHex.startsWith("0x") ? signatureHex.substring(2) : signatureHex
+      );
+
       // Convert hex public keys to BLS public keys
       const publicKeys = [];
       for (const pubKeyHex of publicKeyHexes) {
-        const cleanHex = pubKeyHex.startsWith('0x') ? pubKeyHex.substring(2) : pubKeyHex;
+        const cleanHex = pubKeyHex.startsWith("0x") ? pubKeyHex.substring(2) : pubKeyHex;
         const pubKey = bls.G1.ProjectivePoint.fromHex(cleanHex);
         publicKeys.push(pubKey);
       }
@@ -64,19 +66,19 @@ export class SignatureService {
 
       return {
         valid,
-        message: valid ? 'Signature is valid' : 'Signature verification failed'
+        message: valid ? "Signature is valid" : "Signature verification failed",
       };
     } catch (error) {
-      console.error('BLS verification error:', error);
+      console.error("BLS verification error:", error);
       return {
         valid: false,
-        message: `Verification error: ${error instanceof Error ? error.message : String(error)}`
+        message: `Verification error: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
 
   private hexToBlsSignature(hex: string): any {
-    const cleanHex = hex.startsWith('0x') ? hex.substring(2) : hex;
+    const cleanHex = hex.startsWith("0x") ? hex.substring(2) : hex;
     return sigs.Signature.fromHex(cleanHex);
   }
 

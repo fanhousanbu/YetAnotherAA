@@ -1,10 +1,10 @@
-import { IsString, IsNotEmpty, IsArray, ArrayMinSize } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsArray, ArrayMinSize } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
 
 export class SignMessageDto {
   @ApiProperty({
-    description: 'The message to be signed',
-    example: 'Hello, World!'
+    description: "The message to be signed",
+    example: "Hello, World!",
   })
   @IsString()
   @IsNotEmpty()
@@ -13,17 +13,17 @@ export class SignMessageDto {
 
 export class AggregateSignatureDto {
   @ApiProperty({
-    description: 'The message to be signed by multiple nodes',
-    example: 'Hello, World!'
+    description: "The message to be signed by multiple nodes",
+    example: "Hello, World!",
   })
   @IsString()
   @IsNotEmpty()
   message: string;
 
   @ApiProperty({
-    description: 'Array of node IDs that should sign the message',
-    example: ['node1', 'node2', 'node3'],
-    type: [String]
+    description: "Array of node IDs that should sign the message",
+    example: ["node1", "node2", "node3"],
+    type: [String],
   })
   @IsArray()
   @ArrayMinSize(1)
