@@ -65,7 +65,6 @@ export default function DashboardPage() {
     try {
       const response = await accountAPI.create({
         deploy: true,
-        fundAmount: '0.01', // Fund with 0.01 ETH
       });
       setAccount(response.data);
       toast.success('Account created successfully!');

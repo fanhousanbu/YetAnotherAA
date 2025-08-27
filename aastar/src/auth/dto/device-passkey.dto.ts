@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString } from 'class-validator';
+import { IsEmail, IsString, IsObject } from 'class-validator';
 
 export class DevicePasskeyBeginDto {
   @ApiProperty({ example: 'user@example.com' })
@@ -20,6 +20,7 @@ export class DevicePasskeyRegisterDto {
   @IsString()
   password: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'WebAuthn credential response' })
+  @IsObject()
   credential: any;
 }

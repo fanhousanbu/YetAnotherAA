@@ -22,24 +22,29 @@ export default function LoginPage() {
     if (loading) return;
 
     setLoading(true);
+    let loadingToast: string | null = null;
+    
     try {
       // 第一步：开始Passkey登录
-      toast.loading('Starting passkey authentication...');
+      loadingToast = toast.loading('Starting passkey authentication...');
       const beginResponse = await authAPI.beginPasskeyLogin();
       const options = beginResponse.data;
 
       // 第二步：调用WebAuthn API
-      toast.loading('Please authenticate with your passkey...');
+      toast.dismiss(loadingToast);
+      loadingToast = toast.loading('Please authenticate with your passkey...');
       const credential = await startAuthentication(options);
 
       // 第三步：完成登录
-      toast.loading('Completing authentication...');
+      toast.dismiss(loadingToast);
+      loadingToast = toast.loading('Completing authentication...');
       const completeResponse = await authAPI.completePasskeyLogin({
         credential,
       });
 
       const { access_token, user } = completeResponse.data;
       
+      toast.dismiss(loadingToast);
       setStoredAuth(access_token, user);
       toast.success('Login successful!');
       router.push('/dashboard');
@@ -61,10 +66,16 @@ export default function LoginPage() {
         toast.error('No passkey found. You may need to register a passkey for this device.');
         setShowDeviceRegister(true);
       } else {
+        if (loadingToast) {
+          toast.dismiss(loadingToast);
+        }
         toast.error(message);
       }
     } finally {
       setLoading(false);
+      if (loadingToast) {
+        toast.dismiss(loadingToast);
+      }
     }
   };
 
@@ -78,9 +89,11 @@ export default function LoginPage() {
     }
 
     setLoading(true);
+    let loadingToast: string | null = null;
+    
     try {
       // 第一步：开始新设备Passkey注册
-      toast.loading('Verifying credentials...');
+      loadingToast = toast.loading('Verifying credentials...');
       const beginResponse = await authAPI.beginDevicePasskeyRegistration({
         email: deviceFormData.email,
         password: deviceFormData.password,
@@ -89,17 +102,20 @@ export default function LoginPage() {
       const options = beginResponse.data;
 
       // 第二步：调用WebAuthn API
-      toast.loading('Please set up passkey for this device...');
+      toast.dismiss(loadingToast);
+      loadingToast = toast.loading('Please set up passkey for this device...');
       const credential = await startRegistration(options);
 
       // 第三步：完成注册
-      toast.loading('Completing passkey setup...');
+      toast.dismiss(loadingToast);
+      loadingToast = toast.loading('Completing passkey setup...');
       await authAPI.completeDevicePasskeyRegistration({
         email: deviceFormData.email,
         password: deviceFormData.password,
         credential,
       });
 
+      toast.dismiss(loadingToast);
       toast.success('Passkey registered for this device! You can now login with passkey.');
       setShowDeviceRegister(false);
       setDeviceFormData({ email: '', password: '' });
@@ -117,9 +133,15 @@ export default function LoginPage() {
         message = 'Security error during passkey registration';
       }
       
+      if (loadingToast) {
+        toast.dismiss(loadingToast);
+      }
       toast.error(message);
     } finally {
       setLoading(false);
+      if (loadingToast) {
+        toast.dismiss(loadingToast);
+      }
     }
   };
 

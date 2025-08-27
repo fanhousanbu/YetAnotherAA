@@ -44,9 +44,11 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
+    let loadingToast: string | null = null;
+    
     try {
       // 第一步：开始Passkey注册
-      toast.loading('Starting passkey registration...');
+      loadingToast = toast.loading('Starting passkey registration...');
       const beginResponse = await authAPI.beginPasskeyRegistration({
         email: formData.email,
         username: formData.username || undefined,
@@ -56,11 +58,13 @@ export default function RegisterPage() {
       const { options } = beginResponse.data;
 
       // 第二步：调用WebAuthn API
-      toast.loading('Please complete the passkey setup with your authenticator...');
+      toast.dismiss(loadingToast);
+      loadingToast = toast.loading('Please complete the passkey setup with your authenticator...');
       const credential = await startRegistration(options);
 
       // 第三步：完成注册
-      toast.loading('Completing registration...');
+      toast.dismiss(loadingToast);
+      loadingToast = toast.loading('Completing registration...');
       const completeResponse = await authAPI.completePasskeyRegistration({
         email: formData.email,
         username: formData.username || undefined,
@@ -70,6 +74,7 @@ export default function RegisterPage() {
 
       const { access_token, user } = completeResponse.data;
       
+      toast.dismiss(loadingToast);
       setStoredAuth(access_token, user);
       toast.success('Account created successfully with passkey!');
       router.push('/dashboard');
@@ -87,9 +92,15 @@ export default function RegisterPage() {
         message = 'Security error during passkey registration';
       }
       
+      if (loadingToast) {
+        toast.dismiss(loadingToast);
+      }
       toast.error(message);
     } finally {
       setLoading(false);
+      if (loadingToast) {
+        toast.dismiss(loadingToast);
+      }
     }
   };
 
