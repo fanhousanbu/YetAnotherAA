@@ -7,13 +7,14 @@ import Layout from '@/components/Layout';
 import { authAPI } from '@/lib/api';
 import { setStoredAuth } from '@/lib/auth';
 import toast from 'react-hot-toast';
+import { startRegistration } from '@simplewebauthn/browser';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
     email: '',
+    username: '',
     password: '',
     confirmPassword: '',
-    username: '',
   });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -22,8 +23,13 @@ export default function RegisterPage() {
     e.preventDefault();
     if (loading) return;
 
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+    if (!formData.email) {
+      toast.error('Please enter your email address');
+      return;
+    }
+
+    if (!formData.password) {
+      toast.error('Please enter a password');
       return;
     }
 
@@ -32,17 +38,55 @@ export default function RegisterPage() {
       return;
     }
 
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
     setLoading(true);
     try {
-      const { confirmPassword, ...registerData } = formData;
-      const response = await authAPI.register(registerData);
-      const { access_token, user } = response.data;
+      // 第一步：开始Passkey注册
+      toast.loading('Starting passkey registration...');
+      const beginResponse = await authAPI.beginPasskeyRegistration({
+        email: formData.email,
+        username: formData.username || undefined,
+        password: formData.password,
+      });
+
+      const { options } = beginResponse.data;
+
+      // 第二步：调用WebAuthn API
+      toast.loading('Please complete the passkey setup with your authenticator...');
+      const credential = await startRegistration(options);
+
+      // 第三步：完成注册
+      toast.loading('Completing registration...');
+      const completeResponse = await authAPI.completePasskeyRegistration({
+        email: formData.email,
+        username: formData.username || undefined,
+        password: formData.password,
+        credential,
+      });
+
+      const { access_token, user } = completeResponse.data;
       
       setStoredAuth(access_token, user);
-      toast.success('Account created successfully!');
+      toast.success('Account created successfully with passkey!');
       router.push('/dashboard');
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Registration failed';
+      console.error('Passkey registration error:', error);
+      let message = 'Passkey registration failed';
+      
+      if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.name === 'NotAllowedError') {
+        message = 'Passkey registration was cancelled or not allowed';
+      } else if (error.name === 'NotSupportedError') {
+        message = 'Passkeys are not supported on this device';
+      } else if (error.name === 'SecurityError') {
+        message = 'Security error during passkey registration';
+      }
+      
       toast.error(message);
     } finally {
       setLoading(false);
@@ -62,7 +106,7 @@ export default function RegisterPage() {
         <div className="max-w-md w-full space-y-8">
           <div>
             <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              Create your account
+              Create your account with Passkey
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
               Or{' '}
@@ -73,13 +117,16 @@ export default function RegisterPage() {
                 sign in to your existing account
               </Link>
             </p>
+            <p className="mt-1 text-center text-xs text-gray-500">
+              Registration requires email, password, and passkey setup
+            </p>
           </div>
           
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email address
+                  Email address *
                 </label>
                 <input
                   id="email"
@@ -109,10 +156,10 @@ export default function RegisterPage() {
                   placeholder="Enter your username"
                 />
               </div>
-              
+
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Password
+                  Password *
                 </label>
                 <input
                   id="password"
@@ -129,7 +176,7 @@ export default function RegisterPage() {
 
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                  Confirm Password
+                  Confirm Password *
                 </label>
                 <input
                   id="confirmPassword"
@@ -143,6 +190,24 @@ export default function RegisterPage() {
                   placeholder="Confirm your password"
                 />
               </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-blue-800">
+                      Passkey Registration
+                    </h3>
+                    <div className="mt-1 text-sm text-blue-700">
+                      <p>You'll set up both a password (for new device access) and a passkey (for secure login). After clicking "Create Account", you'll be prompted to set up a passkey using your device's authenticator.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div>
@@ -152,9 +217,17 @@ export default function RegisterPage() {
                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Setting up passkey...
+                  </div>
                 ) : (
-                  'Create Account'
+                  <div className="flex items-center">
+                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                    </svg>
+                    Create Account with Passkey
+                  </div>
                 )}
               </button>
             </div>

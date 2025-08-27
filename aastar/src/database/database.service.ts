@@ -106,6 +106,36 @@ export class DatabaseService {
     }
   }
 
+  // Passkeys operations
+  getPasskeys(): any[] {
+    return this.readJSON('passkeys.json');
+  }
+
+  savePasskey(passkey: any): void {
+    const passkeys = this.getPasskeys();
+    passkeys.push(passkey);
+    this.writeJSON('passkeys.json', passkeys);
+  }
+
+  findPasskeysByUserId(userId: string): any[] {
+    const passkeys = this.getPasskeys();
+    return passkeys.filter(p => p.userId === userId);
+  }
+
+  findPasskeyByCredentialId(credentialId: string): any {
+    const passkeys = this.getPasskeys();
+    return passkeys.find(p => p.credentialId === credentialId);
+  }
+
+  updatePasskey(credentialId: string, updates: any): void {
+    const passkeys = this.getPasskeys();
+    const index = passkeys.findIndex(p => p.credentialId === credentialId);
+    if (index !== -1) {
+      passkeys[index] = { ...passkeys[index], ...updates };
+      this.writeJSON('passkeys.json', passkeys);
+    }
+  }
+
   // BLS Config
   getBlsConfig(): any {
     const filePath = path.join(this.dataDir, 'bls-config.json');
