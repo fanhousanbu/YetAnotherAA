@@ -1,19 +1,12 @@
-import { Module } from "@nestjs/common";
-import { HttpModule } from "@nestjs/axios";
-import { ConfigModule } from "@nestjs/config";
-import { BlsService } from "./bls.service";
-import { BlsController } from "./bls.controller";
+import { Module, forwardRef } from '@nestjs/common';
+import { BlsService } from './bls.service';
+import { BlsController } from './bls.controller';
+import { AccountModule } from '../account/account.module';
 
 @Module({
-  imports: [
-    HttpModule.register({
-      timeout: 10000, // 10秒超时
-      maxRedirects: 5,
-    }),
-    ConfigModule,
-  ],
-  controllers: [BlsController],
+  imports: [forwardRef(() => AccountModule)],
   providers: [BlsService],
+  controllers: [BlsController],
   exports: [BlsService],
 })
 export class BlsModule {}

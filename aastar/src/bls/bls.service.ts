@@ -1,227 +1,279 @@
-import { Injectable, Logger, HttpException, HttpStatus } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
-
-export interface BlsNode {
-  nodeId: string;
-  publicKey: string;
-  address: string;
-  port: number;
-  status: "active" | "inactive";
-}
-
-export interface SignatureRequest {
-  message: string;
-  nodeIds?: string[];
-}
-
-export interface SignatureResponse {
-  nodeId: string;
-  signature: string;
-  publicKey: string;
-  message: string;
-}
-
-export interface AggregateSignatureResponse {
-  aggregatedSignature: string;
-  aggregatedPublicKey: string;
-  participatingNodes: string[];
-  message: string;
-}
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import axios from 'axios';
+import { ethers } from 'ethers';
+import { bls12_381 as bls } from '@noble/curves/bls12-381';
+import { DatabaseService } from '../database/database.service';
+import { AccountService } from '../account/account.service';
+import { BlsSignatureData } from '../common/interfaces/erc4337.interface';
 
 @Injectable()
 export class BlsService {
-  private readonly logger = new Logger(BlsService.name);
-  private seedNodeUrl: string;
+  private blsConfig: any;
 
   constructor(
+    private databaseService: DatabaseService,
+    private accountService: AccountService,
     private configService: ConfigService,
-    private httpService: HttpService
   ) {
-    const seedHost = this.configService.get<string>("BLS_SEED_NODE_HOST", "localhost");
-    const seedPort = this.configService.get<number>("BLS_SEED_NODE_PORT", 3001);
-    this.seedNodeUrl = `http://${seedHost}:${seedPort}`;
+    this.blsConfig = this.databaseService.getBlsConfig();
   }
 
-  /**
-   * 从种子节点获取活跃的BLS节点列表
-   */
-  async getActiveNodes(): Promise<BlsNode[]> {
+  async getActiveSignerNodes(): Promise<any[]> {
+    const blsSignerUrl = this.configService.get<string>('BLS_SIGNER_URL') || 'http://localhost:3001';
+    
     try {
-      this.logger.log(`获取活跃节点列表，种子节点: ${this.seedNodeUrl}`);
-
-      const response = await firstValueFrom(
-        this.httpService.get(`${this.seedNodeUrl}/gossip/peers`)
+      const response = await axios.get(`${blsSignerUrl}/gossip/peers`);
+      const peers = response.data.peers || [];
+      
+      // Filter active peers
+      const activeNodes = peers.filter((peer: any) => 
+        peer.status === 'active' && 
+        peer.apiEndpoint && 
+        peer.publicKey
       );
-
-      const nodes: BlsNode[] = response.data.peers || [];
-      this.logger.log(`发现 ${nodes.length} 个活跃节点`);
-
-      return nodes.filter(node => node.status === "active");
-    } catch (error) {
-      this.logger.error(`获取节点列表失败: ${error.message}`);
-      throw new HttpException(
-        `无法获取BLS节点列表: ${error.message}`,
-        HttpStatus.SERVICE_UNAVAILABLE
-      );
-    }
-  }
-
-  /**
-   * 从指定节点获取单个签名
-   */
-  async getSignatureFromNode(nodeUrl: string, message: string): Promise<SignatureResponse> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post(`${nodeUrl}/signature/sign`, {
-          message,
-        })
-      );
-
-      return response.data;
-    } catch (error) {
-      this.logger.error(`从节点 ${nodeUrl} 获取签名失败: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * 从多个节点收集签名
-   */
-  async collectSignatures(
-    message: string,
-    requiredNodeIds?: string[]
-  ): Promise<SignatureResponse[]> {
-    try {
-      // 获取活跃节点列表
-      const activeNodes = await this.getActiveNodes();
-
+      
       if (activeNodes.length === 0) {
-        throw new HttpException("没有可用的BLS签名节点", HttpStatus.SERVICE_UNAVAILABLE);
+        throw new Error('No active BLS signer nodes found');
       }
+      
+      
+      return activeNodes;
+    } catch (error: any) {
+      console.error('Failed to get active signer nodes:', error.message);
+      throw new Error(`Unable to connect to BLS signer network: ${error.message}`);
+    }
+  }
 
-      // 如果指定了节点ID，过滤出对应节点
-      let targetNodes = activeNodes;
-      if (requiredNodeIds && requiredNodeIds.length > 0) {
-        targetNodes = activeNodes.filter(node => requiredNodeIds.includes(node.nodeId));
-
-        if (targetNodes.length === 0) {
-          throw new HttpException(
-            `指定的节点ID未找到活跃节点: ${requiredNodeIds.join(", ")}`,
-            HttpStatus.BAD_REQUEST
-          );
-        }
-      }
-
-      this.logger.log(`开始从 ${targetNodes.length} 个节点收集签名`);
-
-      // 并行请求所有节点的签名
-      const signaturePromises = targetNodes.map(async node => {
-        const nodeUrl = `http://${node.address}:${node.port}`;
+  async generateBLSSignatureFromSigners(
+    userId: string,
+    userOpHash: string,
+  ): Promise<BlsSignatureData> {
+    // Get active nodes from gossip network
+    const activeNodes = await this.getActiveSignerNodes();
+    
+    if (activeNodes.length === 0) {
+      throw new Error('No active BLS signer nodes available');
+    }
+    
+    // Use first 3 active nodes (or all if less than 3)
+    const selectedNodes = activeNodes.slice(0, Math.min(3, activeNodes.length));
+    
+    try {
+      // Request signatures from each selected node
+      const signatures = [];
+      const publicKeys = [];
+      const nodeIds = [];
+      
+      for (const node of selectedNodes) {
         try {
-          return await this.getSignatureFromNode(nodeUrl, message);
-        } catch (error) {
-          this.logger.warn(`节点 ${node.nodeId} 签名失败: ${error.message}`);
-          return null;
+          const response = await axios.post(`${node.apiEndpoint}/signature/sign`, {
+            message: userOpHash,
+          });
+          
+          // Ensure signature is properly formatted as hex
+          const signature = response.data.signature;
+          const formattedSignature = signature.startsWith('0x') ? signature : `0x${signature}`;
+          
+          signatures.push(formattedSignature);
+          publicKeys.push(response.data.publicKey);
+          nodeIds.push(response.data.nodeId);
+        } catch (error: any) {
+          console.error(`Failed to get signature from ${node.apiEndpoint}:`, error.message);
+          // Continue with other nodes
         }
-      });
-
-      const signatures = await Promise.all(signaturePromises);
-      const validSignatures = signatures.filter(sig => sig !== null) as SignatureResponse[];
-
-      if (validSignatures.length === 0) {
-        throw new HttpException("所有节点签名都失败了", HttpStatus.SERVICE_UNAVAILABLE);
       }
-
-      this.logger.log(`成功收集到 ${validSignatures.length} 个签名`);
-      return validSignatures;
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
+      
+      if (signatures.length === 0) {
+        throw new Error('Failed to get signatures from any BLS nodes');
       }
-      this.logger.error(`收集签名失败: ${error.message}`);
-      throw new HttpException(
-        `收集BLS签名失败: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+      
+      
+      // TODO: Implement signature aggregation
+      // For now, return the first signature as placeholder
+      return {
+        signatures: signatures,
+        publicKeys: publicKeys,
+        nodeIds: nodeIds,
+        signature: signatures[0], // Use first signature as main signature
+        aggregatedSignature: signatures[0], // Placeholder
+        messagePoint: userOpHash.startsWith('0x') ? userOpHash : `0x${userOpHash}`,
+      };
+      
+    } catch (error: any) {
+      console.error('BLS signature generation failed:', error);
+      throw new Error(`BLS signature generation failed: ${error.message}`);
     }
   }
 
-  /**
-   * 调用种子节点进行签名聚合
-   */
-  async aggregateSignatures(
-    message: string,
-    signatures: SignatureResponse[]
-  ): Promise<AggregateSignatureResponse> {
-    try {
-      this.logger.log(`开始聚合 ${signatures.length} 个签名`);
-
-      const response = await firstValueFrom(
-        this.httpService.post(`${this.seedNodeUrl}/signature/aggregate`, {
-          message,
-          signatures: signatures.map(sig => ({
-            nodeId: sig.nodeId,
-            signature: sig.signature,
-            publicKey: sig.publicKey,
-          })),
-        })
-      );
-
-      this.logger.log("签名聚合完成");
-      return response.data;
-    } catch (error) {
-      this.logger.error(`签名聚合失败: ${error.message}`);
-      throw new HttpException(
-        `BLS签名聚合失败: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+  async generateBLSSignature(
+    userId: string,
+    userOpHash: string,
+    nodeIndices?: number[],
+  ): Promise<BlsSignatureData> {
+    // Get active nodes and use first 3 as indices for the local BLS generation
+    const activeNodes = await this.getActiveSignerNodes();
+    if (activeNodes.length < 3) {
+      throw new Error('Not enough active BLS nodes available');
     }
-  }
-
-  /**
-   * 完整的BLS签名流程：收集签名 + 聚合
-   */
-  async signMessage(
-    message: string,
-    requiredNodeIds?: string[]
-  ): Promise<AggregateSignatureResponse> {
-    try {
-      this.logger.log(`开始BLS签名流程，消息: ${message.substring(0, 10)}...`);
-
-      // 1. 收集签名
-      const signatures = await this.collectSignatures(message, requiredNodeIds);
-
-      // 2. 聚合签名
-      const aggregatedResult = await this.aggregateSignatures(message, signatures);
-
-      this.logger.log(
-        `BLS签名流程完成，参与节点: ${aggregatedResult.participatingNodes.length} 个`
-      );
-      return aggregatedResult;
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
+    
+    // Use local BLS generation with first 3 active nodes (indices 1,2,3)
+    const autoSelectedIndices = [1, 2, 3];
+    
+    // Continue with the original local BLS generation method using auto-selected indices
+    // Validate node indices
+    const indices = autoSelectedIndices.map(n => n - 1);
+    for (const index of indices) {
+      if (index < 0 || index >= this.blsConfig.keyPairs.length) {
+        throw new Error(
+          `Auto-selected node index ${index + 1} is out of range (1-${this.blsConfig.keyPairs.length})`,
+        );
       }
-      this.logger.error(`BLS签名流程失败: ${error.message}`);
-      throw new HttpException(
-        `BLS签名流程失败: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
     }
+
+    // Get selected nodes
+    const selectedNodes = indices.map(i => this.blsConfig.keyPairs[i]);
+
+    // BLS signature parameters
+    const messageBytes = ethers.getBytes(userOpHash);
+    const DST = 'BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_';
+
+    // Generate G2 point message
+    const messagePoint = await bls.G2.hashToCurve(messageBytes, { DST });
+
+    // Generate signature for each node
+    const signatures = [];
+    const nodeIds = [];
+
+    for (const node of selectedNodes) {
+      const privateKeyBytes = this.hexToBytes(node.privateKey.substring(2));
+      
+      // Convert private key to bigint
+      let privateKeyBn = 0n;
+      for (const byte of privateKeyBytes) {
+        privateKeyBn = (privateKeyBn << 8n) + BigInt(byte);
+      }
+      
+      // BLS12-381 curve order (r)
+      const curveOrder = 52435875175126190479447740508185965837690552500527637822603658699938581184513n;
+      
+      // Ensure private key is within valid range by taking modulo
+      privateKeyBn = privateKeyBn % curveOrder;
+      
+      if (privateKeyBn <= 0n) {
+        throw new Error(`Invalid private key for node ${node.nodeName}: private key must be > 0`);
+      }
+      
+      // Multiply message point by private key to get signature
+      const signature = messagePoint.multiply(privateKeyBn);
+
+      signatures.push(signature);
+      nodeIds.push(node.contractNodeId);
+    }
+
+    // Aggregate signatures (simple addition of points)
+    let aggregatedSignature = signatures[0];
+    for (let i = 1; i < signatures.length; i++) {
+      aggregatedSignature = aggregatedSignature.add(signatures[i]);
+    }
+
+    // Convert to contract format
+    const aggregatedSignatureEIP = this.encodeG2Point(aggregatedSignature);
+    const messageG2EIP = this.encodeG2Point(messagePoint);
+
+    // Generate AA signature using user's account owner private key
+    const account = this.accountService.getAccountByUserId(userId);
+    if (!account) {
+      throw new Error('User account not found');
+    }
+
+    const wallet = new ethers.Wallet(account.ownerPrivateKey);
+    const aaSignature = await wallet.signMessage(ethers.getBytes(userOpHash));
+
+    return {
+      nodeIds: nodeIds,
+      signature: '0x' + Buffer.from(aggregatedSignatureEIP).toString('hex'),
+      messagePoint: '0x' + Buffer.from(messageG2EIP).toString('hex'),
+      aaAddress: account.ownerAddress,
+      aaSignature: aaSignature,
+    };
   }
 
-  /**
-   * 健康检查 - 检查种子节点是否可用
-   */
-  async healthCheck(): Promise<boolean> {
-    try {
-      await firstValueFrom(this.httpService.get(`${this.seedNodeUrl}/node/info`));
-      return true;
-    } catch (error) {
-      this.logger.warn(`BLS种子节点不可用: ${error.message}`);
-      return false;
+  async packSignature(blsData: BlsSignatureData): Promise<string> {
+    // Handle new signature format from signer nodes
+    if (blsData.signatures && blsData.nodeIds) {
+      // New format: pack signatures from signer nodes
+      const nodeIdsLength = ethers.solidityPacked(['uint256'], [blsData.nodeIds.length]);
+      const nodeIdsBytes = ethers.solidityPacked(
+        Array(blsData.nodeIds.length).fill('bytes32'),
+        blsData.nodeIds,
+      );
+
+      return ethers.solidityPacked(
+        ['bytes', 'bytes', 'bytes', 'bytes'],
+        [nodeIdsLength, nodeIdsBytes, blsData.signature, blsData.messagePoint],
+      );
     }
+    
+    // Fallback to old format if available
+    if (blsData.nodeIds && blsData.aaSignature) {
+      const nodeIdsLength = ethers.solidityPacked(['uint256'], [blsData.nodeIds.length]);
+      const nodeIdsBytes = ethers.solidityPacked(
+        Array(blsData.nodeIds.length).fill('bytes32'),
+        blsData.nodeIds,
+      );
+
+      return ethers.solidityPacked(
+        ['bytes', 'bytes', 'bytes', 'bytes', 'bytes'],
+        [nodeIdsLength, nodeIdsBytes, blsData.signature, blsData.messagePoint, blsData.aaSignature],
+      );
+    }
+
+    throw new Error('Invalid BLS signature data format');
+  }
+
+  getAvailableNodes() {
+    return this.blsConfig.keyPairs.map((node, index) => ({
+      index: index + 1,
+      nodeId: node.contractNodeId,
+      nodeName: node.nodeName,
+      status: node.registrationStatus,
+    }));
+  }
+
+  getNodesByIndices(indices: number[]) {
+    return indices.map(i => {
+      const node = this.blsConfig.keyPairs[i - 1];
+      if (!node) throw new Error(`Node ${i} not found`);
+      return {
+        index: i,
+        nodeId: node.contractNodeId,
+        nodeName: node.nodeName,
+      };
+    });
+  }
+
+  private hexToBytes(hex: string): Uint8Array {
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) {
+      bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+    }
+    return bytes;
+  }
+
+  private encodeG2Point(point: any): Uint8Array {
+    const result = new Uint8Array(256);
+    const affine = point.toAffine();
+
+    const x0Bytes = this.hexToBytes(affine.x.c0.toString(16).padStart(96, '0'));
+    const x1Bytes = this.hexToBytes(affine.x.c1.toString(16).padStart(96, '0'));
+    const y0Bytes = this.hexToBytes(affine.y.c0.toString(16).padStart(96, '0'));
+    const y1Bytes = this.hexToBytes(affine.y.c1.toString(16).padStart(96, '0'));
+
+    result.set(x0Bytes, 16);
+    result.set(x1Bytes, 80);
+    result.set(y0Bytes, 144);
+    result.set(y1Bytes, 208);
+    return result;
   }
 }

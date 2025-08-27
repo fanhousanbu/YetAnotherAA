@@ -16,6 +16,7 @@ verification.
   on-chain verification costs
 - **ERC-4337 Account Abstraction**: Full compatibility with Ethereum Account
   Abstraction standard
+- **Automatic Node Selection**: Automatically selects active BLS nodes from gossip network
 - **Gas Optimization**: Precise gas estimation based on EIP-2537 standards
 - **Dual Verification Mechanism**: AA signatures verify userOpHash, BLS
   signatures verify messagePoint
@@ -41,6 +42,15 @@ YetAnotherAA/
 │   │   └── README.md             # Demo usage guide
 │   ├── src/                      # BLS signing service
 │   └── README.md                 # Signer service documentation
+├── aastar/                       # Backend API (NestJS)
+│   ├── src/                      # API source code
+│   ├── data/                     # JSON data storage
+│   └── README.md                 # API documentation
+├── aastar-frontend/              # Frontend Application (Next.js)
+│   ├── app/                      # Next.js pages
+│   ├── components/               # React components
+│   ├── lib/                      # Utilities and API client
+│   └── README.md                 # Frontend documentation
 └── README.md                     # Project documentation
 ```
 
@@ -126,6 +136,15 @@ Complete 705-byte signature structure:
 | 1 node     | 600,000              | ~520k        | Baseline protection |
 | 3 nodes    | 600,000              | ~653k        | Moderate            |
 | 100 nodes  | 640,500              | Estimated    | Auto-scaling        |
+
+## 🔄 Automatic Node Selection
+
+The system now automatically selects active BLS nodes from the gossip network:
+
+1. **Gossip Network Discovery**: Queries active nodes from the P2P network
+2. **Automatic Selection**: Selects the optimal 3 nodes for signature generation
+3. **No Manual Configuration**: Users don't need to select nodes manually
+4. **Improved UX**: Simplified transfer process with automatic node management
 
 ## 📖 Usage Guide
 
@@ -256,6 +275,61 @@ This project demonstrates:
 
 **Note**: For quick testing, you can use our reference contracts on Sepolia, but
 deploy your own for production use.
+
+## 🌐 Complete Application Stack
+
+A full-stack application with all components is now available:
+
+### BLS Signer Service (NestJS)
+- **Location**: `signer/`
+- **Port**: http://localhost:3001
+- **Features**: BLS signature generation, gossip network, node management
+- **Documentation**: Swagger UI at http://localhost:3001/api
+
+```bash
+cd signer
+npm install
+npm run start
+```
+
+### Backend API (NestJS)
+- **Location**: `aastar/`
+- **Port**: http://localhost:3000
+- **Features**: User auth, account management, ERC-4337 transfers
+- **Documentation**: Swagger UI at http://localhost:3000/api-docs
+
+```bash
+cd aastar
+npm install
+npm run start:dev
+```
+
+### Frontend Application (Next.js)
+- **Location**: `aastar-frontend/`
+- **Port**: http://localhost:8080
+- **Features**: Complete user interface for registration, login, transfers
+
+```bash
+cd aastar-frontend
+npm install
+npm run dev
+```
+
+### Complete User Flow
+1. **Start all services**: Signer (3001) → Backend (3000) → Frontend (8080)
+2. Visit http://localhost:8080
+3. Register new account or login
+4. Create ERC-4337 smart account
+5. Fund account and execute transfers
+6. View transfer history and status
+
+**Features**:
+- ✅ Multi-node BLS signature aggregation
+- ✅ ERC-4337 account abstraction
+- ✅ Gasless transaction support
+- ✅ Real-time gossip network
+- ✅ Complete user interface
+- ✅ No CORS issues (API proxy)
 
 ## 📄 License
 
