@@ -1,15 +1,15 @@
-import { Injectable } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
+import { Injectable } from "@nestjs/common";
+import * as fs from "fs";
+import * as path from "path";
 
 @Injectable()
 export class DatabaseService {
-  private readonly dataDir = path.join(process.cwd(), 'data');
+  private readonly dataDir = path.join(process.cwd(), "data");
 
   private readJSON(filename: string): any[] {
     const filePath = path.join(this.dataDir, filename);
     try {
-      const data = fs.readFileSync(filePath, 'utf-8');
+      const data = fs.readFileSync(filePath, "utf-8");
       return JSON.parse(data);
     } catch (error) {
       return [];
@@ -23,13 +23,13 @@ export class DatabaseService {
 
   // Users operations
   getUsers(): any[] {
-    return this.readJSON('users.json');
+    return this.readJSON("users.json");
   }
 
   saveUser(user: any): void {
     const users = this.getUsers();
     users.push(user);
-    this.writeJSON('users.json', users);
+    this.writeJSON("users.json", users);
   }
 
   updateUser(id: string, updates: any): void {
@@ -37,7 +37,7 @@ export class DatabaseService {
     const index = users.findIndex(u => u.id === id);
     if (index !== -1) {
       users[index] = { ...users[index], ...updates };
-      this.writeJSON('users.json', users);
+      this.writeJSON("users.json", users);
     }
   }
 
@@ -53,13 +53,13 @@ export class DatabaseService {
 
   // Accounts operations
   getAccounts(): any[] {
-    return this.readJSON('accounts.json');
+    return this.readJSON("accounts.json");
   }
 
   saveAccount(account: any): void {
     const accounts = this.getAccounts();
     accounts.push(account);
-    this.writeJSON('accounts.json', accounts);
+    this.writeJSON("accounts.json", accounts);
   }
 
   findAccountByUserId(userId: string): any {
@@ -72,19 +72,19 @@ export class DatabaseService {
     const index = accounts.findIndex(a => a.userId === userId);
     if (index !== -1) {
       accounts[index] = { ...accounts[index], ...updates };
-      this.writeJSON('accounts.json', accounts);
+      this.writeJSON("accounts.json", accounts);
     }
   }
 
   // Transfers operations
   getTransfers(): any[] {
-    return this.readJSON('transfers.json');
+    return this.readJSON("transfers.json");
   }
 
   saveTransfer(transfer: any): void {
     const transfers = this.getTransfers();
     transfers.push(transfer);
-    this.writeJSON('transfers.json', transfers);
+    this.writeJSON("transfers.json", transfers);
   }
 
   findTransfersByUserId(userId: string): any[] {
@@ -102,19 +102,19 @@ export class DatabaseService {
     const index = transfers.findIndex(t => t.id === id);
     if (index !== -1) {
       transfers[index] = { ...transfers[index], ...updates };
-      this.writeJSON('transfers.json', transfers);
+      this.writeJSON("transfers.json", transfers);
     }
   }
 
   // Passkeys operations
   getPasskeys(): any[] {
-    return this.readJSON('passkeys.json');
+    return this.readJSON("passkeys.json");
   }
 
   savePasskey(passkey: any): void {
     const passkeys = this.getPasskeys();
     passkeys.push(passkey);
-    this.writeJSON('passkeys.json', passkeys);
+    this.writeJSON("passkeys.json", passkeys);
   }
 
   findPasskeysByUserId(userId: string): any[] {
@@ -132,15 +132,15 @@ export class DatabaseService {
     const index = passkeys.findIndex(p => p.credentialId === credentialId);
     if (index !== -1) {
       passkeys[index] = { ...passkeys[index], ...updates };
-      this.writeJSON('passkeys.json', passkeys);
+      this.writeJSON("passkeys.json", passkeys);
     }
   }
 
   // BLS Config
   getBlsConfig(): any {
-    const filePath = path.join(this.dataDir, 'bls-config.json');
+    const filePath = path.join(this.dataDir, "bls-config.json");
     try {
-      const data = fs.readFileSync(filePath, 'utf-8');
+      const data = fs.readFileSync(filePath, "utf-8");
       return JSON.parse(data);
     } catch (error) {
       return null;

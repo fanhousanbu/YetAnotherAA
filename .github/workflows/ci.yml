@@ -214,7 +214,7 @@ jobs:
             npx tsc --noEmit
           fi
 
-  # Job 7: CodeQL Analysis  
+  # Job 7: CodeQL Analysis
   codeql:
     name: CodeQL Analysis
     runs-on: ubuntu-latest

@@ -1,14 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { ethers } from 'ethers';
-import { v4 as uuidv4 } from 'uuid';
-import { DatabaseService } from '../database/database.service';
-import { EthereumService } from '../ethereum/ethereum.service';
-import { AccountService } from '../account/account.service';
-import { BlsService } from '../bls/bls.service';
-import { ExecuteTransferDto } from './dto/execute-transfer.dto';
-import { EstimateGasDto } from './dto/estimate-gas.dto';
-import { UserOperation } from '../common/interfaces/erc4337.interface';
+import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { ethers } from "ethers";
+import { v4 as uuidv4 } from "uuid";
+import { DatabaseService } from "../database/database.service";
+import { EthereumService } from "../ethereum/ethereum.service";
+import { AccountService } from "../account/account.service";
+import { BlsService } from "../bls/bls.service";
+import { ExecuteTransferDto } from "./dto/execute-transfer.dto";
+import { EstimateGasDto } from "./dto/estimate-gas.dto";
+import { UserOperation } from "../common/interfaces/erc4337.interface";
 
 @Injectable()
 export class TransferService {
@@ -17,18 +17,18 @@ export class TransferService {
     private ethereumService: EthereumService,
     private accountService: AccountService,
     private blsService: BlsService,
-    private configService: ConfigService,
+    private configService: ConfigService
   ) {}
 
   async executeTransfer(userId: string, transferDto: ExecuteTransferDto) {
     // Get user's account
     const account = this.accountService.getAccountByUserId(userId);
     if (!account) {
-      throw new NotFoundException('User account not found');
+      throw new NotFoundException("User account not found");
     }
 
     if (!account.deployed) {
-      throw new BadRequestException('Account needs to be deployed first');
+      throw new BadRequestException("Account needs to be deployed first");
     }
 
     // Build UserOperation
@@ -36,17 +36,14 @@ export class TransferService {
       account.address,
       transferDto.to,
       transferDto.amount,
-      transferDto.data || '0x',
+      transferDto.data || "0x"
     );
 
     // Get UserOp hash
     const userOpHash = await this.ethereumService.getUserOpHash(userOp);
 
     // Generate BLS signature using active signer nodes
-    const blsData = await this.blsService.generateBLSSignature(
-      userId,
-      userOpHash,
-    );
+    const blsData = await this.blsService.generateBLSSignature(userId, userOpHash);
 
     // Pack signature
     userOp.signature = await this.blsService.packSignature(blsData);
@@ -61,7 +58,7 @@ export class TransferService {
       amount: transferDto.amount,
       data: transferDto.data,
       userOpHash,
-      status: 'pending',
+      status: "pending",
       nodeIndices: [], // Auto-selected by gossip network
       createdAt: new Date().toISOString(),
     };
@@ -71,13 +68,13 @@ export class TransferService {
     try {
       // Submit UserOp to bundler
       const bundlerUserOpHash = await this.ethereumService.sendUserOperation(
-        this.formatUserOpForBundler(userOp),
+        this.formatUserOpForBundler(userOp)
       );
 
       // Update transfer status
       this.databaseService.updateTransfer(transferId, {
         bundlerUserOpHash,
-        status: 'submitted',
+        status: "submitted",
       });
 
       // Wait for transaction
@@ -86,7 +83,7 @@ export class TransferService {
       // Update transfer with transaction hash
       this.databaseService.updateTransfer(transferId, {
         transactionHash: txHash,
-        status: 'completed',
+        status: "completed",
         completedAt: new Date().toISOString(),
       });
 
@@ -103,7 +100,7 @@ export class TransferService {
     } catch (error) {
       // Update transfer status to failed
       this.databaseService.updateTransfer(transferId, {
-        status: 'failed',
+        status: "failed",
         error: error.message,
       });
 
@@ -115,7 +112,7 @@ export class TransferService {
     // Get user's account
     const account = this.accountService.getAccountByUserId(userId);
     if (!account) {
-      throw new NotFoundException('User account not found');
+      throw new NotFoundException("User account not found");
     }
 
     // Build UserOperation for estimation
@@ -123,12 +120,12 @@ export class TransferService {
       account.address,
       estimateDto.to,
       estimateDto.amount,
-      estimateDto.data || '0x',
+      estimateDto.data || "0x"
     );
 
     // Format for bundler
     const formattedUserOp = this.formatUserOpForBundler(userOp);
-    
+
     // Get gas estimates
     const gasEstimates = await this.ethereumService.estimateUserOperationGas(formattedUserOp);
 
@@ -147,15 +144,15 @@ export class TransferService {
         BigInt(gasEstimates.verificationGasLimit) +
         BigInt(gasEstimates.preVerificationGas)
       ).toString(),
-      maxFeePerGas: ethers.parseUnits('1', 'gwei').toString(),
-      maxPriorityFeePerGas: ethers.parseUnits('0.1', 'gwei').toString(),
+      maxFeePerGas: ethers.parseUnits("1", "gwei").toString(),
+      maxPriorityFeePerGas: ethers.parseUnits("0.1", "gwei").toString(),
     };
   }
 
   async getTransferStatus(userId: string, transferId: string) {
     const transfer = this.databaseService.findTransferById(transferId);
     if (!transfer || transfer.userId !== userId) {
-      throw new NotFoundException('Transfer not found');
+      throw new NotFoundException("Transfer not found");
     }
 
     return transfer;
@@ -163,7 +160,7 @@ export class TransferService {
 
   async getTransferHistory(userId: string, page: number = 1, limit: number = 10) {
     const transfers = this.databaseService.findTransfersByUserId(userId);
-    
+
     // Sort by createdAt descending
     transfers.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -185,13 +182,13 @@ export class TransferService {
     sender: string,
     to: string,
     amount: string,
-    data: string,
+    data: string
   ): Promise<UserOperation> {
     const accountContract = this.ethereumService.getAccountContract(sender);
     const nonce = await this.ethereumService.getNonce(sender);
 
     // Encode execute function call
-    const callData = accountContract.interface.encodeFunctionData('execute', [
+    const callData = accountContract.interface.encodeFunctionData("execute", [
       to,
       ethers.parseEther(amount),
       data,
@@ -200,16 +197,16 @@ export class TransferService {
     // Initial UserOp for gas estimation
     const baseUserOp = {
       sender,
-      nonce: '0x' + nonce.toString(16),
-      initCode: '0x',
+      nonce: "0x" + nonce.toString(16),
+      initCode: "0x",
       callData,
-      callGasLimit: '0x0',
-      verificationGasLimit: '0x0',
-      preVerificationGas: '0x0',
-      maxFeePerGas: '0x' + ethers.parseUnits('1', 'gwei').toString(16),
-      maxPriorityFeePerGas: '0x' + ethers.parseUnits('0.1', 'gwei').toString(16),
-      paymasterAndData: '0x',
-      signature: '0x',
+      callGasLimit: "0x0",
+      verificationGasLimit: "0x0",
+      preVerificationGas: "0x0",
+      maxFeePerGas: "0x" + ethers.parseUnits("1", "gwei").toString(16),
+      maxPriorityFeePerGas: "0x" + ethers.parseUnits("0.1", "gwei").toString(16),
+      paymasterAndData: "0x",
+      signature: "0x",
     };
 
     // Estimate gas
@@ -218,29 +215,29 @@ export class TransferService {
     return {
       sender,
       nonce,
-      initCode: '0x',
+      initCode: "0x",
       callData,
       callGasLimit: BigInt(gasEstimates.callGasLimit),
       verificationGasLimit: BigInt(gasEstimates.verificationGasLimit),
       preVerificationGas: BigInt(gasEstimates.preVerificationGas),
-      maxFeePerGas: ethers.parseUnits('1', 'gwei'),
-      maxPriorityFeePerGas: ethers.parseUnits('0.1', 'gwei'),
-      paymasterAndData: '0x',
-      signature: '0x',
+      maxFeePerGas: ethers.parseUnits("1", "gwei"),
+      maxPriorityFeePerGas: ethers.parseUnits("0.1", "gwei"),
+      paymasterAndData: "0x",
+      signature: "0x",
     };
   }
 
   private formatUserOpForBundler(userOp: UserOperation): any {
     return {
       sender: userOp.sender,
-      nonce: '0x' + userOp.nonce.toString(16),
+      nonce: "0x" + userOp.nonce.toString(16),
       initCode: userOp.initCode,
       callData: userOp.callData,
-      callGasLimit: '0x' + userOp.callGasLimit.toString(16),
-      verificationGasLimit: '0x' + userOp.verificationGasLimit.toString(16),
-      preVerificationGas: '0x' + userOp.preVerificationGas.toString(16),
-      maxFeePerGas: '0x' + userOp.maxFeePerGas.toString(16),
-      maxPriorityFeePerGas: '0x' + userOp.maxPriorityFeePerGas.toString(16),
+      callGasLimit: "0x" + userOp.callGasLimit.toString(16),
+      verificationGasLimit: "0x" + userOp.verificationGasLimit.toString(16),
+      preVerificationGas: "0x" + userOp.preVerificationGas.toString(16),
+      maxFeePerGas: "0x" + userOp.maxFeePerGas.toString(16),
+      maxPriorityFeePerGas: "0x" + userOp.maxPriorityFeePerGas.toString(16),
       paymasterAndData: userOp.paymasterAndData,
       signature: userOp.signature,
     };
