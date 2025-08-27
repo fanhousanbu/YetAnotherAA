@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { clearStoredAuth, getStoredAuth } from '@/lib/auth';
-import { User } from '@/lib/types';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { clearStoredAuth, getStoredAuth } from "@/lib/auth";
+import { User } from "@/lib/types";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -19,17 +19,17 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
 
   useEffect(() => {
     const { token, user: storedUser } = getStoredAuth();
-    
+
     if (requireAuth && !token) {
-      router.push('/auth/login');
+      router.push("/auth/login");
       return;
     }
-    
+
     if (!requireAuth && token) {
-      router.push('/dashboard');
+      router.push("/dashboard");
       return;
     }
-    
+
     setUser(storedUser);
     setLoading(false);
   }, [requireAuth, router]);
@@ -37,7 +37,7 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
   const handleLogout = () => {
     clearStoredAuth();
     setUser(null);
-    router.push('/');
+    router.push("/");
   };
 
   if (loading) {
@@ -56,28 +56,24 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-gray-900">
-                  AAStar
-                </h1>
+                <h1 className="text-xl font-semibold text-gray-900">AAStar</h1>
               </div>
-              
+
               <div className="hidden md:flex items-center space-x-4">
                 <button
-                  onClick={() => router.push('/dashboard')}
+                  onClick={() => router.push("/dashboard")}
                   className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium"
                 >
                   Dashboard
                 </button>
                 <button
-                  onClick={() => router.push('/transfer')}
+                  onClick={() => router.push("/transfer")}
                   className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium"
                 >
                   Transfer
                 </button>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">
-                    {user.username || user.email}
-                  </span>
+                  <span className="text-sm text-gray-500">{user.username || user.email}</span>
                   <button
                     onClick={handleLogout}
                     className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm font-medium"
@@ -109,7 +105,7 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
               <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
                 <button
                   onClick={() => {
-                    router.push('/dashboard');
+                    router.push("/dashboard");
                     setMobileMenuOpen(false);
                   }}
                   className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 w-full text-left"
@@ -118,16 +114,14 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                 </button>
                 <button
                   onClick={() => {
-                    router.push('/transfer');
+                    router.push("/transfer");
                     setMobileMenuOpen(false);
                   }}
                   className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 w-full text-left"
                 >
                   Transfer
                 </button>
-                <div className="px-3 py-2 text-sm text-gray-500">
-                  {user.username || user.email}
-                </div>
+                <div className="px-3 py-2 text-sm text-gray-500">{user.username || user.email}</div>
                 <button
                   onClick={handleLogout}
                   className="block w-full text-left px-3 py-2 text-base font-medium text-red-600 hover:text-red-700"
@@ -141,9 +135,7 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
       )}
 
       {/* Main content */}
-      <main className={user ? 'py-6' : ''}>
-        {children}
-      </main>
+      <main className={user ? "py-6" : ""}>{children}</main>
     </div>
   );
 }

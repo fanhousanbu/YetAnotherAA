@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { DocumentDuplicateIcon, CheckIcon } from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
+import { useState } from "react";
+import { DocumentDuplicateIcon, CheckIcon } from "@heroicons/react/24/outline";
+import toast from "react-hot-toast";
 
 interface CopyButtonProps {
   text: string;
@@ -11,11 +11,11 @@ interface CopyButtonProps {
   showFullText?: boolean;
 }
 
-export default function CopyButton({ 
-  text, 
-  displayText, 
-  className = '',
-  showFullText = false 
+export default function CopyButton({
+  text,
+  displayText,
+  className = "",
+  showFullText = false,
 }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
@@ -23,27 +23,27 @@ export default function CopyButton({
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      toast.success('Address copied to clipboard!');
-      
+      toast.success("Address copied to clipboard!");
+
       // Reset icon after 2 seconds
       setTimeout(() => {
         setCopied(false);
       }, 2000);
     } catch (err) {
       // Fallback for older browsers
-      const textArea = document.createElement('textarea');
+      const textArea = document.createElement("textarea");
       textArea.value = text;
       document.body.appendChild(textArea);
       textArea.select();
       try {
-        document.execCommand('copy');
+        document.execCommand("copy");
         setCopied(true);
-        toast.success('Address copied to clipboard!');
+        toast.success("Address copied to clipboard!");
         setTimeout(() => {
           setCopied(false);
         }, 2000);
       } catch (fallbackErr) {
-        toast.error('Failed to copy address');
+        toast.error("Failed to copy address");
       }
       document.body.removeChild(textArea);
     }

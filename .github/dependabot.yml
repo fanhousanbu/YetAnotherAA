@@ -6,21 +6,21 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
-    
+
   # AAstar backend
   - package-ecosystem: "npm"
     directory: "/aastar"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
-    
+
   # AAstar frontend
   - package-ecosystem: "npm"
     directory: "/aastar-frontend"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
-    
+
   # Signer service
   - package-ecosystem: "npm"
     directory: "/signer"

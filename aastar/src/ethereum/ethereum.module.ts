@@ -1,5 +1,5 @@
-import { Module, Global } from '@nestjs/common';
-import { EthereumService } from './ethereum.service';
+import { Module, Global } from "@nestjs/common";
+import { EthereumService } from "./ethereum.service";
 
 @Global()
 @Module({
