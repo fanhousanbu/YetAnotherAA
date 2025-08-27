@@ -9,17 +9,7 @@
   "arrowParens": "avoid",
   "bracketSpacing": true,
   "proseWrap": "preserve",
-  "plugins": ["prettier-plugin-solidity"],
   "overrides": [
-    {
-      "files": "*.sol",
-      "options": {
-        "printWidth": 120,
-        "tabWidth": 4,
-        "singleQuote": false,
-        "bracketSpacing": true
-      }
-    },
     {
       "files": "*.md",
       "options": {
