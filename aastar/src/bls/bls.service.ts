@@ -37,9 +37,6 @@ export class BlsService {
         throw new Error('No active BLS signer nodes found');
       }
       
-      console.log(`Found ${activeNodes.length} active BLS nodes:`, 
-        activeNodes.map((n: any) => n.apiEndpoint)
-      );
       
       return activeNodes;
     } catch (error: any) {
@@ -91,7 +88,6 @@ export class BlsService {
         throw new Error('Failed to get signatures from any BLS nodes');
       }
       
-      console.log(`Got signatures from ${signatures.length} nodes`);
       
       // TODO: Implement signature aggregation
       // For now, return the first signature as placeholder
@@ -123,7 +119,6 @@ export class BlsService {
     
     // Use local BLS generation with first 3 active nodes (indices 1,2,3)
     const autoSelectedIndices = [1, 2, 3];
-    console.log(`Auto-selected BLS node indices: ${autoSelectedIndices.join(', ')}`);
     
     // Continue with the original local BLS generation method using auto-selected indices
     // Validate node indices
@@ -151,18 +146,13 @@ export class BlsService {
     const nodeIds = [];
 
     for (const node of selectedNodes) {
-      console.log(`Processing node ${node.nodeName} with private key: ${node.privateKey}`);
-      
       const privateKeyBytes = this.hexToBytes(node.privateKey.substring(2));
-      console.log(`Private key bytes length: ${privateKeyBytes.length}`);
       
       // Convert private key to bigint
       let privateKeyBn = 0n;
       for (const byte of privateKeyBytes) {
         privateKeyBn = (privateKeyBn << 8n) + BigInt(byte);
       }
-      
-      console.log(`Private key as bigint: ${privateKeyBn.toString()}`);
       
       // BLS12-381 curve order (r)
       const curveOrder = 52435875175126190479447740508185965837690552500527637822603658699938581184513n;
@@ -173,8 +163,6 @@ export class BlsService {
       if (privateKeyBn <= 0n) {
         throw new Error(`Invalid private key for node ${node.nodeName}: private key must be > 0`);
       }
-      
-      console.log(`Private key after modulo: ${privateKeyBn.toString()}`);
       
       // Multiply message point by private key to get signature
       const signature = messagePoint.multiply(privateKeyBn);

@@ -16,6 +16,7 @@ verification.
   on-chain verification costs
 - **ERC-4337 Account Abstraction**: Full compatibility with Ethereum Account
   Abstraction standard
+- **Automatic Node Selection**: Automatically selects active BLS nodes from gossip network
 - **Gas Optimization**: Precise gas estimation based on EIP-2537 standards
 - **Dual Verification Mechanism**: AA signatures verify userOpHash, BLS
   signatures verify messagePoint
@@ -135,6 +136,15 @@ Complete 705-byte signature structure:
 | 1 node     | 600,000              | ~520k        | Baseline protection |
 | 3 nodes    | 600,000              | ~653k        | Moderate            |
 | 100 nodes  | 640,500              | Estimated    | Auto-scaling        |
+
+## 🔄 Automatic Node Selection
+
+The system now automatically selects active BLS nodes from the gossip network:
+
+1. **Gossip Network Discovery**: Queries active nodes from the P2P network
+2. **Automatic Selection**: Selects the optimal 3 nodes for signature generation
+3. **No Manual Configuration**: Users don't need to select nodes manually
+4. **Improved UX**: Simplified transfer process with automatic node management
 
 ## 📖 Usage Guide
 
