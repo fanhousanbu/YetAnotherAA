@@ -1,165 +1,183 @@
 # AAStar Frontend
 
-基于 Passkey 的 Web3 账户抽象钱包前端应用。
+A modern web interface for ERC-4337 Account Abstraction with BLS Aggregate Signatures.
 
-## 功能特性
+## Features
 
-- 🔐 **Passkey 认证**: 使用生物识别或设备密码进行安全登录
-- 📧 **邮箱验证**: 注册时通过邮箱验证码验证身份
-- 💰 **钱包管理**: 查看钱包地址、余额和交易历史
-- 👥 **联系人管理**: 添加和管理转账联系人
-- 🔄 **转账功能**: 支持 ETH 转账操作
-- 🛡️ **BLS 签名**: 支持 BLS 聚合签名功能
+🚀 **Complete User Flow**
+- User registration and authentication
+- ERC-4337 smart account creation
+- Balance viewing and account management
+- Transfer execution with BLS signatures
+- Transfer history and status tracking
 
-## 技术栈
+🎨 **Modern UI/UX**
+- Responsive design with Tailwind CSS
+- Toast notifications for user feedback
+- Loading states and error handling
+- Mobile-friendly interface
 
-- **框架**: Next.js 14
-- **语言**: TypeScript
-- **样式**: Tailwind CSS
-- **认证**: WebAuthn / Passkey
-- **状态管理**: React Hooks
-- **HTTP 客户端**: Fetch API
+🔧 **Technical Stack**
+- **Next.js 15** with App Router
+- **TypeScript** for type safety
+- **Tailwind CSS** for styling
+- **Heroicons** for icons
+- **Axios** for API communication
+- **React Hot Toast** for notifications
 
-## 快速开始
+## Getting Started
 
-### 环境要求
+### Prerequisites
 
-- Node.js 18+
-- 支持 Passkey 的现代浏览器（Chrome、Safari、Edge）
-- 后端服务运行在 `http://localhost:3000`
+Make sure the backend API is running:
+```bash
+cd ../aastar
+npm run start:dev
+```
 
-### 安装依赖
+The backend should be available at `http://localhost:3000/api/v1`
+
+### Installation
 
 ```bash
 npm install
 ```
 
-### 启动开发服务器
+### Environment Setup
+
+Create `.env.local` file (already provided):
+```env
+NEXT_PUBLIC_API_URL=/api/v1
+```
+
+**Note**: The frontend uses Next.js rewrites to proxy API requests, eliminating CORS issues.
+
+### Development
 
 ```bash
 npm run dev
 ```
 
-应用将在 `http://localhost:8080` 启动。
+Open [http://localhost:8080](http://localhost:8080) in your browser.
 
-### 构建生产版本
+### Building for Production
 
 ```bash
 npm run build
 npm start
 ```
 
-## 使用流程
+## User Journey
 
-### 1. 注册账户
+### 1. **Landing Page** (`/`)
+- Welcome screen with feature highlights
+- Sign in / Create account buttons
+- Auto-redirects if already authenticated
 
-1. 点击"立即注册"
-2. 输入邮箱地址并发送验证码
-3. 输入收到的 6 位验证码
-4. 创建 Passkey（使用指纹、面容或设备密码）
-5. 注册完成，自动登录
+### 2. **Authentication** (`/auth/*`)
+- **Register** (`/auth/register`): Create new account
+- **Login** (`/auth/login`): Sign in to existing account
+- Form validation and error handling
+- JWT token management
 
-### 2. 登录账户
+### 3. **Dashboard** (`/dashboard`)
+- Account overview and balance display
+- Smart account creation (if not exists)
+- Account funding options
+- Recent transfer history
+- Quick action buttons
 
-1. 输入注册时使用的邮箱地址
-2. 使用 Passkey 进行身份验证
-3. 登录成功，进入主界面
+### 4. **Transfer** (`/transfer`)
+- Send ETH to any address
+- Select BLS signature nodes (minimum 3)
+- Gas estimation before sending
+- Real-time transfer status
+- Transaction hash display
 
-### 3. 钱包功能
+### 5. **Transfer History** (`/transfer/history`)
+- Complete transfer history
+- Status filtering and pagination
+- Transaction details
+- Node selection history
 
-- **查看钱包信息**: 显示钱包地址和余额
-- **管理联系人**: 添加和管理转账联系人
-- **转账记录**: 查看历史转账记录
+## API Integration
 
-## API 接口
+The frontend integrates with the AAStar backend API:
 
-### 认证相关
+```typescript
+// Authentication
+POST /auth/register
+POST /auth/login
+GET  /auth/profile
 
-- `POST /auth/email/send-code` - 发送邮箱验证码
-- `POST /auth/email/verify-code` - 验证邮箱验证码
-- `POST /auth/passkey/register/begin` - 开始 Passkey 注册
-- `POST /auth/passkey/register/complete` - 完成 Passkey 注册
-- `POST /auth/passkey/login/begin` - 开始 Passkey 登录
-- `POST /auth/passkey/login/complete` - 完成 Passkey 登录
+// Account Management
+POST /account/create
+GET  /account
+GET  /account/balance
+POST /account/fund
 
-### 用户相关
+// Transfers
+POST /transfer/execute
+POST /transfer/estimate
+GET  /transfer/status/:id
+GET  /transfer/history
 
-- `GET /user/me` - 获取当前用户信息
-
-### 钱包相关
-
-- `GET /wallet/info` - 获取钱包信息
-- `GET /wallet/balance` - 获取钱包余额
-- `GET /wallet/address` - 获取钱包地址
-- `POST /wallet/export-private-key` - 导出私钥
-- `GET /wallet/bls/signers` - 获取可用的 BLS 签名节点
-- `POST /wallet/bls/sign` - 使用 BLS 签名消息
-- `POST /wallet/bls/verify` - 验证 BLS 签名
-
-## 项目结构
-
-```
-aastar-frontend/
-├── app/                    # Next.js 应用目录
-│   ├── globals.css        # 全局样式
-│   ├── layout.tsx         # 布局组件
-│   └── page.tsx           # 主页面
-├── components/            # React 组件
-│   ├── AddContactModal.tsx
-│   ├── ContactList.tsx
-│   ├── Dashboard.tsx
-│   ├── LoginForm.tsx
-│   ├── RegisterForm.tsx
-│   ├── TransferHistory.tsx
-│   └── TransferModal.tsx
-├── lib/                   # 工具库
-│   ├── api.ts            # API 接口
-│   ├── passkey.ts        # Passkey 工具
-│   ├── storage.ts        # 本地存储
-│   ├── types.ts          # TypeScript 类型
-│   └── demo-data.ts      # 演示数据
-└── package.json
+// BLS Signatures
+GET  /bls/nodes
+POST /bls/sign
 ```
 
-## 开发说明
+## Testing the Complete Flow
 
-### 适配后端
+1. **Start Both Services**:
+   ```bash
+   # Terminal 1: Backend
+   cd aastar && npm run start:dev
+   
+   # Terminal 2: Frontend
+   cd aastar-frontend && npm run dev
+   ```
 
-本前端已适配 AAStar 后端服务，主要变更包括：
+2. **Complete User Flow**:
+   - Visit http://localhost:8080
+   - Register a new account
+   - Create ERC-4337 smart account
+   - Fund the account
+   - Send a test transfer
+   - View transfer history
 
-1. **API 接口更新**: 适配后端的认证、用户和钱包接口
-2. **数据结构调整**: 更新用户和钱包数据类型定义
-3. **认证流程优化**: 支持邮箱验证 + Passkey 的双重认证
-4. **钱包功能增强**: 添加钱包信息显示和 BLS 签名功能
+3. **API Integration**:
+   - All data flows through the backend API
+   - Real-time updates via API polling
+   - Error handling with user notifications
 
-### 环境配置
+## Available Scripts
 
-确保后端服务运行在正确的端口上，默认配置为 `http://localhost:3000`。
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+```
 
-如需修改 API 地址，请编辑 `lib/api.ts` 文件中的 `API_BASE` 常量。
+## File Structure
+```
+app/
+├── auth/
+│   ├── login/page.tsx     # Login form
+│   └── register/page.tsx  # Registration form
+├── dashboard/page.tsx     # Main dashboard
+├── transfer/
+│   ├── page.tsx          # Send transfer
+│   └── history/page.tsx  # Transfer history
+├── layout.tsx            # Root layout
+└── page.tsx             # Landing page
 
-## 故障排除
+components/
+└── Layout.tsx           # App layout wrapper
 
-### 常见问题
-
-1. **Passkey 不可用**
-   - 确保使用支持 Passkey 的现代浏览器
-   - 检查是否在 HTTPS 环境下运行（本地开发除外）
-
-2. **登录失败**
-   - 检查后端服务是否正常运行
-   - 确认邮箱地址正确
-   - 验证 Passkey 是否已正确创建
-
-3. **API 请求失败**
-   - 检查网络连接
-   - 确认后端服务地址配置正确
-   - 查看浏览器控制台错误信息
-
-### 调试模式
-
-在浏览器开发者工具中查看控制台输出，获取详细的错误信息。
-
-## 许可证
-
-本项目采用 MIT 许可证。
+lib/
+├── api.ts              # API client
+├── auth.ts             # Auth utilities
+└── types.ts            # TypeScript definitions
+```

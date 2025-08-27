@@ -1,19 +1,25 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "FrontDoor Demo - 邮件注册与Passkey登录",
-  description: "演示邮件注册、Passkey关联、登录和联系人管理功能",
+  title: "AAStar - ERC4337 Account Abstraction",
+  description: "ERC4337 Account Abstraction with BLS Signatures",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <html lang="zh-CN">
+    <html lang="en">
       <body className={inter.className}>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">{children}</div>
+        {children}
+        <Toaster position="top-right" />
       </body>
     </html>
   );

@@ -16,7 +16,7 @@ export class BlockchainService {
       process.env.ETH_RPC_URL || "https://sepolia.infura.io/v3/7051eb377c77490881070faaf93aef20";
     const privateKey = process.env.ETH_PRIVATE_KEY;
 
-    // 创建provider（只读连接）
+    // Create provider (read-only connection)
     this.provider = new ethers.JsonRpcProvider(rpcUrl);
 
     if (!privateKey || privateKey === "your_eth_private_key_here") {

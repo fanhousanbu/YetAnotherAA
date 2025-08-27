@@ -46,7 +46,7 @@ export class NodeService implements OnModuleInit {
   }
 
   private loadContractAddress(): void {
-    // 优先使用环境变量中的合约地址
+    // Prioritize contract address from environment variables
     this.contractAddress =
       process.env.VALIDATOR_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS || "";
 
@@ -55,7 +55,7 @@ export class NodeService implements OnModuleInit {
       return;
     }
 
-    // 回退到配置文件
+    // Fallback to configuration file
     const currentDir = dirname(fileURLToPath(import.meta.url));
     const configPath = join(currentDir, "../../../demo/config.json");
 
@@ -218,10 +218,21 @@ export class NodeService implements OnModuleInit {
       // Perform actual registration
       this.logger.log(`Registering node ${this.nodeState.nodeId} on-chain...`);
 
+      // Convert 48-byte public key to 128-byte EIP2537 format for contract registration
+      const privateKeyHex = this.nodeState.privateKey.substring(2);
+      const privateKeyBytes = new Uint8Array(privateKeyHex.length / 2);
+      for (let i = 0; i < privateKeyHex.length; i += 2) {
+        privateKeyBytes[i / 2] = parseInt(privateKeyHex.substr(i, 2), 16);
+      }
+      
+      const { sigs } = await import('../../utils/bls.util.js');
+      const publicKeyPoint = sigs.getPublicKey(privateKeyBytes);
+      const eip2537PublicKey = this.blsService.encodePublicKeyToEIP2537(publicKeyPoint);
+
       const txHash = await this.blockchainService.registerNodeOnChain(
         this.contractAddress,
         this.nodeState.contractNodeId,
-        this.nodeState.publicKey
+        eip2537PublicKey
       );
 
       if (txHash === "already_registered") {
