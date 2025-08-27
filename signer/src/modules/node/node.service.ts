@@ -224,8 +224,8 @@ export class NodeService implements OnModuleInit {
       for (let i = 0; i < privateKeyHex.length; i += 2) {
         privateKeyBytes[i / 2] = parseInt(privateKeyHex.substr(i, 2), 16);
       }
-      
-      const { sigs } = await import('../../utils/bls.util.js');
+
+      const { sigs } = await import("../../utils/bls.util.js");
       const publicKeyPoint = sigs.getPublicKey(privateKeyBytes);
       const eip2537PublicKey = this.blsService.encodePublicKeyToEIP2537(publicKeyPoint);
 
