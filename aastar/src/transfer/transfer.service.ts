@@ -147,8 +147,8 @@ export class TransferService {
         BigInt(gasEstimates.verificationGasLimit) +
         BigInt(gasEstimates.preVerificationGas)
       ).toString(),
-      maxFeePerGas: ethers.parseUnits('30', 'gwei').toString(),
-      maxPriorityFeePerGas: ethers.parseUnits('10', 'gwei').toString(),
+      maxFeePerGas: ethers.parseUnits('1', 'gwei').toString(),
+      maxPriorityFeePerGas: ethers.parseUnits('0.1', 'gwei').toString(),
     };
   }
 
@@ -206,8 +206,8 @@ export class TransferService {
       callGasLimit: '0x0',
       verificationGasLimit: '0x0',
       preVerificationGas: '0x0',
-      maxFeePerGas: '0x' + ethers.parseUnits('30', 'gwei').toString(16),
-      maxPriorityFeePerGas: '0x' + ethers.parseUnits('10', 'gwei').toString(16),
+      maxFeePerGas: '0x' + ethers.parseUnits('1', 'gwei').toString(16),
+      maxPriorityFeePerGas: '0x' + ethers.parseUnits('0.1', 'gwei').toString(16),
       paymasterAndData: '0x',
       signature: '0x',
     };
@@ -223,8 +223,8 @@ export class TransferService {
       callGasLimit: BigInt(gasEstimates.callGasLimit),
       verificationGasLimit: BigInt(gasEstimates.verificationGasLimit),
       preVerificationGas: BigInt(gasEstimates.preVerificationGas),
-      maxFeePerGas: ethers.parseUnits('30', 'gwei'),
-      maxPriorityFeePerGas: ethers.parseUnits('10', 'gwei'),
+      maxFeePerGas: ethers.parseUnits('1', 'gwei'),
+      maxPriorityFeePerGas: ethers.parseUnits('0.1', 'gwei'),
       paymasterAndData: '0x',
       signature: '0x',
     };

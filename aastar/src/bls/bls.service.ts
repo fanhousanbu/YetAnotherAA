@@ -164,9 +164,17 @@ export class BlsService {
       
       console.log(`Private key as bigint: ${privateKeyBn.toString()}`);
       
+      // BLS12-381 curve order (r)
+      const curveOrder = 52435875175126190479447740508185965837690552500527637822603658699938581184513n;
+      
+      // Ensure private key is within valid range by taking modulo
+      privateKeyBn = privateKeyBn % curveOrder;
+      
       if (privateKeyBn <= 0n) {
         throw new Error(`Invalid private key for node ${node.nodeName}: private key must be > 0`);
       }
+      
+      console.log(`Private key after modulo: ${privateKeyBn.toString()}`);
       
       // Multiply message point by private key to get signature
       const signature = messagePoint.multiply(privateKeyBn);
