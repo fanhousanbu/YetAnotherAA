@@ -44,12 +44,15 @@ export const authAPI = {
   beginPasskeyRegistration: (data: { email: string; username?: string; password: string }) =>
     api.post("/auth/passkey/register/begin", data),
 
-  completePasskeyRegistration: (data: { email: string; username?: string; password: string; credential: any }) =>
-    api.post("/auth/passkey/register/complete", data),
+  completePasskeyRegistration: (data: {
+    email: string;
+    username?: string;
+    password: string;
+    credential: any;
+  }) => api.post("/auth/passkey/register/complete", data),
 
   // Passkey login
-  beginPasskeyLogin: () =>
-    api.post("/auth/passkey/login/begin"),
+  beginPasskeyLogin: () => api.post("/auth/passkey/login/begin"),
 
   completePasskeyLogin: (data: { credential: any }) =>
     api.post("/auth/passkey/login/complete", data),

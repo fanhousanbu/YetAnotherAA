@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Layout from '@/components/Layout';
-import CopyButton from '@/components/CopyButton';
-import { transferAPI } from '@/lib/api';
-import { Transfer } from '@/lib/types';
-import toast from 'react-hot-toast';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Layout from "@/components/Layout";
+import CopyButton from "@/components/CopyButton";
+import { transferAPI } from "@/lib/api";
+import { Transfer } from "@/lib/types";
+import toast from "react-hot-toast";
 import {
   ClockIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
   ArrowPathIcon,
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
 
 export default function TransferHistoryPage() {
   const [transfers, setTransfers] = useState<Transfer[]>([]);
@@ -40,7 +40,7 @@ export default function TransferHistoryPage() {
         totalPages: response.data.totalPages,
       }));
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to load transfers';
+      const message = error.response?.data?.message || "Failed to load transfers";
       toast.error(message);
     } finally {
       setLoading(false);
@@ -49,12 +49,12 @@ export default function TransferHistoryPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
+      case "completed":
         return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
-      case 'failed':
+      case "failed":
         return <ExclamationCircleIcon className="h-5 w-5 text-red-500" />;
-      case 'pending':
-      case 'submitted':
+      case "pending":
+      case "submitted":
         return <ClockIcon className="h-5 w-5 text-yellow-500" />;
       default:
         return <ClockIcon className="h-5 w-5 text-gray-500" />;
@@ -63,15 +63,15 @@ export default function TransferHistoryPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'failed':
-        return 'bg-red-100 text-red-800';
-      case 'pending':
-      case 'submitted':
-        return 'bg-yellow-100 text-yellow-800';
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "failed":
+        return "bg-red-100 text-red-800";
+      case "pending":
+      case "submitted":
+        return "bg-yellow-100 text-yellow-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -105,9 +105,7 @@ export default function TransferHistoryPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Transfer History</h1>
-              <p className="mt-1 text-sm text-gray-600">
-                View all your ERC-4337 transfers
-              </p>
+              <p className="mt-1 text-sm text-gray-600">View all your ERC-4337 transfers</p>
             </div>
             <div className="flex space-x-3">
               <button
@@ -123,7 +121,7 @@ export default function TransferHistoryPage() {
                 Refresh
               </button>
               <button
-                onClick={() => router.push('/transfer')}
+                onClick={() => router.push("/transfer")}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 New Transfer
@@ -161,21 +159,20 @@ export default function TransferHistoryPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {transfers.map((transfer) => (
+                    {transfers.map(transfer => (
                       <tr key={transfer.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             {getStatusIcon(transfer.status)}
-                            <span className={`ml-2 inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(transfer.status)}`}>
+                            <span
+                              className={`ml-2 inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(transfer.status)}`}
+                            >
                               {transfer.status}
                             </span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <CopyButton 
-                            text={transfer.to}
-                            className="text-sm"
-                          />
+                          <CopyButton text={transfer.to} className="text-sm" />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-semibold text-gray-900">
@@ -192,19 +189,14 @@ export default function TransferHistoryPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {transfer.transactionHash ? (
-                            <CopyButton 
-                              text={transfer.transactionHash}
-                              className="text-sm"
-                            />
+                            <CopyButton text={transfer.transactionHash} className="text-sm" />
                           ) : (
-                            <div className="text-sm text-gray-400">
-                              Pending...
-                            </div>
+                            <div className="text-sm text-gray-400">Pending...</div>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
-                            {transfer.nodeIndices.join(', ')}
+                            {transfer.nodeIndices.join(", ")}
                           </div>
                         </td>
                       </tr>
@@ -235,17 +227,15 @@ export default function TransferHistoryPage() {
                   <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                     <div>
                       <p className="text-sm text-gray-700">
-                        Showing{' '}
+                        Showing{" "}
                         <span className="font-medium">
                           {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)}
-                        </span>{' '}
-                        to{' '}
+                        </span>{" "}
+                        to{" "}
                         <span className="font-medium">
                           {Math.min(pagination.page * pagination.limit, pagination.total)}
-                        </span>{' '}
-                        of{' '}
-                        <span className="font-medium">{pagination.total}</span>{' '}
-                        results
+                        </span>{" "}
+                        of <span className="font-medium">{pagination.total}</span> results
                       </p>
                     </div>
                     <div>
@@ -257,7 +247,7 @@ export default function TransferHistoryPage() {
                         >
                           Previous
                         </button>
-                        
+
                         {/* Page numbers */}
                         {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                           const pageNum = i + 1;
@@ -267,15 +257,15 @@ export default function TransferHistoryPage() {
                               onClick={() => handlePageChange(pageNum)}
                               className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                                 pagination.page === pageNum
-                                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                  ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                                  : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                               }`}
                             >
                               {pageNum}
                             </button>
                           );
                         })}
-                        
+
                         <button
                           onClick={() => handlePageChange(pagination.page + 1)}
                           disabled={pagination.page >= pagination.totalPages}
@@ -298,7 +288,7 @@ export default function TransferHistoryPage() {
               </p>
               <div className="mt-6">
                 <button
-                  onClick={() => router.push('/transfer')}
+                  onClick={() => router.push("/transfer")}
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   Send Transfer
