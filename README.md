@@ -16,7 +16,8 @@ verification.
   on-chain verification costs
 - **ERC-4337 Account Abstraction**: Full compatibility with Ethereum Account
   Abstraction standard
-- **Automatic Node Selection**: Automatically selects active BLS nodes from gossip network
+- **Automatic Node Selection**: Automatically selects active BLS nodes from
+  gossip network
 - **Gas Optimization**: Precise gas estimation based on EIP-2537 standards
 - **Dual Verification Mechanism**: AA signatures verify userOpHash, BLS
   signatures verify messagePoint
@@ -281,6 +282,7 @@ deploy your own for production use.
 A full-stack application with all components is now available:
 
 ### BLS Signer Service (NestJS)
+
 - **Location**: `signer/`
 - **Port**: http://localhost:3001
 - **Features**: BLS signature generation, gossip network, node management
@@ -293,6 +295,7 @@ npm run start
 ```
 
 ### Backend API (NestJS)
+
 - **Location**: `aastar/`
 - **Port**: http://localhost:3000
 - **Features**: User auth, account management, ERC-4337 transfers
@@ -305,6 +308,7 @@ npm run start:dev
 ```
 
 ### Frontend Application (Next.js)
+
 - **Location**: `aastar-frontend/`
 - **Port**: http://localhost:8080
 - **Features**: Complete user interface for registration, login, transfers
@@ -316,6 +320,7 @@ npm run dev
 ```
 
 ### Complete User Flow
+
 1. **Start all services**: Signer (3001) → Backend (3000) → Frontend (8080)
 2. Visit http://localhost:8080
 3. Register new account or login
@@ -324,6 +329,7 @@ npm run dev
 6. View transfer history and status
 
 **Features**:
+
 - ✅ Multi-node BLS signature aggregation
 - ✅ ERC-4337 account abstraction
 - ✅ Gasless transaction support

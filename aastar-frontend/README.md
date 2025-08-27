@@ -1,10 +1,12 @@
 # AAStar Frontend
 
-A modern web interface for ERC-4337 Account Abstraction with BLS Aggregate Signatures.
+A modern web interface for ERC-4337 Account Abstraction with BLS Aggregate
+Signatures.
 
 ## Features
 
 🚀 **Complete User Flow**
+
 - User registration and authentication
 - ERC-4337 smart account creation
 - Balance viewing and account management
@@ -12,12 +14,14 @@ A modern web interface for ERC-4337 Account Abstraction with BLS Aggregate Signa
 - Transfer history and status tracking
 
 🎨 **Modern UI/UX**
+
 - Responsive design with Tailwind CSS
 - Toast notifications for user feedback
 - Loading states and error handling
 - Mobile-friendly interface
 
 🔧 **Technical Stack**
+
 - **Next.js 15** with App Router
 - **TypeScript** for type safety
 - **Tailwind CSS** for styling
@@ -30,6 +34,7 @@ A modern web interface for ERC-4337 Account Abstraction with BLS Aggregate Signa
 ### Prerequisites
 
 Make sure the backend API is running:
+
 ```bash
 cd ../aastar
 npm run start:dev
@@ -46,11 +51,13 @@ npm install
 ### Environment Setup
 
 Create `.env.local` file (already provided):
+
 ```env
 NEXT_PUBLIC_API_URL=/api/v1
 ```
 
-**Note**: The frontend uses Next.js rewrites to proxy API requests, eliminating CORS issues.
+**Note**: The frontend uses Next.js rewrites to proxy API requests, eliminating
+CORS issues.
 
 ### Development
 
@@ -70,17 +77,20 @@ npm start
 ## User Journey
 
 ### 1. **Landing Page** (`/`)
+
 - Welcome screen with feature highlights
 - Sign in / Create account buttons
 - Auto-redirects if already authenticated
 
 ### 2. **Authentication** (`/auth/*`)
+
 - **Register** (`/auth/register`): Create new account
 - **Login** (`/auth/login`): Sign in to existing account
 - Form validation and error handling
 - JWT token management
 
 ### 3. **Dashboard** (`/dashboard`)
+
 - Account overview and balance display
 - Smart account creation (if not exists)
 - Account funding options
@@ -88,6 +98,7 @@ npm start
 - Quick action buttons
 
 ### 4. **Transfer** (`/transfer`)
+
 - Send ETH to any address
 - Select BLS signature nodes (minimum 3)
 - Gas estimation before sending
@@ -95,6 +106,7 @@ npm start
 - Transaction hash display
 
 ### 5. **Transfer History** (`/transfer/history`)
+
 - Complete transfer history
 - Status filtering and pagination
 - Transaction details
@@ -130,10 +142,11 @@ POST /bls/sign
 ## Testing the Complete Flow
 
 1. **Start Both Services**:
+
    ```bash
    # Terminal 1: Backend
    cd aastar && npm run start:dev
-   
+
    # Terminal 2: Frontend
    cd aastar-frontend && npm run dev
    ```
@@ -161,6 +174,7 @@ npm run lint         # Run ESLint
 ```
 
 ## File Structure
+
 ```
 app/
 ├── auth/

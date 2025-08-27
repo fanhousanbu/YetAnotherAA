@@ -64,17 +64,20 @@ npm run start:prod
 ## API Documentation
 
 Once the application is running, visit:
+
 - Swagger UI: http://localhost:3000/api-docs
 - API Base URL: http://localhost:3000/api/v1
 
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/v1/auth/register` - Register new user
 - `POST /api/v1/auth/login` - User login
 - `GET /api/v1/auth/profile` - Get user profile (requires auth)
 
 ### Account Management
+
 - `POST /api/v1/account/create` - Create ERC-4337 account
 - `GET /api/v1/account` - Get account information
 - `GET /api/v1/account/balance` - Get account balance
@@ -82,10 +85,12 @@ Once the application is running, visit:
 - `POST /api/v1/account/fund` - Fund account with ETH
 
 ### BLS Signatures
+
 - `GET /api/v1/bls/nodes` - Get available BLS nodes
 - `POST /api/v1/bls/sign` - Generate BLS aggregate signature
 
 ### Transfers
+
 - `POST /api/v1/transfer/execute` - Execute ERC-4337 transfer
 - `POST /api/v1/transfer/estimate` - Estimate gas for transfer
 - `GET /api/v1/transfer/status/:id` - Get transfer status
@@ -94,6 +99,7 @@ Once the application is running, visit:
 ## Usage Example
 
 ### 1. Register User
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
@@ -104,6 +110,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 ```
 
 ### 2. Login
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
@@ -114,6 +121,7 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 ```
 
 ### 3. Create Account (with auth token)
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/account/create \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -125,6 +133,7 @@ curl -X POST http://localhost:3000/api/v1/account/create \
 ```
 
 ### 4. Execute Transfer
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/transfer/execute \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -139,6 +148,7 @@ curl -X POST http://localhost:3000/api/v1/transfer/execute \
 ## Data Storage
 
 Currently uses JSON files in `/data` directory:
+
 - `users.json` - User accounts
 - `accounts.json` - ERC-4337 accounts
 - `transfers.json` - Transfer history
@@ -175,6 +185,7 @@ src/
 ## Security Notes
 
 ⚠️ **For Production:**
+
 - Change JWT_SECRET to a strong random value
 - Encrypt private keys before storing
 - Use proper database (MongoDB/PostgreSQL)

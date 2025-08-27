@@ -75,7 +75,7 @@
       "version": "v1.0"
     },
     "accountFactory": {
-      "name": "AAStarAccountFactoryV6", 
+      "name": "AAStarAccountFactoryV6",
       "address": "0x559DD2D8Bf9180A70Da56FEFF57DA531BF3f2E1c"
     },
     "accountImplementation": {

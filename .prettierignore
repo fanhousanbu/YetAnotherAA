@@ -18,9 +18,24 @@ artifacts
 typechain
 typechain-types
 
+# Git submodules
+validator/lib/
+
+# Foundry/Hardhat outputs
+validator/broadcast/
+validator/cache/
+validator/out/
+
+# Data files
+*/data/
+data/
+
 # IDE
 .vscode
 .idea
+
+# Claude settings
+.claude/
 
 # Environment
 .env

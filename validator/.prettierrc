@@ -9,7 +9,17 @@
   "arrowParens": "avoid",
   "bracketSpacing": true,
   "proseWrap": "preserve",
+  "plugins": ["prettier-plugin-solidity"],
   "overrides": [
+    {
+      "files": "*.sol",
+      "options": {
+        "printWidth": 120,
+        "tabWidth": 4,
+        "singleQuote": false,
+        "bracketSpacing": true
+      }
+    },
     {
       "files": "*.md",
       "options": {
@@ -22,22 +32,6 @@
       "options": {
         "printWidth": 80,
         "tabWidth": 2
-      }
-    },
-    {
-      "files": ["*.ts", "*.tsx"],
-      "options": {
-        "printWidth": 100,
-        "semi": true,
-        "singleQuote": false
-      }
-    },
-    {
-      "files": "*.js",
-      "options": {
-        "printWidth": 100,
-        "semi": true,
-        "singleQuote": false
       }
     }
   ]

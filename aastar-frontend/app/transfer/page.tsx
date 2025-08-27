@@ -1,22 +1,18 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Layout from '@/components/Layout';
-import { accountAPI, transferAPI } from '@/lib/api';
-import { Account, GasEstimate } from '@/lib/types';
-import toast from 'react-hot-toast';
-import {
-  ArrowUpIcon,
-  InformationCircleIcon,
-  CheckCircleIcon,
-} from '@heroicons/react/24/outline';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Layout from "@/components/Layout";
+import { accountAPI, transferAPI } from "@/lib/api";
+import { Account, GasEstimate } from "@/lib/types";
+import toast from "react-hot-toast";
+import { ArrowUpIcon, InformationCircleIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 
 export default function TransferPage() {
   const [account, setAccount] = useState<Account | null>(null);
   const [formData, setFormData] = useState({
-    to: '',
-    amount: '',
+    to: "",
+    amount: "",
   });
   const [gasEstimate, setGasEstimate] = useState<GasEstimate | null>(null);
   const [loading, setLoading] = useState({
@@ -39,12 +35,12 @@ export default function TransferPage() {
       setAccount(accountResponse.data);
 
       if (!accountResponse.data.deployed) {
-        toast.error('Account must be deployed before making transfers');
+        toast.error("Account must be deployed before making transfers");
       }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to load account data';
+      const message = error.response?.data?.message || "Failed to load account data";
       toast.error(message);
-      router.push('/dashboard');
+      router.push("/dashboard");
     } finally {
       setLoading(prev => ({ ...prev, page: false }));
     }
@@ -63,10 +59,9 @@ export default function TransferPage() {
     }
   };
 
-
   const estimateGas = async () => {
     if (!formData.to || !formData.amount) {
-      toast.error('Please fill in recipient address and amount');
+      toast.error("Please fill in recipient address and amount");
       return;
     }
 
@@ -77,9 +72,9 @@ export default function TransferPage() {
         amount: formData.amount,
       });
       setGasEstimate(response.data);
-      toast.success('Gas estimated successfully');
+      toast.success("Gas estimated successfully");
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to estimate gas';
+      const message = error.response?.data?.message || "Failed to estimate gas";
       toast.error(message);
     } finally {
       setLoading(prev => ({ ...prev, estimate: false }));
@@ -88,10 +83,9 @@ export default function TransferPage() {
 
   const executeTransfer = async () => {
     if (!formData.to || !formData.amount) {
-      toast.error('Please fill in recipient address and amount');
+      toast.error("Please fill in recipient address and amount");
       return;
     }
-
 
     setLoading(prev => ({ ...prev, transfer: true }));
     try {
@@ -99,18 +93,18 @@ export default function TransferPage() {
         to: formData.to,
         amount: formData.amount,
       });
-      
+
       setTransferResult(response.data);
-      toast.success('Transfer submitted successfully!');
-      
+      toast.success("Transfer submitted successfully!");
+
       // Clear form
       setFormData({
-        to: '',
-        amount: '',
+        to: "",
+        amount: "",
       });
       setGasEstimate(null);
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Transfer failed';
+      const message = error.response?.data?.message || "Transfer failed";
       toast.error(message);
     } finally {
       setLoading(prev => ({ ...prev, transfer: false }));
@@ -137,15 +131,13 @@ export default function TransferPage() {
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
             <InformationCircleIcon className="mx-auto h-12 w-12 text-yellow-400" />
-            <h2 className="mt-2 text-lg font-medium text-gray-900">
-              Account Not Deployed
-            </h2>
+            <h2 className="mt-2 text-lg font-medium text-gray-900">Account Not Deployed</h2>
             <p className="mt-1 text-sm text-gray-500">
               Your smart account needs to be deployed before you can make transfers.
             </p>
             <div className="mt-6">
               <button
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push("/dashboard")}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
               >
                 Go to Dashboard
@@ -166,9 +158,7 @@ export default function TransferPage() {
             <ArrowUpIcon className="h-8 w-8 text-blue-500 mr-3" />
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Send Transfer</h1>
-              <p className="text-sm text-gray-600">
-                Send ETH using ERC-4337 account abstraction
-              </p>
+              <p className="text-sm text-gray-600">Send ETH using ERC-4337 account abstraction</p>
             </div>
           </div>
         </div>
@@ -178,9 +168,7 @@ export default function TransferPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-blue-900">Your Balance</p>
-              <p className="text-lg font-semibold text-blue-900">
-                {account?.balance || '0'} ETH
-              </p>
+              <p className="text-lg font-semibold text-blue-900">{account?.balance || "0"} ETH</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-blue-700">Account Address</p>
@@ -248,13 +236,10 @@ export default function TransferPage() {
               />
             </div>
 
-
             {/* Gas Estimation */}
             {gasEstimate && (
               <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-900 mb-2">
-                  Gas Estimation
-                </h3>
+                <h3 className="text-sm font-medium text-gray-900 mb-2">Gas Estimation</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-500">Call Gas:</span>
@@ -297,15 +282,11 @@ export default function TransferPage() {
                 ) : null}
                 Estimate Gas
               </button>
-              
+
               <button
                 type="button"
                 onClick={executeTransfer}
-                disabled={
-                  loading.transfer || 
-                  !formData.to || 
-                  !formData.amount
-                }
+                disabled={loading.transfer || !formData.to || !formData.amount}
                 className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading.transfer ? (
@@ -324,9 +305,7 @@ export default function TransferPage() {
           <div className="flex">
             <InformationCircleIcon className="h-5 w-5 text-blue-400" />
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">
-                How it works
-              </h3>
+              <h3 className="text-sm font-medium text-blue-800">How it works</h3>
               <div className="mt-2 text-sm text-blue-700">
                 <ul className="list-disc list-inside space-y-1">
                   <li>BLS nodes are automatically selected from the gossip network</li>

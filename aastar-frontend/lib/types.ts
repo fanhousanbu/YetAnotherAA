@@ -28,7 +28,7 @@ export interface Transfer {
   userOpHash: string;
   bundlerUserOpHash?: string;
   transactionHash?: string;
-  status: 'pending' | 'submitted' | 'completed' | 'failed';
+  status: "pending" | "submitted" | "completed" | "failed";
   nodeIndices: number[];
   error?: string;
   createdAt: string;

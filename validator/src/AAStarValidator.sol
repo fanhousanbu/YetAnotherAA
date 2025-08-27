@@ -623,8 +623,8 @@ contract AAStarValidator {
         requiredGas = (totalBaseCost * 125) / 100;
 
         // Minimum gas floor: ensure at least the proven working amount for small node counts
-        if (requiredGas < 600000) {
-            requiredGas = 600000;
+        if (requiredGas < 150000) {
+            requiredGas = 150000;
         }
 
         // Maximum gas cap: prevent excessive gas usage for very large node counts
