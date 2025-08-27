@@ -217,9 +217,9 @@ export default function RegisterPage() {
                     <h3 className="text-sm font-medium text-blue-800">Passkey Registration</h3>
                     <div className="mt-1 text-sm text-blue-700">
                       <p>
-                        You&apos;ll set up both a password (for new device access) and a passkey (for
-                        secure login). After clicking &quot;Create Account&quot;, you&apos;ll be prompted to set up
-                        a passkey using your device&apos;s authenticator.
+                        You&apos;ll set up both a password (for new device access) and a passkey
+                        (for secure login). After clicking &quot;Create Account&quot;, you&apos;ll
+                        be prompted to set up a passkey using your device&apos;s authenticator.
                       </p>
                     </div>
                   </div>

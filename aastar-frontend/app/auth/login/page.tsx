@@ -196,8 +196,8 @@ export default function LoginPage() {
                       <h3 className="text-sm font-medium text-blue-800">Passkey Authentication</h3>
                       <div className="mt-1 text-sm text-blue-700">
                         <p>
-                          Click the button below to authenticate using your device&apos;s passkey (Face
-                          ID, Touch ID, Windows Hello, etc.).
+                          Click the button below to authenticate using your device&apos;s passkey
+                          (Face ID, Touch ID, Windows Hello, etc.).
                         </p>
                       </div>
                     </div>
@@ -315,8 +315,8 @@ export default function LoginPage() {
                       <h3 className="text-sm font-medium text-yellow-800">Device Registration</h3>
                       <div className="mt-1 text-sm text-yellow-700">
                         <p>
-                          This will register a new passkey specifically for this device. You&apos;ll need
-                          your existing credentials to verify your identity.
+                          This will register a new passkey specifically for this device. You&apos;ll
+                          need your existing credentials to verify your identity.
                         </p>
                       </div>
                     </div>
