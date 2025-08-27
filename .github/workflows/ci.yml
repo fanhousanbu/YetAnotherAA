@@ -5,6 +5,11 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  pull_request_target: # Add this trigger to run CI for Dependabot PRs
+    types:
+      - opened
+      - synchronize
+      - reopened
   schedule:
     - cron: "0 0 * * 1" # Weekly security scan on Monday
 
