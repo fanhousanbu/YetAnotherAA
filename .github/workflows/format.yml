@@ -1,0 +1,60 @@
+name: Code Format
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  format:
+    name: Auto Format
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.head_ref }}
+      
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Format AAstar
+        working-directory: ./aastar
+        run: |
+          npm ci
+          npx prettier --write "**/*.{js,jsx,ts,tsx,json,css,md}" || true
+          npx eslint . --ext .js,.jsx,.ts,.tsx --fix || true
+        continue-on-error: true
+      
+      - name: Format AAstar Frontend
+        working-directory: ./aastar-frontend
+        run: |
+          npm ci
+          npx prettier --write "**/*.{js,jsx,ts,tsx,json,css,md}" || true
+          npx eslint . --ext .js,.jsx,.ts,.tsx --fix || true
+        continue-on-error: true
+      
+      - name: Format Signer
+        working-directory: ./signer
+        run: |
+          npm ci
+          npx prettier --write "**/*.{js,jsx,ts,tsx,json,css,md}" || true
+          npx eslint . --ext .js,.jsx,.ts,.tsx --fix || true
+        continue-on-error: true
+      
+      - name: Check for changes
+        id: verify-changed-files
+        run: |
+          git diff --exit-code || echo "changed=true" >> $GITHUB_OUTPUT
+      
+      - name: Commit changes
+        if: steps.verify-changed-files.outputs.changed == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          git commit -m "style: Auto-format code with Prettier and ESLint" || exit 0
+          git push

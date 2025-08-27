@@ -11,8 +11,13 @@
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "prettier --check .",
-    "lint:fix": "prettier --write ."
+    "lint": "npm run lint -ws",
+    "lint:fix": "npm run lint:fix -ws",
+    "build": "npm run build -ws",
+    "test": "npm run test -ws",
+    "test:ci": "npm run test:ci -ws",
+    "audit": "npm audit && npm audit -ws",
+    "ci": "npm run format:check && npm run lint && npm run build && npm run test:ci"
   },
   "devDependencies": {
     "prettier": "^3.3.3",

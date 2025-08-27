@@ -1,0 +1,26 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+build
+out
+.next
+coverage
+
+# Contracts
+cache
+artifacts
+typechain
+typechain-types
+
+# Test coverage
+coverage
+
+# Config files
+*.config.js
+*.config.ts
+
+# Environment
+.env
+.env.*

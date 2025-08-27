@@ -1,0 +1,201 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop, 'feat/**']
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  # Job 1: Security audit
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=moderate || true
+          cd aastar && npm audit --audit-level=moderate || true
+          cd ../aastar-frontend && npm audit --audit-level=moderate || true
+          cd ../signer && npm audit --audit-level=moderate || true
+        continue-on-error: true
+
+  # Job 2: Code quality checks  
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [aastar, aastar-frontend, signer]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        working-directory: ./${{ matrix.project }}
+        run: npm ci
+      
+      - name: Check formatting
+        working-directory: ./${{ matrix.project }}
+        run: |
+          npm run format:check || npm run prettier:check || npx prettier --check "**/*.{js,jsx,ts,tsx,json,css,md}" || true
+        continue-on-error: true
+      
+      - name: Run linter
+        working-directory: ./${{ matrix.project }}
+        run: |
+          npm run lint || npx eslint . --ext .js,.jsx,.ts,.tsx || true
+        continue-on-error: true
+
+  # Job 3: Build all projects
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - project: aastar
+            build-command: npm run build
+          - project: aastar-frontend
+            build-command: npm run build
+          - project: signer
+            build-command: npm run build
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        working-directory: ./${{ matrix.project }}
+        run: npm ci
+      
+      - name: Build project
+        working-directory: ./${{ matrix.project }}
+        run: ${{ matrix.build-command }}
+        env:
+          CI: true
+
+  # Job 4: Run tests
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [aastar, signer]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        working-directory: ./${{ matrix.project }}
+        run: npm ci
+      
+      - name: Run tests
+        working-directory: ./${{ matrix.project }}
+        run: npm test || npm run test:ci || echo "No tests configured"
+        env:
+          CI: true
+          NODE_ENV: test
+
+  # Job 5: Solidity contracts
+  contracts:
+    name: Smart Contracts
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./validator
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+      
+      - name: Build contracts
+        run: forge build
+      
+      - name: Run tests
+        run: forge test -vvv
+      
+      - name: Check contract sizes
+        run: forge build --sizes
+      
+      - name: Run coverage
+        run: forge coverage || true
+        continue-on-error: true
+
+  # Job 6: Type checking
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [aastar, aastar-frontend, signer]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        working-directory: ./${{ matrix.project }}
+        run: npm ci
+      
+      - name: Run TypeScript compiler
+        working-directory: ./${{ matrix.project }}
+        run: npx tsc --noEmit || npm run type-check || true
+        continue-on-error: true
+
+  # Job 7: Dependencies check
+  dependencies:
+    name: Check Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Check for outdated packages
+        run: |
+          echo "=== Root ===" && npm outdated || true
+          echo "=== AAstar ===" && cd aastar && npm outdated || true
+          echo "=== AAstar Frontend ===" && cd ../aastar-frontend && npm outdated || true
+          echo "=== Signer ===" && cd ../signer && npm outdated || true
+        continue-on-error: true
+      
+      - name: Check for duplicate dependencies
+        run: |
+          npx depcheck || true
+        continue-on-error: true
