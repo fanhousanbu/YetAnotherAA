@@ -46,7 +46,7 @@ export class NodeService implements OnModuleInit {
   }
 
   private loadContractAddress(): void {
-    // 优先使用环境变量中的合约地址
+    // Prioritize contract address from environment variables
     this.contractAddress =
       process.env.VALIDATOR_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS || "";
 
@@ -55,7 +55,7 @@ export class NodeService implements OnModuleInit {
       return;
     }
 
-    // 回退到配置文件
+    // Fallback to configuration file
     const currentDir = dirname(fileURLToPath(import.meta.url));
     const configPath = join(currentDir, "../../../demo/config.json");
 
