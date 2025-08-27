@@ -5,9 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened]
   schedule:
-    - cron: '0 0 * * 1' # Weekly on Monday
+    - cron: "0 0 * * 1" # Weekly on Monday
 
 jobs:
   security-scan:
@@ -15,21 +14,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
         continue-on-error: true
-      
+
       - name: Upload Trivy results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
         continue-on-error: true
 
   dependency-review:
@@ -54,17 +53,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ['javascript', 'typescript']
+        language: ["javascript", "typescript"]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-      
+
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
-      
+
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
