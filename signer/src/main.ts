@@ -29,11 +29,13 @@ async function bootstrap() {
   SwaggerModule.setup("api", app, document);
 
   const port = process.env.PORT || 3000;
+  const host = process.env.HOST || "0.0.0.0";
+  const publicUrl = process.env.PUBLIC_URL || `http://localhost:${port}`;
 
-  await app.listen(port);
+  await app.listen(port, host);
 
-  console.log(`🚀 BLS Signer Service is running on port ${port}`);
-  console.log(`📖 Swagger API documentation: http://localhost:${port}/api`);
+  console.log(`🚀 BLS Signer Service is running on ${host}:${port}`);
+  console.log(`📖 Swagger API documentation: ${publicUrl}/api`);
   console.log(`📋 Available endpoints:`);
   console.log(`   GET /node/info - Get current node information`);
   console.log(`   POST /node/register - Register node on-chain`);

@@ -29,7 +29,7 @@ export default function TransferHistoryPage() {
     loadTransfers();
   }, [pagination.page]);
 
-  const loadTransfers = async () => {
+  const loadTransfers = async (showToast: boolean = false) => {
     setLoading(true);
     try {
       const response = await transferAPI.getHistory(pagination.page, pagination.limit);
@@ -39,6 +39,9 @@ export default function TransferHistoryPage() {
         total: response.data.total,
         totalPages: response.data.totalPages,
       }));
+      if (showToast) {
+        toast.success("Transfers refreshed");
+      }
     } catch (error: any) {
       const message = error.response?.data?.message || "Failed to load transfers";
       toast.error(message);
@@ -109,7 +112,7 @@ export default function TransferHistoryPage() {
             </div>
             <div className="flex space-x-3">
               <button
-                onClick={loadTransfers}
+                onClick={() => loadTransfers(true)}
                 disabled={loading}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
