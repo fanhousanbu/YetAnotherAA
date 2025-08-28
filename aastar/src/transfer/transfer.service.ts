@@ -185,7 +185,7 @@ export class TransferService {
     if (transfer.transactionHash) {
       response.explorerUrl = `https://sepolia.etherscan.io/tx/${transfer.transactionHash}`;
     }
-    
+
     if (transfer.bundlerUserOpHash) {
       response.bundlerStatus = "Transaction submitted to bundler";
     }

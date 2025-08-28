@@ -161,7 +161,8 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
       });
     });
 
-    const gossipPublicUrl = this.configService.get('GOSSIP_PUBLIC_URL') || `ws://localhost:${this.port}`;
+    const gossipPublicUrl =
+      this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`;
     console.log(`✅ Gossip Server listening on ${gossipPublicUrl}`);
   }
 
@@ -174,7 +175,8 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const myGossipEndpoint = this.configService.get('GOSSIP_PUBLIC_URL') || `ws://localhost:${this.port}`;
+    const myGossipEndpoint =
+      this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`;
     const validBootstrapPeers = this.bootstrapPeers.filter(peer => peer !== myGossipEndpoint);
 
     if (validBootstrapPeers.length === 0) {
@@ -347,7 +349,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Connect to the new peer if we don't have a connection
-    const myEndpoint = this.configService.get('GOSSIP_PUBLIC_URL') || `ws://localhost:${this.port}`;
+    const myEndpoint = this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`;
     if (isNewPeer && peer.gossipEndpoint && peer.gossipEndpoint !== myEndpoint) {
       setTimeout(() => this.connectToPeer(peer.gossipEndpoint!), 1000);
     }
@@ -821,7 +823,8 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
         console.log(`🔍 Discovered new peer: ${peerInfo.id} (${peerInfo.apiEndpoint})`);
 
         // Try to connect to the discovered peer
-        const myEndpoint = this.configService.get('GOSSIP_PUBLIC_URL') || `ws://localhost:${this.port}`;
+        const myEndpoint =
+          this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`;
         if (peer.gossipEndpoint && peer.gossipEndpoint !== myEndpoint) {
           setTimeout(() => this.connectToPeer(peer.gossipEndpoint!), 2000);
         }
@@ -853,7 +856,8 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
       console.log(`📢 Announced peer discovered: ${peerInfo.id} (${peerInfo.apiEndpoint})`);
 
       // Try to connect to the announced peer
-      const myEndpoint = this.configService.get('GOSSIP_PUBLIC_URL') || `ws://localhost:${this.port}`;
+      const myEndpoint =
+        this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`;
       if (peer.gossipEndpoint && peer.gossipEndpoint !== myEndpoint) {
         setTimeout(() => this.connectToPeer(peer.gossipEndpoint!), 2000);
       }
@@ -994,7 +998,8 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
     const disconnectedPeers = Array.from(this.peers.values())
       .filter(peer => peer.status !== "active" || !this.connections.has(peer.gossipEndpoint!))
       .filter(peer => {
-        const myEndpoint = this.configService.get('GOSSIP_PUBLIC_URL') || `ws://localhost:${this.port}`;
+        const myEndpoint =
+          this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`;
         return peer.gossipEndpoint && peer.gossipEndpoint !== myEndpoint;
       });
 
@@ -1087,7 +1092,8 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
   private async connectToKnownPeers(): Promise<void> {
     const knownPeers = Array.from(this.peers.values())
       .filter(peer => {
-        const myEndpoint = this.configService.get('GOSSIP_PUBLIC_URL') || `ws://localhost:${this.port}`;
+        const myEndpoint =
+          this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`;
         return peer.gossipEndpoint && peer.gossipEndpoint !== myEndpoint;
       })
       .filter(peer => !this.connections.has(peer.gossipEndpoint!));
@@ -1116,8 +1122,12 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
     return {
       id: nodeState?.nodeId || process.env.NODE_ID || "unknown-node",
       publicKey: nodeState?.publicKey,
-      apiEndpoint: nodeState?.nodeId ? (this.configService.get('PUBLIC_URL') || `http://localhost:${this.apiPort}`) : undefined,
-      gossipEndpoint: nodeState?.nodeId ? (this.configService.get('GOSSIP_PUBLIC_URL') || `ws://localhost:${this.port}`) : undefined,
+      apiEndpoint: nodeState?.nodeId
+        ? this.configService.get("PUBLIC_URL") || `http://localhost:${this.apiPort}`
+        : undefined,
+      gossipEndpoint: nodeState?.nodeId
+        ? this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`
+        : undefined,
       region: "local",
       capabilities: ["bls-signing", "message-aggregation"],
       version: "1.0.0",

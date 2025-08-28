@@ -163,21 +163,21 @@ export default function TransferPage() {
       setTransferStatus(response.data);
 
       // Stop polling if transfer is completed or failed
-      if (response.data.status === 'completed' || response.data.status === 'failed') {
+      if (response.data.status === "completed" || response.data.status === "failed") {
         const wasPolling = isPollingRef.current;
         stopPolling();
 
         // Only show toast once when polling was active
         if (wasPolling) {
-          if (response.data.status === 'completed') {
-            toast.success('Transfer completed successfully!');
+          if (response.data.status === "completed") {
+            toast.success("Transfer completed successfully!");
           } else {
-            toast.error(`Transfer failed: ${response.data.error || 'Unknown error'}`);
+            toast.error(`Transfer failed: ${response.data.error || "Unknown error"}`);
           }
         }
       }
     } catch (error) {
-      console.error('Failed to check transfer status:', error);
+      console.error("Failed to check transfer status:", error);
     }
   };
 
@@ -258,30 +258,41 @@ export default function TransferPage() {
 
         {/* Transfer Status */}
         {transferResult && (
-          <div className={`border rounded-lg p-4 mb-6 ${
-            transferStatus?.status === 'completed' ? 'bg-green-50 border-green-200' :
-            transferStatus?.status === 'failed' ? 'bg-red-50 border-red-200' :
-            'bg-blue-50 border-blue-200'
-          }`}>
+          <div
+            className={`border rounded-lg p-4 mb-6 ${
+              transferStatus?.status === "completed"
+                ? "bg-green-50 border-green-200"
+                : transferStatus?.status === "failed"
+                  ? "bg-red-50 border-red-200"
+                  : "bg-blue-50 border-blue-200"
+            }`}
+          >
             <div className="flex">
-              {transferStatus?.status === 'completed' ? (
+              {transferStatus?.status === "completed" ? (
                 <CheckCircleIcon className="h-5 w-5 text-green-400" />
-              ) : transferStatus?.status === 'failed' ? (
+              ) : transferStatus?.status === "failed" ? (
                 <InformationCircleIcon className="h-5 w-5 text-red-400" />
               ) : (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
               )}
               <div className="ml-3 flex-1">
-                <h3 className={`text-sm font-medium ${
-                  transferStatus?.status === 'completed' ? 'text-green-800' :
-                  transferStatus?.status === 'failed' ? 'text-red-800' :
-                  'text-blue-800'
-                }`}>
-                  {transferStatus?.statusDescription || 'Transfer Submitted'}
+                <h3
+                  className={`text-sm font-medium ${
+                    transferStatus?.status === "completed"
+                      ? "text-green-800"
+                      : transferStatus?.status === "failed"
+                        ? "text-red-800"
+                        : "text-blue-800"
+                  }`}
+                >
+                  {transferStatus?.statusDescription || "Transfer Submitted"}
                 </h3>
                 <div className="mt-2 text-sm space-y-1">
                   <p className="text-gray-600">
-                    Status: <span className="font-medium">{transferStatus?.status || transferResult.status}</span>
+                    Status:{" "}
+                    <span className="font-medium">
+                      {transferStatus?.status || transferResult.status}
+                    </span>
                     {transferStatus?.elapsedSeconds && (
                       <span className="ml-2 text-gray-500">
                         ({transferStatus.elapsedSeconds}s elapsed)
@@ -293,8 +304,8 @@ export default function TransferPage() {
                   </p>
                   {transferStatus?.transactionHash && (
                     <p className="font-mono text-xs text-gray-600">
-                      Transaction: 
-                      <a 
+                      Transaction:
+                      <a
                         href={transferStatus.explorerUrl}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -305,9 +316,7 @@ export default function TransferPage() {
                     </p>
                   )}
                   {transferStatus?.bundlerUserOpHash && !transferStatus?.transactionHash && (
-                    <p className="text-xs text-gray-500">
-                      Bundler processing transaction...
-                    </p>
+                    <p className="text-xs text-gray-500">Bundler processing transaction...</p>
                   )}
                 </div>
               </div>

@@ -29,7 +29,7 @@ async function bootstrap() {
   SwaggerModule.setup("api", app, document);
 
   const port = process.env.PORT || 3000;
-  const host = process.env.HOST || '0.0.0.0';
+  const host = process.env.HOST || "0.0.0.0";
   const publicUrl = process.env.PUBLIC_URL || `http://localhost:${port}`;
 
   await app.listen(port, host);
