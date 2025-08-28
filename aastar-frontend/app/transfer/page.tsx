@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { accountAPI, transferAPI } from "@/lib/api";
@@ -21,6 +21,9 @@ export default function TransferPage() {
     transfer: false,
   });
   const [transferResult, setTransferResult] = useState<any>(null);
+  const [transferStatus, setTransferStatus] = useState<any>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isPollingRef = useRef(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -87,6 +90,11 @@ export default function TransferPage() {
       return;
     }
 
+    // Stop any existing polling and clear previous results
+    stopPolling();
+    setTransferResult(null);
+    setTransferStatus(null);
+
     setLoading(prev => ({ ...prev, transfer: true }));
     try {
       const response = await transferAPI.execute({
@@ -95,7 +103,10 @@ export default function TransferPage() {
       });
 
       setTransferResult(response.data);
-      toast.success("Transfer submitted successfully!");
+      toast.success("Transfer submitted! Tracking status...");
+
+      // Start polling for status
+      startStatusPolling(response.data.transferId);
 
       // Clear form
       setFormData({
@@ -110,6 +121,72 @@ export default function TransferPage() {
       setLoading(prev => ({ ...prev, transfer: false }));
     }
   };
+
+  const startStatusPolling = (transferId: string) => {
+    // Clear any existing polling
+    stopPolling();
+
+    // Set polling flag
+    isPollingRef.current = true;
+
+    // Poll immediately
+    checkTransferStatus(transferId);
+
+    // Set up polling interval (every 2 seconds)
+    const interval = setInterval(() => {
+      if (!isPollingRef.current) {
+        clearInterval(interval);
+        return;
+      }
+      checkTransferStatus(transferId);
+    }, 2000);
+
+    pollingIntervalRef.current = interval;
+  };
+
+  const stopPolling = () => {
+    isPollingRef.current = false;
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+  };
+
+  const checkTransferStatus = async (transferId: string) => {
+    // Skip if not polling
+    if (!isPollingRef.current) {
+      return;
+    }
+
+    try {
+      const response = await transferAPI.getStatus(transferId);
+      setTransferStatus(response.data);
+
+      // Stop polling if transfer is completed or failed
+      if (response.data.status === 'completed' || response.data.status === 'failed') {
+        const wasPolling = isPollingRef.current;
+        stopPolling();
+
+        // Only show toast once when polling was active
+        if (wasPolling) {
+          if (response.data.status === 'completed') {
+            toast.success('Transfer completed successfully!');
+          } else {
+            toast.error(`Transfer failed: ${response.data.error || 'Unknown error'}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check transfer status:', error);
+    }
+  };
+
+  // Clean up polling on unmount
+  useEffect(() => {
+    return () => {
+      stopPolling();
+    };
+  }, []);
 
   const formatGwei = (wei: string) => {
     return (parseInt(wei, 16) / 1e9).toFixed(2);
@@ -179,19 +256,58 @@ export default function TransferPage() {
           </div>
         </div>
 
-        {/* Transfer Result */}
+        {/* Transfer Status */}
         {transferResult && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className={`border rounded-lg p-4 mb-6 ${
+            transferStatus?.status === 'completed' ? 'bg-green-50 border-green-200' :
+            transferStatus?.status === 'failed' ? 'bg-red-50 border-red-200' :
+            'bg-blue-50 border-blue-200'
+          }`}>
             <div className="flex">
-              <CheckCircleIcon className="h-5 w-5 text-green-400" />
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">
-                  Transfer Submitted Successfully!
+              {transferStatus?.status === 'completed' ? (
+                <CheckCircleIcon className="h-5 w-5 text-green-400" />
+              ) : transferStatus?.status === 'failed' ? (
+                <InformationCircleIcon className="h-5 w-5 text-red-400" />
+              ) : (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+              )}
+              <div className="ml-3 flex-1">
+                <h3 className={`text-sm font-medium ${
+                  transferStatus?.status === 'completed' ? 'text-green-800' :
+                  transferStatus?.status === 'failed' ? 'text-red-800' :
+                  'text-blue-800'
+                }`}>
+                  {transferStatus?.statusDescription || 'Transfer Submitted'}
                 </h3>
-                <div className="mt-2 text-sm text-green-700">
-                  <p>Transfer ID: {transferResult.transferId}</p>
-                  {transferResult.transactionHash && (
-                    <p>Transaction: {transferResult.transactionHash.slice(0, 20)}...</p>
+                <div className="mt-2 text-sm space-y-1">
+                  <p className="text-gray-600">
+                    Status: <span className="font-medium">{transferStatus?.status || transferResult.status}</span>
+                    {transferStatus?.elapsedSeconds && (
+                      <span className="ml-2 text-gray-500">
+                        ({transferStatus.elapsedSeconds}s elapsed)
+                      </span>
+                    )}
+                  </p>
+                  <p className="font-mono text-xs text-gray-500">
+                    Transfer ID: {transferResult.transferId}
+                  </p>
+                  {transferStatus?.transactionHash && (
+                    <p className="font-mono text-xs text-gray-600">
+                      Transaction: 
+                      <a 
+                        href={transferStatus.explorerUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-1 text-blue-600 hover:text-blue-800 underline"
+                      >
+                        {transferStatus.transactionHash.slice(0, 20)}...
+                      </a>
+                    </p>
+                  )}
+                  {transferStatus?.bundlerUserOpHash && !transferStatus?.transactionHash && (
+                    <p className="text-xs text-gray-500">
+                      Bundler processing transaction...
+                    </p>
                   )}
                 </div>
               </div>

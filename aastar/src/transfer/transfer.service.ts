@@ -65,6 +65,29 @@ export class TransferService {
 
     this.databaseService.saveTransfer(transfer);
 
+    // Process transfer asynchronously
+    this.processTransferAsync(transferId, userOp, account.address, transferDto);
+
+    // Return immediately with transfer ID for tracking
+    return {
+      success: true,
+      transferId,
+      userOpHash,
+      status: "pending",
+      message: "Transfer submitted successfully. Use transferId to check status.",
+      from: account.address,
+      to: transferDto.to,
+      amount: transferDto.amount,
+    };
+  }
+
+  // Async processing method
+  private async processTransferAsync(
+    transferId: string,
+    userOp: UserOperation,
+    from: string,
+    transferDto: ExecuteTransferDto
+  ) {
     try {
       // Submit UserOp to bundler
       const bundlerUserOpHash = await this.ethereumService.sendUserOperation(
@@ -75,6 +98,7 @@ export class TransferService {
       this.databaseService.updateTransfer(transferId, {
         bundlerUserOpHash,
         status: "submitted",
+        submittedAt: new Date().toISOString(),
       });
 
       // Wait for transaction
@@ -87,24 +111,16 @@ export class TransferService {
         completedAt: new Date().toISOString(),
       });
 
-      return {
-        success: true,
-        transferId,
-        userOpHash,
-        bundlerUserOpHash,
-        transactionHash: txHash,
-        from: account.address,
-        to: transferDto.to,
-        amount: transferDto.amount,
-      };
+      console.log(`Transfer ${transferId} completed with tx: ${txHash}`);
     } catch (error) {
       // Update transfer status to failed
       this.databaseService.updateTransfer(transferId, {
         status: "failed",
         error: error.message,
+        failedAt: new Date().toISOString(),
       });
 
-      throw new BadRequestException(`Transfer failed: ${error.message}`);
+      console.error(`Transfer ${transferId} failed:`, error.message);
     }
   }
 
@@ -155,7 +171,35 @@ export class TransferService {
       throw new NotFoundException("Transfer not found");
     }
 
-    return transfer;
+    // Add additional status information
+    const response: any = { ...transfer };
+
+    // Calculate elapsed time for pending transfers
+    if (transfer.status === "pending" || transfer.status === "submitted") {
+      const startTime = new Date(transfer.createdAt).getTime();
+      const currentTime = new Date().getTime();
+      response.elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
+    }
+
+    // Add explorer links
+    if (transfer.transactionHash) {
+      response.explorerUrl = `https://sepolia.etherscan.io/tx/${transfer.transactionHash}`;
+    }
+    
+    if (transfer.bundlerUserOpHash) {
+      response.bundlerStatus = "Transaction submitted to bundler";
+    }
+
+    // Add status description
+    const statusDescriptions = {
+      pending: "Preparing transaction and generating signatures",
+      submitted: "Transaction submitted to bundler, waiting for confirmation",
+      completed: "Transaction confirmed on chain",
+      failed: "Transaction failed",
+    };
+    response.statusDescription = statusDescriptions[transfer.status] || transfer.status;
+
+    return response;
   }
 
   async getTransferHistory(userId: string, page: number = 1, limit: number = 10) {
