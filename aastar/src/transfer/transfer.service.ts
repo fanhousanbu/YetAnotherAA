@@ -23,14 +23,14 @@ export class TransferService {
   ) {}
 
   async executeTransfer(userId: string, transferDto: ExecuteTransferDto) {
-    console.log('TransferService.executeTransfer called with userId:', userId);
-    console.log('Transfer data:', transferDto);
-    
+    console.log("TransferService.executeTransfer called with userId:", userId);
+    console.log("Transfer data:", transferDto);
+
     // Get user's account
     const account = this.accountService.getAccountByUserId(userId);
-    console.log('Account found:', account ? 'YES' : 'NO');
+    console.log("Account found:", account ? "YES" : "NO");
     if (!account) {
-      console.log('No account found for transfer, userId:', userId);
+      console.log("No account found for transfer, userId:", userId);
       throw new NotFoundException("User account not found");
     }
 
@@ -40,7 +40,7 @@ export class TransferService {
     const needsDeployment = code === "0x";
 
     if (needsDeployment) {
-      console.log('Account needs deployment, will deploy with first transaction');
+      console.log("Account needs deployment, will deploy with first transaction");
       // The account will be deployed automatically with the first UserOp
       // The initCode in the UserOp will handle deployment
     }
@@ -48,30 +48,35 @@ export class TransferService {
     // Check Smart Account balance and validate transfer amount
     const smartAccountBalance = parseFloat(await this.ethereumService.getBalance(account.address));
     const transferAmount = parseFloat(transferDto.amount);
-    
+
     // Check if transfer amount exceeds available balance
     if (transferAmount > smartAccountBalance) {
-      throw new BadRequestException(`Insufficient balance: Trying to send ${transferAmount} ETH but Smart Account only has ${smartAccountBalance} ETH available.`);
+      throw new BadRequestException(
+        `Insufficient balance: Trying to send ${transferAmount} ETH but Smart Account only has ${smartAccountBalance} ETH available.`
+      );
     }
-    
+
     const minRequiredBalance = 0.001; // Require at least 0.001 ETH in Smart Account for gas fees (lower threshold)
-    
+
     if (smartAccountBalance < minRequiredBalance) {
       console.log(`Smart Account balance (${smartAccountBalance} ETH) is too low, prefunding...`);
-      
+
       // Get user's EOA wallet
       const userWallet = this.authService.getUserWallet(userId);
       const provider = this.ethereumService.getProvider();
       const userWalletWithProvider = userWallet.connect(provider);
-      
+
       // Check EOA balance
       const eoaBalance = parseFloat(await this.ethereumService.getBalance(userWallet.address));
       const prefundAmount = Math.max(0.002, minRequiredBalance - smartAccountBalance + 0.001); // Minimum 0.002 ETH or needed amount + 0.001 safety
-      
-      if (eoaBalance < prefundAmount) { // Don't reserve EOA balance if it's very low
-        throw new BadRequestException(`Insufficient balance: Smart Account needs ${minRequiredBalance} ETH but only has ${smartAccountBalance} ETH. EOA has ${eoaBalance} ETH but needs ${prefundAmount} ETH for prefunding. Please add more ETH to your EOA address.`);
+
+      if (eoaBalance < prefundAmount) {
+        // Don't reserve EOA balance if it's very low
+        throw new BadRequestException(
+          `Insufficient balance: Smart Account needs ${minRequiredBalance} ETH but only has ${smartAccountBalance} ETH. EOA has ${eoaBalance} ETH but needs ${prefundAmount} ETH for prefunding. Please add more ETH to your EOA address.`
+        );
       }
-      
+
       // Send ETH from EOA to Smart Account
       console.log(`Sending ${prefundAmount} ETH from EOA to Smart Account...`);
       const prefundTx = await userWalletWithProvider.sendTransaction({
@@ -80,7 +85,7 @@ export class TransferService {
         maxFeePerGas: ethers.parseUnits("20", "gwei"),
         maxPriorityFeePerGas: ethers.parseUnits("1", "gwei"),
       });
-      
+
       console.log(`Prefund transaction hash: ${prefundTx.hash}`);
       await prefundTx.wait();
       console.log(`Smart Account prefunded successfully`);
@@ -318,7 +323,7 @@ export class TransferService {
       if (account) {
         const factory = this.ethereumService.getFactoryContract();
         const factoryAddress = await factory.getAddress();
-        
+
         // Encode factory deployment call
         const deployCalldata = factory.interface.encodeFunctionData(
           "createAccountWithAAStarValidator",
@@ -326,13 +331,13 @@ export class TransferService {
             account.ownerAddress,
             account.validatorAddress,
             true, // useAAStarValidator
-            account.salt
+            account.salt,
           ]
         );
-        
+
         // initCode = factory address + deployment calldata
         initCode = ethers.concat([factoryAddress, deployCalldata]);
-        console.log('Account needs deployment, adding initCode to UserOp');
+        console.log("Account needs deployment, adding initCode to UserOp");
       }
     }
 

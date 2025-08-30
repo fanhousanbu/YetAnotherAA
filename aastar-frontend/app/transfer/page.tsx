@@ -6,7 +6,12 @@ import Layout from "@/components/Layout";
 import { accountAPI, transferAPI } from "@/lib/api";
 import { Account, GasEstimate } from "@/lib/types";
 import toast from "react-hot-toast";
-import { ArrowUpIcon, InformationCircleIcon, CheckCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowUpIcon,
+  InformationCircleIcon,
+  CheckCircleIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 
 export default function TransferPage() {
   const [account, setAccount] = useState<Account | null>(null);
@@ -94,12 +99,14 @@ export default function TransferPage() {
       toast.error("Please fill in recipient address and amount");
       return;
     }
-    
+
     // Check if amount exceeds available balance
     const transferAmount = parseFloat(formData.amount);
     const availableBalance = parseFloat(account?.balance || "0");
     if (transferAmount > availableBalance) {
-      toast.error(`Insufficient balance: Trying to send ${transferAmount} ETH but only ${availableBalance} ETH available`);
+      toast.error(
+        `Insufficient balance: Trying to send ${transferAmount} ETH but only ${availableBalance} ETH available`
+      );
       return;
     }
 
@@ -220,10 +227,10 @@ export default function TransferPage() {
     if (!formData.to || !formData.amount || loading.transfer) {
       return true;
     }
-    
+
     const transferAmount = parseFloat(formData.amount);
     const availableBalance = parseFloat(account?.balance || "0");
-    
+
     return transferAmount > availableBalance || transferAmount <= 0;
   };
 
@@ -248,7 +255,6 @@ export default function TransferPage() {
     );
   }
 
-
   return (
     <Layout requireAuth={true}>
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -272,7 +278,8 @@ export default function TransferPage() {
               </div>
               <div className="ml-3 flex-1">
                 <p className="text-sm text-blue-700">
-                  <strong>First Transfer:</strong> Your smart account will be automatically deployed with your first transfer. Make sure your EOA has enough ETH for gas fees.
+                  <strong>First Transfer:</strong> Your smart account will be automatically deployed
+                  with your first transfer. Make sure your EOA has enough ETH for gas fees.
                 </p>
               </div>
               <div className="ml-auto pl-3">
@@ -330,7 +337,12 @@ export default function TransferPage() {
                 className="mt-2 inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-white border border-blue-200 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
                 </svg>
                 Refresh
               </button>
@@ -442,7 +454,7 @@ export default function TransferPage() {
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
               <p className="mt-1 text-sm text-gray-500">
-                Available: 
+                Available:
                 <span className="relative group ml-1">
                   {formatBalance(account?.balance)} ETH
                   {/* Tooltip for available balance */}
@@ -451,9 +463,10 @@ export default function TransferPage() {
                     <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
                   </div>
                 </span>
-                {formData.amount && parseFloat(formData.amount) > parseFloat(account?.balance || "0") && (
-                  <span className="text-red-600 ml-2">⚠️ Insufficient balance</span>
-                )}
+                {formData.amount &&
+                  parseFloat(formData.amount) > parseFloat(account?.balance || "0") && (
+                    <span className="text-red-600 ml-2">⚠️ Insufficient balance</span>
+                  )}
               </p>
             </div>
 
@@ -510,8 +523,8 @@ export default function TransferPage() {
                 disabled={isTransferDisabled()}
                 className={`flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                   isTransferDisabled()
-                    ? 'bg-gray-400 text-gray-100 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    ? "bg-gray-400 text-gray-100 cursor-not-allowed"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
                 }`}
               >
                 {loading.transfer ? (
@@ -519,10 +532,10 @@ export default function TransferPage() {
                 ) : (
                   <ArrowUpIcon className="h-4 w-4 mr-2" />
                 )}
-                {formData.amount && parseFloat(formData.amount) > parseFloat(account?.balance || "0")
+                {formData.amount &&
+                parseFloat(formData.amount) > parseFloat(account?.balance || "0")
                   ? "Insufficient Balance"
-                  : "Send Transfer"
-                }
+                  : "Send Transfer"}
               </button>
             </div>
           </div>
