@@ -1,5 +1,4 @@
 import * as crypto from "crypto";
-import { ConfigService } from "@nestjs/config";
 
 export class CryptoUtil {
   private static readonly ALGORITHM = "aes-256-gcm";

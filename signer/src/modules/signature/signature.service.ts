@@ -3,7 +3,7 @@ import { ethers } from "ethers";
 import { BlsService } from "../bls/bls.service.js";
 import { NodeService } from "../node/node.service.js";
 import { SignatureResult, AggregateSignatureResult } from "../../interfaces/signature.interface.js";
-import { sigs, bls } from "../../utils/bls.util.js";
+import { sigs, bls, BLS_DST } from "../../utils/bls.util.js";
 
 @Injectable()
 export class SignatureService {
@@ -53,7 +53,7 @@ export class SignatureService {
       const publicKeys = [];
       for (const pubKeyHex of publicKeyHexes) {
         const cleanHex = pubKeyHex.startsWith("0x") ? pubKeyHex.substring(2) : pubKeyHex;
-        const pubKey = bls.G1.ProjectivePoint.fromHex(cleanHex);
+        const pubKey = bls.G1.Point.fromHex(cleanHex);
         publicKeys.push(pubKey);
       }
 
@@ -62,7 +62,8 @@ export class SignatureService {
 
       // Verify the aggregated signature
       const messageBytes = ethers.getBytes(message);
-      const valid = await bls.verify(signature, messageBytes, aggregatedPubKey);
+      const messagePoint = await bls.G2.hashToCurve(messageBytes, { DST: BLS_DST });
+      const valid = await sigs.verify(signature, messagePoint, aggregatedPubKey);
 
       return {
         valid,

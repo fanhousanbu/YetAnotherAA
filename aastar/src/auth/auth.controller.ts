@@ -4,7 +4,7 @@ import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { PasskeyRegisterBeginDto, PasskeyRegisterDto } from "./dto/passkey-register.dto";
-import { PasskeyLoginBeginDto, PasskeyLoginDto } from "./dto/passkey-login.dto";
+import { PasskeyLoginDto } from "./dto/passkey-login.dto";
 import { DevicePasskeyBeginDto, DevicePasskeyRegisterDto } from "./dto/device-passkey.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { LocalAuthGuard } from "./guards/local-auth.guard";
@@ -23,7 +23,7 @@ export class AuthController {
   @Post("login")
   @ApiOperation({ summary: "User login" })
   @UseGuards(LocalAuthGuard)
-  async login(@Body() loginDto: LoginDto, @Request() req) {
+  async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 

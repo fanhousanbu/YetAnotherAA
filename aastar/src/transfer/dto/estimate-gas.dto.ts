@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, IsArray, IsOptional, IsEthereumAddress } from "class-validator";
+import { IsString, IsOptional, IsEthereumAddress } from "class-validator";
 
 export class EstimateGasDto {
   @ApiProperty({ description: "Recipient address", example: "0x..." })

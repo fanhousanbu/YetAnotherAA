@@ -8,7 +8,7 @@ import * as bcrypt from "bcrypt";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { PasskeyRegisterBeginDto, PasskeyRegisterDto } from "./dto/passkey-register.dto";
-import { PasskeyLoginBeginDto, PasskeyLoginDto } from "./dto/passkey-login.dto";
+import { PasskeyLoginDto } from "./dto/passkey-login.dto";
 import { DevicePasskeyBeginDto, DevicePasskeyRegisterDto } from "./dto/device-passkey.dto";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -16,12 +16,6 @@ import {
   verifyRegistrationResponse,
   generateAuthenticationOptions,
   verifyAuthenticationResponse,
-} from "@simplewebauthn/server";
-import type {
-  GenerateRegistrationOptionsOpts,
-  VerifyRegistrationResponseOpts,
-  GenerateAuthenticationOptionsOpts,
-  VerifyAuthenticationResponseOpts,
 } from "@simplewebauthn/server";
 
 @Injectable()
