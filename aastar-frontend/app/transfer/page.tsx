@@ -304,9 +304,9 @@ export default function TransferPage() {
             <div>
               <p className="text-sm font-medium text-blue-900">Smart Account Balance</p>
               <div className="relative group">
-                <p className="text-lg font-semibold text-blue-900">
+                <div className="text-lg font-semibold text-blue-900">
                   {formatBalance(account?.balance)} ETH
-                </p>
+                </div>
                 {/* Tooltip */}
                 <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-10">
                   <div className="font-mono">{account?.balance || "0"} ETH</div>
@@ -317,9 +317,9 @@ export default function TransferPage() {
             <div>
               <p className="text-sm font-medium text-blue-900">EOA Balance (for gas)</p>
               <div className="relative group">
-                <p className="text-lg font-semibold text-green-700">
+                <div className="text-lg font-semibold text-green-700">
                   {formatBalance(account?.eoaBalance)} ETH
-                </p>
+                </div>
                 {/* Tooltip */}
                 <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-10">
                   <div className="font-mono">{account?.eoaBalance || "0"} ETH</div>
@@ -453,7 +453,7 @@ export default function TransferPage() {
                 placeholder="0.001"
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
-              <p className="mt-1 text-sm text-gray-500">
+              <div className="mt-1 text-sm text-gray-500">
                 Available:
                 <span className="relative group ml-1">
                   {formatBalance(account?.balance)} ETH
@@ -467,7 +467,7 @@ export default function TransferPage() {
                   parseFloat(formData.amount) > parseFloat(account?.balance || "0") && (
                     <span className="text-red-600 ml-2">⚠️ Insufficient balance</span>
                   )}
-              </p>
+              </div>
             </div>
 
             {/* Gas Estimation */}
