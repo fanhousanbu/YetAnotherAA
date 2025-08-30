@@ -1,9 +1,10 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
+import { Injectable, OnModuleInit, OnModuleDestroy, Inject } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import WebSocket, { WebSocketServer } from "ws";
 import { v4 as uuidv4 } from "uuid";
 import * as fs from "fs";
 import * as path from "path";
+import * as http from "http";
 import { NodeService } from "../node/node.service.js";
 import {
   GossipMessage,
@@ -27,7 +28,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
 
   private readonly config: GossipConfig;
   private readonly port: number;
-  private readonly apiPort: number;
+  private httpServer: http.Server | null = null;
   private bootstrapPeers: string[] = [];
   private isNodeReady = false;
   private reconnectInterval: NodeJS.Timeout;
@@ -47,11 +48,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
     private configService: ConfigService,
     private nodeService: NodeService
   ) {
-    this.apiPort = parseInt(this.configService.get("PORT") || "3001", 10);
-    const configuredGossipPort = this.configService.get("GOSSIP_PORT");
-    this.port = configuredGossipPort
-      ? parseInt(configuredGossipPort, 10)
-      : 8000 + (this.apiPort - 3000);
+    this.port = parseInt(this.configService.get("PORT") || "3000", 10);
 
     this.bootstrapPeers = this.configService.get("GOSSIP_BOOTSTRAP_PEERS")
       ? this.configService
@@ -90,6 +87,14 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     console.log(`🗣️  Starting BLS Signer Gossip Service on port ${this.port}...`);
+    
+    // Wait a bit for the HTTP server to be set
+    let retries = 0;
+    while (!this.httpServer && retries < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      retries++;
+    }
+    
     await this.startGossipServer();
     await this.waitForNodeReady();
     this.isNodeReady = true;
@@ -130,12 +135,24 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Set HTTP server instance for WebSocket upgrade
+   */
+  setHttpServer(httpServer: http.Server): void {
+    this.httpServer = httpServer;
+  }
+
+  /**
    * Start the gossip WebSocket server
    */
   private async startGossipServer(): Promise<void> {
+    if (!this.httpServer) {
+      console.error("❌ HTTP server not set, cannot start WebSocket server");
+      return;
+    }
+
     this.server = new WebSocketServer({
-      port: this.port,
-      host: "0.0.0.0",
+      server: this.httpServer,
+      path: '/ws',
     });
 
     this.server.on("connection", (ws: WebSocket, request) => {
@@ -162,7 +179,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
     });
 
     const gossipPublicUrl =
-      this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`;
+      this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}/ws`;
     console.log(`✅ Gossip Server listening on ${gossipPublicUrl}`);
   }
 
@@ -176,7 +193,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
     }
 
     const myGossipEndpoint =
-      this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`;
+      this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}/ws`;
     const validBootstrapPeers = this.bootstrapPeers.filter(peer => peer !== myGossipEndpoint);
 
     if (validBootstrapPeers.length === 0) {
@@ -349,7 +366,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Connect to the new peer if we don't have a connection
-    const myEndpoint = this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`;
+    const myEndpoint = this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}/ws`;
     if (isNewPeer && peer.gossipEndpoint && peer.gossipEndpoint !== myEndpoint) {
       setTimeout(() => this.connectToPeer(peer.gossipEndpoint!), 1000);
     }
@@ -824,7 +841,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
 
         // Try to connect to the discovered peer
         const myEndpoint =
-          this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`;
+          this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}/ws`;
         if (peer.gossipEndpoint && peer.gossipEndpoint !== myEndpoint) {
           setTimeout(() => this.connectToPeer(peer.gossipEndpoint!), 2000);
         }
@@ -857,7 +874,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
 
       // Try to connect to the announced peer
       const myEndpoint =
-        this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`;
+        this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}/ws`;
       if (peer.gossipEndpoint && peer.gossipEndpoint !== myEndpoint) {
         setTimeout(() => this.connectToPeer(peer.gossipEndpoint!), 2000);
       }
@@ -999,7 +1016,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
       .filter(peer => peer.status !== "active" || !this.connections.has(peer.gossipEndpoint!))
       .filter(peer => {
         const myEndpoint =
-          this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`;
+          this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}/ws`;
         return peer.gossipEndpoint && peer.gossipEndpoint !== myEndpoint;
       });
 
@@ -1093,7 +1110,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
     const knownPeers = Array.from(this.peers.values())
       .filter(peer => {
         const myEndpoint =
-          this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`;
+          this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}/ws`;
         return peer.gossipEndpoint && peer.gossipEndpoint !== myEndpoint;
       })
       .filter(peer => !this.connections.has(peer.gossipEndpoint!));
@@ -1123,10 +1140,10 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
       id: nodeState?.nodeId || process.env.NODE_ID || "unknown-node",
       publicKey: nodeState?.publicKey,
       apiEndpoint: nodeState?.nodeId
-        ? this.configService.get("PUBLIC_URL") || `http://localhost:${this.apiPort}`
+        ? this.configService.get("PUBLIC_URL") || `http://localhost:${this.port}`
         : undefined,
       gossipEndpoint: nodeState?.nodeId
-        ? this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}`
+        ? this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}/ws`
         : undefined,
       region: "local",
       capabilities: ["bls-signing", "message-aggregation"],

@@ -3,6 +3,7 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module.js";
 import { ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { GossipService } from "./modules/gossip/gossip.service.js";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -32,15 +33,22 @@ async function bootstrap() {
   const host = process.env.HOST || "0.0.0.0";
   const publicUrl = process.env.PUBLIC_URL || `http://localhost:${port}`;
 
+  // Get the HTTP server instance and pass it to GossipService
+  const httpServer = app.getHttpServer();
+  const gossipService = app.get(GossipService);
+  gossipService.setHttpServer(httpServer);
+
   await app.listen(port, host);
 
   console.log(`🚀 BLS Signer Service is running on ${host}:${port}`);
   console.log(`📖 Swagger API documentation: ${publicUrl}/api`);
+  console.log(`🌐 WebSocket Gossip endpoint: ws://${host}:${port}/ws`);
   console.log(`📋 Available endpoints:`);
   console.log(`   GET /node/info - Get current node information`);
   console.log(`   POST /node/register - Register node on-chain`);
   console.log(`   POST /signature/sign - Sign message with this node`);
   console.log(`   POST /signature/aggregate - Sign and return as aggregate format`);
+  console.log(`   WS /ws - WebSocket gossip protocol endpoint`);
 }
 
 bootstrap();

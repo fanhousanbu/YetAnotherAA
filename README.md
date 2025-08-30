@@ -284,9 +284,10 @@ A full-stack application with all components is now available:
 ### BLS Signer Service (NestJS)
 
 - **Location**: `signer/`
-- **Port**: http://localhost:3001
+- **Port**: http://localhost:3001 (HTTP API & WebSocket Gossip at /ws)
 - **Features**: BLS signature generation, gossip network, node management
 - **Documentation**: Swagger UI at http://localhost:3001/api
+- **Gossip Network**: WebSocket at ws://localhost:3001/ws
 
 ```bash
 cd signer
@@ -321,7 +322,10 @@ npm run dev
 
 ### Complete User Flow
 
-1. **Start all services**: Signer (3001) → Backend (3000) → Frontend (8080)
+1. **Start all services**: 
+   - Signer Service: HTTP API on port 3001, WebSocket Gossip on /ws path
+   - Backend API: Port 3000 
+   - Frontend: Port 8080
 2. Visit http://localhost:8080
 3. Register new account or login
 4. Create ERC-4337 smart account

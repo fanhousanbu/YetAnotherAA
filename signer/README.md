@@ -13,6 +13,8 @@ registration for the AAStarValidator system.
   using ethers.js
 - **RESTful API**: Clean REST endpoints for signature operations and node
   management
+- **Gossip Network**: WebSocket-based P2P communication for node discovery
+- **Single Port Architecture**: HTTP API and WebSocket gossip on same port
 - **Development Ready**: Fixed development nodes for consistent debugging
   experience
 
@@ -35,6 +37,10 @@ Set environment variables (or use project root `.env`):
 # Node Configuration
 NODE_STATE_FILE=./node_dev_001.json
 PORT=3001
+
+# Gossip Network Configuration (Optional)
+GOSSIP_PUBLIC_URL=ws://localhost:3001/ws
+GOSSIP_BOOTSTRAP_PEERS=ws://localhost:3002/ws,ws://localhost:3003/ws
 
 # Blockchain Configuration
 VALIDATOR_CONTRACT_ADDRESS=0xAe7eA28a0aeA05cbB8631bDd7B10Cb0f387FC479
@@ -70,6 +76,12 @@ npm start
 - `POST /signature/aggregate` - Aggregate external signatures from multiple
   nodes
 
+### Gossip Network
+
+- `GET /gossip/peers` - Get active gossip peers
+- `GET /gossip/stats` - Get gossip network statistics
+- `WS /ws` - WebSocket gossip protocol endpoint
+
 ### Documentation
 
 - `GET /api` - Swagger API documentation
@@ -100,9 +112,11 @@ npm start  # Discovers existing node files automatically
 
 Three fixed development nodes are provided for consistent debugging:
 
-- **node_dev_001.json**: Port 3001, Node ID `0x123e4567e89b12d3a456426614174001`
-- **node_dev_002.json**: Port 3002, Node ID `0x123e4567e89b12d3a456426614174002`
-- **node_dev_003.json**: Port 3003, Node ID `0x123e4567e89b12d3a456426614174003`
+- **node_dev_001.json**: Port 3001 (HTTP API + WebSocket /ws), Node ID `0x123e4567e89b12d3a456426614174001`
+- **node_dev_002.json**: Port 3002 (HTTP API + WebSocket /ws), Node ID `0x123e4567e89b12d3a456426614174002`  
+- **node_dev_003.json**: Port 3003 (HTTP API + WebSocket /ws), Node ID `0x123e4567e89b12d3a456426614174003`
+
+Each node runs both HTTP API and WebSocket gossip protocol on the same port, with WebSocket accessible at the `/ws` path.
 
 VSCode launch configurations are provided for single or multi-node debugging.
 

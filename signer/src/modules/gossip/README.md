@@ -20,6 +20,7 @@ rumors spread in social networks.
 - **Scalability**: Efficient even with large numbers of nodes
 - **Message Deduplication**: Prevents message loops and duplicates
 - **Health Monitoring**: Tracks peer health and removes inactive peers
+- **Single Port Architecture**: WebSocket gossip shares the same port as HTTP API
 
 ## Architecture
 
@@ -44,8 +45,8 @@ The gossip protocol can be configured via environment variables:
 
 ```bash
 # Gossip Protocol Configuration
-GOSSIP_PORT=8001                    # Port for gossip communication
-GOSSIP_BOOTSTRAP_PEERS=ws://peer1:8001,ws://peer2:8001  # Initial peers
+GOSSIP_PUBLIC_URL=ws://localhost:3001/ws  # This node's gossip WebSocket URL
+GOSSIP_BOOTSTRAP_PEERS=ws://peer1:3001/ws,ws://peer2:3002/ws  # Initial peers
 GOSSIP_INTERVAL=5000                # Gossip round interval (ms)
 GOSSIP_FANOUT=3                     # Number of peers to gossip to each round
 GOSSIP_MAX_TTL=5                    # Maximum message propagation hops
@@ -111,18 +112,13 @@ curl http://localhost:3001/gossip/health
 
 ## How It Works
 
-1. **Node Startup**: When a node starts, it connects to bootstrap peers and
-   announces itself
-2. **Peer Discovery**: Nodes learn about other peers through join messages and
-   peer lists
-3. **Gossip Rounds**: Every `GOSSIP_INTERVAL` ms, each node selects random peers
-   and gossips data
-4. **Message Propagation**: Messages are forwarded to other peers with
-   decreasing TTL
-5. **Health Monitoring**: Heartbeats track peer health, inactive peers are
-   eventually removed
-6. **State Synchronization**: Nodes exchange their complete state to ensure
-   consistency
+1. **Node Startup**: When a node starts, WebSocket gossip server starts on `/ws` path of the main HTTP port
+2. **Peer Connection**: Nodes connect to bootstrap peers via WebSocket at `ws://host:port/ws`
+3. **Peer Discovery**: Nodes learn about other peers through join messages and peer lists
+4. **Gossip Rounds**: Every `GOSSIP_INTERVAL` ms, each node selects random peers and gossips data
+5. **Message Propagation**: Messages are forwarded to other peers with decreasing TTL
+6. **Health Monitoring**: Heartbeats track peer health, inactive peers are eventually removed
+7. **State Synchronization**: Nodes exchange their complete state to ensure consistency
 
 ## Differences from Previous P2P Implementation
 
