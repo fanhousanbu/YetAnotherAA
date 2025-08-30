@@ -40,33 +40,33 @@ export class AccountService {
     );
 
     // Debug logging
-    console.log('Account Creation Debug:');
-    console.log('- User Wallet Address (Owner):', userWallet.address);
-    console.log('- Validator Address:', validatorAddress);
-    console.log('- Salt:', salt);
-    console.log('- Predicted AA Account Address:', accountAddress);
-    console.log('- Factory Contract Address:', factory.target || factory.address);
+    console.log("Account Creation Debug:");
+    console.log("- User Wallet Address (Owner):", userWallet.address);
+    console.log("- Validator Address:", validatorAddress);
+    console.log("- Salt:", salt);
+    console.log("- Predicted AA Account Address:", accountAddress);
+    console.log("- Factory Contract Address:", factory.target || factory.address);
 
     // Check if account is already deployed on-chain (this may be slow for RPC calls)
     let deployed = false;
     let deploymentTxHash = null;
-    
+
     try {
       const code = await provider.getCode(accountAddress);
       deployed = code !== "0x";
-      console.log('Account deployment check completed:', deployed);
+      console.log("Account deployment check completed:", deployed);
     } catch (error) {
-      console.log('Warning: Could not check deployment status:', error.message);
+      console.log("Warning: Could not check deployment status:", error.message);
       // Assume not deployed if RPC fails
     }
 
     // Don't auto-deploy on account creation
     // Deployment will happen on first transaction
     if (deployed) {
-      console.log('Account already deployed on-chain:', accountAddress);
+      console.log("Account already deployed on-chain:", accountAddress);
     } else {
-      console.log('Account will be deployed on first transaction:', accountAddress);
-      console.log('Please fund EOA wallet first:', userWallet.address);
+      console.log("Account will be deployed on first transaction:", accountAddress);
+      console.log("Please fund EOA wallet first:", userWallet.address);
     }
 
     // Save account information
@@ -87,25 +87,25 @@ export class AccountService {
   }
 
   async getAccount(userId: string) {
-    console.log('AccountService.getAccount called with userId:', userId);
+    console.log("AccountService.getAccount called with userId:", userId);
     const account = this.databaseService.findAccountByUserId(userId);
-    console.log('Found account:', account ? 'YES' : 'NO');
+    console.log("Found account:", account ? "YES" : "NO");
     if (!account) {
-      console.log('No account found for userId:', userId);
+      console.log("No account found for userId:", userId);
       throw new NotFoundException("Account not found");
     }
 
     // Get current balance of Smart Account (skip if not deployed to speed up)
     let balance = "0";
     let eoaBalance = "0";
-    
+
     try {
       // Only check balances if we have provider connection
       balance = await this.ethereumService.getBalance(account.address);
       eoaBalance = await this.ethereumService.getBalance(account.ownerAddress);
-      console.log('Balances retrieved - Smart Account:', balance, 'EOA:', eoaBalance);
+      console.log("Balances retrieved - Smart Account:", balance, "EOA:", eoaBalance);
     } catch (error) {
-      console.log('Warning: Could not retrieve balances, using defaults:', error.message);
+      console.log("Warning: Could not retrieve balances, using defaults:", error.message);
       // Use default values if RPC fails
     }
 
@@ -119,7 +119,7 @@ export class AccountService {
       eoaBalance,
       nonce: nonce.toString(),
     };
-    console.log('AccountService returning data:', JSON.stringify(finalResult, null, 2));
+    console.log("AccountService returning data:", JSON.stringify(finalResult, null, 2));
     return finalResult;
   }
 
@@ -168,7 +168,7 @@ export class AccountService {
     const userWallet = this.authService.getUserWallet(userId);
     const provider = this.ethereumService.getProvider();
     const userWalletWithProvider = userWallet.connect(provider);
-    
+
     const tx = await userWalletWithProvider.sendTransaction({
       to: account.address,
       value: ethers.parseEther(amount),

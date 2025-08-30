@@ -48,12 +48,13 @@ export class AuthService {
 
     // Generate HDWallet for the user
     const userWallet = ethers.Wallet.createRandom();
-    const encryptionKey = this.configService.get<string>("USER_ENCRYPTION_KEY") || "default-key-change-in-production";
+    const encryptionKey =
+      this.configService.get<string>("USER_ENCRYPTION_KEY") || "default-key-change-in-production";
     const encryptedPrivateKey = CryptoUtil.encrypt(userWallet.privateKey, encryptionKey);
 
-    console.log('User Registration Debug:');
-    console.log('- Generated Wallet Address:', userWallet.address);
-    console.log('- Mnemonic:', userWallet.mnemonic?.phrase);
+    console.log("User Registration Debug:");
+    console.log("- Generated Wallet Address:", userWallet.address);
+    console.log("- Mnemonic:", userWallet.mnemonic?.phrase);
 
     const user = {
       id: uuidv4(),
@@ -114,10 +115,11 @@ export class AuthService {
   getUserWallet(userId: string): ethers.Wallet {
     const user = this.databaseService.findUserById(userId);
     if (!user || !user.encryptedPrivateKey) {
-      throw new Error('User wallet not found');
+      throw new Error("User wallet not found");
     }
 
-    const encryptionKey = this.configService.get<string>("USER_ENCRYPTION_KEY") || "default-key-change-in-production";
+    const encryptionKey =
+      this.configService.get<string>("USER_ENCRYPTION_KEY") || "default-key-change-in-production";
     const privateKey = CryptoUtil.decrypt(user.encryptedPrivateKey, encryptionKey);
     return new ethers.Wallet(privateKey);
   }
@@ -193,15 +195,16 @@ export class AuthService {
 
       // 创建用户（包含密码和钱包）
       const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-      
+
       // Generate HDWallet for the user (same as regular registration)
       const userWallet = ethers.Wallet.createRandom();
-      const encryptionKey = this.configService.get<string>("USER_ENCRYPTION_KEY") || "default-key-change-in-production";
+      const encryptionKey =
+        this.configService.get<string>("USER_ENCRYPTION_KEY") || "default-key-change-in-production";
       const encryptedPrivateKey = CryptoUtil.encrypt(userWallet.privateKey, encryptionKey);
 
-      console.log('Passkey User Registration Debug:');
-      console.log('- Generated Wallet Address:', userWallet.address);
-      console.log('- Mnemonic:', userWallet.mnemonic?.phrase);
+      console.log("Passkey User Registration Debug:");
+      console.log("- Generated Wallet Address:", userWallet.address);
+      console.log("- Mnemonic:", userWallet.mnemonic?.phrase);
 
       const user = {
         id: uuidv4(),

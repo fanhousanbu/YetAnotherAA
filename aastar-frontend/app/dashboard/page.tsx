@@ -40,10 +40,10 @@ export default function DashboardPage() {
       // Try to get account
       try {
         const accountResponse = await accountAPI.getAccount();
-        console.log('Dashboard received account data:', accountResponse);
-        console.log('Account data:', accountResponse.data);
-        console.log('Account address:', accountResponse.data?.address);
-        console.log('Account ownerAddress:', accountResponse.data?.ownerAddress);
+        console.log("Dashboard received account data:", accountResponse);
+        console.log("Account data:", accountResponse.data);
+        console.log("Account address:", accountResponse.data?.address);
+        console.log("Account ownerAddress:", accountResponse.data?.ownerAddress);
         setAccount(accountResponse.data);
       } catch (error) {
         // Account doesn't exist yet
@@ -92,7 +92,7 @@ export default function DashboardPage() {
       `Send ETH to: ${account.address.slice(0, 10)}...${account.address.slice(-8)}\nAddress copied to clipboard!`,
       { duration: 5000 }
     );
-    
+
     // Copy address to clipboard
     navigator.clipboard.writeText(account.address);
   };
@@ -149,9 +149,9 @@ export default function DashboardPage() {
                   <div className="ml-4 flex-1">
                     <h3 className="text-lg font-medium text-gray-900">Smart Account</h3>
                     {(() => {
-                      console.log('Rendering account:', account);
-                      console.log('Account address in render:', account?.address);
-                      console.log('Account ownerAddress in render:', account?.ownerAddress);
+                      console.log("Rendering account:", account);
+                      console.log("Account address in render:", account?.address);
+                      console.log("Account ownerAddress in render:", account?.ownerAddress);
                       return null;
                     })()}
                     {account ? (

@@ -6,11 +6,7 @@ import { AccountModule } from "../account/account.module";
 import { AuthModule } from "../auth/auth.module";
 
 @Module({
-  imports: [
-    BlsModule, 
-    AccountModule,
-    forwardRef(() => AuthModule)
-  ],
+  imports: [BlsModule, AccountModule, forwardRef(() => AuthModule)],
   providers: [TransferService],
   controllers: [TransferController],
 })

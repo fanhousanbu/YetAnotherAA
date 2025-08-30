@@ -5,10 +5,7 @@ import { AccountModule } from "../account/account.module";
 import { AuthModule } from "../auth/auth.module";
 
 @Module({
-  imports: [
-    forwardRef(() => AccountModule),
-    forwardRef(() => AuthModule)
-  ],
+  imports: [forwardRef(() => AccountModule), forwardRef(() => AuthModule)],
   providers: [BlsService],
   controllers: [BlsController],
   exports: [BlsService],

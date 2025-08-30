@@ -24,7 +24,7 @@ export default function CopyButton({
       toast.error("No text to copy");
       return;
     }
-    
+
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -37,7 +37,7 @@ export default function CopyButton({
     } catch (err) {
       // Fallback for older browsers
       const textArea = document.createElement("textarea");
-      textArea.value = text || '';
+      textArea.value = text || "";
       document.body.appendChild(textArea);
       textArea.select();
       try {
@@ -55,14 +55,14 @@ export default function CopyButton({
   };
 
   const truncateAddress = (address: string | undefined) => {
-    if (!address || address.length < 10) return address || '';
+    if (!address || address.length < 10) return address || "";
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
   return (
     <div className={`inline-flex items-center space-x-2 ${className}`}>
-      <span className="text-sm font-mono" title={text || ''}>
-        {displayText || (showFullText ? (text || '') : truncateAddress(text))}
+      <span className="text-sm font-mono" title={text || ""}>
+        {displayText || (showFullText ? text || "" : truncateAddress(text))}
       </span>
       <button
         onClick={copyToClipboard}

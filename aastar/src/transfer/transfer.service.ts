@@ -60,7 +60,9 @@ export class TransferService {
     const balanceAfterTransfer = smartAccountBalance - transferAmount;
 
     if (balanceAfterTransfer < minRequiredBalance) {
-      console.log(`Smart Account needs prefunding: Current balance ${smartAccountBalance} ETH, transfer ${transferAmount} ETH, remaining ${balanceAfterTransfer} ETH (need ${minRequiredBalance} ETH minimum)`);
+      console.log(
+        `Smart Account needs prefunding: Current balance ${smartAccountBalance} ETH, transfer ${transferAmount} ETH, remaining ${balanceAfterTransfer} ETH (need ${minRequiredBalance} ETH minimum)`
+      );
 
       // Get user's EOA wallet
       const userWallet = this.authService.getUserWallet(userId);
