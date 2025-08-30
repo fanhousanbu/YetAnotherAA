@@ -7,10 +7,9 @@ import {
   forwardRef,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { NodeKeyPair, SignerConfig, NodeState } from "../../interfaces/node.interface.js";
+import { NodeKeyPair, NodeState } from "../../interfaces/node.interface.js";
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
+import { join } from "path";
 import { BlsService } from "../bls/bls.service.js";
 import { BlockchainService } from "../blockchain/blockchain.service.js";
 import { randomBytes, createHash } from "crypto";
@@ -46,27 +45,14 @@ export class NodeService implements OnModuleInit {
   }
 
   private loadContractAddress(): void {
-    // Prioritize contract address from environment variables
     this.contractAddress =
       process.env.VALIDATOR_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS || "";
 
     if (this.contractAddress) {
       this.logger.log(`Using contract address from environment: ${this.contractAddress}`);
-      return;
-    }
-
-    // Fallback to configuration file
-    const currentDir = dirname(fileURLToPath(import.meta.url));
-    const configPath = join(currentDir, "../../../demo/config.json");
-
-    try {
-      const configData = readFileSync(configPath, "utf8");
-      const config: SignerConfig = JSON.parse(configData);
-      this.contractAddress = config.contractAddress;
-      this.logger.log(`Using contract address from config: ${this.contractAddress}`);
-    } catch (error: any) {
-      this.logger.warn(`Could not load shared config: ${error.message}`);
-      this.contractAddress = "";
+    } else {
+      this.logger.error("VALIDATOR_CONTRACT_ADDRESS environment variable is required");
+      throw new Error("VALIDATOR_CONTRACT_ADDRESS environment variable is required");
     }
   }
 
