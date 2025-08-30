@@ -5,6 +5,7 @@ import { ethers } from "ethers";
 import { bls12_381 as bls } from "@noble/curves/bls12-381";
 import { DatabaseService } from "../database/database.service";
 import { AccountService } from "../account/account.service";
+import { AuthService } from "../auth/auth.service";
 import { BlsSignatureData } from "../common/interfaces/erc4337.interface";
 
 @Injectable()
@@ -14,6 +15,7 @@ export class BlsService {
   constructor(
     private databaseService: DatabaseService,
     private accountService: AccountService,
+    private authService: AuthService,
     private configService: ConfigService
   ) {
     this.blsConfig = this.databaseService.getBlsConfig();
@@ -107,14 +109,15 @@ export class BlsService {
     userOpHash: string,
     nodeIndices?: number[]
   ): Promise<BlsSignatureData> {
-    // Get active nodes and use first 3 as indices for the local BLS generation
+    // Get active nodes - for development, we can work with as few as 1 node
     const activeNodes = await this.getActiveSignerNodes();
-    if (activeNodes.length < 3) {
-      throw new Error("Not enough active BLS nodes available");
+    if (activeNodes.length < 1) {
+      throw new Error("No active BLS nodes available");
     }
 
-    // Use local BLS generation with first 3 active nodes (indices 1,2,3)
-    const autoSelectedIndices = [1, 2, 3];
+    // Adapt to available nodes - use as many as available, up to 3
+    const maxNodes = Math.min(3, activeNodes.length, this.blsConfig.keyPairs.length);
+    const autoSelectedIndices = Array.from({ length: maxNodes }, (_, i) => i + 1);
 
     // Continue with the original local BLS generation method using auto-selected indices
     // Validate node indices
@@ -178,13 +181,14 @@ export class BlsService {
     const aggregatedSignatureEIP = this.encodeG2Point(aggregatedSignature);
     const messageG2EIP = this.encodeG2Point(messagePoint);
 
-    // Generate AA signature using user's account owner private key
+    // Generate AA signature using user's wallet from AuthService
     const account = this.accountService.getAccountByUserId(userId);
     if (!account) {
       throw new Error("User account not found");
     }
 
-    const wallet = new ethers.Wallet(account.ownerPrivateKey);
+    // Use AuthService to get the user's decrypted wallet
+    const wallet = this.authService.getUserWallet(userId);
     const aaSignature = await wallet.signMessage(ethers.getBytes(userOpHash));
 
     return {

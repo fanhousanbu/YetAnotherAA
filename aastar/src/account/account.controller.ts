@@ -21,7 +21,16 @@ export class AccountController {
   @Get()
   @ApiOperation({ summary: "Get user account information" })
   async getAccount(@Request() req) {
-    return this.accountService.getAccount(req.user.sub);
+    console.log('AccountController.getAccount called');
+    console.log('User from JWT:', req.user);
+    try {
+      const accountData = await this.accountService.getAccount(req.user.sub);
+      console.log('Account data retrieved successfully');
+      return accountData; // 直接返回数据，不包装
+    } catch (error) {
+      console.log('Error in AccountController.getAccount:', error.message);
+      throw error;
+    }
   }
 
   @Get("address")
