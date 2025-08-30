@@ -56,10 +56,11 @@ export class TransferService {
       );
     }
 
-    const minRequiredBalance = 0.001; // Require at least 0.001 ETH in Smart Account for gas fees (lower threshold)
+    const minRequiredBalance = 0.0002; // Require at least 0.0002 ETH remaining after transfer for gas fees (typical gas cost ~0.0001 ETH)
+    const balanceAfterTransfer = smartAccountBalance - transferAmount;
 
-    if (smartAccountBalance < minRequiredBalance) {
-      console.log(`Smart Account balance (${smartAccountBalance} ETH) is too low, prefunding...`);
+    if (balanceAfterTransfer < minRequiredBalance) {
+      console.log(`Smart Account needs prefunding: Current balance ${smartAccountBalance} ETH, transfer ${transferAmount} ETH, remaining ${balanceAfterTransfer} ETH (need ${minRequiredBalance} ETH minimum)`);
 
       // Get user's EOA wallet
       const userWallet = this.authService.getUserWallet(userId);
@@ -68,12 +69,12 @@ export class TransferService {
 
       // Check EOA balance
       const eoaBalance = parseFloat(await this.ethereumService.getBalance(userWallet.address));
-      const prefundAmount = Math.max(0.002, minRequiredBalance - smartAccountBalance + 0.001); // Minimum 0.002 ETH or needed amount + 0.001 safety
+      const neededAmount = minRequiredBalance - balanceAfterTransfer; // How much more ETH is needed
+      const prefundAmount = Math.max(0.001, neededAmount + 0.0005); // Minimum 0.001 ETH or needed amount + 0.0005 safety
 
       if (eoaBalance < prefundAmount) {
-        // Don't reserve EOA balance if it's very low
         throw new BadRequestException(
-          `Insufficient balance: Smart Account needs ${minRequiredBalance} ETH but only has ${smartAccountBalance} ETH. EOA has ${eoaBalance} ETH but needs ${prefundAmount} ETH for prefunding. Please add more ETH to your EOA address.`
+          `Insufficient balance: After transferring ${transferAmount} ETH, Smart Account would have ${balanceAfterTransfer.toFixed(6)} ETH but needs at least ${minRequiredBalance} ETH. EOA has ${eoaBalance} ETH but needs ${prefundAmount.toFixed(6)} ETH for prefunding. Please add more ETH to your EOA address.`
         );
       }
 
