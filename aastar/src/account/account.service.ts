@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { ethers } from "ethers";
 import { DatabaseService } from "../database/database.service";
 import { EthereumService } from "../ethereum/ethereum.service";
+import { AuthService } from "../auth/auth.service";
 import { CreateAccountDto } from "./dto/create-account.dto";
 
 @Injectable()
@@ -10,6 +11,7 @@ export class AccountService {
   constructor(
     private databaseService: DatabaseService,
     private ethereumService: EthereumService,
+    private authService: AuthService,
     private configService: ConfigService
   ) {}
 
@@ -23,8 +25,10 @@ export class AccountService {
     const factory = this.ethereumService.getFactoryContract();
     const validatorAddress = this.configService.get<string>("VALIDATOR_CONTRACT_ADDRESS");
 
-    // Generate a wallet for the user (this will be the owner of the AA account)
-    const userWallet = ethers.Wallet.createRandom();
+    // Get user's wallet (created during registration)
+    const userWallet = this.authService.getUserWallet(userId);
+    const provider = this.ethereumService.getProvider();
+    const userWalletWithProvider = userWallet.connect(provider);
     const salt = createAccountDto.salt || Math.floor(Math.random() * 1000000);
 
     // Get the predicted account address
@@ -35,39 +39,34 @@ export class AccountService {
       salt
     );
 
-    // Check if account needs to be deployed
-    const provider = this.ethereumService.getProvider();
-    const code = await provider.getCode(accountAddress);
+    // Debug logging
+    console.log("Account Creation Debug:");
+    console.log("- User Wallet Address (Owner):", userWallet.address);
+    console.log("- Validator Address:", validatorAddress);
+    console.log("- Salt:", salt);
+    console.log("- Predicted AA Account Address:", accountAddress);
+    console.log("- Factory Contract Address:", factory.target || factory.address);
 
-    let deployed = code !== "0x";
+    // Check if account is already deployed on-chain (this may be slow for RPC calls)
+    let deployed = false;
     let deploymentTxHash = null;
 
-    if (!deployed && createAccountDto.deploy) {
-      // Deploy the account
-      const tx = await factory.createAccountWithAAStarValidator(
-        userWallet.address,
-        validatorAddress,
-        true,
-        salt,
-        {
-          maxFeePerGas: ethers.parseUnits("30", "gwei"),
-          maxPriorityFeePerGas: ethers.parseUnits("10", "gwei"),
-        }
-      );
-      await tx.wait();
-      deploymentTxHash = tx.hash;
-      deployed = true;
+    try {
+      const code = await provider.getCode(accountAddress);
+      deployed = code !== "0x";
+      console.log("Account deployment check completed:", deployed);
+    } catch (error) {
+      console.log("Warning: Could not check deployment status:", error.message);
+      // Assume not deployed if RPC fails
+    }
 
-      // Fund the account if requested
-      if (createAccountDto.fundAmount) {
-        const fundTx = await this.ethereumService.getWallet().sendTransaction({
-          to: accountAddress,
-          value: ethers.parseEther(createAccountDto.fundAmount),
-          maxFeePerGas: ethers.parseUnits("30", "gwei"),
-          maxPriorityFeePerGas: ethers.parseUnits("10", "gwei"),
-        });
-        await fundTx.wait();
-      }
+    // Don't auto-deploy on account creation
+    // Deployment will happen on first transaction
+    if (deployed) {
+      console.log("Account already deployed on-chain:", accountAddress);
+    } else {
+      console.log("Account will be deployed on first transaction:", accountAddress);
+      console.log("Please fund EOA wallet first:", userWallet.address);
     }
 
     // Save account information
@@ -75,7 +74,6 @@ export class AccountService {
       userId,
       address: accountAddress,
       ownerAddress: userWallet.address,
-      ownerPrivateKey: userWallet.privateKey, // In production, this should be encrypted
       salt,
       deployed,
       deploymentTxHash,
@@ -85,29 +83,44 @@ export class AccountService {
 
     this.databaseService.saveAccount(account);
 
-    // Return account info without private key
-    const { ownerPrivateKey, ...result } = account;
-    return result;
+    return account;
   }
 
   async getAccount(userId: string) {
+    console.log("AccountService.getAccount called with userId:", userId);
     const account = this.databaseService.findAccountByUserId(userId);
+    console.log("Found account:", account ? "YES" : "NO");
     if (!account) {
+      console.log("No account found for userId:", userId);
       throw new NotFoundException("Account not found");
     }
 
-    // Get current balance
-    const balance = await this.ethereumService.getBalance(account.address);
+    // Get current balance of Smart Account (skip if not deployed to speed up)
+    let balance = "0";
+    let eoaBalance = "0";
+
+    try {
+      // Only check balances if we have provider connection
+      balance = await this.ethereumService.getBalance(account.address);
+      eoaBalance = await this.ethereumService.getBalance(account.ownerAddress);
+      console.log("Balances retrieved - Smart Account:", balance, "EOA:", eoaBalance);
+    } catch (error) {
+      console.log("Warning: Could not retrieve balances, using defaults:", error.message);
+      // Use default values if RPC fails
+    }
 
     // Get nonce
     const nonce = await this.ethereumService.getNonce(account.address);
 
     const { ownerPrivateKey, ...result } = account;
-    return {
+    const finalResult = {
       ...result,
       balance,
+      eoaBalance,
       nonce: nonce.toString(),
     };
+    console.log("AccountService returning data:", JSON.stringify(finalResult, null, 2));
+    return finalResult;
   }
 
   async getAccountAddress(userId: string): Promise<string> {
@@ -151,7 +164,12 @@ export class AccountService {
       throw new NotFoundException("Account not found");
     }
 
-    const tx = await this.ethereumService.getWallet().sendTransaction({
+    // Use user's wallet for funding
+    const userWallet = this.authService.getUserWallet(userId);
+    const provider = this.ethereumService.getProvider();
+    const userWalletWithProvider = userWallet.connect(provider);
+
+    const tx = await userWalletWithProvider.sendTransaction({
       to: account.address,
       value: ethers.parseEther(amount),
       maxFeePerGas: ethers.parseUnits("30", "gwei"),

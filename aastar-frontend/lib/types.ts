@@ -2,6 +2,7 @@ export interface User {
   id: string;
   email: string;
   username: string;
+  walletAddress?: string;
   createdAt: string;
 }
 
@@ -14,6 +15,7 @@ export interface Account {
   deploymentTxHash?: string;
   validatorAddress: string;
   balance?: string;
+  eoaBalance?: string;
   nonce?: string;
   createdAt: string;
 }

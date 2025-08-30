@@ -40,6 +40,10 @@ export default function DashboardPage() {
       // Try to get account
       try {
         const accountResponse = await accountAPI.getAccount();
+        console.log("Dashboard received account data:", accountResponse);
+        console.log("Account data:", accountResponse.data);
+        console.log("Account address:", accountResponse.data?.address);
+        console.log("Account ownerAddress:", accountResponse.data?.ownerAddress);
         setAccount(accountResponse.data);
       } catch (error) {
         // Account doesn't exist yet
@@ -78,19 +82,19 @@ export default function DashboardPage() {
     }
   };
 
-  const fundAccount = async () => {
-    setActionLoading("fund");
-    try {
-      await accountAPI.fundAccount({ amount: "0.01" });
-      toast.success("Account funded successfully!");
-      // Reload data to get updated balance
-      setTimeout(() => loadDashboardData(), 2000);
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Failed to fund account";
-      toast.error(message);
-    } finally {
-      setActionLoading("");
+  const showTopUpInfo = () => {
+    if (!account?.address) {
+      toast.error("No account address found");
+      return;
     }
+
+    toast.success(
+      `Send ETH to: ${account.address.slice(0, 10)}...${account.address.slice(-8)}\nAddress copied to clipboard!`,
+      { duration: 5000 }
+    );
+
+    // Copy address to clipboard
+    navigator.clipboard.writeText(account.address);
   };
 
   const getStatusIcon = (status: string) => {
@@ -144,14 +148,30 @@ export default function DashboardPage() {
                   </div>
                   <div className="ml-4 flex-1">
                     <h3 className="text-lg font-medium text-gray-900">Smart Account</h3>
+                    {(() => {
+                      console.log("Rendering account:", account);
+                      console.log("Account address in render:", account?.address);
+                      console.log("Account ownerAddress in render:", account?.ownerAddress);
+                      return null;
+                    })()}
                     {account ? (
                       <div className="mt-2 space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500">Address:</span>
+                          <span className="text-sm text-gray-500">EOA Address:</span>
+                          <CopyButton text={account.ownerAddress} className="flex-shrink-0" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-500">Smart Account:</span>
                           <CopyButton text={account.address} className="flex-shrink-0" />
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500">Balance:</span>
+                          <span className="text-sm text-gray-500">EOA Balance:</span>
+                          <span className="text-sm font-semibold text-green-600">
+                            {account.eoaBalance || "0"} ETH
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-500">Smart Account Balance:</span>
                           <span className="text-sm font-semibold">
                             {account.balance || "0"} ETH
                           </span>
@@ -201,16 +221,11 @@ export default function DashboardPage() {
                         Send Transfer
                       </button>
                       <button
-                        onClick={fundAccount}
-                        disabled={actionLoading === "fund"}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                        onClick={showTopUpInfo}
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
-                        {actionLoading === "fund" ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
-                        ) : (
-                          <PlusIcon className="h-4 w-4 mr-2" />
-                        )}
-                        Add Funds
+                        <PlusIcon className="h-4 w-4 mr-2" />
+                        Top Up
                       </button>
                     </>
                   )}

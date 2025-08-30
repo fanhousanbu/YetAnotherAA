@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { DatabaseService } from "../database/database.service";
 import { EthereumService } from "../ethereum/ethereum.service";
 import { AccountService } from "../account/account.service";
+import { AuthService } from "../auth/auth.service";
 import { BlsService } from "../bls/bls.service";
 import { ExecuteTransferDto } from "./dto/execute-transfer.dto";
 import { EstimateGasDto } from "./dto/estimate-gas.dto";
@@ -16,19 +17,81 @@ export class TransferService {
     private databaseService: DatabaseService,
     private ethereumService: EthereumService,
     private accountService: AccountService,
+    private authService: AuthService,
     private blsService: BlsService,
     private configService: ConfigService
   ) {}
 
   async executeTransfer(userId: string, transferDto: ExecuteTransferDto) {
+    console.log("TransferService.executeTransfer called with userId:", userId);
+    console.log("Transfer data:", transferDto);
+
     // Get user's account
     const account = this.accountService.getAccountByUserId(userId);
+    console.log("Account found:", account ? "YES" : "NO");
     if (!account) {
+      console.log("No account found for transfer, userId:", userId);
       throw new NotFoundException("User account not found");
     }
 
-    if (!account.deployed) {
-      throw new BadRequestException("Account needs to be deployed first");
+    // Check if account needs deployment
+    const provider = this.ethereumService.getProvider();
+    const code = await provider.getCode(account.address);
+    const needsDeployment = code === "0x";
+
+    if (needsDeployment) {
+      console.log("Account needs deployment, will deploy with first transaction");
+      // The account will be deployed automatically with the first UserOp
+      // The initCode in the UserOp will handle deployment
+    }
+
+    // Check Smart Account balance and validate transfer amount
+    const smartAccountBalance = parseFloat(await this.ethereumService.getBalance(account.address));
+    const transferAmount = parseFloat(transferDto.amount);
+
+    // Check if transfer amount exceeds available balance
+    if (transferAmount > smartAccountBalance) {
+      throw new BadRequestException(
+        `Insufficient balance: Trying to send ${transferAmount} ETH but Smart Account only has ${smartAccountBalance} ETH available.`
+      );
+    }
+
+    const minRequiredBalance = 0.0002; // Require at least 0.0002 ETH remaining after transfer for gas fees (typical gas cost ~0.0001 ETH)
+    const balanceAfterTransfer = smartAccountBalance - transferAmount;
+
+    if (balanceAfterTransfer < minRequiredBalance) {
+      console.log(
+        `Smart Account needs prefunding: Current balance ${smartAccountBalance} ETH, transfer ${transferAmount} ETH, remaining ${balanceAfterTransfer} ETH (need ${minRequiredBalance} ETH minimum)`
+      );
+
+      // Get user's EOA wallet
+      const userWallet = this.authService.getUserWallet(userId);
+      const provider = this.ethereumService.getProvider();
+      const userWalletWithProvider = userWallet.connect(provider);
+
+      // Check EOA balance
+      const eoaBalance = parseFloat(await this.ethereumService.getBalance(userWallet.address));
+      const neededAmount = minRequiredBalance - balanceAfterTransfer; // How much more ETH is needed
+      const prefundAmount = Math.max(0.001, neededAmount + 0.0005); // Minimum 0.001 ETH or needed amount + 0.0005 safety
+
+      if (eoaBalance < prefundAmount) {
+        throw new BadRequestException(
+          `Insufficient balance: After transferring ${transferAmount} ETH, Smart Account would have ${balanceAfterTransfer.toFixed(6)} ETH but needs at least ${minRequiredBalance} ETH. EOA has ${eoaBalance} ETH but needs ${prefundAmount.toFixed(6)} ETH for prefunding. Please add more ETH to your EOA address.`
+        );
+      }
+
+      // Send ETH from EOA to Smart Account
+      console.log(`Sending ${prefundAmount} ETH from EOA to Smart Account...`);
+      const prefundTx = await userWalletWithProvider.sendTransaction({
+        to: account.address,
+        value: ethers.parseEther(prefundAmount.toString()),
+        maxFeePerGas: ethers.parseUnits("20", "gwei"),
+        maxPriorityFeePerGas: ethers.parseUnits("1", "gwei"),
+      });
+
+      console.log(`Prefund transaction hash: ${prefundTx.hash}`);
+      await prefundTx.wait();
+      console.log(`Smart Account prefunded successfully`);
     }
 
     // Build UserOperation
@@ -112,6 +175,20 @@ export class TransferService {
       });
 
       console.log(`Transfer ${transferId} completed with tx: ${txHash}`);
+
+      // Check if this was a deployment transaction and update account status
+      const provider = this.ethereumService.getProvider();
+      const code = await provider.getCode(from);
+      if (code !== "0x") {
+        const account = this.databaseService.getAccounts().find(a => a.address === from);
+        if (account && !account.deployed) {
+          this.databaseService.updateAccount(account.userId, {
+            deployed: true,
+            deploymentTxHash: txHash,
+          });
+          console.log(`Account ${from} deployed successfully with tx: ${txHash}`);
+        }
+      }
     } catch (error) {
       // Update transfer status to failed
       this.databaseService.updateTransfer(transferId, {
@@ -130,6 +207,11 @@ export class TransferService {
     if (!account) {
       throw new NotFoundException("User account not found");
     }
+
+    // Check if account needs deployment for accurate gas estimation
+    const provider = this.ethereumService.getProvider();
+    const code = await provider.getCode(account.address);
+    const needsDeployment = code === "0x";
 
     // Build UserOperation for estimation
     const userOp = await this.buildUserOperation(
@@ -231,6 +313,37 @@ export class TransferService {
     const accountContract = this.ethereumService.getAccountContract(sender);
     const nonce = await this.ethereumService.getNonce(sender);
 
+    // Check if account needs deployment
+    const provider = this.ethereumService.getProvider();
+    const code = await provider.getCode(sender);
+    const needsDeployment = code === "0x";
+
+    // Build initCode if account needs deployment
+    let initCode = "0x";
+    if (needsDeployment) {
+      // Get account details to build initCode
+      const account = this.databaseService.getAccounts().find(a => a.address === sender);
+      if (account) {
+        const factory = this.ethereumService.getFactoryContract();
+        const factoryAddress = await factory.getAddress();
+
+        // Encode factory deployment call
+        const deployCalldata = factory.interface.encodeFunctionData(
+          "createAccountWithAAStarValidator",
+          [
+            account.ownerAddress,
+            account.validatorAddress,
+            true, // useAAStarValidator
+            account.salt,
+          ]
+        );
+
+        // initCode = factory address + deployment calldata
+        initCode = ethers.concat([factoryAddress, deployCalldata]);
+        console.log("Account needs deployment, adding initCode to UserOp");
+      }
+    }
+
     // Encode execute function call
     const callData = accountContract.interface.encodeFunctionData("execute", [
       to,
@@ -242,7 +355,7 @@ export class TransferService {
     const baseUserOp = {
       sender,
       nonce: "0x" + nonce.toString(16),
-      initCode: "0x",
+      initCode,
       callData,
       callGasLimit: "0x0",
       verificationGasLimit: "0x0",
@@ -259,7 +372,7 @@ export class TransferService {
     return {
       sender,
       nonce,
-      initCode: "0x",
+      initCode,
       callData,
       callGasLimit: BigInt(gasEstimates.callGasLimit),
       verificationGasLimit: BigInt(gasEstimates.verificationGasLimit),

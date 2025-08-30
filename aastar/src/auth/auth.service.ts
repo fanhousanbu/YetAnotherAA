@@ -1,6 +1,9 @@
 import { Injectable, UnauthorizedException, ConflictException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
 import { DatabaseService } from "../database/database.service";
+import { CryptoUtil } from "../common/utils/crypto.util";
+import { ethers } from "ethers";
 import * as bcrypt from "bcrypt";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
@@ -31,7 +34,8 @@ export class AuthService {
 
   constructor(
     private databaseService: DatabaseService,
-    private jwtService: JwtService
+    private jwtService: JwtService,
+    private configService: ConfigService
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -42,17 +46,30 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
+    // Generate HDWallet for the user
+    const userWallet = ethers.Wallet.createRandom();
+    const encryptionKey =
+      this.configService.get<string>("USER_ENCRYPTION_KEY") || "default-key-change-in-production";
+    const encryptedPrivateKey = CryptoUtil.encrypt(userWallet.privateKey, encryptionKey);
+
+    console.log("User Registration Debug:");
+    console.log("- Generated Wallet Address:", userWallet.address);
+    console.log("- Mnemonic:", userWallet.mnemonic?.phrase);
+
     const user = {
       id: uuidv4(),
       email: registerDto.email,
       username: registerDto.username || registerDto.email.split("@")[0],
       password: hashedPassword,
+      walletAddress: userWallet.address,
+      encryptedPrivateKey,
+      mnemonic: userWallet.mnemonic?.phrase, // In production, this should also be encrypted
       createdAt: new Date().toISOString(),
     };
 
     this.databaseService.saveUser(user);
 
-    const { password, ...result } = user;
+    const { password, encryptedPrivateKey: _, ...result } = user;
     return {
       user: result,
       access_token: this.generateToken(user),
@@ -93,6 +110,18 @@ export class AuthService {
     }
     const { password, ...result } = user;
     return result;
+  }
+
+  getUserWallet(userId: string): ethers.Wallet {
+    const user = this.databaseService.findUserById(userId);
+    if (!user || !user.encryptedPrivateKey) {
+      throw new Error("User wallet not found");
+    }
+
+    const encryptionKey =
+      this.configService.get<string>("USER_ENCRYPTION_KEY") || "default-key-change-in-production";
+    const privateKey = CryptoUtil.decrypt(user.encryptedPrivateKey, encryptionKey);
+    return new ethers.Wallet(privateKey);
   }
 
   private generateToken(user: any) {
@@ -164,13 +193,27 @@ export class AuthService {
         throw new UnauthorizedException("Passkey registration failed");
       }
 
-      // 创建用户（包含密码）
+      // 创建用户（包含密码和钱包）
       const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+
+      // Generate HDWallet for the user (same as regular registration)
+      const userWallet = ethers.Wallet.createRandom();
+      const encryptionKey =
+        this.configService.get<string>("USER_ENCRYPTION_KEY") || "default-key-change-in-production";
+      const encryptedPrivateKey = CryptoUtil.encrypt(userWallet.privateKey, encryptionKey);
+
+      console.log("Passkey User Registration Debug:");
+      console.log("- Generated Wallet Address:", userWallet.address);
+      console.log("- Mnemonic:", userWallet.mnemonic?.phrase);
+
       const user = {
         id: uuidv4(),
         email: registerDto.email,
         username: registerDto.username || registerDto.email.split("@")[0],
         password: hashedPassword,
+        walletAddress: userWallet.address,
+        encryptedPrivateKey,
+        mnemonic: userWallet.mnemonic?.phrase, // In production, this should also be encrypted
         createdAt: new Date().toISOString(),
       };
 

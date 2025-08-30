@@ -458,7 +458,6 @@ contract AAStarValidatorTest is Test {
             console.log("Expected precompile error:", reason);
             assertTrue(true, "Precompile unavailable in test environment");
         }
-
         // 4. Update a node's public key
         validator.updatePublicKey(NODE_ID_1, PARTICIPANT_KEY_3);
         assertEq(validator.registeredKeys(NODE_ID_1), PARTICIPANT_KEY_3, "Key should be updated");
