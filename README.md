@@ -322,9 +322,9 @@ npm run dev
 
 ### Complete User Flow
 
-1. **Start all services**: 
+1. **Start all services**:
    - Signer Service: HTTP API on port 3001, WebSocket Gossip on /ws path
-   - Backend API: Port 3000 
+   - Backend API: Port 3000
    - Frontend: Port 8080
 2. Visit http://localhost:8080
 3. Register new account or login

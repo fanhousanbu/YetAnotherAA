@@ -20,7 +20,8 @@ rumors spread in social networks.
 - **Scalability**: Efficient even with large numbers of nodes
 - **Message Deduplication**: Prevents message loops and duplicates
 - **Health Monitoring**: Tracks peer health and removes inactive peers
-- **Single Port Architecture**: WebSocket gossip shares the same port as HTTP API
+- **Single Port Architecture**: WebSocket gossip shares the same port as HTTP
+  API
 
 ## Architecture
 
@@ -112,13 +113,20 @@ curl http://localhost:3001/gossip/health
 
 ## How It Works
 
-1. **Node Startup**: When a node starts, WebSocket gossip server starts on `/ws` path of the main HTTP port
-2. **Peer Connection**: Nodes connect to bootstrap peers via WebSocket at `ws://host:port/ws`
-3. **Peer Discovery**: Nodes learn about other peers through join messages and peer lists
-4. **Gossip Rounds**: Every `GOSSIP_INTERVAL` ms, each node selects random peers and gossips data
-5. **Message Propagation**: Messages are forwarded to other peers with decreasing TTL
-6. **Health Monitoring**: Heartbeats track peer health, inactive peers are eventually removed
-7. **State Synchronization**: Nodes exchange their complete state to ensure consistency
+1. **Node Startup**: When a node starts, WebSocket gossip server starts on `/ws`
+   path of the main HTTP port
+2. **Peer Connection**: Nodes connect to bootstrap peers via WebSocket at
+   `ws://host:port/ws`
+3. **Peer Discovery**: Nodes learn about other peers through join messages and
+   peer lists
+4. **Gossip Rounds**: Every `GOSSIP_INTERVAL` ms, each node selects random peers
+   and gossips data
+5. **Message Propagation**: Messages are forwarded to other peers with
+   decreasing TTL
+6. **Health Monitoring**: Heartbeats track peer health, inactive peers are
+   eventually removed
+7. **State Synchronization**: Nodes exchange their complete state to ensure
+   consistency
 
 ## Differences from Previous P2P Implementation
 

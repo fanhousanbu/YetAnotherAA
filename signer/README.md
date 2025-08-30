@@ -112,11 +112,15 @@ npm start  # Discovers existing node files automatically
 
 Three fixed development nodes are provided for consistent debugging:
 
-- **node_dev_001.json**: Port 3001 (HTTP API + WebSocket /ws), Node ID `0x123e4567e89b12d3a456426614174001`
-- **node_dev_002.json**: Port 3002 (HTTP API + WebSocket /ws), Node ID `0x123e4567e89b12d3a456426614174002`  
-- **node_dev_003.json**: Port 3003 (HTTP API + WebSocket /ws), Node ID `0x123e4567e89b12d3a456426614174003`
+- **node_dev_001.json**: Port 3001 (HTTP API + WebSocket /ws), Node ID
+  `0x123e4567e89b12d3a456426614174001`
+- **node_dev_002.json**: Port 3002 (HTTP API + WebSocket /ws), Node ID
+  `0x123e4567e89b12d3a456426614174002`
+- **node_dev_003.json**: Port 3003 (HTTP API + WebSocket /ws), Node ID
+  `0x123e4567e89b12d3a456426614174003`
 
-Each node runs both HTTP API and WebSocket gossip protocol on the same port, with WebSocket accessible at the `/ws` path.
+Each node runs both HTTP API and WebSocket gossip protocol on the same port,
+with WebSocket accessible at the `/ws` path.
 
 VSCode launch configurations are provided for single or multi-node debugging.
 

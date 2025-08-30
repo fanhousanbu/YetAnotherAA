@@ -87,14 +87,14 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     console.log(`🗣️  Starting BLS Signer Gossip Service on port ${this.port}...`);
-    
+
     // Wait a bit for the HTTP server to be set
     let retries = 0;
     while (!this.httpServer && retries < 50) {
       await new Promise(resolve => setTimeout(resolve, 100));
       retries++;
     }
-    
+
     await this.startGossipServer();
     await this.waitForNodeReady();
     this.isNodeReady = true;
@@ -152,7 +152,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
 
     this.server = new WebSocketServer({
       server: this.httpServer,
-      path: '/ws',
+      path: "/ws",
     });
 
     this.server.on("connection", (ws: WebSocket, request) => {
@@ -366,7 +366,8 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Connect to the new peer if we don't have a connection
-    const myEndpoint = this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}/ws`;
+    const myEndpoint =
+      this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}/ws`;
     if (isNewPeer && peer.gossipEndpoint && peer.gossipEndpoint !== myEndpoint) {
       setTimeout(() => this.connectToPeer(peer.gossipEndpoint!), 1000);
     }
