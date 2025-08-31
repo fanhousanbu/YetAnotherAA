@@ -63,15 +63,15 @@ export class BlsService {
 
     // Step 2: Fallback to seed nodes discovery
     console.log("\nStep 2: No cached nodes available, trying seed nodes...");
-    
+
     // Check for environment variable overrides
     const seedNodeOverrides = this.configService.get<string>("BLS_SEED_NODES");
     let seedNodes;
-    
+
     if (seedNodeOverrides) {
       // Parse comma-separated seed nodes from environment
-      seedNodes = seedNodeOverrides.split(',').map(endpoint => ({ 
-        endpoint: endpoint.trim() 
+      seedNodes = seedNodeOverrides.split(",").map(endpoint => ({
+        endpoint: endpoint.trim(),
       }));
       console.log("Using seed nodes from environment variables");
     } else {
@@ -112,22 +112,22 @@ export class BlsService {
     // Step 3: Try default fallback endpoints if configured
     const fallbackOverrides = this.configService.get<string>("BLS_FALLBACK_ENDPOINTS");
     let fallbackEndpoints;
-    
+
     if (fallbackOverrides) {
       // Parse comma-separated fallback endpoints from environment
-      fallbackEndpoints = fallbackOverrides.split(',').map(endpoint => endpoint.trim());
+      fallbackEndpoints = fallbackOverrides.split(",").map(endpoint => endpoint.trim());
       console.log("Using fallback endpoints from environment variables");
     } else {
       // Use config file defaults
       fallbackEndpoints = config.discovery?.fallbackEndpoints || [
         "http://localhost:3001",
-        "http://localhost:3002"
+        "http://localhost:3002",
       ];
     }
 
     if (fallbackEndpoints.length > 0) {
       console.log("\nStep 3: Trying fallback endpoints...");
-      
+
       for (const endpoint of fallbackEndpoints) {
         try {
           console.log(`Trying fallback: ${endpoint}`);
