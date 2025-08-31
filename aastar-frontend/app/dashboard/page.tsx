@@ -161,16 +161,29 @@ export default function DashboardPage() {
                           <CopyButton text={account.address} className="flex-shrink-0" />
                         </div>
                         {!account.deployed && account.ownerAddress && (
-                          <div className="flex items-center justify-between bg-yellow-50 p-2 rounded-lg">
-                            <div className="flex flex-col">
-                              <span className="text-sm text-yellow-800 font-medium">
-                                ⚠️ Fund EOA Address First:
-                              </span>
-                              <span className="text-xs text-yellow-700">
-                                This address needs ETH to deploy your smart account
+                          <div className="bg-yellow-50 p-3 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex flex-col">
+                                <span className="text-sm text-yellow-800 font-medium">
+                                  ⚠️ Fund EOA Address First:
+                                </span>
+                                <span className="text-xs text-yellow-700">
+                                  This address needs ETH to deploy your smart account
+                                </span>
+                              </div>
+                              <CopyButton text={account.ownerAddress} className="flex-shrink-0" />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-yellow-700">EOA Balance:</span>
+                              <span className="text-xs text-yellow-800 font-semibold">
+                                {(() => {
+                                  console.log("Account data for EOA balance:", account);
+                                  console.log("EOA balance value:", account.eoaBalance);
+                                  return account.eoaBalance || "0";
+                                })()}{" "}
+                                ETH
                               </span>
                             </div>
-                            <CopyButton text={account.ownerAddress} className="flex-shrink-0" />
                           </div>
                         )}
                         <div className="flex items-center justify-between">
