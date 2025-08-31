@@ -63,10 +63,24 @@ export class BlsService {
 
     // Step 2: Fallback to seed nodes discovery
     console.log("\nStep 2: No cached nodes available, trying seed nodes...");
-    const seedNodes = config.discovery?.seedNodes || [
-      { endpoint: "http://localhost:3001" },
-      { endpoint: "http://localhost:3002" },
-    ];
+    
+    // Check for environment variable overrides
+    const seedNodeOverrides = this.configService.get<string>("BLS_SEED_NODES");
+    let seedNodes;
+    
+    if (seedNodeOverrides) {
+      // Parse comma-separated seed nodes from environment
+      seedNodes = seedNodeOverrides.split(',').map(endpoint => ({ 
+        endpoint: endpoint.trim() 
+      }));
+      console.log("Using seed nodes from environment variables");
+    } else {
+      // Use config file defaults
+      seedNodes = config.discovery?.seedNodes || [
+        { endpoint: "http://localhost:3001" },
+        { endpoint: "http://localhost:3002" },
+      ];
+    }
 
     for (const seedNode of seedNodes) {
       try {
@@ -95,24 +109,43 @@ export class BlsService {
       }
     }
 
-    // Step 3: Last resort - try environment variable fallback
-    console.log("\nStep 3: Trying environment fallback...");
-    const fallbackUrl = this.configService.get<string>("BLS_SIGNER_URL") || "http://localhost:3001";
+    // Step 3: Try default fallback endpoints if configured
+    const fallbackOverrides = this.configService.get<string>("BLS_FALLBACK_ENDPOINTS");
+    let fallbackEndpoints;
+    
+    if (fallbackOverrides) {
+      // Parse comma-separated fallback endpoints from environment
+      fallbackEndpoints = fallbackOverrides.split(',').map(endpoint => endpoint.trim());
+      console.log("Using fallback endpoints from environment variables");
+    } else {
+      // Use config file defaults
+      fallbackEndpoints = config.discovery?.fallbackEndpoints || [
+        "http://localhost:3001",
+        "http://localhost:3002"
+      ];
+    }
 
-    try {
-      const response = await axios.get(`${fallbackUrl}/gossip/peers`, { timeout: 5000 });
-      const peers = response.data.peers || [];
-      const activeNodes = peers.filter(
-        (peer: any) => peer.status === "active" && peer.apiEndpoint && peer.publicKey
-      );
+    if (fallbackEndpoints.length > 0) {
+      console.log("\nStep 3: Trying fallback endpoints...");
+      
+      for (const endpoint of fallbackEndpoints) {
+        try {
+          console.log(`Trying fallback: ${endpoint}`);
+          const response = await axios.get(`${endpoint}/gossip/peers`, { timeout: 5000 });
+          const peers = response.data.peers || [];
+          const activeNodes = peers.filter(
+            (peer: any) => peer.status === "active" && peer.apiEndpoint && peer.publicKey
+          );
 
-      if (activeNodes.length > 0) {
-        console.log(`✅ Found ${activeNodes.length} node(s) via environment fallback`);
-        await this.updateSignerNodeCache(activeNodes);
-        return activeNodes;
+          if (activeNodes.length > 0) {
+            console.log(`✅ Found ${activeNodes.length} node(s) via fallback endpoint`);
+            await this.updateSignerNodeCache(activeNodes);
+            return activeNodes;
+          }
+        } catch (error: any) {
+          console.log(`  ❌ Fallback ${endpoint} failed: ${error.message}`);
+        }
       }
-    } catch (error: any) {
-      console.log(`  ❌ Environment fallback failed: ${error.message}`);
     }
 
     console.log("❌ No active BLS signer nodes found anywhere");

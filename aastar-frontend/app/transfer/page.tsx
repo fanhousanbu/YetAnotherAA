@@ -279,7 +279,7 @@ export default function TransferPage() {
               <div className="ml-3 flex-1">
                 <p className="text-sm text-blue-700">
                   <strong>First Transfer:</strong> Your smart account will be automatically deployed
-                  with your first transfer. Make sure your EOA has enough ETH for gas fees.
+                  with your first transfer.
                 </p>
               </div>
               <div className="ml-auto pl-3">
@@ -300,9 +300,9 @@ export default function TransferPage() {
 
         {/* Account Info */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm font-medium text-blue-900">Smart Account Balance</p>
+              <p className="text-sm font-medium text-blue-900">Account Balance</p>
               <div className="relative group">
                 <div className="text-lg font-semibold text-blue-900">
                   {formatBalance(account?.balance)} ETH
@@ -310,19 +310,6 @@ export default function TransferPage() {
                 {/* Tooltip */}
                 <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-10">
                   <div className="font-mono">{account?.balance || "0"} ETH</div>
-                  <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
-                </div>
-              </div>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-blue-900">EOA Balance (for gas)</p>
-              <div className="relative group">
-                <div className="text-lg font-semibold text-green-700">
-                  {formatBalance(account?.eoaBalance)} ETH
-                </div>
-                {/* Tooltip */}
-                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-10">
-                  <div className="font-mono">{account?.eoaBalance || "0"} ETH</div>
                   <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
                 </div>
               </div>

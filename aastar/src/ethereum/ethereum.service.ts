@@ -7,7 +7,6 @@ import { UserOperation } from "../common/interfaces/erc4337.interface";
 export class EthereumService {
   private provider: ethers.JsonRpcProvider;
   private bundlerProvider: ethers.JsonRpcProvider;
-  private wallet: ethers.Wallet;
 
   // Contract ABIs
   private readonly FACTORY_ABI = [
@@ -33,11 +32,9 @@ export class EthereumService {
   constructor(private configService: ConfigService) {
     const rpcUrl = this.configService.get<string>("ETH_RPC_URL");
     const bundlerRpcUrl = this.configService.get<string>("BUNDLER_RPC_URL");
-    const privateKey = this.configService.get<string>("ETH_PRIVATE_KEY");
 
     this.provider = new ethers.JsonRpcProvider(rpcUrl);
     this.bundlerProvider = new ethers.JsonRpcProvider(bundlerRpcUrl);
-    this.wallet = new ethers.Wallet(privateKey, this.provider);
   }
 
   getProvider(): ethers.JsonRpcProvider {
@@ -48,18 +45,14 @@ export class EthereumService {
     return this.bundlerProvider;
   }
 
-  getWallet(): ethers.Wallet {
-    return this.wallet;
-  }
-
   getFactoryContract(): ethers.Contract {
     const address = this.configService.get<string>("AASTAR_ACCOUNT_FACTORY_ADDRESS");
-    return new ethers.Contract(address, this.FACTORY_ABI, this.wallet);
+    return new ethers.Contract(address, this.FACTORY_ABI, this.provider);
   }
 
   getEntryPointContract(): ethers.Contract {
     const address = this.configService.get<string>("ENTRY_POINT_ADDRESS");
-    return new ethers.Contract(address, this.ENTRY_POINT_ABI, this.wallet);
+    return new ethers.Contract(address, this.ENTRY_POINT_ABI, this.provider);
   }
 
   getValidatorContract(): ethers.Contract {

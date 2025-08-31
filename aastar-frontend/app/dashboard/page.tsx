@@ -157,21 +157,24 @@ export default function DashboardPage() {
                     {account ? (
                       <div className="mt-2 space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500">EOA Address:</span>
-                          <CopyButton text={account.ownerAddress} className="flex-shrink-0" />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500">Smart Account:</span>
+                          <span className="text-sm text-gray-500">Account Address:</span>
                           <CopyButton text={account.address} className="flex-shrink-0" />
                         </div>
+                        {!account.deployed && account.ownerAddress && (
+                          <div className="flex items-center justify-between bg-yellow-50 p-2 rounded-lg">
+                            <div className="flex flex-col">
+                              <span className="text-sm text-yellow-800 font-medium">
+                                ⚠️ Fund EOA Address First:
+                              </span>
+                              <span className="text-xs text-yellow-700">
+                                This address needs ETH to deploy your smart account
+                              </span>
+                            </div>
+                            <CopyButton text={account.ownerAddress} className="flex-shrink-0" />
+                          </div>
+                        )}
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500">EOA Balance:</span>
-                          <span className="text-sm font-semibold text-green-600">
-                            {account.eoaBalance || "0"} ETH
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500">Smart Account Balance:</span>
+                          <span className="text-sm text-gray-500">Balance:</span>
                           <span className="text-sm font-semibold">
                             {account.balance || "0"} ETH
                           </span>
