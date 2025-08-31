@@ -19,7 +19,8 @@ RUN npm run build
 FROM base AS frontend-deps
 WORKDIR /app/frontend
 COPY aastar-frontend/package*.json ./
-RUN npm install --omit=dev
+# Need all dependencies for Next.js build
+RUN npm install
 
 # Frontend build
 FROM base AS frontend-build
@@ -47,8 +48,15 @@ COPY --from=backend-deps /app/backend/node_modules ./backend/node_modules
 COPY --from=backend-build /app/backend/dist ./backend/dist
 COPY --from=backend-build /app/backend/package*.json ./backend/
 
+# Copy frontend (only production dependencies)
+# Install production-only dependencies in a new stage
+FROM base AS frontend-prod-deps
+WORKDIR /app/frontend
+COPY aastar-frontend/package*.json ./
+RUN npm install --omit=dev
+
 # Copy frontend
-COPY --from=frontend-deps /app/frontend/node_modules ./frontend/node_modules
+COPY --from=frontend-prod-deps /app/frontend/node_modules ./frontend/node_modules
 COPY --from=frontend-build /app/frontend/.next ./frontend/.next
 COPY --from=frontend-build /app/frontend/public ./frontend/public
 COPY --from=frontend-build /app/frontend/package*.json ./frontend/
