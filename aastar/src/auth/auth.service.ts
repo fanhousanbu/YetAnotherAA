@@ -20,17 +20,23 @@ import {
 
 @Injectable()
 export class AuthService {
-  private readonly rpName = "AAstar";
-  private readonly rpID = "localhost";
-  private readonly origin = "http://localhost:8080";
-  private readonly expectedOrigin = this.origin;
+  private readonly rpName: string;
+  private readonly rpID: string;
+  private readonly origin: string;
+  private readonly expectedOrigin: string;
   private challengeStore = new Map<string, string>();
 
   constructor(
     private databaseService: DatabaseService,
     private jwtService: JwtService,
     private configService: ConfigService
-  ) {}
+  ) {
+    // Load WebAuthn configuration from environment variables
+    this.rpName = this.configService.get<string>("WEBAUTHN_RP_NAME") || "AAstar";
+    this.rpID = this.configService.get<string>("WEBAUTHN_RP_ID") || "localhost";
+    this.origin = this.configService.get<string>("WEBAUTHN_ORIGIN") || "http://localhost:8080";
+    this.expectedOrigin = this.origin;
+  }
 
   async register(registerDto: RegisterDto) {
     const existingUser = this.databaseService.findUserByEmail(registerDto.email);
