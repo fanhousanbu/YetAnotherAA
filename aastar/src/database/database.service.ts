@@ -4,7 +4,34 @@ import * as path from "path";
 
 @Injectable()
 export class DatabaseService {
-  private readonly dataDir = path.join(process.cwd(), "data");
+  private readonly dataDir: string;
+
+  constructor() {
+    // Try multiple paths to find the data directory
+    const possiblePaths = [
+      path.join(process.cwd(), "data"),
+      path.join(process.cwd(), "aastar", "data"),
+      path.join(__dirname, "..", "..", "data"),
+      path.join(__dirname, "..", "data"),
+    ];
+    
+    for (const possiblePath of possiblePaths) {
+      if (fs.existsSync(possiblePath)) {
+        this.dataDir = possiblePath;
+        console.log(`📁 Data directory found at: ${this.dataDir}`);
+        break;
+      }
+    }
+    
+    // If no existing directory found, use default and create it
+    if (!this.dataDir) {
+      this.dataDir = path.join(process.cwd(), "data");
+      if (!fs.existsSync(this.dataDir)) {
+        fs.mkdirSync(this.dataDir, { recursive: true });
+        console.log(`📁 Created data directory at: ${this.dataDir}`);
+      }
+    }
+  }
 
   private readJSON(filename: string): any[] {
     const filePath = path.join(this.dataDir, filename);
@@ -143,7 +170,29 @@ export class DatabaseService {
       const data = fs.readFileSync(filePath, "utf-8");
       return JSON.parse(data);
     } catch (error) {
-      return null;
+      console.warn(`⚠️  Could not read bls-config.json from ${filePath}, using default config`);
+      // Return a default minimal config for production
+      const defaultConfig = {
+        signerNodes: {
+          nodes: [],
+          totalNodes: 0,
+          activeNodes: 0
+        },
+        discovery: {
+          seedNodes: [],
+          fallbackEndpoints: []
+        }
+      };
+      
+      // Try to create the file with default config
+      try {
+        fs.writeFileSync(filePath, JSON.stringify(defaultConfig, null, 2));
+        console.log(`✅ Created default bls-config.json at ${filePath}`);
+      } catch (writeError) {
+        console.error(`❌ Could not create bls-config.json: ${writeError}`);
+      }
+      
+      return defaultConfig;
     }
   }
 
