@@ -67,6 +67,6 @@ RUN mkdir -p /home/nodejs/.pm2 && chown -R nodejs:nodejs /home/nodejs
 USER nodejs
 ENV PM2_HOME=/home/nodejs/.pm2
 
-EXPOSE 8080
+EXPOSE 80
 
 CMD ["pm2-runtime", "start", "ecosystem.config.js"]

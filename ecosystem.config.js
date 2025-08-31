@@ -21,7 +21,7 @@ module.exports = {
       args: "start",
       env: {
         NODE_ENV: "production",
-        PORT: "8080",
+        PORT: "80",
         NEXT_PUBLIC_API_URL: "/api/v1",
       },
       error_file: "./logs/frontend-error.log",
