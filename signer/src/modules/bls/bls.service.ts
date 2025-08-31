@@ -14,9 +14,11 @@ export class BlsService {
     const publicKey = sigs.getPublicKey(privateKeyBytes);
     const signature = await sigs.sign(messagePoint as any, privateKeyBytes);
 
+    // Return both compact and EIP-2537 formats
     return {
       nodeId: node.contractNodeId,
-      signature: signature.toHex(),
+      signature: this.encodeToEIP2537(signature), // Use EIP-2537 format as default
+      signatureCompact: signature.toHex(), // Keep compact format for backward compatibility
       publicKey: publicKey.toHex(),
       message: message,
     };
@@ -42,8 +44,8 @@ export class BlsService {
   }
 
   encodeToEIP2537(point: any): string {
-    // Match demo.js implementation exactly: encodeG2Point(bls.G2.Point.fromHex(aggregatedSignature.toBytes()))
-    const encoded = encodeG2Point(bls.G2.Point.fromHex(point.toBytes()));
+    // Directly encode the point without conversion
+    const encoded = encodeG2Point(point);
     return "0x" + Buffer.from(encoded).toString("hex");
   }
 

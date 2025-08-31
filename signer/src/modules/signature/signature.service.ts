@@ -25,8 +25,18 @@ export class SignatureService {
     const signatures = [];
 
     for (const sigHex of signatureStrings) {
-      // Convert hex strings to BLS signature format
-      const signature = this.hexToBlsSignature(sigHex);
+      // Handle both EIP-2537 format (256 bytes) and compact format (96 bytes)
+      let signature;
+      const cleanHex = sigHex.startsWith("0x") ? sigHex.substring(2) : sigHex;
+
+      // Check if it's EIP-2537 format (512 hex chars = 256 bytes)
+      if (cleanHex.length === 512) {
+        // Parse EIP-2537 format back to BLS signature
+        signature = this.parseEIP2537ToSignature(sigHex);
+      } else {
+        // Assume it's compact format
+        signature = this.hexToBlsSignature(sigHex);
+      }
       signatures.push(signature);
     }
 
@@ -34,8 +44,17 @@ export class SignatureService {
     const aggregatedSignature = await this.blsService.aggregateSignaturesOnly(signatures);
 
     return {
-      signature: this.blsService.encodeToEIP2537(aggregatedSignature),
+      signature: this.blsService.encodeToEIP2537(aggregatedSignature), // Return EIP-2537 format
+      signatureCompact: aggregatedSignature.toHex(), // Also include compact format
     };
+  }
+
+  private parseEIP2537ToSignature(eipHex: string): any {
+    // This is a placeholder - we need to implement proper EIP-2537 parsing
+    // For now, throw an error indicating EIP format aggregation is not yet supported
+    throw new BadRequestException(
+      "EIP-2537 format aggregation not yet implemented. Please use compact format."
+    );
   }
 
   async verifyAggregatedSignature(

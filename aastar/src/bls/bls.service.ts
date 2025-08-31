@@ -22,85 +22,121 @@ export class BlsService {
   }
 
   async getActiveSignerNodes(): Promise<any[]> {
-    const blsSignerUrl =
-      this.configService.get<string>("BLS_SIGNER_URL") || "http://localhost:3001";
+    const config = this.blsConfig;
+    if (!config || !config.signerNodes) {
+      throw new Error("BLS configuration not found or invalid");
+    }
+
+    console.log("\n========== DISCOVERING ACTIVE SIGNER NODES ==========");
+
+    // Step 1: Try cached nodes first
+    console.log("Step 1: Checking cached signer nodes...");
+    const cachedNodes = config.signerNodes.nodes || [];
+    const activeCachedNodes = [];
+
+    for (const node of cachedNodes) {
+      if (node.status === "active" && node.apiEndpoint) {
+        try {
+          // Quick health check
+          const response = await axios.get(`${node.apiEndpoint}/health`, { timeout: 3000 });
+          if (response.status === 200) {
+            activeCachedNodes.push({
+              nodeId: node.nodeId,
+              nodeName: node.nodeName,
+              apiEndpoint: node.apiEndpoint,
+              publicKey: node.publicKey,
+              status: "active",
+            });
+            console.log(`  ✅ ${node.nodeName} (${node.apiEndpoint}) - Active`);
+          }
+        } catch (error: any) {
+          console.log(`  ❌ ${node.nodeName} (${node.apiEndpoint}) - Offline`);
+          // Continue checking other nodes
+        }
+      }
+    }
+
+    if (activeCachedNodes.length > 0) {
+      console.log(`✅ Found ${activeCachedNodes.length} active cached node(s)`);
+      return activeCachedNodes;
+    }
+
+    // Step 2: Fallback to seed nodes discovery
+    console.log("\nStep 2: No cached nodes available, trying seed nodes...");
+    const seedNodes = config.discovery?.seedNodes || [
+      { endpoint: "http://localhost:3001" },
+      { endpoint: "http://localhost:3002" },
+    ];
+
+    for (const seedNode of seedNodes) {
+      try {
+        console.log(`Querying seed node: ${seedNode.endpoint}`);
+        const response = await axios.get(`${seedNode.endpoint}/gossip/peers`, {
+          timeout: config.discovery?.discoveryTimeout || 10000,
+        });
+        const peers = response.data.peers || [];
+
+        // Filter active peers
+        const activeNodes = peers.filter(
+          (peer: any) => peer.status === "active" && peer.apiEndpoint && peer.publicKey
+        );
+
+        if (activeNodes.length > 0) {
+          console.log(`✅ Discovered ${activeNodes.length} active node(s) via gossip network`);
+
+          // Update cache with discovered nodes
+          await this.updateSignerNodeCache(activeNodes);
+
+          return activeNodes;
+        }
+      } catch (error: any) {
+        console.log(`  ❌ Seed node ${seedNode.endpoint} failed: ${error.message}`);
+        // Continue with next seed node
+      }
+    }
+
+    // Step 3: Last resort - try environment variable fallback
+    console.log("\nStep 3: Trying environment fallback...");
+    const fallbackUrl = this.configService.get<string>("BLS_SIGNER_URL") || "http://localhost:3001";
 
     try {
-      const response = await axios.get(`${blsSignerUrl}/gossip/peers`);
+      const response = await axios.get(`${fallbackUrl}/gossip/peers`, { timeout: 5000 });
       const peers = response.data.peers || [];
-
-      // Filter active peers
       const activeNodes = peers.filter(
         (peer: any) => peer.status === "active" && peer.apiEndpoint && peer.publicKey
       );
 
-      if (activeNodes.length === 0) {
-        throw new Error("No active BLS signer nodes found");
+      if (activeNodes.length > 0) {
+        console.log(`✅ Found ${activeNodes.length} node(s) via environment fallback`);
+        await this.updateSignerNodeCache(activeNodes);
+        return activeNodes;
       }
-
-      return activeNodes;
     } catch (error: any) {
-      console.error("Failed to get active signer nodes:", error.message);
-      throw new Error(`Unable to connect to BLS signer network: ${error.message}`);
+      console.log(`  ❌ Environment fallback failed: ${error.message}`);
     }
+
+    console.log("❌ No active BLS signer nodes found anywhere");
+    throw new Error("No active BLS signer nodes available");
   }
 
-  async generateBLSSignatureFromSigners(
-    userId: string,
-    userOpHash: string
-  ): Promise<BlsSignatureData> {
-    // Get active nodes from gossip network
-    const activeNodes = await this.getActiveSignerNodes();
-
-    if (activeNodes.length === 0) {
-      throw new Error("No active BLS signer nodes available");
-    }
-
-    // Use first 3 active nodes (or all if less than 3)
-    const selectedNodes = activeNodes.slice(0, Math.min(3, activeNodes.length));
-
+  private async updateSignerNodeCache(discoveredNodes: any[]): Promise<void> {
     try {
-      // Request signatures from each selected node
-      const signatures = [];
-      const publicKeys = [];
-      const nodeIds = [];
+      console.log(`📝 Updating bls-config.json with ${discoveredNodes.length} discovered nodes`);
 
-      for (const node of selectedNodes) {
-        try {
-          const response = await axios.post(`${node.apiEndpoint}/signature/sign`, {
-            message: userOpHash,
-          });
+      // Log the discovered nodes
+      discoveredNodes.forEach(node => {
+        console.log(`  - ${node.nodeName || node.nodeId} at ${node.apiEndpoint}`);
+      });
 
-          // Ensure signature is properly formatted as hex
-          const signature = response.data.signature;
-          const formattedSignature = signature.startsWith("0x") ? signature : `0x${signature}`;
+      // Persist to config file using database service
+      this.databaseService.updateSignerNodesCache(discoveredNodes);
 
-          signatures.push(formattedSignature);
-          publicKeys.push(response.data.publicKey);
-          nodeIds.push(response.data.nodeId);
-        } catch (error: any) {
-          console.error(`Failed to get signature from ${node.apiEndpoint}:`, error.message);
-          // Continue with other nodes
-        }
-      }
+      // Also update the in-memory config
+      this.blsConfig = this.databaseService.getBlsConfig();
 
-      if (signatures.length === 0) {
-        throw new Error("Failed to get signatures from any BLS nodes");
-      }
-
-      // TODO: Implement signature aggregation
-      // For now, return the first signature as placeholder
-      return {
-        signatures: signatures,
-        publicKeys: publicKeys,
-        nodeIds: nodeIds,
-        signature: signatures[0], // Use first signature as main signature
-        aggregatedSignature: signatures[0], // Placeholder
-        messagePoint: userOpHash.startsWith("0x") ? userOpHash : `0x${userOpHash}`,
-      };
+      console.log("✅ Successfully updated bls-config.json and in-memory cache");
     } catch (error: any) {
-      console.error("BLS signature generation failed:", error);
-      throw new Error(`BLS signature generation failed: ${error.message}`);
+      console.warn("❌ Failed to update signer node cache:", error.message);
     }
   }
 
@@ -109,95 +145,152 @@ export class BlsService {
     userOpHash: string,
     nodeIndices?: number[]
   ): Promise<BlsSignatureData> {
-    // Get active nodes - for development, we can work with as few as 1 node
+    // Get active nodes from signer network
     const activeNodes = await this.getActiveSignerNodes();
     if (activeNodes.length < 1) {
-      throw new Error("No active BLS nodes available");
+      throw new Error("No active BLS signer nodes available");
     }
 
-    // Adapt to available nodes - use as many as available, up to 3
-    const maxNodes = Math.min(3, activeNodes.length, this.blsConfig.keyPairs.length);
-    const autoSelectedIndices = Array.from({ length: maxNodes }, (_, i) => i + 1);
+    console.log("\n========== SIGNER NODE BLS SIGNATURE GENERATION ==========");
+    console.log("Message (userOpHash):", userOpHash);
+    console.log("Number of active signer nodes:", activeNodes.length);
 
-    // Continue with the original local BLS generation method using auto-selected indices
-    // Validate node indices
-    const indices = autoSelectedIndices.map(n => n - 1);
-    for (const index of indices) {
-      if (index < 0 || index >= this.blsConfig.keyPairs.length) {
-        throw new Error(
-          `Auto-selected node index ${index + 1} is out of range (1-${this.blsConfig.keyPairs.length})`
-        );
-      }
-    }
+    // Use up to 3 active nodes for signing
+    const selectedNodes = activeNodes.slice(0, Math.min(3, activeNodes.length));
+    console.log("Selected nodes for signing:", selectedNodes.length);
 
-    // Get selected nodes
-    const selectedNodes = indices.map(i => this.blsConfig.keyPairs[i]);
+    try {
+      // Request signatures from selected signer nodes
+      const signerNodeSignatures = [];
+      const signerNodePublicKeys = [];
+      const signerNodeIds = [];
 
-    // BLS signature parameters
-    const messageBytes = ethers.getBytes(userOpHash);
-    const DST = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
+      for (const node of selectedNodes) {
+        try {
+          console.log(`\nRequesting signature from ${node.apiEndpoint}...`);
+          const response = await axios.post(`${node.apiEndpoint}/signature/sign`, {
+            message: userOpHash,
+          });
 
-    // Generate G2 point message
-    const messagePoint = await bls.G2.hashToCurve(messageBytes, { DST });
+          const signatureEIP = response.data.signature;
+          const formattedSignatureEIP = signatureEIP.startsWith("0x")
+            ? signatureEIP
+            : `0x${signatureEIP}`;
 
-    // Generate signature for each node
-    const signatures = [];
-    const nodeIds = [];
+          // For aggregation, use compact format if available, otherwise use EIP format
+          const signatureForAggregation = response.data.signatureCompact || signatureEIP;
+          const formattedSignatureForAggregation = signatureForAggregation.startsWith("0x")
+            ? signatureForAggregation
+            : `0x${signatureForAggregation}`;
 
-    for (const node of selectedNodes) {
-      const privateKeyBytes = this.hexToBytes(node.privateKey.substring(2));
+          signerNodeSignatures.push(formattedSignatureForAggregation);
+          signerNodePublicKeys.push(response.data.publicKey);
+          signerNodeIds.push(response.data.nodeId);
 
-      // Convert private key to bigint
-      let privateKeyBn = 0n;
-      for (const byte of privateKeyBytes) {
-        privateKeyBn = (privateKeyBn << 8n) + BigInt(byte);
-      }
-
-      // BLS12-381 curve order (r)
-      const curveOrder =
-        52435875175126190479447740508185965837690552500527637822603658699938581184513n;
-
-      // Ensure private key is within valid range by taking modulo
-      privateKeyBn = privateKeyBn % curveOrder;
-
-      if (privateKeyBn <= 0n) {
-        throw new Error(`Invalid private key for node ${node.nodeName}: private key must be > 0`);
+          console.log(`  ✅ Success - NodeId: ${response.data.nodeId}`);
+          console.log(`  - Signature (EIP): ${formattedSignatureEIP.substring(0, 40)}...`);
+        } catch (error: any) {
+          console.error(`  ❌ Failed: ${error.message}`);
+          // Continue with other nodes
+        }
       }
 
-      // Multiply message point by private key to get signature
-      const signature = messagePoint.multiply(privateKeyBn);
+      if (signerNodeSignatures.length === 0) {
+        throw new Error("Failed to get signatures from any BLS signer nodes");
+      }
 
-      signatures.push(signature);
-      nodeIds.push(node.contractNodeId);
+      console.log(`\n✅ Successfully collected ${signerNodeSignatures.length} signature(s)`);
+
+      let aggregatedSignature: string;
+      let messagePoint: string;
+
+      if (signerNodeSignatures.length > 1) {
+        // Multiple signatures - use aggregation service
+        console.log("\n--- Aggregating Signatures via Signer Node ---");
+        try {
+          const aggregateResponse = await axios.post(
+            `${selectedNodes[0].apiEndpoint}/signature/aggregate`,
+            {
+              signatures: signerNodeSignatures,
+            }
+          );
+
+          aggregatedSignature = aggregateResponse.data.signature.startsWith("0x")
+            ? aggregateResponse.data.signature
+            : `0x${aggregateResponse.data.signature}`;
+
+          console.log("✅ Aggregation successful");
+          console.log("Aggregated Signature:", aggregatedSignature.substring(0, 40) + "...");
+        } catch (error: any) {
+          console.error("❌ Failed to aggregate signatures:", error.message);
+          throw new Error(`BLS signature aggregation failed: ${error.message}`);
+        }
+      } else {
+        // Single signature - use the first (and only) signature
+        console.log("\n--- Using Single Signature ---");
+
+        // Get the EIP format of the single signature
+        try {
+          const singleSignResponse = await axios.post(
+            `${selectedNodes[0].apiEndpoint}/signature/sign`,
+            {
+              message: userOpHash,
+            }
+          );
+          aggregatedSignature = singleSignResponse.data.signature.startsWith("0x")
+            ? singleSignResponse.data.signature
+            : `0x${singleSignResponse.data.signature}`;
+
+          console.log("✅ Using single signature in EIP format");
+          console.log("Signature:", aggregatedSignature.substring(0, 40) + "...");
+        } catch (error: any) {
+          console.error("❌ Failed to get EIP format signature:", error.message);
+          throw new Error(`Failed to get signature in EIP format: ${error.message}`);
+        }
+      }
+
+      // Generate message point using the same method as signer nodes
+      try {
+        console.log("\n--- Generating Message Point ---");
+        const messageBytes = ethers.getBytes(userOpHash);
+        const DST = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
+        const messagePointBLS = await bls.G2.hashToCurve(messageBytes, { DST });
+        const messageG2EIP = this.encodeG2Point(messagePointBLS);
+        messagePoint = "0x" + Buffer.from(messageG2EIP).toString("hex");
+
+        console.log("✅ Message point generated");
+        console.log("Message Point:", messagePoint.substring(0, 40) + "...");
+      } catch (error: any) {
+        console.error("❌ Failed to generate message point:", error.message);
+        throw new Error(`Failed to generate message point: ${error.message}`);
+      }
+
+      // Generate AA signature using user's wallet
+      console.log("\n--- Generating AA Signature ---");
+      const account = this.accountService.getAccountByUserId(userId);
+      if (!account) {
+        throw new Error("User account not found");
+      }
+
+      const wallet = this.authService.getUserWallet(userId);
+      const aaSignature = await wallet.signMessage(ethers.getBytes(userOpHash));
+
+      console.log("✅ AA signature generated");
+      console.log("AA Address:", account.ownerAddress);
+
+      console.log("\n========== BLS SIGNATURE GENERATION COMPLETE ==========");
+
+      return {
+        nodeIds: signerNodeIds,
+        signature: aggregatedSignature,
+        messagePoint: messagePoint,
+        aaAddress: account.ownerAddress,
+        aaSignature: aaSignature,
+      };
+    } catch (error: any) {
+      console.error("❌ BLS signature generation failed:", error);
+      throw new Error(`BLS signature generation failed: ${error.message}`);
     }
-
-    // Aggregate signatures (simple addition of points)
-    let aggregatedSignature = signatures[0];
-    for (let i = 1; i < signatures.length; i++) {
-      aggregatedSignature = aggregatedSignature.add(signatures[i]);
-    }
-
-    // Convert to contract format
-    const aggregatedSignatureEIP = this.encodeG2Point(aggregatedSignature);
-    const messageG2EIP = this.encodeG2Point(messagePoint);
-
-    // Generate AA signature using user's wallet from AuthService
-    const account = this.accountService.getAccountByUserId(userId);
-    if (!account) {
-      throw new Error("User account not found");
-    }
-
-    // Use AuthService to get the user's decrypted wallet
-    const wallet = this.authService.getUserWallet(userId);
-    const aaSignature = await wallet.signMessage(ethers.getBytes(userOpHash));
-
-    return {
-      nodeIds: nodeIds,
-      signature: "0x" + Buffer.from(aggregatedSignatureEIP).toString("hex"),
-      messagePoint: "0x" + Buffer.from(messageG2EIP).toString("hex"),
-      aaAddress: account.ownerAddress,
-      aaSignature: aaSignature,
-    };
   }
 
   async packSignature(blsData: BlsSignatureData): Promise<string> {
@@ -234,22 +327,34 @@ export class BlsService {
   }
 
   getAvailableNodes() {
-    return this.blsConfig.keyPairs.map((node, index) => ({
+    if (!this.blsConfig || !this.blsConfig.signerNodes) {
+      return [];
+    }
+
+    return this.blsConfig.signerNodes.nodes.map((node, index) => ({
       index: index + 1,
-      nodeId: node.contractNodeId,
+      nodeId: node.nodeId,
       nodeName: node.nodeName,
-      status: node.registrationStatus,
+      apiEndpoint: node.apiEndpoint,
+      status: node.status,
+      lastSeen: node.lastSeen,
     }));
   }
 
   getNodesByIndices(indices: number[]) {
+    if (!this.blsConfig || !this.blsConfig.signerNodes) {
+      throw new Error("BLS configuration not found");
+    }
+
     return indices.map(i => {
-      const node = this.blsConfig.keyPairs[i - 1];
+      const node = this.blsConfig.signerNodes.nodes[i - 1];
       if (!node) throw new Error(`Node ${i} not found`);
       return {
         index: i,
-        nodeId: node.contractNodeId,
+        nodeId: node.nodeId,
         nodeName: node.nodeName,
+        apiEndpoint: node.apiEndpoint,
+        status: node.status,
       };
     });
   }

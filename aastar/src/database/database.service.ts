@@ -146,4 +146,56 @@ export class DatabaseService {
       return null;
     }
   }
+
+  updateBlsConfig(updates: any): void {
+    const filePath = path.join(this.dataDir, "bls-config.json");
+    try {
+      const currentConfig = this.getBlsConfig() || {};
+      const updatedConfig = { ...currentConfig, ...updates };
+
+      // Update lastUpdated timestamp
+      updatedConfig.lastUpdated = new Date().toISOString();
+
+      fs.writeFileSync(filePath, JSON.stringify(updatedConfig, null, 2));
+    } catch (error) {
+      console.error("Failed to update BLS config:", error);
+      throw new Error("Failed to update BLS configuration");
+    }
+  }
+
+  updateSignerNodesCache(discoveredNodes: any[]): void {
+    const filePath = path.join(this.dataDir, "bls-config.json");
+    try {
+      const currentConfig = this.getBlsConfig() || {};
+
+      // Update signer nodes cache
+      const updatedSignerNodes = {
+        ...currentConfig.signerNodes,
+        nodes: discoveredNodes.map((node, index) => ({
+          nodeId: node.nodeId || node.id,
+          nodeName: node.nodeName || node.name || `discovered_node_${index + 1}`,
+          apiEndpoint: node.apiEndpoint || node.endpoint,
+          publicKey: node.publicKey || "",
+          status: "active",
+          lastSeen: new Date().toISOString(),
+          description: `Auto-discovered via gossip network`,
+        })),
+        totalNodes: discoveredNodes.length,
+        activeNodes: discoveredNodes.length,
+        lastUpdated: new Date().toISOString(),
+      };
+
+      const updatedConfig = {
+        ...currentConfig,
+        signerNodes: updatedSignerNodes,
+        lastUpdated: new Date().toISOString(),
+      };
+
+      fs.writeFileSync(filePath, JSON.stringify(updatedConfig, null, 2));
+      console.log(`📝 Updated bls-config.json with ${discoveredNodes.length} discovered nodes`);
+    } catch (error) {
+      console.error("Failed to update signer nodes cache:", error);
+      throw new Error("Failed to update signer nodes cache");
+    }
+  }
 }
