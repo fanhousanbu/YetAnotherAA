@@ -8,7 +8,11 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  outputFileTracingRoot: "/app/frontend",
+  // Set explicit tracing root for Render deployment
+  outputFileTracingRoot: process.env.NODE_ENV === 'production' ? undefined : process.cwd(),
+  outputFileTracingExcludes: {
+    '*': ['**/.git/**', '**/node_modules/@swc/**'],
+  },
   async rewrites() {
     const backendUrl = process.env.BACKEND_API_URL || "http://127.0.0.1:3000";
     return [
