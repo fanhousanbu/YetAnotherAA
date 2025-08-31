@@ -4,7 +4,8 @@ services:
     env: node
     region: frankfurt
     plan: free
-    buildCommand: rm -rf node_modules package-lock.json && npm install && npm run build
+    rootDir: aastar-frontend
+    buildCommand: rm -rf node_modules package-lock.json && npm install --no-workspaces && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
