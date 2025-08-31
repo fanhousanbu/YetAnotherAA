@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  output: 'standalone',
+  output: "standalone",
   outputFileTracingRoot: path.join(__dirname),
   async rewrites() {
     const backendUrl = process.env.BACKEND_API_URL || "http://127.0.0.1:3000";
