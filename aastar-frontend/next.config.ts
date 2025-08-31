@@ -1,18 +1,16 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Set explicit tracing root for Render deployment
-  outputFileTracingRoot: process.env.NODE_ENV === "production" ? undefined : process.cwd(),
-  outputFileTracingExcludes: {
-    "*": ["**/.git/**", "**/node_modules/@swc/**"],
-  },
+  output: 'standalone',
+  outputFileTracingRoot: path.join(__dirname),
   async rewrites() {
     const backendUrl = process.env.BACKEND_API_URL || "http://127.0.0.1:3000";
     return [

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: aastar-frontend
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.19.0
+      - key: NPM_CONFIG_PRODUCTION
+        value: false
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=1024"
