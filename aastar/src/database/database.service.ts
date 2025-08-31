@@ -14,7 +14,7 @@ export class DatabaseService {
       path.join(__dirname, "..", "..", "data"),
       path.join(__dirname, "..", "data"),
     ];
-    
+
     for (const possiblePath of possiblePaths) {
       if (fs.existsSync(possiblePath)) {
         this.dataDir = possiblePath;
@@ -22,7 +22,7 @@ export class DatabaseService {
         break;
       }
     }
-    
+
     // If no existing directory found, use default and create it
     if (!this.dataDir) {
       this.dataDir = path.join(process.cwd(), "data");
@@ -176,14 +176,14 @@ export class DatabaseService {
         signerNodes: {
           nodes: [],
           totalNodes: 0,
-          activeNodes: 0
+          activeNodes: 0,
         },
         discovery: {
           seedNodes: [],
-          fallbackEndpoints: []
-        }
+          fallbackEndpoints: [],
+        },
       };
-      
+
       // Try to create the file with default config
       try {
         fs.writeFileSync(filePath, JSON.stringify(defaultConfig, null, 2));
@@ -191,7 +191,7 @@ export class DatabaseService {
       } catch (writeError) {
         console.error(`❌ Could not create bls-config.json: ${writeError}`);
       }
-      
+
       return defaultConfig;
     }
   }
