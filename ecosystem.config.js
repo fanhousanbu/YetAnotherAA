@@ -23,6 +23,7 @@ module.exports = {
         NODE_ENV: "production",
         PORT: "80",
         NEXT_PUBLIC_API_URL: "/api/v1",
+        BACKEND_API_URL: "http://127.0.0.1:3000",
       },
       error_file: "./logs/frontend-error.log",
       out_file: "./logs/frontend-out.log",
