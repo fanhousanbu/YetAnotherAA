@@ -39,7 +39,7 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto) {
-    const existingUser = this.databaseService.findUserByEmail(registerDto.email);
+    const existingUser = await this.databaseService.findUserByEmail(registerDto.email);
     if (existingUser) {
       throw new ConflictException("User already exists");
     }
@@ -67,7 +67,7 @@ export class AuthService {
       createdAt: new Date().toISOString(),
     };
 
-    this.databaseService.saveUser(user);
+    await this.databaseService.saveUser(user);
 
     const { password, encryptedPrivateKey: _, ...result } = user;
     return {
@@ -77,7 +77,7 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    const user = this.databaseService.findUserByEmail(loginDto.email);
+    const user = await this.databaseService.findUserByEmail(loginDto.email);
     if (!user) {
       throw new UnauthorizedException("Invalid credentials");
     }
@@ -95,7 +95,7 @@ export class AuthService {
   }
 
   async validateUser(email: string, pass: string): Promise<any> {
-    const user = this.databaseService.findUserByEmail(email);
+    const user = await this.databaseService.findUserByEmail(email);
     if (user && (await bcrypt.compare(pass, user.password))) {
       const { password, ...result } = user;
       return result;
@@ -104,7 +104,7 @@ export class AuthService {
   }
 
   async getProfile(userId: string) {
-    const user = this.databaseService.findUserById(userId);
+    const user = await this.databaseService.findUserById(userId);
     if (!user) {
       throw new UnauthorizedException("User not found");
     }
@@ -112,8 +112,8 @@ export class AuthService {
     return result;
   }
 
-  getUserWallet(userId: string): ethers.Wallet {
-    const user = this.databaseService.findUserById(userId);
+  async getUserWallet(userId: string): Promise<ethers.Wallet> {
+    const user = await this.databaseService.findUserById(userId);
     if (!user || !user.encryptedPrivateKey) {
       throw new Error("User wallet not found");
     }
@@ -135,13 +135,13 @@ export class AuthService {
 
   // Passkey注册流程 - 开始
   async beginPasskeyRegistration(beginDto: PasskeyRegisterBeginDto) {
-    const existingUser = this.databaseService.findUserByEmail(beginDto.email);
+    const existingUser = await this.databaseService.findUserByEmail(beginDto.email);
     if (existingUser) {
       throw new ConflictException("User already exists");
     }
 
     const userId = uuidv4();
-    const userPasskeys = this.databaseService.findPasskeysByUserId(userId);
+    const userPasskeys = await this.databaseService.findPasskeysByUserId(userId);
 
     const options = await generateRegistrationOptions({
       rpName: this.rpName,
@@ -175,7 +175,7 @@ export class AuthService {
       throw new UnauthorizedException("Invalid registration session");
     }
 
-    const existingUser = this.databaseService.findUserByEmail(registerDto.email);
+    const existingUser = await this.databaseService.findUserByEmail(registerDto.email);
     if (existingUser) {
       throw new ConflictException("User already exists");
     }
@@ -217,7 +217,7 @@ export class AuthService {
         createdAt: new Date().toISOString(),
       };
 
-      this.databaseService.saveUser(user);
+      await this.databaseService.saveUser(user);
 
       // 保存passkey
       const passkey = {
@@ -232,7 +232,7 @@ export class AuthService {
         createdAt: new Date().toISOString(),
       };
 
-      this.databaseService.savePasskey(passkey);
+      await this.databaseService.savePasskey(passkey);
 
       // 清除challenge
       this.challengeStore.delete(registerDto.email);
@@ -264,13 +264,13 @@ export class AuthService {
   // Passkey登录流程 - 完成
   async completePasskeyLogin(loginDto: PasskeyLoginDto) {
     const credentialId = loginDto.credential.id || loginDto.credential.rawId;
-    const passkey = this.databaseService.findPasskeyByCredentialId(credentialId);
+    const passkey = await this.databaseService.findPasskeyByCredentialId(credentialId);
 
     if (!passkey) {
       throw new UnauthorizedException("Passkey not found");
     }
 
-    const user = this.databaseService.findUserById(passkey.userId);
+    const user = await this.databaseService.findUserById(passkey.userId);
     if (!user) {
       throw new UnauthorizedException("User not found");
     }
@@ -307,7 +307,7 @@ export class AuthService {
       }
 
       // 更新counter
-      this.databaseService.updatePasskey(passkey.credentialId, {
+      await this.databaseService.updatePasskey(passkey.credentialId, {
         counter: verification.authenticationInfo.newCounter,
       });
 
@@ -326,7 +326,7 @@ export class AuthService {
 
   // 新设备Passkey注册流程 - 开始
   async beginDevicePasskeyRegistration(beginDto: DevicePasskeyBeginDto) {
-    const user = this.databaseService.findUserByEmail(beginDto.email);
+    const user = await this.databaseService.findUserByEmail(beginDto.email);
     if (!user) {
       throw new UnauthorizedException("User not found");
     }
@@ -345,7 +345,7 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    const userPasskeys = this.databaseService.findPasskeysByUserId(user.id);
+    const userPasskeys = await this.databaseService.findPasskeysByUserId(user.id);
 
     const options = await generateRegistrationOptions({
       rpName: this.rpName,
@@ -371,7 +371,7 @@ export class AuthService {
 
   // 新设备Passkey注册流程 - 完成
   async completeDevicePasskeyRegistration(registerDto: DevicePasskeyRegisterDto) {
-    const user = this.databaseService.findUserByEmail(registerDto.email);
+    const user = await this.databaseService.findUserByEmail(registerDto.email);
     if (!user) {
       throw new UnauthorizedException("User not found");
     }
@@ -417,7 +417,7 @@ export class AuthService {
         createdAt: new Date().toISOString(),
       };
 
-      this.databaseService.savePasskey(passkey);
+      await this.databaseService.savePasskey(passkey);
 
       // 清除challenge
       this.challengeStore.delete(`device_${registerDto.email}`);

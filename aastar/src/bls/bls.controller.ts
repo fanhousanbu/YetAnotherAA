@@ -14,7 +14,7 @@ export class BlsController {
   @Get("nodes")
   @ApiOperation({ summary: "Get available BLS nodes" })
   async getNodes() {
-    return this.blsService.getAvailableNodes();
+    return await this.blsService.getAvailableNodes();
   }
 
   @Post("sign")

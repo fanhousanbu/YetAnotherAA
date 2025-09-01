@@ -17,7 +17,7 @@ export class AccountService {
 
   async createAccount(userId: string, createAccountDto: CreateAccountDto) {
     // Check if user already has an account
-    const existingAccount = this.databaseService.findAccountByUserId(userId);
+    const existingAccount = await this.databaseService.findAccountByUserId(userId);
     if (existingAccount) {
       return existingAccount;
     }
@@ -26,7 +26,7 @@ export class AccountService {
     const validatorAddress = this.configService.get<string>("VALIDATOR_CONTRACT_ADDRESS");
 
     // Get user's wallet (created during registration)
-    const userWallet = this.authService.getUserWallet(userId);
+    const userWallet = await this.authService.getUserWallet(userId);
     const provider = this.ethereumService.getProvider();
     const userWalletWithProvider = userWallet.connect(provider);
     const salt = createAccountDto.salt || Math.floor(Math.random() * 1000000);
@@ -81,14 +81,14 @@ export class AccountService {
       createdAt: new Date().toISOString(),
     };
 
-    this.databaseService.saveAccount(account);
+    await this.databaseService.saveAccount(account);
 
     return account;
   }
 
   async getAccount(userId: string) {
     console.log("AccountService.getAccount called with userId:", userId);
-    const account = this.databaseService.findAccountByUserId(userId);
+    const account = await this.databaseService.findAccountByUserId(userId);
     console.log("Found account:", account ? "YES" : "NO");
     if (!account) {
       console.log("No account found for userId:", userId);
@@ -124,7 +124,7 @@ export class AccountService {
   }
 
   async getAccountAddress(userId: string): Promise<string> {
-    const account = this.databaseService.findAccountByUserId(userId);
+    const account = await this.databaseService.findAccountByUserId(userId);
     if (!account) {
       throw new NotFoundException("Account not found");
     }
@@ -132,7 +132,7 @@ export class AccountService {
   }
 
   async getAccountBalance(userId: string) {
-    const account = this.databaseService.findAccountByUserId(userId);
+    const account = await this.databaseService.findAccountByUserId(userId);
     if (!account) {
       throw new NotFoundException("Account not found");
     }
@@ -146,7 +146,7 @@ export class AccountService {
   }
 
   async getAccountNonce(userId: string) {
-    const account = this.databaseService.findAccountByUserId(userId);
+    const account = await this.databaseService.findAccountByUserId(userId);
     if (!account) {
       throw new NotFoundException("Account not found");
     }
@@ -159,13 +159,13 @@ export class AccountService {
   }
 
   async fundAccount(userId: string, amount: string) {
-    const account = this.databaseService.findAccountByUserId(userId);
+    const account = await this.databaseService.findAccountByUserId(userId);
     if (!account) {
       throw new NotFoundException("Account not found");
     }
 
     // Use user's wallet for funding
-    const userWallet = this.authService.getUserWallet(userId);
+    const userWallet = await this.authService.getUserWallet(userId);
     const provider = this.ethereumService.getProvider();
     const userWalletWithProvider = userWallet.connect(provider);
 
@@ -186,7 +186,7 @@ export class AccountService {
     };
   }
 
-  getAccountByUserId(userId: string) {
-    return this.databaseService.findAccountByUserId(userId);
+  async getAccountByUserId(userId: string) {
+    return await this.databaseService.findAccountByUserId(userId);
   }
 }

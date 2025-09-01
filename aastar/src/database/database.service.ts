@@ -1,250 +1,252 @@
-import { Injectable } from "@nestjs/common";
-import * as fs from "fs";
-import * as path from "path";
+import { Injectable, OnModuleInit } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { PersistenceAdapter } from "./persistence.interface";
+import { JsonAdapter } from "./adapters/json.adapter";
+import { PostgresAdapter } from "./adapters/postgres.adapter";
 
 @Injectable()
-export class DatabaseService {
-  private readonly dataDir: string;
+export class DatabaseService implements OnModuleInit, PersistenceAdapter {
+  private adapter: PersistenceAdapter;
 
-  constructor() {
-    // Try multiple paths to find the data directory
-    const possiblePaths = [
-      path.join(process.cwd(), "data"),
-      path.join(process.cwd(), "aastar", "data"),
-      path.join(__dirname, "..", "..", "data"),
-      path.join(__dirname, "..", "data"),
-    ];
+  constructor(
+    private configService: ConfigService,
+    private jsonAdapter: JsonAdapter,
+    private postgresAdapter?: PostgresAdapter
+  ) {}
 
-    for (const possiblePath of possiblePaths) {
-      if (fs.existsSync(possiblePath)) {
-        this.dataDir = possiblePath;
-        console.log(`📁 Data directory found at: ${this.dataDir}`);
-        break;
+  async onModuleInit() {
+    const dbType = this.configService.get<string>("DB_TYPE", "json");
+
+    if (dbType === "postgres") {
+      if (!this.postgresAdapter) {
+        throw new Error("PostgreSQL adapter not available. Make sure DB_TYPE is set correctly.");
       }
+      this.adapter = this.postgresAdapter;
+      console.log("🔄 Using PostgreSQL persistence adapter");
+    } else {
+      this.adapter = this.jsonAdapter;
+      console.log("🔄 Using JSON persistence adapter");
     }
 
-    // If no existing directory found, use default and create it
-    if (!this.dataDir) {
-      this.dataDir = path.join(process.cwd(), "data");
-      if (!fs.existsSync(this.dataDir)) {
-        fs.mkdirSync(this.dataDir, { recursive: true });
-        console.log(`📁 Created data directory at: ${this.dataDir}`);
-      }
+    // Ensure adapter is initialized
+    if (!this.adapter) {
+      throw new Error("Failed to initialize persistence adapter");
+    }
+
+    // Migrate existing JSON data to PostgreSQL if needed
+    if (dbType === "postgres" && this.configService.get<boolean>("DB_MIGRATE_FROM_JSON", false)) {
+      await this.migrateFromJsonToPostgres();
     }
   }
 
-  private readJSON(filename: string): any[] {
-    const filePath = path.join(this.dataDir, filename);
+  private async migrateFromJsonToPostgres(): Promise<void> {
+    console.log("🔄 Starting migration from JSON to PostgreSQL...");
+
     try {
-      const data = fs.readFileSync(filePath, "utf-8");
-      return JSON.parse(data);
+      // Migrate users
+      const jsonUsers = await this.jsonAdapter.getUsers();
+      for (const user of jsonUsers) {
+        const existing = await this.postgresAdapter.findUserById(user.id);
+        if (!existing) {
+          await this.postgresAdapter.saveUser(user);
+        }
+      }
+
+      // Migrate accounts (with data validation)
+      const accounts = await this.jsonAdapter.getAccounts();
+      const migratedUsers = await this.postgresAdapter.getUsers();
+      const validUserIds = new Set(migratedUsers.map(u => u.id));
+
+      for (const account of accounts) {
+        if (!validUserIds.has(account.userId)) {
+          console.warn(
+            `⚠️  Skipping account ${account.address} - referenced user ${account.userId} does not exist`
+          );
+          continue;
+        }
+
+        const existing = await this.postgresAdapter.findAccountByUserId(account.userId);
+        if (!existing) {
+          await this.postgresAdapter.saveAccount(account);
+        }
+      }
+
+      // Migrate transfers (with data validation)
+      const transfers = await this.jsonAdapter.getTransfers();
+      for (const transfer of transfers) {
+        if (!validUserIds.has(transfer.userId)) {
+          console.warn(
+            `⚠️  Skipping transfer ${transfer.id} - referenced user ${transfer.userId} does not exist`
+          );
+          continue;
+        }
+
+        const existing = await this.postgresAdapter.findTransferById(transfer.id);
+        if (!existing) {
+          // Transform transfer data structure
+          const transferData = {
+            id: transfer.id,
+            userId: transfer.userId,
+            transferData: {
+              // Store the entire transfer object except id, userId, and createdAt
+              ...Object.fromEntries(
+                Object.entries(transfer).filter(
+                  ([key]) => !["id", "userId", "createdAt"].includes(key)
+                )
+              ),
+            },
+            createdAt: transfer.createdAt,
+          };
+          await this.postgresAdapter.saveTransfer(transferData);
+        }
+      }
+
+      // Migrate passkeys (with data validation)
+      const passkeys = await this.jsonAdapter.getPasskeys();
+
+      for (const passkey of passkeys) {
+        // Skip passkeys with missing user references
+        if (!validUserIds.has(passkey.userId)) {
+          console.warn(
+            `⚠️  Skipping passkey ${passkey.credentialId} - referenced user ${passkey.userId} does not exist`
+          );
+          continue;
+        }
+
+        const existing = await this.postgresAdapter.findPasskeyByCredentialId(passkey.credentialId);
+        if (!existing) {
+          // Transform the passkey data structure
+          const passkeyData = {
+            credentialId: passkey.credentialId,
+            userId: passkey.userId,
+            passkeyData: {
+              id: passkey.id,
+              publicKey: passkey.publicKey,
+              counter: passkey.counter,
+              transports: passkey.transports,
+              // Include any other fields from the original passkey
+              ...Object.fromEntries(
+                Object.entries(passkey).filter(
+                  ([key]) => !["credentialId", "userId", "createdAt"].includes(key)
+                )
+              ),
+            },
+            createdAt: passkey.createdAt,
+          };
+          await this.postgresAdapter.savePasskey(passkeyData);
+        }
+      }
+
+      // Migrate BLS config
+      const blsConfig = await this.jsonAdapter.getBlsConfig();
+      if (blsConfig) {
+        await this.postgresAdapter.updateBlsConfig(blsConfig);
+      }
+
+      console.log("✅ Migration from JSON to PostgreSQL completed successfully");
     } catch (error) {
-      return [];
+      console.error("❌ Migration failed:", error);
+      throw error;
     }
   }
 
-  private writeJSON(filename: string, data: any[]): void {
-    const filePath = path.join(this.dataDir, filename);
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  private ensureAdapterInitialized(): void {
+    if (!this.adapter) {
+      throw new Error("Database adapter not initialized. Make sure onModuleInit has completed.");
+    }
   }
 
   // Users operations
-  getUsers(): any[] {
-    return this.readJSON("users.json");
+  async getUsers(): Promise<any[]> {
+    this.ensureAdapterInitialized();
+    return this.adapter.getUsers();
   }
 
-  saveUser(user: any): void {
-    const users = this.getUsers();
-    users.push(user);
-    this.writeJSON("users.json", users);
+  async saveUser(user: any): Promise<void> {
+    return this.adapter.saveUser(user);
   }
 
-  updateUser(id: string, updates: any): void {
-    const users = this.getUsers();
-    const index = users.findIndex(u => u.id === id);
-    if (index !== -1) {
-      users[index] = { ...users[index], ...updates };
-      this.writeJSON("users.json", users);
-    }
+  async updateUser(id: string, updates: any): Promise<void> {
+    return this.adapter.updateUser(id, updates);
   }
 
-  findUserByEmail(email: string): any {
-    const users = this.getUsers();
-    return users.find(u => u.email === email);
+  async findUserByEmail(email: string): Promise<any> {
+    return this.adapter.findUserByEmail(email);
   }
 
-  findUserById(id: string): any {
-    const users = this.getUsers();
-    return users.find(u => u.id === id);
+  async findUserById(id: string): Promise<any> {
+    return this.adapter.findUserById(id);
   }
 
   // Accounts operations
-  getAccounts(): any[] {
-    return this.readJSON("accounts.json");
+  async getAccounts(): Promise<any[]> {
+    return this.adapter.getAccounts();
   }
 
-  saveAccount(account: any): void {
-    const accounts = this.getAccounts();
-    accounts.push(account);
-    this.writeJSON("accounts.json", accounts);
+  async saveAccount(account: any): Promise<void> {
+    return this.adapter.saveAccount(account);
   }
 
-  findAccountByUserId(userId: string): any {
-    const accounts = this.getAccounts();
-    return accounts.find(a => a.userId === userId);
+  async findAccountByUserId(userId: string): Promise<any> {
+    return this.adapter.findAccountByUserId(userId);
   }
 
-  updateAccount(userId: string, updates: any): void {
-    const accounts = this.getAccounts();
-    const index = accounts.findIndex(a => a.userId === userId);
-    if (index !== -1) {
-      accounts[index] = { ...accounts[index], ...updates };
-      this.writeJSON("accounts.json", accounts);
-    }
+  async updateAccount(userId: string, updates: any): Promise<void> {
+    return this.adapter.updateAccount(userId, updates);
   }
 
   // Transfers operations
-  getTransfers(): any[] {
-    return this.readJSON("transfers.json");
+  async getTransfers(): Promise<any[]> {
+    return this.adapter.getTransfers();
   }
 
-  saveTransfer(transfer: any): void {
-    const transfers = this.getTransfers();
-    transfers.push(transfer);
-    this.writeJSON("transfers.json", transfers);
+  async saveTransfer(transfer: any): Promise<void> {
+    return this.adapter.saveTransfer(transfer);
   }
 
-  findTransfersByUserId(userId: string): any[] {
-    const transfers = this.getTransfers();
-    return transfers.filter(t => t.userId === userId);
+  async findTransfersByUserId(userId: string): Promise<any[]> {
+    return this.adapter.findTransfersByUserId(userId);
   }
 
-  findTransferById(id: string): any {
-    const transfers = this.getTransfers();
-    return transfers.find(t => t.id === id);
+  async findTransferById(id: string): Promise<any> {
+    return this.adapter.findTransferById(id);
   }
 
-  updateTransfer(id: string, updates: any): void {
-    const transfers = this.getTransfers();
-    const index = transfers.findIndex(t => t.id === id);
-    if (index !== -1) {
-      transfers[index] = { ...transfers[index], ...updates };
-      this.writeJSON("transfers.json", transfers);
-    }
+  async updateTransfer(id: string, updates: any): Promise<void> {
+    return this.adapter.updateTransfer(id, updates);
   }
 
   // Passkeys operations
-  getPasskeys(): any[] {
-    return this.readJSON("passkeys.json");
+  async getPasskeys(): Promise<any[]> {
+    return this.adapter.getPasskeys();
   }
 
-  savePasskey(passkey: any): void {
-    const passkeys = this.getPasskeys();
-    passkeys.push(passkey);
-    this.writeJSON("passkeys.json", passkeys);
+  async savePasskey(passkey: any): Promise<void> {
+    return this.adapter.savePasskey(passkey);
   }
 
-  findPasskeysByUserId(userId: string): any[] {
-    const passkeys = this.getPasskeys();
-    return passkeys.filter(p => p.userId === userId);
+  async findPasskeysByUserId(userId: string): Promise<any[]> {
+    return this.adapter.findPasskeysByUserId(userId);
   }
 
-  findPasskeyByCredentialId(credentialId: string): any {
-    const passkeys = this.getPasskeys();
-    return passkeys.find(p => p.credentialId === credentialId);
+  async findPasskeyByCredentialId(credentialId: string): Promise<any> {
+    return this.adapter.findPasskeyByCredentialId(credentialId);
   }
 
-  updatePasskey(credentialId: string, updates: any): void {
-    const passkeys = this.getPasskeys();
-    const index = passkeys.findIndex(p => p.credentialId === credentialId);
-    if (index !== -1) {
-      passkeys[index] = { ...passkeys[index], ...updates };
-      this.writeJSON("passkeys.json", passkeys);
-    }
+  async updatePasskey(credentialId: string, updates: any): Promise<void> {
+    return this.adapter.updatePasskey(credentialId, updates);
   }
 
   // BLS Config
-  getBlsConfig(): any {
-    const filePath = path.join(this.dataDir, "bls-config.json");
-    try {
-      const data = fs.readFileSync(filePath, "utf-8");
-      return JSON.parse(data);
-    } catch (error) {
-      console.warn(`⚠️  Could not read bls-config.json from ${filePath}, using default config`);
-      // Return a default minimal config for production
-      const defaultConfig = {
-        signerNodes: {
-          nodes: [],
-          totalNodes: 0,
-          activeNodes: 0,
-        },
-        discovery: {
-          seedNodes: [],
-          fallbackEndpoints: [],
-        },
-      };
-
-      // Try to create the file with default config
-      try {
-        fs.writeFileSync(filePath, JSON.stringify(defaultConfig, null, 2));
-        console.log(`✅ Created default bls-config.json at ${filePath}`);
-      } catch (writeError) {
-        console.error(`❌ Could not create bls-config.json: ${writeError}`);
-      }
-
-      return defaultConfig;
-    }
+  async getBlsConfig(): Promise<any> {
+    return this.adapter.getBlsConfig();
   }
 
-  updateBlsConfig(updates: any): void {
-    const filePath = path.join(this.dataDir, "bls-config.json");
-    try {
-      const currentConfig = this.getBlsConfig() || {};
-      const updatedConfig = { ...currentConfig, ...updates };
-
-      // Update lastUpdated timestamp
-      updatedConfig.lastUpdated = new Date().toISOString();
-
-      fs.writeFileSync(filePath, JSON.stringify(updatedConfig, null, 2));
-    } catch (error) {
-      console.error("Failed to update BLS config:", error);
-      throw new Error("Failed to update BLS configuration");
-    }
+  async updateBlsConfig(updates: any): Promise<void> {
+    return this.adapter.updateBlsConfig(updates);
   }
 
-  updateSignerNodesCache(discoveredNodes: any[]): void {
-    const filePath = path.join(this.dataDir, "bls-config.json");
-    try {
-      const currentConfig = this.getBlsConfig() || {};
-
-      // Update signer nodes cache
-      const updatedSignerNodes = {
-        ...currentConfig.signerNodes,
-        nodes: discoveredNodes.map((node, index) => ({
-          nodeId: node.nodeId || node.id,
-          nodeName: node.nodeName || node.name || `discovered_node_${index + 1}`,
-          apiEndpoint: node.apiEndpoint || node.endpoint,
-          publicKey: node.publicKey || "",
-          status: "active",
-          lastSeen: new Date().toISOString(),
-          description: `Auto-discovered via gossip network`,
-        })),
-        totalNodes: discoveredNodes.length,
-        activeNodes: discoveredNodes.length,
-        lastUpdated: new Date().toISOString(),
-      };
-
-      const updatedConfig = {
-        ...currentConfig,
-        signerNodes: updatedSignerNodes,
-        lastUpdated: new Date().toISOString(),
-      };
-
-      fs.writeFileSync(filePath, JSON.stringify(updatedConfig, null, 2));
-      console.log(`📝 Updated bls-config.json with ${discoveredNodes.length} discovered nodes`);
-    } catch (error) {
-      console.error("Failed to update signer nodes cache:", error);
-      throw new Error("Failed to update signer nodes cache");
-    }
+  async updateSignerNodesCache(discoveredNodes: any[]): Promise<void> {
+    return this.adapter.updateSignerNodesCache(discoveredNodes);
   }
 }

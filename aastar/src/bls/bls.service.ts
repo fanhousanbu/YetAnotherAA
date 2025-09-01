@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import axios from "axios";
 import { ethers } from "ethers";
@@ -9,7 +9,7 @@ import { AuthService } from "../auth/auth.service";
 import { BlsSignatureData } from "../common/interfaces/erc4337.interface";
 
 @Injectable()
-export class BlsService {
+export class BlsService implements OnModuleInit {
   private blsConfig: any;
 
   constructor(
@@ -17,11 +17,20 @@ export class BlsService {
     private accountService: AccountService,
     private authService: AuthService,
     private configService: ConfigService
-  ) {
-    this.blsConfig = this.databaseService.getBlsConfig();
+  ) {}
+
+  async onModuleInit() {
+    await this.initBlsConfig();
+  }
+
+  private async initBlsConfig() {
+    this.blsConfig = await this.databaseService.getBlsConfig();
   }
 
   async getActiveSignerNodes(): Promise<any[]> {
+    if (!this.blsConfig) {
+      await this.initBlsConfig();
+    }
     const config = this.blsConfig;
     if (!config || !config.signerNodes) {
       throw new Error("BLS configuration not found or invalid");
@@ -162,10 +171,10 @@ export class BlsService {
       });
 
       // Persist to config file using database service
-      this.databaseService.updateSignerNodesCache(discoveredNodes);
+      await this.databaseService.updateSignerNodesCache(discoveredNodes);
 
       // Also update the in-memory config
-      this.blsConfig = this.databaseService.getBlsConfig();
+      this.blsConfig = await this.databaseService.getBlsConfig();
 
       console.log("✅ Successfully updated bls-config.json and in-memory cache");
     } catch (error: any) {
@@ -300,12 +309,12 @@ export class BlsService {
 
       // Generate AA signature using user's wallet
       console.log("\n--- Generating AA Signature ---");
-      const account = this.accountService.getAccountByUserId(userId);
+      const account = await this.accountService.getAccountByUserId(userId);
       if (!account) {
         throw new Error("User account not found");
       }
 
-      const wallet = this.authService.getUserWallet(userId);
+      const wallet = await this.authService.getUserWallet(userId);
       const aaSignature = await wallet.signMessage(ethers.getBytes(userOpHash));
 
       console.log("✅ AA signature generated");
@@ -359,7 +368,10 @@ export class BlsService {
     throw new Error("Invalid BLS signature data format");
   }
 
-  getAvailableNodes() {
+  async getAvailableNodes() {
+    if (!this.blsConfig) {
+      await this.initBlsConfig();
+    }
     if (!this.blsConfig || !this.blsConfig.signerNodes) {
       return [];
     }
@@ -374,7 +386,10 @@ export class BlsService {
     }));
   }
 
-  getNodesByIndices(indices: number[]) {
+  async getNodesByIndices(indices: number[]) {
+    if (!this.blsConfig) {
+      await this.initBlsConfig();
+    }
     if (!this.blsConfig || !this.blsConfig.signerNodes) {
       throw new Error("BLS configuration not found");
     }

@@ -15,7 +15,7 @@ import { DatabaseModule } from "./database/database.module";
       isGlobal: true,
       envFilePath: ".env",
     }),
-    DatabaseModule,
+    DatabaseModule.forRoot(),
     AuthModule,
     AccountModule,
     TransferModule,

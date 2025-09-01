@@ -27,7 +27,7 @@ export class TransferService {
     console.log("Transfer data:", transferDto);
 
     // Get user's account
-    const account = this.accountService.getAccountByUserId(userId);
+    const account = await this.accountService.getAccountByUserId(userId);
     console.log("Account found:", account ? "YES" : "NO");
     if (!account) {
       console.log("No account found for transfer, userId:", userId);
@@ -65,7 +65,7 @@ export class TransferService {
       );
 
       // Get user's EOA wallet
-      const userWallet = this.authService.getUserWallet(userId);
+      const userWallet = await this.authService.getUserWallet(userId);
       const provider = this.ethereumService.getProvider();
       const userWalletWithProvider = userWallet.connect(provider);
 
@@ -126,7 +126,7 @@ export class TransferService {
       createdAt: new Date().toISOString(),
     };
 
-    this.databaseService.saveTransfer(transfer);
+    await this.databaseService.saveTransfer(transfer);
 
     // Process transfer asynchronously
     this.processTransferAsync(transferId, userOp, account.address, transferDto);
@@ -158,7 +158,7 @@ export class TransferService {
       );
 
       // Update transfer status
-      this.databaseService.updateTransfer(transferId, {
+      await this.databaseService.updateTransfer(transferId, {
         bundlerUserOpHash,
         status: "submitted",
         submittedAt: new Date().toISOString(),
@@ -168,7 +168,7 @@ export class TransferService {
       const txHash = await this.ethereumService.waitForUserOp(bundlerUserOpHash);
 
       // Update transfer with transaction hash
-      this.databaseService.updateTransfer(transferId, {
+      await this.databaseService.updateTransfer(transferId, {
         transactionHash: txHash,
         status: "completed",
         completedAt: new Date().toISOString(),
@@ -180,9 +180,10 @@ export class TransferService {
       const provider = this.ethereumService.getProvider();
       const code = await provider.getCode(from);
       if (code !== "0x") {
-        const account = this.databaseService.getAccounts().find(a => a.address === from);
+        const accounts = await this.databaseService.getAccounts();
+        const account = accounts.find(a => a.address === from);
         if (account && !account.deployed) {
-          this.databaseService.updateAccount(account.userId, {
+          await this.databaseService.updateAccount(account.userId, {
             deployed: true,
             deploymentTxHash: txHash,
           });
@@ -191,7 +192,7 @@ export class TransferService {
       }
     } catch (error) {
       // Update transfer status to failed
-      this.databaseService.updateTransfer(transferId, {
+      await this.databaseService.updateTransfer(transferId, {
         status: "failed",
         error: error.message,
         failedAt: new Date().toISOString(),
@@ -203,7 +204,7 @@ export class TransferService {
 
   async estimateGas(userId: string, estimateDto: EstimateGasDto) {
     // Get user's account
-    const account = this.accountService.getAccountByUserId(userId);
+    const account = await this.accountService.getAccountByUserId(userId);
     if (!account) {
       throw new NotFoundException("User account not found");
     }
@@ -248,7 +249,7 @@ export class TransferService {
   }
 
   async getTransferStatus(userId: string, transferId: string) {
-    const transfer = this.databaseService.findTransferById(transferId);
+    const transfer = await this.databaseService.findTransferById(transferId);
     if (!transfer || transfer.userId !== userId) {
       throw new NotFoundException("Transfer not found");
     }
@@ -285,7 +286,7 @@ export class TransferService {
   }
 
   async getTransferHistory(userId: string, page: number = 1, limit: number = 10) {
-    const transfers = this.databaseService.findTransfersByUserId(userId);
+    const transfers = await this.databaseService.findTransfersByUserId(userId);
 
     // Sort by createdAt descending
     transfers.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -322,7 +323,8 @@ export class TransferService {
     let initCode = "0x";
     if (needsDeployment) {
       // Get account details to build initCode
-      const account = this.databaseService.getAccounts().find(a => a.address === sender);
+      const accounts = await this.databaseService.getAccounts();
+      const account = accounts.find(a => a.address === sender);
       if (account) {
         const factory = this.ethereumService.getFactoryContract();
         const factoryAddress = await factory.getAddress();
