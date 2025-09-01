@@ -19,7 +19,9 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "db:clear": "node scripts/clear-all-data.js",
+    "db:clear:json": "node scripts/clear-json-data.js"
   },
   "keywords": [],
   "author": "",

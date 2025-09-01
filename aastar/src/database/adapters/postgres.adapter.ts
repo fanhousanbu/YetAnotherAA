@@ -61,23 +61,74 @@ export class PostgresAdapter implements PersistenceAdapter {
 
   // Transfers operations
   async getTransfers(): Promise<any[]> {
-    return this.transferRepository.find();
+    const transfers = await this.transferRepository.find();
+    // Flatten the transferData into the main object
+    return transfers.map(t => ({
+      id: t.id,
+      userId: t.userId,
+      createdAt: t.createdAt,
+      ...t.transferData,
+    }));
   }
 
   async saveTransfer(transfer: any): Promise<void> {
-    await this.transferRepository.save(transfer);
+    // Ensure the data structure is correct
+    const transferEntity = {
+      id: transfer.id,
+      userId: transfer.userId,
+      createdAt: transfer.createdAt,
+      transferData: {
+        // Put all other fields into transferData
+        ...Object.fromEntries(
+          Object.entries(transfer).filter(
+            ([key]) => !["id", "userId", "createdAt", "transferData"].includes(key)
+          )
+        ),
+        // If transfer already has transferData, merge it
+        ...(transfer.transferData || {}),
+      },
+    };
+    await this.transferRepository.save(transferEntity);
   }
 
   async findTransfersByUserId(userId: string): Promise<any[]> {
-    return this.transferRepository.find({ where: { userId } });
+    const transfers = await this.transferRepository.find({ where: { userId } });
+    // Flatten the transferData into the main object
+    return transfers.map(t => ({
+      id: t.id,
+      userId: t.userId,
+      createdAt: t.createdAt,
+      ...t.transferData,
+    }));
   }
 
   async findTransferById(id: string): Promise<any> {
-    return this.transferRepository.findOne({ where: { id } });
+    const transfer = await this.transferRepository.findOne({ where: { id } });
+    if (!transfer) return null;
+    // Flatten the transferData into the main object
+    return {
+      id: transfer.id,
+      userId: transfer.userId,
+      createdAt: transfer.createdAt,
+      ...transfer.transferData,
+    };
   }
 
   async updateTransfer(id: string, updates: any): Promise<void> {
-    await this.transferRepository.update(id, updates);
+    // Get the existing transfer
+    const transfer = await this.transferRepository.findOne({ where: { id } });
+    if (!transfer) {
+      throw new Error(`Transfer ${id} not found`);
+    }
+
+    // Merge updates into transferData
+    const updatedTransferData = {
+      ...transfer.transferData,
+      ...updates,
+    };
+
+    // Update only the transferData field
+    await this.transferRepository.update(id, { transferData: updatedTransferData });
   }
 
   // Passkeys operations
