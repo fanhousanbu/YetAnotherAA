@@ -15,6 +15,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@simplewebauthn/browser": "^13.1.2",
+    "@tailwindcss/postcss": "^4.1.12",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
