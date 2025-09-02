@@ -7,7 +7,7 @@ import "../src/AAStarValidator.sol";
 contract RegisterKeys is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address validatorAddress = 0xAe7eA28a0aeA05cbB8631bDd7B10Cb0f387FC479;
+        address validatorAddress = 0xd65fBD9Ec7B970fA88808f49A7D947A9DDa51D1d;
 
         vm.startBroadcast(deployerPrivateKey);
 
