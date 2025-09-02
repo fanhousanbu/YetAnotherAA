@@ -3,23 +3,20 @@ pragma solidity ^0.8.19;
 
 /**
  * @title AAStarValidator
- * @dev Integrated BLS aggregate signature validator with public key management
+ * @dev Enhanced BLS aggregate signature validator with secure on-chain hash-to-curve
  *
- * This contract integrates the functionality of AggregateSignatureValidator and BLS12381AggregateNegation,
- * and adds public key management functionality with the following features:
+ * Key Security Enhancement:
+ * - Eliminated messagePoint parameter from external interface
+ * - messagePoint generated on-chain from userOpHash using EIP-2537 precompiles
+ * - Prevents messagePoint tampering attacks
  *
  * Core verification workflow:
- * 1. Accept G2-encoded message, aggregated signature, and participating public keys array or node identifiers
- * 2. Aggregate public key array through G1Add
- * 3. Negate the aggregated public key
- * 4. Perform pairing verification
- * 5. Output whether signature verification is successful
- *
- * Public key management functionality:
- * - Support mapping management between node identifiers and public keys
- * - Support registration, update, and revocation of public keys
- * - Support batch operations
- * - Support signature verification through node identifiers
+ * 1. Accept userOpHash, aggregated signature, and participating node identifiers
+ * 2. Generate messagePoint on-chain from userOpHash using hash-to-curve
+ * 3. Aggregate public keys through G1Add precompile
+ * 4. Negate the aggregated public key
+ * 5. Perform pairing verification
+ * 6. Output whether signature verification is successful
  */
 contract AAStarValidator {
     // =============================================================
@@ -48,8 +45,9 @@ contract AAStarValidator {
     //                           CONSTANTS
     // =============================================================
 
-    /// @dev EIP-2537 pairing precompile address
+    /// @dev EIP-2537 precompile addresses
     address private constant PAIRING_PRECOMPILE = 0x000000000000000000000000000000000000000F;
+    address private constant BLS12_MAP_FP2_TO_G2 = 0x0000000000000000000000000000000000000011;
 
     /// @dev Standard encoded lengths for cryptographic points
     uint256 private constant G1_POINT_LENGTH = 128;
@@ -59,6 +57,10 @@ contract AAStarValidator {
     /// @dev Generator point for the cryptographic group (EIP-2537 encoded format)
     bytes private constant GENERATOR_POINT =
         hex"0000000000000000000000000000000017f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb0000000000000000000000000000000008b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1";
+
+    /// @dev BLS12-381 field modulus components for G1 point negation
+    uint256 private constant P_HIGH = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f624;
+    uint256 private constant P_LOW = 0x1eabfffeb153ffffb9feffffffffaaab;
 
     // =============================================================
     //                           CONSTRUCTOR
@@ -70,29 +72,181 @@ contract AAStarValidator {
     }
 
     // =============================================================
-    //                           CONSTANTS
-    // =============================================================
-
-    /// @dev BLS12-381 field modulus (381 bits)
-    /// p = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
-    uint256 private constant P_HIGH = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f624;
-    uint256 private constant P_LOW = 0x1eabfffeb153ffffb9feffffffffaaab;
-
-    // =============================================================
     //                           EVENTS
     // =============================================================
 
-    event SignatureValidated(bytes32 indexed messageHash, uint256 publicKeysCount, bool isValid, uint256 gasUsed);
-
+    event SignatureValidated(bytes32 indexed userOpHash, uint256 publicKeysCount, bool isValid, uint256 gasUsed);
+    event MessagePointGenerated(bytes32 indexed userOpHash, bytes messagePoint);
     event PublicKeyRegistered(bytes32 indexed nodeId, bytes publicKey);
-
     event PublicKeyUpdated(bytes32 indexed nodeId, bytes oldKey, bytes newKey);
-
     event PublicKeyRevoked(bytes32 indexed nodeId);
-
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
+    // =============================================================
+    //                        MAIN VALIDATION FUNCTIONS
+    // =============================================================
+
+    /**
+     * @dev Validate aggregate signature with secure on-chain messagePoint generation
+     * @param nodeIds Array of node identifiers participating in signature
+     * @param signature Aggregated BLS signature (256 bytes, G2 point)
+     * @param userOpHash Hash of the user operation (32 bytes)
+     * @return isValid Whether signature verification is successful
+     */
     function validateAggregateSignature(
+        bytes32[] calldata nodeIds,
+        bytes calldata signature,
+        bytes32 userOpHash
+    ) external view returns (bool isValid) {
+        require(nodeIds.length > 0, "No node IDs provided");
+        require(signature.length == G2_POINT_LENGTH, "Invalid signature length");
+        require(userOpHash != bytes32(0), "Invalid userOp hash");
+
+        return _validateBLSSignatureSecure(nodeIds, signature, userOpHash);
+    }
+
+    /**
+     * @dev Verify aggregate BLS signature with secure on-chain messagePoint generation (emits events)
+     * @param nodeIds Array of node identifiers participating in signature
+     * @param signature Aggregated BLS signature (256 bytes, G2 point)
+     * @param userOpHash Hash of the user operation (32 bytes)
+     * @return isValid Whether signature verification is successful
+     */
+    function verifyAggregateSignature(
+        bytes32[] calldata nodeIds,
+        bytes calldata signature,
+        bytes32 userOpHash
+    ) external returns (bool isValid) {
+        require(nodeIds.length > 0, "No node IDs provided");
+        require(signature.length == G2_POINT_LENGTH, "Invalid signature length");
+        require(userOpHash != bytes32(0), "Invalid userOp hash");
+
+        uint256 gasStart = gasleft();
+
+        // Generate messagePoint on-chain securely
+        bytes memory messagePoint = _hashToG2Secure(userOpHash);
+        emit MessagePointGenerated(userOpHash, messagePoint);
+
+        // Perform validation using generated messagePoint
+        isValid = _validateBLSSignature(nodeIds, signature, messagePoint);
+
+        uint256 gasUsed = gasStart - gasleft();
+        emit SignatureValidated(userOpHash, nodeIds.length, isValid, gasUsed);
+    }
+
+    // =============================================================
+    //                      HASH-TO-CURVE FUNCTIONS
+    // =============================================================
+
+    /**
+     * @dev Secure hash-to-curve implementation using EIP-2537 precompiles
+     * @param userOpHash The user operation hash to convert
+     * @return G2 point as bytes (256 bytes)
+     */
+    function _hashToG2Secure(bytes32 userOpHash) internal view returns (bytes memory) {
+        // Create Fp2 element from userOpHash
+        bytes memory fp2Element = _createFp2FromHash(userOpHash);
+
+        // Call MAP_FP2_TO_G2 precompile
+        (bool success, bytes memory result) = BLS12_MAP_FP2_TO_G2.staticcall(fp2Element);
+        require(success, "Hash-to-curve failed");
+        require(result.length == G2_POINT_LENGTH, "Invalid curve point length");
+
+        return result;
+    }
+
+    /**
+     * @dev Create Fp2 element from hash for hash-to-curve
+     * @param userOpHash Source hash (32 bytes)
+     * @return 128-byte Fp2 element formatted for EIP-2537
+     */
+    function _createFp2FromHash(bytes32 userOpHash) internal pure returns (bytes memory) {
+        bytes memory fp2 = new bytes(128);
+
+        // Method: Use hash to create two field elements for Fp2
+        // EIP-2537 format: each Fp element is 64 bytes (16 zero + 48 data)
+
+        // First field element (c0): use first 16 bytes of hash
+        // Offset 48 = skip first 16 zero bytes + 32 bytes, put data in last 16 bytes
+        for (uint256 i = 0; i < 16; i++) {
+            fp2[48 + i] = userOpHash[i];
+        }
+
+        // Second field element (c1): use last 16 bytes of hash
+        // Offset 112 = skip 64 bytes (first element) + 16 zero bytes + 32 bytes
+        for (uint256 i = 0; i < 16; i++) {
+            fp2[112 + i] = userOpHash[16 + i];
+        }
+
+        return fp2;
+    }
+
+    /**
+     * @dev Public interface for hash-to-curve (for testing and external use)
+     * @param userOpHash The user operation hash to convert
+     * @return G2 point as bytes
+     */
+    function hashUserOpToG2(bytes32 userOpHash) external view returns (bytes memory) {
+        return _hashToG2Secure(userOpHash);
+    }
+
+    // =============================================================
+    //                      BLS VALIDATION FUNCTIONS
+    // =============================================================
+
+    /**
+     * @dev Secure BLS signature validation with on-chain messagePoint generation
+     * @param nodeIds Array of node identifiers
+     * @param signature Aggregated BLS signature
+     * @param userOpHash User operation hash
+     * @return isValid Whether BLS signature is valid
+     */
+    function _validateBLSSignatureSecure(
+        bytes32[] calldata nodeIds,
+        bytes calldata signature,
+        bytes32 userOpHash
+    ) internal view returns (bool isValid) {
+        // Generate messagePoint on-chain securely
+        bytes memory messagePoint = _hashToG2Secure(userOpHash);
+
+        // Perform standard BLS validation
+        return _validateBLSSignature(nodeIds, signature, messagePoint);
+    }
+
+    /**
+     * @dev Standard BLS signature validation with provided messagePoint
+     * @param nodeIds Array of node identifiers
+     * @param signature Aggregated BLS signature
+     * @param messagePoint G2-encoded message point
+     * @return isValid Whether BLS signature is valid
+     */
+    function _validateBLSSignature(
+        bytes32[] calldata nodeIds,
+        bytes calldata signature,
+        bytes memory messagePoint
+    ) internal view returns (bool isValid) {
+        // Get public keys corresponding to nodes
+        bytes[] memory publicKeys = _getPublicKeysByNodes(nodeIds);
+
+        // Aggregate public key array
+        bytes memory aggregatedKey = _aggregatePublicKeysFromMemory(publicKeys);
+
+        // Negate the aggregated public key
+        bytes memory negatedAggregatedKey = _negateG1Point(aggregatedKey);
+
+        // Verify signature with dynamic gas calculation
+        return _validateWithNegatedKey(negatedAggregatedKey, signature, messagePoint, nodeIds.length);
+    }
+
+    /**
+     * @dev Legacy validation function for backward compatibility
+     * @notice This function is deprecated and should not be used in production
+     * @param nodeIds Array of node identifiers participating in signature
+     * @param signature Aggregated BLS signature (256 bytes, G2 point)
+     * @param messagePoint G2-encoded message point (256 bytes) - SECURITY RISK
+     * @return isValid Whether signature verification is successful
+     */
+    function validateAggregateSignatureLegacy(
         bytes32[] calldata nodeIds,
         bytes calldata signature,
         bytes calldata messagePoint
@@ -101,39 +255,8 @@ contract AAStarValidator {
         require(signature.length == G2_POINT_LENGTH, "Invalid signature length");
         require(messagePoint.length == G2_POINT_LENGTH, "Invalid message length");
 
+        // Warning: This function allows external messagePoint input which is a security risk
         return _validateBLSSignature(nodeIds, signature, messagePoint);
-    }
-
-    /**
-     * @dev Verify aggregate BLS signature using node identifiers (emits events)
-     * Note: Both BLS nodes and AA account owner sign the same original message
-     *
-     * @param nodeIds Array of node identifiers participating in signature
-     * @param signature Aggregated BLS signature (256 bytes, G2 point)
-     * @param messagePoint G2-encoded message point (256 bytes)
-     * @return isValid Whether signature verification is successful
-     */
-    function verifyAggregateSignature(
-        bytes32[] calldata nodeIds,
-        bytes calldata signature,
-        bytes calldata messagePoint
-    ) external returns (bool isValid) {
-        require(nodeIds.length > 0, "No node IDs provided");
-        require(signature.length == G2_POINT_LENGTH, "Invalid signature length");
-        require(messagePoint.length == G2_POINT_LENGTH, "Invalid message length");
-
-        uint256 gasStart = gasleft();
-
-        // Perform validation and get result
-        isValid = _validateBLSSignature(nodeIds, signature, messagePoint);
-
-        uint256 gasUsed = gasStart - gasleft();
-        emit SignatureValidated(
-            keccak256(abi.encode(nodeIds, signature, messagePoint)),
-            nodeIds.length,
-            isValid,
-            gasUsed
-        );
     }
 
     // =============================================================
@@ -141,28 +264,7 @@ contract AAStarValidator {
     // =============================================================
 
     /**
-     * @dev Aggregates multiple G1 public keys using G1Add precompile
-     *
-     * @param publicKeys Array of individual G1 public keys to aggregate
-     * @return aggregatedKey The resulting aggregated public key
-     */
-    function _aggregatePublicKeys(bytes[] calldata publicKeys) internal view returns (bytes memory aggregatedKey) {
-        require(publicKeys.length > 0, "No public keys provided");
-
-        // Start with the first public key
-        aggregatedKey = publicKeys[0];
-        require(aggregatedKey.length == G1_POINT_LENGTH, "Invalid first key length");
-
-        // Add each subsequent public key
-        for (uint256 i = 1; i < publicKeys.length; i++) {
-            require(publicKeys[i].length == G1_POINT_LENGTH, "Invalid key length");
-            aggregatedKey = _addG1Points(aggregatedKey, publicKeys[i]);
-        }
-    }
-
-    /**
      * @dev Aggregates multiple G1 public keys using G1Add precompile (memory version)
-     *
      * @param publicKeys Array of individual G1 public keys to aggregate
      * @return aggregatedKey The resulting aggregated public key
      */
@@ -184,7 +286,6 @@ contract AAStarValidator {
 
     /**
      * @dev Get corresponding public key array based on node identifier array
-     *
      * @param nodeIds Array of node identifiers
      * @return publicKeys Corresponding public key array
      */
@@ -198,47 +299,48 @@ contract AAStarValidator {
     }
 
     /**
-     * @dev Validate BLS signature only
-     *
-     * @param nodeIds Array of node identifiers
-     * @param signature Aggregated BLS signature
-     * @param messagePoint G2-encoded message point
-     * @return isValid Whether BLS signature is valid
+     * @dev Adds two G1 points using the EIP-2537 precompile (memory version)
+     * @param point1 First G1 point (128 bytes)
+     * @param point2 Second G1 point (128 bytes)
+     * @return result Sum of the two G1 points
      */
-    function _validateBLSSignature(
-        bytes32[] calldata nodeIds,
-        bytes calldata signature,
-        bytes calldata messagePoint
-    ) internal view returns (bool isValid) {
-        // Get public keys corresponding to nodes
-        bytes[] memory publicKeys = _getPublicKeysByNodes(nodeIds);
+    function _addG1PointsFromMemory(
+        bytes memory point1,
+        bytes memory point2
+    ) internal view returns (bytes memory result) {
+        require(point1.length == G1_POINT_LENGTH, "Invalid point1 length");
+        require(point2.length == G1_POINT_LENGTH, "Invalid point2 length");
 
-        // Aggregate public key array
-        bytes memory aggregatedKey = _aggregatePublicKeysFromMemory(publicKeys);
+        // Create input: concatenate point1 and point2 (256 bytes total)
+        bytes memory input = abi.encodePacked(point1, point2);
+        require(input.length == 256, "Invalid input length");
 
-        // Negate the aggregated public key
-        bytes memory negatedAggregatedKey = _negateG1Point(aggregatedKey);
+        // Use assembly for precompile call
+        result = new bytes(G1_POINT_LENGTH);
 
-        // Verify signature with dynamic gas calculation
-        return _validateWithNegatedKey(negatedAggregatedKey, signature, messagePoint, nodeIds.length);
+        assembly {
+            let success := staticcall(gas(), 0x0b, add(input, 0x20), mload(input), add(result, 0x20), 128)
+            if eq(success, 0) {
+                revert(0, 0)
+            }
+        }
     }
 
     /**
      * @dev Perform pairing verification using negated public key with dynamic gas calculation
-     *
      * @param negatedAggregatedKey Negated aggregated public key
      * @param signature Aggregate signature
-     * @param messagePoint Message point
+     * @param messagePoint Message point (can be bytes memory or bytes calldata)
      * @param nodeCount Number of nodes participating (for dynamic gas calculation)
      * @return isValid Whether verification is successful
      */
     function _validateWithNegatedKey(
         bytes memory negatedAggregatedKey,
         bytes calldata signature,
-        bytes calldata messagePoint,
+        bytes memory messagePoint,
         uint256 nodeCount
     ) internal view returns (bool isValid) {
-        bytes memory pairingData = _buildPairingDataFromComponents(negatedAggregatedKey, signature, messagePoint);
+        bytes memory pairingData = _buildPairingDataFromMemory(negatedAggregatedKey, signature, messagePoint);
 
         // Calculate required gas dynamically based on operation complexity
         uint256 requiredGas = _calculateRequiredGas(nodeCount);
@@ -253,17 +355,16 @@ contract AAStarValidator {
     }
 
     /**
-     * @dev Build pairing verification data from components
-     *
+     * @dev Build pairing verification data from memory components
      * @param aggregatedKey Aggregated public key
      * @param signature Signature
      * @param messagePoint Message point
      * @return pairingData Pairing data
      */
-    function _buildPairingDataFromComponents(
+    function _buildPairingDataFromMemory(
         bytes memory aggregatedKey,
         bytes calldata signature,
-        bytes calldata messagePoint
+        bytes memory messagePoint
     ) internal pure returns (bytes memory pairingData) {
         pairingData = new bytes(768);
 
@@ -292,68 +393,12 @@ contract AAStarValidator {
         }
     }
 
-    /**
-     * @dev Adds two G1 points using the EIP-2537 precompile
-     *
-     * @param point1 First G1 point (128 bytes)
-     * @param point2 Second G1 point (128 bytes)
-     * @return result Sum of the two G1 points
-     */
-    function _addG1Points(bytes memory point1, bytes calldata point2) internal view returns (bytes memory result) {
-        require(point1.length == G1_POINT_LENGTH, "Invalid point1 length");
-        require(point2.length == G1_POINT_LENGTH, "Invalid point2 length");
-
-        // Create input: concatenate point1 and point2 (256 bytes total)
-        bytes memory input = abi.encodePacked(point1, point2);
-        require(input.length == 256, "Invalid input length");
-
-        // Use assembly for precompile call (staticcall doesn't work properly for EIP-2537 on Sepolia)
-        result = new bytes(G1_POINT_LENGTH);
-
-        assembly {
-            let success := staticcall(gas(), 0x0b, add(input, 0x20), mload(input), add(result, 0x20), 128)
-            if eq(success, 0) {
-                revert(0, 0)
-            }
-        }
-    }
-
-    /**
-     * @dev Adds two G1 points using the EIP-2537 precompile (memory version)
-     *
-     * @param point1 First G1 point (128 bytes)
-     * @param point2 Second G1 point (128 bytes)
-     * @return result Sum of the two G1 points
-     */
-    function _addG1PointsFromMemory(
-        bytes memory point1,
-        bytes memory point2
-    ) internal view returns (bytes memory result) {
-        require(point1.length == G1_POINT_LENGTH, "Invalid point1 length");
-        require(point2.length == G1_POINT_LENGTH, "Invalid point2 length");
-
-        // Create input: concatenate point1 and point2 (256 bytes total)
-        bytes memory input = abi.encodePacked(point1, point2);
-        require(input.length == 256, "Invalid input length");
-
-        // Use assembly for precompile call (staticcall doesn't work properly for EIP-2537 on Sepolia)
-        result = new bytes(G1_POINT_LENGTH);
-
-        assembly {
-            let success := staticcall(gas(), 0x0b, add(input, 0x20), mload(input), add(result, 0x20), 128)
-            if eq(success, 0) {
-                revert(0, 0)
-            }
-        }
-    }
-
     // =============================================================
-    //                      NEGATION FUNCTION
+    //                      G1 POINT NEGATION
     // =============================================================
 
     /**
      * @dev Negates a G1 point by computing -P = (x, -y mod p)
-     *
      * @param point G1 point in EIP-2537 format (128 bytes)
      * @return negatedPoint The negated G1 point (-P)
      */
@@ -384,26 +429,15 @@ contract AAStarValidator {
         // Negate y coordinate: compute p - y
         _negateYCoordinate(point, negatedPoint);
     }
-    // =============================================================
-    //                      INTERNAL FUNCTIONS
-    // =============================================================
 
     /**
      * @dev Negates the y coordinate by computing p - y
      * Uses the BLS12-381 field modulus for correct negation
      */
     function _negateYCoordinate(bytes memory point, bytes memory result) internal pure {
-        // Extract y coordinate (bytes 64-127 in EIP-2537 format)
+        // Extract y coordinate (bytes 80-127 in EIP-2537 format)
         // EIP-2537: [16 zero bytes][48 bytes x][16 zero bytes][48 bytes y]
 
-        // For BLS12-381, coordinates are 48 bytes (384 bits) each
-        // In the 64-byte encoding, the actual coordinate starts at byte 16 of each 64-byte chunk
-
-        // Y coordinate: bytes 64+16 = 80 to 127 (48 bytes)
-        // We need to compute p - y where both p and y are 381-bit numbers
-
-        // Extract the full 48-byte y coordinate from the 64-byte encoding
-        // EIP-2537 format: [16 zero bytes][48 bytes coordinate]
         uint256 y_high = 0;
         uint256 y_low = 0;
 
@@ -456,7 +490,6 @@ contract AAStarValidator {
 
     /**
      * @dev Register public key for new node
-     *
      * @param nodeId Unique node identifier
      * @param publicKey G1 public key (128 bytes)
      */
@@ -474,7 +507,6 @@ contract AAStarValidator {
 
     /**
      * @dev Update public key for registered node
-     *
      * @param nodeId Unique node identifier
      * @param newPublicKey New G1 public key (128 bytes)
      */
@@ -490,7 +522,6 @@ contract AAStarValidator {
 
     /**
      * @dev Revoke public key registration for node
-     *
      * @param nodeId Unique node identifier
      */
     function revokePublicKey(bytes32 nodeId) external onlyOwner {
@@ -513,7 +544,6 @@ contract AAStarValidator {
 
     /**
      * @dev Batch register public keys for multiple nodes
-     *
      * @param nodeIds Array of node identifiers
      * @param publicKeys Corresponding public key array
      */
@@ -536,7 +566,6 @@ contract AAStarValidator {
 
     /**
      * @dev Transfer contract ownership
-     *
      * @param newOwner Address of new owner
      */
     function transferOwnership(address newOwner) external onlyOwner {
@@ -549,9 +578,12 @@ contract AAStarValidator {
         emit OwnershipTransferred(previousOwner, newOwner);
     }
 
+    // =============================================================
+    //                      VIEW FUNCTIONS
+    // =============================================================
+
     /**
      * @dev Get number of registered nodes
-     *
      * @return count Number of registered nodes
      */
     function getRegisteredNodeCount() external view returns (uint256 count) {
@@ -560,7 +592,6 @@ contract AAStarValidator {
 
     /**
      * @dev Get registered nodes within specified range
-     *
      * @param offset Starting position
      * @param limit Return count limit
      * @return nodeIds Array of node identifiers
@@ -594,7 +625,6 @@ contract AAStarValidator {
 
     /**
      * @dev Calculate required gas for BLS validation based on EIP-2537 and operational complexity
-     *
      * @param nodeCount Number of nodes participating in the signature
      * @return requiredGas Calculated gas requirement
      */
@@ -605,29 +635,29 @@ contract AAStarValidator {
         uint256 pairingBaseCost = 32600 * 2 + 37700; // 102,900
 
         // G1 point addition cost: (nodeCount - 1) * 500 (EIP-2537 G1 addition)
-        // Each additional node requires one G1 point addition for aggregation
         uint256 g1AdditionCost = (nodeCount - 1) * 500;
 
+        // Hash-to-curve cost: MAP_FP2_TO_G2 precompile
+        uint256 hashToCurveCost = 23800; // EIP-2537 MAP_FP2_TO_G2 cost
+
         // Storage read cost: nodeCount * 2100 (cold SLOAD for public keys)
-        // Each node requires reading its public key from storage
         uint256 storageReadCost = nodeCount * 2100;
 
         // EVM execution overhead: data preparation, memory operations, loops
-        // Includes: memory allocation, data copying, point negation, validation checks
-        uint256 evmExecutionCost = 50000 + (nodeCount * 1000); // Base + per-node overhead
+        uint256 evmExecutionCost = 50000 + (nodeCount * 1000);
 
         // Calculate total with components breakdown
-        uint256 totalBaseCost = pairingBaseCost + g1AdditionCost + storageReadCost + evmExecutionCost;
+        uint256 totalBaseCost = pairingBaseCost + g1AdditionCost + hashToCurveCost + storageReadCost + evmExecutionCost;
 
-        // Safety margin: 25% buffer to handle network variations and unexpected costs
+        // Safety margin: 25% buffer
         requiredGas = (totalBaseCost * 125) / 100;
 
-        // Minimum gas floor: ensure at least the proven working amount for small node counts
-        if (requiredGas < 150000) {
-            requiredGas = 150000;
+        // Minimum gas floor
+        if (requiredGas < 200000) {
+            requiredGas = 200000; // Increased for hash-to-curve operations
         }
 
-        // Maximum gas cap: prevent excessive gas usage for very large node counts
+        // Maximum gas cap
         if (requiredGas > 2000000) {
             requiredGas = 2000000;
         }
@@ -635,7 +665,6 @@ contract AAStarValidator {
 
     /**
      * @dev Get gas estimation (public interface for external callers)
-     *
      * @param nodeCount Number of nodes participating in signature
      * @return gasEstimate Estimated gas consumption
      */
@@ -645,10 +674,17 @@ contract AAStarValidator {
 
     /**
      * @dev Get supported signature format description
-     *
      * @return format Signature format description
      */
     function getSignatureFormat() external pure returns (string memory format) {
-        return "BLS aggregate signature: publicKeys[] + G2_signature + G2_messagePoint";
+        return "BLS aggregate signature: nodeIds[] + G2_signature + userOpHash (messagePoint generated on-chain)";
+    }
+
+    /**
+     * @dev Get contract version
+     * @return version Contract version string
+     */
+    function getVersion() external pure returns (string memory version) {
+        return "secure-hash-to-curve";
     }
 }

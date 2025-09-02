@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import axios from "axios";
 import { ethers } from "ethers";
-import { bls12_381 as bls } from "@noble/curves/bls12-381";
+// Note: bls12_381 import removed - messagePoint generation now done on-chain
 import { DatabaseService } from "../database/database.service";
 import { AccountService } from "../account/account.service";
 import { AuthService } from "../auth/auth.service";
@@ -244,7 +244,6 @@ export class BlsService implements OnModuleInit {
       console.log(`\n✅ Successfully collected ${signerNodeSignatures.length} signature(s)`);
 
       let aggregatedSignature: string;
-      let messagePoint: string;
 
       if (signerNodeSignatures.length > 1) {
         // Multiple signatures - use aggregation service
@@ -291,21 +290,10 @@ export class BlsService implements OnModuleInit {
         }
       }
 
-      // Generate message point using the same method as signer nodes
-      try {
-        console.log("\n--- Generating Message Point ---");
-        const messageBytes = ethers.getBytes(userOpHash);
-        const DST = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
-        const messagePointBLS = await bls.G2.hashToCurve(messageBytes, { DST });
-        const messageG2EIP = this.encodeG2Point(messagePointBLS);
-        messagePoint = "0x" + Buffer.from(messageG2EIP).toString("hex");
-
-        console.log("✅ Message point generated");
-        console.log("Message Point:", messagePoint.substring(0, 40) + "...");
-      } catch (error: any) {
-        console.error("❌ Failed to generate message point:", error.message);
-        throw new Error(`Failed to generate message point: ${error.message}`);
-      }
+      // NOTE: messagePoint generation removed - now handled securely on-chain by AAStarValidatorV7
+      console.log("\n--- Message Point Generation ---");
+      console.log("✅ Message point will be generated on-chain by AAStarValidatorV7 contract");
+      console.log("This eliminates the messagePoint tampering attack vector");
 
       // Generate AA signature using user's wallet
       console.log("\n--- Generating AA Signature ---");
@@ -325,7 +313,7 @@ export class BlsService implements OnModuleInit {
       return {
         nodeIds: signerNodeIds,
         signature: aggregatedSignature,
-        messagePoint: messagePoint,
+        // messagePoint removed: now generated securely on-chain by AAStarValidatorV7
         aaAddress: account.ownerAddress,
         aaSignature: aaSignature,
       };
@@ -336,36 +324,22 @@ export class BlsService implements OnModuleInit {
   }
 
   async packSignature(blsData: BlsSignatureData): Promise<string> {
-    // Handle new signature format from signer nodes
-    if (blsData.signatures && blsData.nodeIds) {
-      // New format: pack signatures from signer nodes
+    // V7 Format: Pack without messagePoint (generated on-chain by AAStarValidatorV7)
+    if (blsData.nodeIds && blsData.signature) {
       const nodeIdsLength = ethers.solidityPacked(["uint256"], [blsData.nodeIds.length]);
       const nodeIdsBytes = ethers.solidityPacked(
         Array(blsData.nodeIds.length).fill("bytes32"),
         blsData.nodeIds
       );
 
+      // V7 format: nodeIds + signature (no messagePoint)
       return ethers.solidityPacked(
-        ["bytes", "bytes", "bytes", "bytes"],
-        [nodeIdsLength, nodeIdsBytes, blsData.signature, blsData.messagePoint]
+        ["bytes", "bytes", "bytes"],
+        [nodeIdsLength, nodeIdsBytes, blsData.signature]
       );
     }
 
-    // Fallback to old format if available
-    if (blsData.nodeIds && blsData.aaSignature) {
-      const nodeIdsLength = ethers.solidityPacked(["uint256"], [blsData.nodeIds.length]);
-      const nodeIdsBytes = ethers.solidityPacked(
-        Array(blsData.nodeIds.length).fill("bytes32"),
-        blsData.nodeIds
-      );
-
-      return ethers.solidityPacked(
-        ["bytes", "bytes", "bytes", "bytes", "bytes"],
-        [nodeIdsLength, nodeIdsBytes, blsData.signature, blsData.messagePoint, blsData.aaSignature]
-      );
-    }
-
-    throw new Error("Invalid BLS signature data format");
+    throw new Error("Invalid BLS signature data format - nodeIds and signature required");
   }
 
   async getAvailableNodes() {
@@ -407,27 +381,6 @@ export class BlsService implements OnModuleInit {
     });
   }
 
-  private hexToBytes(hex: string): Uint8Array {
-    const bytes = new Uint8Array(hex.length / 2);
-    for (let i = 0; i < hex.length; i += 2) {
-      bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
-    }
-    return bytes;
-  }
-
-  private encodeG2Point(point: any): Uint8Array {
-    const result = new Uint8Array(256);
-    const affine = point.toAffine();
-
-    const x0Bytes = this.hexToBytes(affine.x.c0.toString(16).padStart(96, "0"));
-    const x1Bytes = this.hexToBytes(affine.x.c1.toString(16).padStart(96, "0"));
-    const y0Bytes = this.hexToBytes(affine.y.c0.toString(16).padStart(96, "0"));
-    const y1Bytes = this.hexToBytes(affine.y.c1.toString(16).padStart(96, "0"));
-
-    result.set(x0Bytes, 16);
-    result.set(x1Bytes, 80);
-    result.set(y0Bytes, 144);
-    result.set(y1Bytes, 208);
-    return result;
-  }
+  // Note: messagePoint generation methods removed
+  // messagePoint now generated securely on-chain by AAStarValidatorV7
 }

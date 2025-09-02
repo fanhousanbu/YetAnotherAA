@@ -23,7 +23,7 @@ export interface BlsSignatureData {
   signatures?: string[];
   publicKeys?: string[];
   signature: string;
-  messagePoint: string;
+  // messagePoint removed: now generated on-chain by AAStarValidatorV7
   aaAddress?: string;
   aaSignature?: string;
   aggregatedSignature?: string;

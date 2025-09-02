@@ -27,6 +27,10 @@ export class EthereumService {
 
   private readonly VALIDATOR_ABI = [
     "function getGasEstimate(uint256 nodeCount) external pure returns (uint256 gasEstimate)",
+    "function validateAggregateSignature(bytes32[] calldata nodeIds, bytes calldata signature, bytes32 userOpHash) external view returns (bool isValid)",
+    "function hashUserOpToG2(bytes32 userOpHash) external view returns (bytes memory)",
+    "function getVersion() external pure returns (string memory version)",
+    "function getSignatureFormat() external pure returns (string memory format)",
   ];
 
   constructor(private configService: ConfigService) {

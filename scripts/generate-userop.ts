@@ -34,8 +34,8 @@ function encodeG2Point(point: any): string {
   const y1Bytes = hexToBytes(y1Hex);
 
   // Set bytes in the result array according to EIP-2537 format
-  result.set(x0Bytes, 16);  // x.c0 at offset 16
-  result.set(x1Bytes, 80);  // x.c1 at offset 80
+  result.set(x0Bytes, 16); // x.c0 at offset 16
+  result.set(x1Bytes, 80); // x.c1 at offset 80
   result.set(y0Bytes, 144); // y.c0 at offset 144
   result.set(y1Bytes, 208); // y.c1 at offset 208
 
@@ -104,7 +104,8 @@ async function main() {
     sender: "0x1234567890123456789012345678901234567890",
     nonce: BigInt(42),
     initCode: "0x",
-    callData: "0xa9059cbb000000000000000000000000abcdefabcdefabcdefabcdefabcdefabcdefabcdef0000000000000000000000000000000000000000000000000de0b6b3a7640000",
+    callData:
+      "0xa9059cbb000000000000000000000000abcdefabcdefabcdefabcdefabcdefabcdefabcdef0000000000000000000000000000000000000000000000000de0b6b3a7640000",
     callGasLimit: BigInt(21000),
     verificationGasLimit: BigInt(100000),
     preVerificationGas: BigInt(21000),
@@ -119,9 +120,14 @@ async function main() {
 
   // Generate userOpHash
   const userOpHash = generateUserOpHash(userOp, entryPoint, chainId);
-  console.log("UserOperation:", JSON.stringify(userOp, (key, value) =>
-    typeof value === "bigint" ? value.toString() : value
-  , 2));
+  console.log(
+    "UserOperation:",
+    JSON.stringify(
+      userOp,
+      (key, value) => (typeof value === "bigint" ? value.toString() : value),
+      2
+    )
+  );
   console.log("UserOp Hash:", userOpHash);
 
   // Compute messagePoint using hash-to-curve
@@ -144,7 +150,7 @@ async function main() {
       preVerificationGas: userOp.preVerificationGas.toString(),
       maxFeePerGas: userOp.maxFeePerGas.toString(),
       maxPriorityFeePerGas: userOp.maxPriorityFeePerGas.toString(),
-    }
+    },
   };
 
   console.log("\n=== Test Data for Contract ===");
@@ -152,8 +158,8 @@ async function main() {
 }
 
 // Check if this is the main module (ES modules)
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
