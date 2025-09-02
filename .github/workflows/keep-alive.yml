@@ -1,7 +1,7 @@
 name: Render Multi-Service Keep Alive
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/10 * * * *"
 jobs:
   ping-all:
     runs-on: ubuntu-latest
