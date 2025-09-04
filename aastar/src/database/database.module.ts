@@ -34,7 +34,7 @@ export class DatabaseModule {
                   rejectUnauthorized: false, // For self-signed certificates
                 },
                 extra: {
-                  ssl: true,
+                  ssl: configService.get<boolean>("PGSSLMODE", false),
                 },
               };
             }

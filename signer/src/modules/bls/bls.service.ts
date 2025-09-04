@@ -4,6 +4,14 @@ import { bls, sigs, BLS_DST, encodeG2Point } from "../../utils/bls.util.js";
 import { SignatureResult } from "../../interfaces/signature.interface.js";
 import { NodeKeyPair } from "../../interfaces/node.interface.js";
 
+// On-chain validator contract for messagePoint generation
+const VALIDATOR_ADDRESS =
+  process.env.VALIDATOR_CONTRACT_ADDRESS || "0xFA4A1D9E471044607FE5F3854dE715b6e6bB01A4";
+const VALIDATOR_ABI = [
+  "function hashUserOpToG2(bytes32 userOpHash) external view returns (bytes memory)",
+];
+const RPC_URL = process.env.ETH_RPC_URL;
+
 @Injectable()
 export class BlsService {
   async signMessage(message: string, node: NodeKeyPair): Promise<SignatureResult> {
@@ -41,6 +49,51 @@ export class BlsService {
   async hashMessageToCurve(message: string): Promise<any> {
     const messageBytes = ethers.getBytes(message);
     return await bls.G2.hashToCurve(messageBytes, { DST: BLS_DST });
+  }
+
+  /**
+   * Get messagePoint from on-chain validator contract using EIP-2537
+   * This ensures exact consistency with chain validation
+   */
+  async hashToG2Simple(userOpHash: string): Promise<any> {
+    const provider = new ethers.JsonRpcProvider(RPC_URL);
+    const validator = new ethers.Contract(VALIDATOR_ADDRESS, VALIDATOR_ABI, provider);
+
+    const messagePointBytes = await validator.hashUserOpToG2(userOpHash);
+
+    // Decode the 256-byte EIP-2537 G2 point format
+    return this.decodeG2Point(messagePointBytes);
+  }
+
+  /**
+   * Decode EIP-2537 format G2 point to bls library format
+   * EIP-2537 format: [16 zero bytes][48 bytes x.c0][16 zero bytes][48 bytes x.c1][16 zero bytes][48 bytes y.c0][16 zero bytes][48 bytes y.c1]
+   */
+  private decodeG2Point(messagePointBytes: string): any {
+    const bytes = ethers.getBytes(messagePointBytes);
+    if (bytes.length !== 256) {
+      throw new Error(`Invalid G2 point length: ${bytes.length}, expected 256`);
+    }
+
+    // Extract field elements from EIP-2537 format
+    // Each field element is 64 bytes: 16 zero bytes + 48 data bytes
+    const x0 = bytes.slice(16, 64); // x.c0: skip first 16 zeros, take next 48 bytes
+    const x1 = bytes.slice(80, 128); // x.c1: skip next 16 zeros, take next 48 bytes
+    const y0 = bytes.slice(144, 192); // y.c0: skip next 16 zeros, take next 48 bytes
+    const y1 = bytes.slice(208, 256); // y.c1: skip next 16 zeros, take next 48 bytes
+
+    // Convert to hex strings and then to BigInt
+    const x0Hex = Buffer.from(x0).toString("hex");
+    const x1Hex = Buffer.from(x1).toString("hex");
+    const y0Hex = Buffer.from(y0).toString("hex");
+    const y1Hex = Buffer.from(y1).toString("hex");
+
+    // Create Fp2 elements for noble curves
+    const x = { c0: BigInt("0x" + x0Hex), c1: BigInt("0x" + x1Hex) };
+    const y = { c0: BigInt("0x" + y0Hex), c1: BigInt("0x" + y1Hex) };
+
+    // Create the G2 point using noble curves Point.fromAffine method
+    return bls.G2.Point.fromAffine({ x, y });
   }
 
   encodeToEIP2537(point: any): string {

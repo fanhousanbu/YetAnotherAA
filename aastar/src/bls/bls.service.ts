@@ -303,7 +303,8 @@ export class BlsService implements OnModuleInit {
       }
 
       const wallet = await this.authService.getUserWallet(userId);
-      const aaSignature = await wallet.signMessage(ethers.getBytes(userOpHash));
+      // Sign userOpHash directly - contract will add Ethereum Signed Message prefix
+      const aaSignature = await wallet.signMessage(userOpHash);
 
       console.log("✅ AA signature generated");
       console.log("AA Address:", account.ownerAddress);
@@ -324,22 +325,24 @@ export class BlsService implements OnModuleInit {
   }
 
   async packSignature(blsData: BlsSignatureData): Promise<string> {
-    // V7 Format: Pack without messagePoint (generated on-chain by AAStarValidatorV7)
-    if (blsData.nodeIds && blsData.signature) {
+    // Secure Format: Pack without messagePoint (generated on-chain by secure AAStarValidator)
+    if (blsData.nodeIds && blsData.signature && blsData.aaSignature) {
       const nodeIdsLength = ethers.solidityPacked(["uint256"], [blsData.nodeIds.length]);
       const nodeIdsBytes = ethers.solidityPacked(
         Array(blsData.nodeIds.length).fill("bytes32"),
         blsData.nodeIds
       );
 
-      // V7 format: nodeIds + signature (no messagePoint)
+      // Secure format: nodeIds + blsSignature + aaSignature (no messagePoint)
       return ethers.solidityPacked(
-        ["bytes", "bytes", "bytes"],
-        [nodeIdsLength, nodeIdsBytes, blsData.signature]
+        ["bytes", "bytes", "bytes", "bytes"],
+        [nodeIdsLength, nodeIdsBytes, blsData.signature, blsData.aaSignature]
       );
     }
 
-    throw new Error("Invalid BLS signature data format - nodeIds and signature required");
+    throw new Error(
+      "Invalid BLS signature data format - nodeIds, signature, and aaSignature required"
+    );
   }
 
   async getAvailableNodes() {

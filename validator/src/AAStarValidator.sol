@@ -144,6 +144,15 @@ contract AAStarValidator {
      * @return G2 point as bytes (256 bytes)
      */
     function _hashToG2Secure(bytes32 userOpHash) internal view returns (bytes memory) {
+        return _hashToG2WithPrecompile(userOpHash);
+    }
+
+    /**
+     * @dev Hash-to-curve using EIP-2537 precompiles
+     * @param userOpHash The user operation hash to convert
+     * @return G2 point as bytes (256 bytes)
+     */
+    function _hashToG2WithPrecompile(bytes32 userOpHash) internal view returns (bytes memory) {
         // Create Fp2 element from userOpHash
         bytes memory fp2Element = _createFp2FromHash(userOpHash);
 
@@ -163,19 +172,34 @@ contract AAStarValidator {
     function _createFp2FromHash(bytes32 userOpHash) internal pure returns (bytes memory) {
         bytes memory fp2 = new bytes(128);
 
-        // Method: Use hash to create two field elements for Fp2
-        // EIP-2537 format: each Fp element is 64 bytes (16 zero + 48 data)
+        // BLS12-381 base field modulus
+        // p = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
+        // We need to ensure field elements are < p
 
-        // First field element (c0): use first 16 bytes of hash
-        // Offset 48 = skip first 16 zero bytes + 32 bytes, put data in last 16 bytes
-        for (uint256 i = 0; i < 16; i++) {
-            fp2[48 + i] = userOpHash[i];
+        // Create two field elements from userOpHash
+        bytes32 c0Hash = keccak256(abi.encodePacked(userOpHash, "fp2_c0"));
+        bytes32 c1Hash = keccak256(abi.encodePacked(userOpHash, "fp2_c1"));
+
+        // Reduce modulo field characteristic (simplified approach)
+        // Take only lower bits to ensure we stay well below the modulus
+        uint256 c0_reduced = uint256(c0Hash) >> 8; // Remove top 8 bits
+        uint256 c1_reduced = uint256(c1Hash) >> 8; // Remove top 8 bits
+
+        // EIP-2537 Fp2 format: two 64-byte field elements
+        // Each element: 16 zero bytes + 48 value bytes (big-endian)
+
+        // First field element (c0): bytes 0-63
+        // Store c0_reduced in big-endian format at the end of 64-byte field element
+        bytes32 c0_bytes = bytes32(c0_reduced);
+        for (uint256 i = 0; i < 32; i++) {
+            fp2[32 + i] = c0_bytes[i]; // Offset 32 to place in last 32 bytes of 64-byte element
         }
 
-        // Second field element (c1): use last 16 bytes of hash
-        // Offset 112 = skip 64 bytes (first element) + 16 zero bytes + 32 bytes
-        for (uint256 i = 0; i < 16; i++) {
-            fp2[112 + i] = userOpHash[16 + i];
+        // Second field element (c1): bytes 64-127
+        // Store c1_reduced in big-endian format at the end of 64-byte field element
+        bytes32 c1_bytes = bytes32(c1_reduced);
+        for (uint256 i = 0; i < 32; i++) {
+            fp2[96 + i] = c1_bytes[i]; // Offset 96 to place in last 32 bytes of second element
         }
 
         return fp2;
