@@ -1,11 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { ethers } from "ethers";
 import { v4 as uuidv4 } from "uuid";
 import { DatabaseService } from "../database/database.service";
 import { EthereumService } from "../ethereum/ethereum.service";
+import { DeploymentWalletService } from "../ethereum/deployment-wallet.service";
 import { AccountService } from "../account/account.service";
-import { AuthService } from "../auth/auth.service";
 import { BlsService } from "../bls/bls.service";
 import { ExecuteTransferDto } from "./dto/execute-transfer.dto";
 import { EstimateGasDto } from "./dto/estimate-gas.dto";
@@ -16,10 +15,9 @@ export class TransferService {
   constructor(
     private databaseService: DatabaseService,
     private ethereumService: EthereumService,
+    private deploymentWalletService: DeploymentWalletService,
     private accountService: AccountService,
-    private authService: AuthService,
-    private blsService: BlsService,
-    private configService: ConfigService
+    private blsService: BlsService
   ) {}
 
   async executeTransfer(userId: string, transferDto: ExecuteTransferDto) {
@@ -49,40 +47,24 @@ export class TransferService {
     const smartAccountBalance = parseFloat(await this.ethereumService.getBalance(account.address));
     const transferAmount = parseFloat(transferDto.amount);
 
-    // Check if transfer amount exceeds available balance
-    if (transferAmount > smartAccountBalance) {
-      throw new BadRequestException(
-        `Insufficient balance: Trying to send ${transferAmount} ETH but Smart Account only has ${smartAccountBalance} ETH available.`
-      );
-    }
-
     const minRequiredBalance = 0.0002; // Require at least 0.0002 ETH remaining after transfer for gas fees (typical gas cost ~0.0001 ETH)
-    const balanceAfterTransfer = smartAccountBalance - transferAmount;
+    const totalNeeded = transferAmount + minRequiredBalance;
 
-    if (balanceAfterTransfer < minRequiredBalance) {
+    // Check if Smart Account has sufficient balance for transfer + gas fees
+    if (smartAccountBalance < totalNeeded) {
       console.log(
-        `Smart Account needs prefunding: Current balance ${smartAccountBalance} ETH, transfer ${transferAmount} ETH, remaining ${balanceAfterTransfer} ETH (need ${minRequiredBalance} ETH minimum)`
+        `Smart Account needs prefunding: Current balance ${smartAccountBalance} ETH, needs ${totalNeeded} ETH (${transferAmount} transfer + ${minRequiredBalance} gas)`
       );
 
-      // Get user's EOA wallet
-      const userWallet = await this.authService.getUserWallet(userId);
+      const prefundAmount = Math.max(0.001, totalNeeded - smartAccountBalance + 0.0005); // Add 0.0005 safety margin
+
+      // Use deployment wallet to prefund Smart Account
       const provider = this.ethereumService.getProvider();
-      const userWalletWithProvider = userWallet.connect(provider);
+      const deploymentWallet = this.deploymentWalletService.getWallet(provider);
 
-      // Check EOA balance
-      const eoaBalance = parseFloat(await this.ethereumService.getBalance(userWallet.address));
-      const neededAmount = minRequiredBalance - balanceAfterTransfer; // How much more ETH is needed
-      const prefundAmount = Math.max(0.001, neededAmount + 0.0005); // Minimum 0.001 ETH or needed amount + 0.0005 safety
-
-      if (eoaBalance < prefundAmount) {
-        throw new BadRequestException(
-          `Insufficient balance: After transferring ${transferAmount} ETH, Smart Account would have ${balanceAfterTransfer.toFixed(6)} ETH but needs at least ${minRequiredBalance} ETH. EOA has ${eoaBalance} ETH but needs ${prefundAmount.toFixed(6)} ETH for prefunding. Please add more ETH to your EOA address.`
-        );
-      }
-
-      // Send ETH from EOA to Smart Account
-      console.log(`Sending ${prefundAmount} ETH from EOA to Smart Account...`);
-      const prefundTx = await userWalletWithProvider.sendTransaction({
+      // Send ETH from deployment wallet to Smart Account
+      console.log(`Sending ${prefundAmount} ETH from deployment wallet to Smart Account...`);
+      const prefundTx = await deploymentWallet.sendTransaction({
         to: account.address,
         value: ethers.parseEther(prefundAmount.toString()),
         maxFeePerGas: ethers.parseUnits("20", "gwei"),
@@ -129,7 +111,7 @@ export class TransferService {
     await this.databaseService.saveTransfer(transfer);
 
     // Process transfer asynchronously
-    this.processTransferAsync(transferId, userOp, account.address, transferDto);
+    this.processTransferAsync(transferId, userOp, account.address);
 
     // Return immediately with transfer ID for tracking
     return {
@@ -145,12 +127,7 @@ export class TransferService {
   }
 
   // Async processing method
-  private async processTransferAsync(
-    transferId: string,
-    userOp: UserOperation,
-    from: string,
-    transferDto: ExecuteTransferDto
-  ) {
+  private async processTransferAsync(transferId: string, userOp: UserOperation, from: string) {
     try {
       // Submit UserOp to bundler
       const bundlerUserOpHash = await this.ethereumService.sendUserOperation(
@@ -209,11 +186,6 @@ export class TransferService {
       throw new NotFoundException("User account not found");
     }
 
-    // Check if account needs deployment for accurate gas estimation
-    const provider = this.ethereumService.getProvider();
-    const code = await provider.getCode(account.address);
-    const needsDeployment = code === "0x";
-
     // Build UserOperation for estimation
     const userOp = await this.buildUserOperation(
       account.address,
@@ -255,7 +227,7 @@ export class TransferService {
     }
 
     // Add additional status information
-    const response: any = { ...transfer };
+    const response = { ...transfer };
 
     // Calculate elapsed time for pending transfers
     if (transfer.status === "pending" || transfer.status === "submitted") {
@@ -287,6 +259,17 @@ export class TransferService {
 
   async getTransferHistory(userId: string, page: number = 1, limit: number = 10) {
     const transfers = await this.databaseService.findTransfersByUserId(userId);
+
+    // Return empty result if no transfers found (this is normal, not an error)
+    if (!transfers || transfers.length === 0) {
+      return {
+        transfers: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      };
+    }
 
     // Sort by createdAt descending
     transfers.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -333,7 +316,8 @@ export class TransferService {
         const deployCalldata = factory.interface.encodeFunctionData(
           "createAccountWithAAStarValidator",
           [
-            account.ownerAddress,
+            account.creatorAddress,
+            account.signerAddress, // signerAddress for AA signature verification
             account.validatorAddress,
             true, // useAAStarValidator
             account.salt,

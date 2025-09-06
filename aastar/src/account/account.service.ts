@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ethers } from "ethers";
 import { DatabaseService } from "../database/database.service";
 import { EthereumService } from "../ethereum/ethereum.service";
+import { DeploymentWalletService } from "../ethereum/deployment-wallet.service";
 import { AuthService } from "../auth/auth.service";
 import { CreateAccountDto } from "./dto/create-account.dto";
 
@@ -11,6 +12,7 @@ export class AccountService {
   constructor(
     private databaseService: DatabaseService,
     private ethereumService: EthereumService,
+    private deploymentWalletService: DeploymentWalletService,
     private authService: AuthService,
     private configService: ConfigService
   ) {}
@@ -25,15 +27,16 @@ export class AccountService {
     const factory = this.ethereumService.getFactoryContract();
     const validatorAddress = this.configService.get<string>("VALIDATOR_CONTRACT_ADDRESS");
 
-    // Get user's wallet (created during registration)
+    // Use deployment wallet as the owner (from .secret file)
+    const deploymentWallet = this.deploymentWalletService.getWallet();
+    // Get user's wallet address for AA signature verification
     const userWallet = await this.authService.getUserWallet(userId);
-    const provider = this.ethereumService.getProvider();
-    const userWalletWithProvider = userWallet.connect(provider);
     const salt = createAccountDto.salt || Math.floor(Math.random() * 1000000);
 
-    // Get the predicted account address
-    const accountAddress = await factory["getAddress(address,address,bool,uint256)"](
-      userWallet.address,
+    // Get the predicted account address using deployment wallet as creator and user wallet for AA signature
+    const accountAddress = await factory["getAddress(address,address,address,bool,uint256)"](
+      deploymentWallet.address,
+      userWallet.address, // signerAddress for AA signature verification
       validatorAddress,
       true, // useAAStarValidator
       salt
@@ -41,7 +44,8 @@ export class AccountService {
 
     // Debug logging
     console.log("Account Creation Debug:");
-    console.log("- User Wallet Address (Owner):", userWallet.address);
+    console.log("- Deployment Wallet Address (Creator):", deploymentWallet.address);
+    console.log("- User Wallet Address (Signer):", userWallet.address);
     console.log("- Validator Address:", validatorAddress);
     console.log("- Salt:", salt);
     console.log("- Predicted AA Account Address:", accountAddress);
@@ -52,6 +56,7 @@ export class AccountService {
     let deploymentTxHash = null;
 
     try {
+      const provider = this.ethereumService.getProvider();
       const code = await provider.getCode(accountAddress);
       deployed = code !== "0x";
       console.log("Account deployment check completed:", deployed);
@@ -66,14 +71,15 @@ export class AccountService {
       console.log("Account already deployed on-chain:", accountAddress);
     } else {
       console.log("Account will be deployed on first transaction:", accountAddress);
-      console.log("Please fund EOA wallet first:", userWallet.address);
+      console.log("Using deployment wallet for gas:", deploymentWallet.address);
     }
 
     // Save account information
     const account = {
       userId,
       address: accountAddress,
-      ownerAddress: userWallet.address,
+      creatorAddress: deploymentWallet.address, // Use deployment wallet as creator
+      signerAddress: userWallet.address, // User wallet for AA signature verification
       salt,
       deployed,
       deploymentTxHash,
@@ -92,31 +98,30 @@ export class AccountService {
     console.log("Found account:", account ? "YES" : "NO");
     if (!account) {
       console.log("No account found for userId:", userId);
-      throw new NotFoundException("Account not found");
+      return null; // Return null instead of throwing exception for missing accounts
     }
 
-    // Get current balance of Smart Account (skip if not deployed to speed up)
+    // Get current balance of Smart Account
     let balance = "0";
-    let eoaBalance = "0";
 
     try {
-      // Only check balances if we have provider connection
+      // Only check Smart Account balance
       balance = await this.ethereumService.getBalance(account.address);
-      eoaBalance = await this.ethereumService.getBalance(account.ownerAddress);
-      console.log("Balances retrieved - Smart Account:", balance, "EOA:", eoaBalance);
+      console.log("Smart Account balance retrieved:", balance);
     } catch (error) {
-      console.log("Warning: Could not retrieve balances, using defaults:", error.message);
-      // Use default values if RPC fails
+      console.log(
+        "Warning: Could not retrieve Smart Account balance, using default:",
+        error.message
+      );
+      // Use default value if RPC fails
     }
 
     // Get nonce
     const nonce = await this.ethereumService.getNonce(account.address);
 
-    const { ownerPrivateKey, ...result } = account;
     const finalResult = {
-      ...result,
+      ...account,
       balance,
-      eoaBalance,
       nonce: nonce.toString(),
     };
     console.log("AccountService returning data:", JSON.stringify(finalResult, null, 2));
@@ -164,12 +169,11 @@ export class AccountService {
       throw new NotFoundException("Account not found");
     }
 
-    // Use user's wallet for funding
-    const userWallet = await this.authService.getUserWallet(userId);
+    // Use deployment wallet for funding
     const provider = this.ethereumService.getProvider();
-    const userWalletWithProvider = userWallet.connect(provider);
+    const deploymentWallet = this.deploymentWalletService.getWallet(provider);
 
-    const tx = await userWalletWithProvider.sendTransaction({
+    const tx = await deploymentWallet.sendTransaction({
       to: account.address,
       value: ethers.parseEther(amount),
       maxFeePerGas: ethers.parseUnits("30", "gwei"),
@@ -188,5 +192,43 @@ export class AccountService {
 
   async getAccountByUserId(userId: string) {
     return await this.databaseService.findAccountByUserId(userId);
+  }
+
+  async sponsorAccount(userId: string) {
+    const account = await this.databaseService.findAccountByUserId(userId);
+    if (!account) {
+      throw new NotFoundException("Account not found");
+    }
+
+    if (account.sponsored) {
+      throw new BadRequestException("Account has already been sponsored");
+    }
+
+    // Use deployment wallet to sponsor with 0.01 ETH
+    const provider = this.ethereumService.getProvider();
+    const deploymentWallet = this.deploymentWalletService.getWallet(provider);
+    const sponsorAmount = "0.01";
+
+    const tx = await deploymentWallet.sendTransaction({
+      to: account.address,
+      value: ethers.parseEther(sponsorAmount),
+      maxFeePerGas: ethers.parseUnits("30", "gwei"),
+      maxPriorityFeePerGas: ethers.parseUnits("10", "gwei"),
+    });
+
+    await tx.wait();
+
+    // Update account to mark as sponsored
+    await this.databaseService.updateAccount(userId, {
+      sponsored: true,
+      sponsorTxHash: tx.hash,
+    });
+
+    return {
+      success: true,
+      txHash: tx.hash,
+      amount: sponsorAmount,
+      address: account.address,
+    };
   }
 }

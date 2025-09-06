@@ -1,9 +1,10 @@
 import { Module, Global } from "@nestjs/common";
 import { EthereumService } from "./ethereum.service";
+import { DeploymentWalletService } from "./deployment-wallet.service";
 
 @Global()
 @Module({
-  providers: [EthereumService],
-  exports: [EthereumService],
+  providers: [EthereumService, DeploymentWalletService],
+  exports: [EthereumService, DeploymentWalletService],
 })
 export class EthereumModule {}

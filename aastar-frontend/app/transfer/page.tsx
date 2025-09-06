@@ -24,6 +24,7 @@ export default function TransferPage() {
     page: true,
     estimate: false,
     transfer: false,
+    sponsor: false,
   });
   const [transferResult, setTransferResult] = useState<any>(null);
   const [transferStatus, setTransferStatus] = useState<any>(null);
@@ -245,6 +246,32 @@ export default function TransferPage() {
     }
   };
 
+  // Sponsor account with 0.01 ETH
+  const sponsorAccount = async () => {
+    setLoading(prev => ({ ...prev, sponsor: true }));
+    try {
+      await accountAPI.sponsorAccount();
+      toast.success("Account sponsored successfully! 🎉");
+      
+      // Refresh account data to update sponsored status and balance
+      await refreshBalance();
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to sponsor account";
+      toast.error(message);
+    } finally {
+      setLoading(prev => ({ ...prev, sponsor: false }));
+    }
+  };
+
+  // Check if sponsor button should be shown
+  const shouldShowSponsorButton = () => {
+    if (!account) return false;
+    if (account.sponsored) return false;
+    
+    const balance = parseFloat(account.balance || "0");
+    return balance <= 0.01;
+  };
+
   if (loading.page) {
     return (
       <Layout requireAuth={true}>
@@ -264,7 +291,7 @@ export default function TransferPage() {
             <ArrowUpIcon className="h-8 w-8 text-blue-500 mr-3" />
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Send Transfer</h1>
-              <p className="text-sm text-gray-600">Send ETH using ERC-4337 account abstraction</p>
+              <p className="text-sm text-gray-600">Send ETH using ERC-4337 account abstraction - gas fees handled automatically</p>
             </div>
           </div>
         </div>
@@ -279,7 +306,7 @@ export default function TransferPage() {
               <div className="ml-3 flex-1">
                 <p className="text-sm text-blue-700">
                   <strong>First Transfer:</strong> Your smart account will be automatically deployed
-                  with your first transfer.
+                  with your first transfer - no additional gas fees required!
                 </p>
               </div>
               <div className="ml-auto pl-3">
@@ -319,20 +346,43 @@ export default function TransferPage() {
               <p className="text-sm font-mono text-blue-900">
                 {account?.address.slice(0, 10)}...{account?.address.slice(-8)}
               </p>
-              <button
-                onClick={refreshBalance}
-                className="mt-2 inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-white border border-blue-200 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-                Refresh
-              </button>
+              <div className="mt-2 flex justify-end space-x-2">
+                <button
+                  onClick={refreshBalance}
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-white border border-blue-200 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  Refresh
+                </button>
+                {shouldShowSponsorButton() && (
+                  <button
+                    onClick={sponsorAccount}
+                    disabled={loading.sponsor}
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading.sponsor ? (
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-green-600 mr-1"></div>
+                    ) : (
+                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"
+                        />
+                      </svg>
+                    )}
+                    Sponsor
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -536,8 +586,8 @@ export default function TransferPage() {
               <h3 className="text-sm font-medium text-blue-800">How it works</h3>
               <div className="mt-2 text-sm text-blue-700">
                 <ul className="list-disc list-inside space-y-1">
+                  <li>Gas fees are automatically handled - no need to hold ETH for gas</li>
                   <li>BLS nodes are automatically selected from the gossip network</li>
-                  <li>Estimate gas costs before sending</li>
                   <li>Transaction uses ERC-4337 UserOperation</li>
                   <li>BLS signatures reduce verification costs</li>
                 </ul>

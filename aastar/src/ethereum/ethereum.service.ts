@@ -10,8 +10,8 @@ export class EthereumService {
 
   // Contract ABIs
   private readonly FACTORY_ABI = [
-    "function getAddress(address owner, address validator, bool useAAStarValidator, uint256 salt) view returns (address)",
-    "function createAccountWithAAStarValidator(address owner, address aaStarValidator, bool useAAStarValidator, uint256 salt) returns (address)",
+    "function getAddress(address creator, address signer, address validator, bool useAAStarValidator, uint256 salt) view returns (address)",
+    "function createAccountWithAAStarValidator(address creator, address signer, address aaStarValidator, bool useAAStarValidator, uint256 salt) returns (address)",
   ];
 
   private readonly ACCOUNT_ABI = [

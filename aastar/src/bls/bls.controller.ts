@@ -23,11 +23,7 @@ export class BlsController {
     @Request() req,
     @Body() generateBlsSignatureDto: GenerateBlsSignatureDto
   ) {
-    return this.blsService.generateBLSSignature(
-      req.user.sub,
-      generateBlsSignatureDto.userOpHash,
-      generateBlsSignatureDto.nodeIndices
-    );
+    return this.blsService.generateBLSSignature(req.user.sub, generateBlsSignatureDto.userOpHash);
   }
 
   @Post("aggregate")

@@ -20,7 +20,10 @@ export class Account {
   address: string;
 
   @Column()
-  ownerAddress: string;
+  creatorAddress: string;
+
+  @Column()
+  signerAddress: string;
 
   @Column()
   salt: number;
@@ -30,6 +33,12 @@ export class Account {
 
   @Column({ nullable: true })
   deploymentTxHash: string;
+
+  @Column({ default: false })
+  sponsored: boolean;
+
+  @Column({ nullable: true })
+  sponsorTxHash: string;
 
   @Column()
   validatorAddress: string;

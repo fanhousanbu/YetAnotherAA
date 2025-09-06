@@ -1,5 +1,5 @@
-import { Controller, Post, Get, Body, UseGuards, Request } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import { Controller, Post, Get, Body, UseGuards, Request, HttpCode, HttpStatus, Res } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from "@nestjs/swagger";
 import { AccountService } from "./account.service";
 import { CreateAccountDto } from "./dto/create-account.dto";
 import { FundAccountDto } from "./dto/fund-account.dto";
@@ -20,17 +20,21 @@ export class AccountController {
 
   @Get()
   @ApiOperation({ summary: "Get user account information" })
-  async getAccount(@Request() req) {
+  @ApiResponse({ status: 200, description: "Account found" })
+  @ApiResponse({ status: 204, description: "No account exists for user" })
+  async getAccount(@Request() req, @Res() res) {
     console.log("AccountController.getAccount called");
     console.log("User from JWT:", req.user);
-    try {
-      const accountData = await this.accountService.getAccount(req.user.sub);
-      console.log("Account data retrieved successfully");
-      return accountData; // 直接返回数据，不包装
-    } catch (error) {
-      console.log("Error in AccountController.getAccount:", error.message);
-      throw error;
+    
+    const accountData = await this.accountService.getAccount(req.user.sub);
+    
+    if (accountData === null) {
+      console.log("No account found - returning 204 No Content");
+      return res.status(HttpStatus.NO_CONTENT).send();
     }
+    
+    console.log("Account data retrieved successfully");
+    return res.status(HttpStatus.OK).json(accountData);
   }
 
   @Get("address")
@@ -56,5 +60,11 @@ export class AccountController {
   @ApiOperation({ summary: "Fund account with ETH" })
   async fundAccount(@Request() req, @Body() fundAccountDto: FundAccountDto) {
     return this.accountService.fundAccount(req.user.sub, fundAccountDto.amount);
+  }
+
+  @Post("sponsor")
+  @ApiOperation({ summary: "Sponsor account with 0.01 ETH (one-time only)" })
+  async sponsorAccount(@Request() req) {
+    return this.accountService.sponsorAccount(req.user.sub);
   }
 }

@@ -43,8 +43,11 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
-    // Account owner (for ECDSA validation part)
-    address public owner;
+    // Account creator (for gas payment and management)
+    address public creator;
+    
+    // Signer address (for AA signature verification)
+    address public signer;
 
     // AAStarValidator contract for BLS aggregate signature validation
     AAStarValidator public aaStarValidator;
@@ -55,12 +58,12 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
     IEntryPoint private immutable _entryPoint;
 
     // Events
-    event AccountInitialized(IEntryPoint indexed entryPoint, address indexed owner);
+    event AccountInitialized(IEntryPoint indexed entryPoint, address indexed creator);
     event AAStarValidatorSet(address indexed validator, bool useCustom);
     event AAStarValidationUsed(address indexed validator, bool success);
 
-    modifier onlyOwner() {
-        _onlyOwner();
+    modifier onlyCreator() {
+        _onlyCreator();
         _;
     }
 
@@ -69,30 +72,25 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         _disableInitializers();
     }
 
-    function _onlyOwner() internal view {
-        require(msg.sender == owner || msg.sender == address(this), "account: not Owner or self");
+    function _onlyCreator() internal view {
+        require(msg.sender == creator || msg.sender == address(this), "account: not Creator or self");
     }
 
     /**
-     * @dev Initialize account with owner and AAStarValidator
+     * @dev Initialize account with creator and signer addresses
      */
     function initialize(
-        address anOwner,
+        address _creator,
+        address _signer,
         address _aaStarValidator,
         bool _useAAStarValidator
     ) public virtual initializer {
-        _initialize(anOwner, _aaStarValidator, _useAAStarValidator);
+        _initialize(_creator, _signer, _aaStarValidator, _useAAStarValidator);
     }
 
-    /**
-     * @dev Initialize with just owner (backward compatibility)
-     */
-    function initialize(address anOwner) public virtual initializer {
-        _initialize(anOwner, address(0), false);
-    }
-
-    function _initialize(address anOwner, address _aaStarValidator, bool _useAAStarValidator) internal virtual {
-        owner = anOwner;
+    function _initialize(address _creator, address _signer, address _aaStarValidator, bool _useAAStarValidator) internal virtual {
+        creator = _creator;
+        signer = _signer;
 
         if (_aaStarValidator != address(0)) {
             aaStarValidator = AAStarValidator(_aaStarValidator);
@@ -100,13 +98,13 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
             emit AAStarValidatorSet(_aaStarValidator, _useAAStarValidator);
         }
 
-        emit AccountInitialized(_entryPoint, owner);
+        emit AccountInitialized(_entryPoint, creator);
     }
 
     /**
      * @dev Set AAStarValidator
      */
-    function setAAStarValidator(address _aaStarValidator, bool _useAAStarValidator) external onlyOwner {
+    function setAAStarValidator(address _aaStarValidator, bool _useAAStarValidator) external onlyCreator {
         if (_aaStarValidator != address(0)) {
             aaStarValidator = AAStarValidator(_aaStarValidator);
         }
@@ -115,12 +113,12 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
     }
 
     function execute(address dest, uint256 value, bytes calldata func) external {
-        _requireFromEntryPointOrOwner();
+        _requireFromEntryPointOrCreator();
         _call(dest, value, func);
     }
 
     function executeBatch(address[] calldata dest, bytes[] calldata func) external {
-        _requireFromEntryPointOrOwner();
+        _requireFromEntryPointOrCreator();
         require(dest.length == func.length, "wrong array lengths");
         for (uint256 i = 0; i < dest.length; i++) {
             _call(dest[i], 0, func[i]);
@@ -172,8 +170,8 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
             }
         }
 
-        // Default ECDSA validation
-        if (owner != hash.recover(userOp.signature)) {
+        // Default ECDSA validation using signer
+        if (signer != hash.recover(userOp.signature)) {
             return 1;
         }
         return 0;
@@ -202,8 +200,8 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         address recoveredSigner = ECDSA.recover(hash, aaSignature);
 
-        // Validate that the AA signature is from the owner
-        if (recoveredSigner != owner) {
+        // Validate that the AA signature is from the signer
+        if (recoveredSigner != signer) {
             return false;
         }
 
@@ -259,9 +257,9 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
     function getValidationConfig()
         external
         view
-        returns (address validator, bool isAAStarEnabled, address accountOwner)
+        returns (address validator, bool isAAStarEnabled, address accountCreator)
     {
-        return (address(aaStarValidator), useAAStarValidator, owner);
+        return (address(aaStarValidator), useAAStarValidator, creator);
     }
 
     function _validateNonce(uint256) internal view virtual {
@@ -288,13 +286,13 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         require(msg.sender == address(entryPoint()), "account: not from EntryPoint");
     }
 
-    function _requireFromEntryPointOrOwner() internal view {
-        require(msg.sender == address(entryPoint()) || msg.sender == owner, "account: not Owner or EntryPoint");
+    function _requireFromEntryPointOrCreator() internal view {
+        require(msg.sender == address(entryPoint()) || msg.sender == creator, "account: not Creator or EntryPoint");
     }
 
     function _authorizeUpgrade(address newImplementation) internal view override {
         (newImplementation);
-        _onlyOwner();
+        _onlyCreator();
     }
 
     // =============================================================
@@ -340,8 +338,8 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         address recoveredSigner = ECDSA.recover(hash, aaSignature);
 
-        // Validate that the AA signature is from the owner
-        if (recoveredSigner != owner) {
+        // Validate that the AA signature is from the signer
+        if (recoveredSigner != signer) {
             return false;
         }
 

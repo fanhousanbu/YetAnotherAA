@@ -15,7 +15,7 @@ contract AAStarAccountFactoryV6 {
     // Events
     event AccountCreated(
         address indexed account,
-        address indexed owner,
+        address indexed creator,
         address aaStarValidator,
         bool useAAStarValidator,
         uint256 salt
@@ -28,24 +28,25 @@ contract AAStarAccountFactoryV6 {
     /**
      * @dev Create account with standard ECDSA validation
      */
-    function createAccount(address owner, uint256 salt) public returns (AAStarAccountV6 ret) {
-        return createAccountWithAAStarValidator(owner, address(0), false, salt);
+    function createAccount(address creator, address signer, uint256 salt) public returns (AAStarAccountV6 ret) {
+        return createAccountWithAAStarValidator(creator, signer, address(0), false, salt);
     }
 
     /**
      * @dev Create account with AAStarValidator for BLS aggregate signature validation
-     * @param owner The account owner
+     * @param creator The account creator (gas payment and management)
      * @param aaStarValidator Address of the AAStarValidator contract
      * @param useAAStarValidator Whether to use AAStarValidator by default
      * @param salt Salt for deterministic address generation
      */
     function createAccountWithAAStarValidator(
-        address owner,
+        address creator,
+        address signer,
         address aaStarValidator,
         bool useAAStarValidator,
         uint256 salt
     ) public returns (AAStarAccountV6 ret) {
-        address addr = getAddress(owner, aaStarValidator, useAAStarValidator, salt);
+        address addr = getAddress(creator, signer, aaStarValidator, useAAStarValidator, salt);
         uint codeSize = addr.code.length;
 
         if (codeSize > 0) {
@@ -57,8 +58,9 @@ contract AAStarAccountFactoryV6 {
                 new ERC1967Proxy{ salt: bytes32(salt) }(
                     address(accountImplementation),
                     abi.encodeWithSignature(
-                        "initialize(address,address,bool)",
-                        owner,
+                        "initialize(address,address,address,bool)",
+                        creator,
+                        signer,
                         aaStarValidator,
                         useAAStarValidator
                     )
@@ -66,21 +68,22 @@ contract AAStarAccountFactoryV6 {
             )
         );
 
-        emit AccountCreated(address(ret), owner, aaStarValidator, useAAStarValidator, salt);
+        emit AccountCreated(address(ret), creator, aaStarValidator, useAAStarValidator, salt);
     }
 
     /**
      * @dev Get deterministic address for standard account
      */
-    function getAddress(address owner, uint256 salt) public view returns (address) {
-        return getAddress(owner, address(0), false, salt);
+    function getAddress(address creator, address signer, uint256 salt) public view returns (address) {
+        return getAddress(creator, signer, address(0), false, salt);
     }
 
     /**
-     * @dev Get deterministic address for account with AAStarValidator
+     * @dev Get deterministic address for account with AAStarValidator and signer
      */
     function getAddress(
-        address owner,
+        address creator,
+        address signer,
         address aaStarValidator,
         bool useAAStarValidator,
         uint256 salt
@@ -94,8 +97,9 @@ contract AAStarAccountFactoryV6 {
                         abi.encode(
                             address(accountImplementation),
                             abi.encodeWithSignature(
-                                "initialize(address,address,bool)",
-                                owner,
+                                "initialize(address,address,address,bool)",
+                                creator,
+                                signer,
                                 aaStarValidator,
                                 useAAStarValidator
                             )
@@ -105,27 +109,31 @@ contract AAStarAccountFactoryV6 {
             );
     }
 
+
     /**
      * @dev Batch create multiple accounts with different configurations
      */
     function batchCreateAccounts(
-        address[] calldata owners,
+        address[] calldata creators,
+        address[] calldata signers,
         address[] calldata aaStarValidators,
         bool[] calldata useAAStarValidators,
         uint256[] calldata salts
     ) external returns (AAStarAccountV6[] memory accounts) {
         require(
-            owners.length == aaStarValidators.length &&
-                owners.length == useAAStarValidators.length &&
-                owners.length == salts.length,
+            creators.length == signers.length &&
+                creators.length == aaStarValidators.length &&
+                creators.length == useAAStarValidators.length &&
+                creators.length == salts.length,
             "Array length mismatch"
         );
 
-        accounts = new AAStarAccountV6[](owners.length);
+        accounts = new AAStarAccountV6[](creators.length);
 
-        for (uint256 i = 0; i < owners.length; i++) {
+        for (uint256 i = 0; i < creators.length; i++) {
             accounts[i] = createAccountWithAAStarValidator(
-                owners[i],
+                creators[i],
+                signers[i],
                 aaStarValidators[i],
                 useAAStarValidators[i],
                 salts[i]
@@ -138,29 +146,31 @@ contract AAStarAccountFactoryV6 {
      * This is a convenience function for common use case
      */
     function createAAStarAccount(
-        address owner,
+        address creator,
+        address signer,
         address aaStarValidator,
         uint256 salt
     ) external returns (AAStarAccountV6 ret) {
         require(aaStarValidator != address(0), "AAStarValidator address required");
-        return createAccountWithAAStarValidator(owner, aaStarValidator, true, salt);
+        return createAccountWithAAStarValidator(creator, signer, aaStarValidator, true, salt);
     }
 
     /**
      * @dev Batch create AAStarValidator accounts
      */
     function batchCreateAAStarAccounts(
-        address[] calldata owners,
+        address[] calldata creators,
+        address[] calldata signers,
         address aaStarValidator,
         uint256[] calldata salts
     ) external returns (AAStarAccountV6[] memory accounts) {
         require(aaStarValidator != address(0), "AAStarValidator address required");
-        require(owners.length == salts.length, "Array length mismatch");
+        require(creators.length == signers.length && creators.length == salts.length, "Array length mismatch");
 
-        accounts = new AAStarAccountV6[](owners.length);
+        accounts = new AAStarAccountV6[](creators.length);
 
-        for (uint256 i = 0; i < owners.length; i++) {
-            accounts[i] = createAccountWithAAStarValidator(owners[i], aaStarValidator, true, salts[i]);
+        for (uint256 i = 0; i < creators.length; i++) {
+            accounts[i] = createAccountWithAAStarValidator(creators[i], signers[i], aaStarValidator, true, salts[i]);
         }
     }
 
@@ -175,12 +185,13 @@ contract AAStarAccountFactoryV6 {
      * @dev Check if account exists at given address
      */
     function isAccountDeployed(
-        address owner,
+        address creator,
+        address signer,
         address aaStarValidator,
         bool useAAStarValidator,
         uint256 salt
     ) external view returns (bool) {
-        address addr = getAddress(owner, aaStarValidator, useAAStarValidator, salt);
+        address addr = getAddress(creator, signer, aaStarValidator, useAAStarValidator, salt);
         return addr.code.length > 0;
     }
 }

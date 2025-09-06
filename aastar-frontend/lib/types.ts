@@ -9,13 +9,15 @@ export interface User {
 export interface Account {
   userId: string;
   address: string;
-  ownerAddress: string;
+  creatorAddress: string;
+  signerAddress: string;
   salt: number;
   deployed: boolean;
   deploymentTxHash?: string;
+  sponsored: boolean;
+  sponsorTxHash?: string;
   validatorAddress: string;
   balance?: string;
-  eoaBalance?: string;
   nonce?: string;
   createdAt: string;
 }

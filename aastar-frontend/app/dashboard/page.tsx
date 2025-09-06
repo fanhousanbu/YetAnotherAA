@@ -43,7 +43,7 @@ export default function DashboardPage() {
         console.log("Dashboard received account data:", accountResponse);
         console.log("Account data:", accountResponse.data);
         console.log("Account address:", accountResponse.data?.address);
-        console.log("Account ownerAddress:", accountResponse.data?.ownerAddress);
+        console.log("Account creatorAddress:", accountResponse.data?.creatorAddress);
         setAccount(accountResponse.data);
       } catch (error) {
         // Account doesn't exist yet
@@ -89,12 +89,38 @@ export default function DashboardPage() {
     }
 
     toast.success(
-      `Send ETH to: ${account.address.slice(0, 10)}...${account.address.slice(-8)}\nAddress copied to clipboard!`,
-      { duration: 5000 }
+      `Send ETH directly to your Smart Account: ${account.address.slice(0, 10)}...${account.address.slice(-8)}\nAddress copied to clipboard!`,
+      { duration: 6000 }
     );
 
     // Copy address to clipboard
     navigator.clipboard.writeText(account.address);
+  };
+
+  // Sponsor account with 0.01 ETH
+  const sponsorAccount = async () => {
+    setActionLoading("sponsor");
+    try {
+      await accountAPI.sponsorAccount();
+      toast.success("Account sponsored successfully! 🎉");
+      
+      // Reload dashboard data to update sponsored status and balance
+      setTimeout(() => loadDashboardData(), 2000);
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to sponsor account";
+      toast.error(message);
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  // Check if sponsor button should be shown
+  const shouldShowSponsorButton = () => {
+    if (!account) return false;
+    if (account.sponsored) return false;
+    
+    const balance = parseFloat(account.balance || "0");
+    return balance <= 0.01;
   };
 
   const getStatusIcon = (status: string) => {
@@ -133,7 +159,7 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold text-gray-900">
             Welcome back, {user?.username || user?.email}!
           </h1>
-          <p className="mt-1 text-sm text-gray-600">Manage your ERC-4337 smart account</p>
+          <p className="mt-1 text-sm text-gray-600">Manage your ERC-4337 smart account - no need to manage gas fees!</p>
         </div>
 
         {/* Account Status */}
@@ -151,7 +177,7 @@ export default function DashboardPage() {
                     {(() => {
                       console.log("Rendering account:", account);
                       console.log("Account address in render:", account?.address);
-                      console.log("Account ownerAddress in render:", account?.ownerAddress);
+                      console.log("Account creatorAddress in render:", account?.creatorAddress);
                       return null;
                     })()}
                     {account ? (
@@ -160,32 +186,6 @@ export default function DashboardPage() {
                           <span className="text-sm text-gray-500">Account Address:</span>
                           <CopyButton text={account.address} className="flex-shrink-0" />
                         </div>
-                        {!account.deployed && account.ownerAddress && (
-                          <div className="bg-yellow-50 p-3 rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex flex-col">
-                                <span className="text-sm text-yellow-800 font-medium">
-                                  ⚠️ Fund EOA Address First:
-                                </span>
-                                <span className="text-xs text-yellow-700">
-                                  This address needs ETH to deploy your smart account
-                                </span>
-                              </div>
-                              <CopyButton text={account.ownerAddress} className="flex-shrink-0" />
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-yellow-700">EOA Balance:</span>
-                              <span className="text-xs text-yellow-800 font-semibold">
-                                {(() => {
-                                  console.log("Account data for EOA balance:", account);
-                                  console.log("EOA balance value:", account.eoaBalance);
-                                  return account.eoaBalance || "0";
-                                })()}{" "}
-                                ETH
-                              </span>
-                            </div>
-                          </div>
-                        )}
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-gray-500">Balance:</span>
                           <span className="text-sm font-semibold">
@@ -207,7 +207,7 @@ export default function DashboardPage() {
                       </div>
                     ) : (
                       <p className="mt-2 text-sm text-gray-600">
-                        No smart account found. Create one to get started.
+                        No smart account found. Create one to get started - deployment and gas fees are automatically handled!
                       </p>
                     )}
                   </div>
@@ -243,6 +243,27 @@ export default function DashboardPage() {
                         <PlusIcon className="h-4 w-4 mr-2" />
                         Top Up
                       </button>
+                      {shouldShowSponsorButton() && (
+                        <button
+                          onClick={sponsorAccount}
+                          disabled={actionLoading === "sponsor"}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {actionLoading === "sponsor" ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          ) : (
+                            <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"
+                              />
+                            </svg>
+                          )}
+                          Sponsor
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
@@ -271,6 +292,27 @@ export default function DashboardPage() {
                     <EyeIcon className="h-4 w-4 mr-2" />
                     Refresh Data
                   </button>
+                  {shouldShowSponsorButton() && (
+                    <button
+                      onClick={sponsorAccount}
+                      disabled={actionLoading === "sponsor"}
+                      className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {actionLoading === "sponsor" ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      ) : (
+                        <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"
+                          />
+                        </svg>
+                      )}
+                      Sponsor
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

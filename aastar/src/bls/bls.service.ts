@@ -58,7 +58,7 @@ export class BlsService implements OnModuleInit {
             });
             console.log(`  ✅ ${node.nodeName} (${node.apiEndpoint}) - Active`);
           }
-        } catch (error: any) {
+        } catch {
           console.log(`  ❌ ${node.nodeName} (${node.apiEndpoint}) - Offline`);
           // Continue checking other nodes
         }
@@ -85,10 +85,7 @@ export class BlsService implements OnModuleInit {
       console.log("Using seed nodes from environment variables");
     } else {
       // Use config file defaults
-      seedNodes = config.discovery?.seedNodes || [
-        { endpoint: "http://localhost:3001" },
-        { endpoint: "http://localhost:3002" },
-      ];
+      seedNodes = config.discovery?.seedNodes || [];
     }
 
     for (const seedNode of seedNodes) {
@@ -101,7 +98,7 @@ export class BlsService implements OnModuleInit {
 
         // Filter active peers
         const activeNodes = peers.filter(
-          (peer: any) => peer.status === "active" && peer.apiEndpoint && peer.publicKey
+          peer => peer.status === "active" && peer.apiEndpoint && peer.publicKey
         );
 
         if (activeNodes.length > 0) {
@@ -112,7 +109,7 @@ export class BlsService implements OnModuleInit {
 
           return activeNodes;
         }
-      } catch (error: any) {
+      } catch (error) {
         console.log(`  ❌ Seed node ${seedNode.endpoint} failed: ${error.message}`);
         // Continue with next seed node
       }
@@ -128,10 +125,7 @@ export class BlsService implements OnModuleInit {
       console.log("Using fallback endpoints from environment variables");
     } else {
       // Use config file defaults
-      fallbackEndpoints = config.discovery?.fallbackEndpoints || [
-        "http://localhost:3001",
-        "http://localhost:3002",
-      ];
+      fallbackEndpoints = config.discovery?.fallbackEndpoints || [];
     }
 
     if (fallbackEndpoints.length > 0) {
@@ -143,7 +137,7 @@ export class BlsService implements OnModuleInit {
           const response = await axios.get(`${endpoint}/gossip/peers`, { timeout: 5000 });
           const peers = response.data.peers || [];
           const activeNodes = peers.filter(
-            (peer: any) => peer.status === "active" && peer.apiEndpoint && peer.publicKey
+            peer => peer.status === "active" && peer.apiEndpoint && peer.publicKey
           );
 
           if (activeNodes.length > 0) {
@@ -151,7 +145,7 @@ export class BlsService implements OnModuleInit {
             await this.updateSignerNodeCache(activeNodes);
             return activeNodes;
           }
-        } catch (error: any) {
+        } catch (error) {
           console.log(`  ❌ Fallback ${endpoint} failed: ${error.message}`);
         }
       }
@@ -177,16 +171,12 @@ export class BlsService implements OnModuleInit {
       this.blsConfig = await this.databaseService.getBlsConfig();
 
       console.log("✅ Successfully updated bls-config.json and in-memory cache");
-    } catch (error: any) {
+    } catch (error) {
       console.warn("❌ Failed to update signer node cache:", error.message);
     }
   }
 
-  async generateBLSSignature(
-    userId: string,
-    userOpHash: string,
-    nodeIndices?: number[]
-  ): Promise<BlsSignatureData> {
+  async generateBLSSignature(userId: string, userOpHash: string): Promise<BlsSignatureData> {
     // Get active nodes from signer network
     const activeNodes = await this.getActiveSignerNodes();
     if (activeNodes.length < 1) {
@@ -231,7 +221,7 @@ export class BlsService implements OnModuleInit {
 
           console.log(`  ✅ Success - NodeId: ${response.data.nodeId}`);
           console.log(`  - Signature (EIP): ${formattedSignatureEIP.substring(0, 40)}...`);
-        } catch (error: any) {
+        } catch (error) {
           console.error(`  ❌ Failed: ${error.message}`);
           // Continue with other nodes
         }
@@ -263,7 +253,7 @@ export class BlsService implements OnModuleInit {
 
           console.log("✅ Aggregation successful");
           console.log("Aggregated Signature:", aggregatedSignature.substring(0, 40) + "...");
-        } catch (error: any) {
+        } catch (error) {
           console.error("❌ Failed to aggregate signatures:", error.message);
           throw new Error(`BLS signature aggregation failed: ${error.message}`);
         }
@@ -285,7 +275,7 @@ export class BlsService implements OnModuleInit {
 
           console.log("✅ Using single signature in EIP format");
           console.log("Signature:", aggregatedSignature.substring(0, 40) + "...");
-        } catch (error: any) {
+        } catch (error) {
           console.error("❌ Failed to get EIP format signature:", error.message);
           throw new Error(`Failed to get signature in EIP format: ${error.message}`);
         }
@@ -302,7 +292,7 @@ export class BlsService implements OnModuleInit {
 
         console.log("✅ Message point generated");
         console.log("Message Point:", messagePoint.substring(0, 40) + "...");
-      } catch (error: any) {
+      } catch (error) {
         console.error("❌ Failed to generate message point:", error.message);
         throw new Error(`Failed to generate message point: ${error.message}`);
       }
@@ -318,7 +308,7 @@ export class BlsService implements OnModuleInit {
       const aaSignature = await wallet.signMessage(ethers.getBytes(userOpHash));
 
       console.log("✅ AA signature generated");
-      console.log("AA Address:", account.ownerAddress);
+      console.log("AA Address:", account.signerAddress);
 
       console.log("\n========== BLS SIGNATURE GENERATION COMPLETE ==========");
 
@@ -326,10 +316,10 @@ export class BlsService implements OnModuleInit {
         nodeIds: signerNodeIds,
         signature: aggregatedSignature,
         messagePoint: messagePoint,
-        aaAddress: account.ownerAddress,
+        aaAddress: account.signerAddress,
         aaSignature: aaSignature,
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error("❌ BLS signature generation failed:", error);
       throw new Error(`BLS signature generation failed: ${error.message}`);
     }
