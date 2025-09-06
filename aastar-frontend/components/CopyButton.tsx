@@ -34,7 +34,7 @@ export default function CopyButton({
       setTimeout(() => {
         setCopied(false);
       }, 2000);
-    } catch (err) {
+    } catch (_err) {
       // Fallback for older browsers
       const textArea = document.createElement("textarea");
       textArea.value = text || "";
@@ -47,7 +47,7 @@ export default function CopyButton({
         setTimeout(() => {
           setCopied(false);
         }, 2000);
-      } catch (fallbackErr) {
+      } catch (_fallbackErr) {
         toast.error("Failed to copy address");
       }
       document.body.removeChild(textArea);

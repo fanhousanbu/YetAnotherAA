@@ -45,7 +45,7 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
 
     // Account creator (for gas payment and management)
     address public creator;
-    
+
     // Signer address (for AA signature verification)
     address public signer;
 
@@ -88,7 +88,12 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         _initialize(_creator, _signer, _aaStarValidator, _useAAStarValidator);
     }
 
-    function _initialize(address _creator, address _signer, address _aaStarValidator, bool _useAAStarValidator) internal virtual {
+    function _initialize(
+        address _creator,
+        address _signer,
+        address _aaStarValidator,
+        bool _useAAStarValidator
+    ) internal virtual {
         creator = _creator;
         signer = _signer;
 

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, Request, HttpCode, HttpStatus, Res } from "@nestjs/common";
+import { Controller, Post, Get, Body, UseGuards, Request, HttpStatus, Res } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from "@nestjs/swagger";
 import { AccountService } from "./account.service";
 import { CreateAccountDto } from "./dto/create-account.dto";
@@ -25,14 +25,14 @@ export class AccountController {
   async getAccount(@Request() req, @Res() res) {
     console.log("AccountController.getAccount called");
     console.log("User from JWT:", req.user);
-    
+
     const accountData = await this.accountService.getAccount(req.user.sub);
-    
+
     if (accountData === null) {
       console.log("No account found - returning 204 No Content");
       return res.status(HttpStatus.NO_CONTENT).send();
     }
-    
+
     console.log("Account data retrieved successfully");
     return res.status(HttpStatus.OK).json(accountData);
   }

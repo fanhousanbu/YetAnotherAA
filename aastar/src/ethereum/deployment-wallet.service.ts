@@ -6,9 +6,7 @@ import { ethers } from "ethers";
 export class DeploymentWalletService {
   private deploymentWallet: ethers.Wallet;
 
-  constructor(
-    private configService: ConfigService
-  ) {
+  constructor(private configService: ConfigService) {
     const privateKey = this.configService.get<string>("ETH_PRIVATE_KEY");
     if (!privateKey) {
       throw new Error("ETH_PRIVATE_KEY not found in configuration");

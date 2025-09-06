@@ -98,7 +98,7 @@ export class EthereumService {
         userOp,
         this.configService.get("ENTRY_POINT_ADDRESS"),
       ]);
-    } catch (error) {
+    } catch {
       // Return default values if estimation fails
       return {
         callGasLimit: "0x249f0", // 150000
@@ -128,7 +128,7 @@ export class EthereumService {
         if (receipt && (receipt.transactionHash || receipt.receipt?.transactionHash)) {
           return receipt.transactionHash || receipt.receipt?.transactionHash;
         }
-      } catch (error) {
+      } catch {
         // Continue polling
       }
       await new Promise(resolve => setTimeout(resolve, pollInterval));

@@ -34,7 +34,10 @@ export class TransferController {
 
   @Get("history")
   @ApiOperation({ summary: "Get transfer history" })
-  @ApiResponse({ status: 200, description: "Transfer history retrieved (may be empty array if no transfers)" })
+  @ApiResponse({
+    status: 200,
+    description: "Transfer history retrieved (may be empty array if no transfers)",
+  })
   @ApiQuery({ name: "page", required: false, type: Number })
   @ApiQuery({ name: "limit", required: false, type: Number })
   async getTransferHistory(

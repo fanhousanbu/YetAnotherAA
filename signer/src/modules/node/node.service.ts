@@ -1,11 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  OnModuleInit,
-  Logger,
-  Inject,
-  forwardRef,
-} from "@nestjs/common";
+import { Injectable, OnModuleInit, Logger, Inject, forwardRef } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NodeKeyPair, NodeState } from "../../interfaces/node.interface.js";
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "fs";

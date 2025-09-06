@@ -45,7 +45,7 @@ export default function DashboardPage() {
         console.log("Account address:", accountResponse.data?.address);
         console.log("Account creatorAddress:", accountResponse.data?.creatorAddress);
         setAccount(accountResponse.data);
-      } catch (error) {
+      } catch {
         // Account doesn't exist yet
         setAccount(null);
       }
@@ -54,7 +54,7 @@ export default function DashboardPage() {
       try {
         const transferResponse = await transferAPI.getHistory(1, 5);
         setTransfers(transferResponse.data.transfers);
-      } catch (error) {
+      } catch {
         setTransfers([]);
       }
     } catch (error: any) {
@@ -103,7 +103,7 @@ export default function DashboardPage() {
     try {
       await accountAPI.sponsorAccount();
       toast.success("Account sponsored successfully! 🎉");
-      
+
       // Reload dashboard data to update sponsored status and balance
       setTimeout(() => loadDashboardData(), 2000);
     } catch (error: any) {
@@ -118,7 +118,7 @@ export default function DashboardPage() {
   const shouldShowSponsorButton = () => {
     if (!account) return false;
     if (account.sponsored) return false;
-    
+
     const balance = parseFloat(account.balance || "0");
     return balance <= 0.01;
   };
@@ -126,26 +126,22 @@ export default function DashboardPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "completed":
-        return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+        return <CheckCircleIcon className="w-5 h-5 text-green-500" />;
       case "failed":
-        return <ExclamationCircleIcon className="h-5 w-5 text-red-500" />;
+        return <ExclamationCircleIcon className="w-5 h-5 text-red-500" />;
       case "pending":
       case "submitted":
-        return <ClockIcon className="h-5 w-5 text-yellow-500" />;
+        return <ClockIcon className="w-5 h-5 text-yellow-500" />;
       default:
-        return <ClockIcon className="h-5 w-5 text-gray-500" />;
+        return <ClockIcon className="w-5 h-5 text-gray-500" />;
     }
-  };
-
-  const truncateAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
   if (loading) {
     return (
       <Layout requireAuth={true}>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="w-32 h-32 border-b-2 border-blue-500 rounded-full animate-spin"></div>
         </div>
       </Layout>
     );
@@ -153,26 +149,28 @@ export default function DashboardPage() {
 
   return (
     <Layout requireAuth={true}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
             Welcome back, {user?.username || user?.email}!
           </h1>
-          <p className="mt-1 text-sm text-gray-600">Manage your ERC-4337 smart account - no need to manage gas fees!</p>
+          <p className="mt-1 text-sm text-gray-600">
+            Manage your ERC-4337 smart account - no need to manage gas fees!
+          </p>
         </div>
 
         {/* Account Status */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-3">
           {/* Account Card */}
           <div className="col-span-1 lg:col-span-2">
-            <div className="bg-white overflow-hidden shadow-sm rounded-lg">
+            <div className="overflow-hidden bg-white rounded-lg shadow-sm">
               <div className="p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <WalletIcon className="h-8 w-8 text-blue-500" />
+                    <WalletIcon className="w-8 h-8 text-blue-500" />
                   </div>
-                  <div className="ml-4 flex-1">
+                  <div className="flex-1 ml-4">
                     <h3 className="text-lg font-medium text-gray-900">Smart Account</h3>
                     {(() => {
                       console.log("Rendering account:", account);
@@ -207,23 +205,24 @@ export default function DashboardPage() {
                       </div>
                     ) : (
                       <p className="mt-2 text-sm text-gray-600">
-                        No smart account found. Create one to get started - deployment and gas fees are automatically handled!
+                        No smart account found. Create one to get started - deployment and gas fees
+                        are automatically handled!
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="mt-6 flex space-x-3">
+                <div className="flex mt-6 space-x-3">
                   {!account ? (
                     <button
                       onClick={createAccount}
                       disabled={actionLoading === "create"}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                     >
                       {actionLoading === "create" ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
                       ) : (
-                        <PlusIcon className="h-4 w-4 mr-2" />
+                        <PlusIcon className="w-4 h-4 mr-2" />
                       )}
                       Create Account
                     </button>
@@ -231,28 +230,33 @@ export default function DashboardPage() {
                     <>
                       <button
                         onClick={() => router.push("/transfer")}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
-                        <ArrowUpIcon className="h-4 w-4 mr-2" />
+                        <ArrowUpIcon className="w-4 h-4 mr-2" />
                         Send Transfer
                       </button>
                       <button
                         onClick={showTopUpInfo}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
-                        <PlusIcon className="h-4 w-4 mr-2" />
+                        <PlusIcon className="w-4 h-4 mr-2" />
                         Top Up
                       </button>
                       {shouldShowSponsorButton() && (
                         <button
                           onClick={sponsorAccount}
                           disabled={actionLoading === "sponsor"}
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {actionLoading === "sponsor" ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
                           ) : (
-                            <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg
+                              className="w-4 h-4 mr-2"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -273,35 +277,40 @@ export default function DashboardPage() {
 
           {/* Quick Actions */}
           <div className="col-span-1">
-            <div className="bg-white overflow-hidden shadow-sm rounded-lg">
+            <div className="overflow-hidden bg-white rounded-lg shadow-sm">
               <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
+                <h3 className="mb-4 text-lg font-medium text-gray-900">Quick Actions</h3>
                 <div className="space-y-3">
                   <button
                     onClick={() => router.push("/transfer")}
                     disabled={!account?.deployed}
-                    className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-blue-600 bg-blue-100 border border-transparent rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <ArrowUpIcon className="h-4 w-4 mr-2" />
+                    <ArrowUpIcon className="w-4 h-4 mr-2" />
                     Send Transfer
                   </button>
                   <button
                     onClick={() => loadDashboardData()}
-                    className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    <EyeIcon className="h-4 w-4 mr-2" />
+                    <EyeIcon className="w-4 h-4 mr-2" />
                     Refresh Data
                   </button>
                   {shouldShowSponsorButton() && (
                     <button
                       onClick={sponsorAccount}
                       disabled={actionLoading === "sponsor"}
-                      className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {actionLoading === "sponsor" ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
                       ) : (
-                        <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -320,7 +329,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Transfers */}
-        <div className="bg-white shadow-sm rounded-lg">
+        <div className="bg-white rounded-lg shadow-sm">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Recent Transfers</h3>
@@ -369,8 +378,8 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-6">
-                <WalletIcon className="mx-auto h-12 w-12 text-gray-400" />
+              <div className="py-6 text-center">
+                <WalletIcon className="w-12 h-12 mx-auto text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No transfers yet</h3>
                 <p className="mt-1 text-sm text-gray-500">Start by sending your first transfer!</p>
               </div>

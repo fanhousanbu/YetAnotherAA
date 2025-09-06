@@ -37,7 +37,7 @@ export class JsonAdapter implements PersistenceAdapter {
     try {
       const data = await fs.promises.readFile(filePath, "utf-8");
       return JSON.parse(data);
-    } catch (error) {
+    } catch {
       return [];
     }
   }
@@ -168,7 +168,7 @@ export class JsonAdapter implements PersistenceAdapter {
     try {
       const data = await fs.promises.readFile(filePath, "utf-8");
       return JSON.parse(data);
-    } catch (error) {
+    } catch {
       console.warn(`⚠️  Could not read bls-config.json from ${filePath}, using default config`);
       const defaultConfig = {
         signerNodes: {

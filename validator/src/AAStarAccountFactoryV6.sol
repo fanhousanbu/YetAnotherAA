@@ -109,7 +109,6 @@ contract AAStarAccountFactoryV6 {
             );
     }
 
-
     /**
      * @dev Batch create multiple accounts with different configurations
      */

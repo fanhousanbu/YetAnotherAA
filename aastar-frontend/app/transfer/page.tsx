@@ -241,7 +241,7 @@ export default function TransferPage() {
       const accountResponse = await accountAPI.getAccount();
       setAccount(accountResponse.data);
       toast.success("Balance updated");
-    } catch (error) {
+    } catch {
       toast.error("Failed to refresh balance");
     }
   };
@@ -252,7 +252,7 @@ export default function TransferPage() {
     try {
       await accountAPI.sponsorAccount();
       toast.success("Account sponsored successfully! 🎉");
-      
+
       // Refresh account data to update sponsored status and balance
       await refreshBalance();
     } catch (error: any) {
@@ -267,7 +267,7 @@ export default function TransferPage() {
   const shouldShowSponsorButton = () => {
     if (!account) return false;
     if (account.sponsored) return false;
-    
+
     const balance = parseFloat(account.balance || "0");
     return balance <= 0.01;
   };
@@ -275,8 +275,8 @@ export default function TransferPage() {
   if (loading.page) {
     return (
       <Layout requireAuth={true}>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="w-32 h-32 border-b-2 border-blue-500 rounded-full animate-spin"></div>
         </div>
       </Layout>
     );
@@ -284,32 +284,34 @@ export default function TransferPage() {
 
   return (
     <Layout requireAuth={true}>
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-2xl px-4 py-6 mx-auto sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center">
-            <ArrowUpIcon className="h-8 w-8 text-blue-500 mr-3" />
+            <ArrowUpIcon className="w-8 h-8 mr-3 text-blue-500" />
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Send Transfer</h1>
-              <p className="text-sm text-gray-600">Send ETH using ERC-4337 account abstraction - gas fees handled automatically</p>
+              <p className="text-sm text-gray-600">
+                Send ETH using ERC-4337 account abstraction - gas fees handled automatically
+              </p>
             </div>
           </div>
         </div>
 
         {/* Deployment Banner */}
         {showDeploymentBanner && (
-          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+          <div className="p-4 mb-6 border-l-4 border-blue-400 bg-blue-50">
             <div className="flex">
               <div className="flex-shrink-0">
-                <InformationCircleIcon className="h-5 w-5 text-blue-400" />
+                <InformationCircleIcon className="w-5 h-5 text-blue-400" />
               </div>
-              <div className="ml-3 flex-1">
+              <div className="flex-1 ml-3">
                 <p className="text-sm text-blue-700">
                   <strong>First Transfer:</strong> Your smart account will be automatically deployed
                   with your first transfer - no additional gas fees required!
                 </p>
               </div>
-              <div className="ml-auto pl-3">
+              <div className="pl-3 ml-auto">
                 <div className="-mx-1.5 -my-1.5">
                   <button
                     type="button"
@@ -317,7 +319,7 @@ export default function TransferPage() {
                     className="inline-flex bg-blue-50 rounded-md p-1.5 text-blue-500 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-50 focus:ring-blue-600"
                   >
                     <span className="sr-only">Dismiss</span>
-                    <XMarkIcon className="h-5 w-5" />
+                    <XMarkIcon className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -326,8 +328,8 @@ export default function TransferPage() {
         )}
 
         {/* Account Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-4 mb-6 border border-blue-200 rounded-lg bg-blue-50">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <p className="text-sm font-medium text-blue-900">Account Balance</p>
               <div className="relative group">
@@ -335,23 +337,28 @@ export default function TransferPage() {
                   {formatBalance(account?.balance)} ETH
                 </div>
                 {/* Tooltip */}
-                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-10">
+                <div className="absolute left-0 z-10 invisible px-3 py-2 mb-2 text-sm text-white transition-all duration-200 bg-gray-900 rounded-lg opacity-0 bottom-full group-hover:opacity-100 group-hover:visible whitespace-nowrap">
                   <div className="font-mono">{account?.balance || "0"} ETH</div>
-                  <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
+                  <div className="absolute w-0 h-0 border-t-4 border-l-4 border-r-4 top-full left-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
                 </div>
               </div>
             </div>
             <div className="text-right">
               <p className="text-sm text-blue-700">Account Address</p>
-              <p className="text-sm font-mono text-blue-900">
+              <p className="font-mono text-sm text-blue-900">
                 {account?.address.slice(0, 10)}...{account?.address.slice(-8)}
               </p>
-              <div className="mt-2 flex justify-end space-x-2">
+              <div className="flex justify-end mt-2 space-x-2">
                 <button
                   onClick={refreshBalance}
                   className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-white border border-blue-200 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-3 h-3 mr-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -365,12 +372,17 @@ export default function TransferPage() {
                   <button
                     onClick={sponsorAccount}
                     disabled={loading.sponsor}
-                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 border border-green-200 rounded-md bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading.sponsor ? (
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-green-600 mr-1"></div>
+                      <div className="w-3 h-3 mr-1 border-b-2 border-green-600 rounded-full animate-spin"></div>
                     ) : (
-                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg
+                        className="w-3 h-3 mr-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -400,13 +412,13 @@ export default function TransferPage() {
           >
             <div className="flex">
               {transferStatus?.status === "completed" ? (
-                <CheckCircleIcon className="h-5 w-5 text-green-400" />
+                <CheckCircleIcon className="w-5 h-5 text-green-400" />
               ) : transferStatus?.status === "failed" ? (
-                <InformationCircleIcon className="h-5 w-5 text-red-400" />
+                <InformationCircleIcon className="w-5 h-5 text-red-400" />
               ) : (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                <div className="w-5 h-5 border-b-2 border-blue-500 rounded-full animate-spin"></div>
               )}
-              <div className="ml-3 flex-1">
+              <div className="flex-1 ml-3">
                 <h3
                   className={`text-sm font-medium ${
                     transferStatus?.status === "completed"
@@ -418,7 +430,7 @@ export default function TransferPage() {
                 >
                   {transferStatus?.statusDescription || "Transfer Submitted"}
                 </h3>
-                <div className="mt-2 text-sm space-y-1">
+                <div className="mt-2 space-y-1 text-sm">
                   <p className="text-gray-600">
                     Status:{" "}
                     <span className="font-medium">
@@ -440,7 +452,7 @@ export default function TransferPage() {
                         href={transferStatus.explorerUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="ml-1 text-blue-600 hover:text-blue-800 underline"
+                        className="ml-1 text-blue-600 underline hover:text-blue-800"
                       >
                         {transferStatus.transactionHash.slice(0, 20)}...
                       </a>
@@ -456,7 +468,7 @@ export default function TransferPage() {
         )}
 
         {/* Transfer Form */}
-        <div className="bg-white shadow-sm rounded-lg">
+        <div className="bg-white rounded-lg shadow-sm">
           <div className="p-6 space-y-6">
             {/* Recipient */}
             <div>
@@ -470,7 +482,7 @@ export default function TransferPage() {
                 value={formData.to}
                 onChange={handleChange}
                 placeholder="0x..."
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
             </div>
 
@@ -488,29 +500,29 @@ export default function TransferPage() {
                 value={formData.amount}
                 onChange={handleChange}
                 placeholder="0.001"
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
               <div className="mt-1 text-sm text-gray-500">
                 Available:
-                <span className="relative group ml-1">
+                <span className="relative ml-1 group">
                   {formatBalance(account?.balance)} ETH
                   {/* Tooltip for available balance */}
-                  <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-20">
+                  <div className="absolute left-0 z-20 invisible px-3 py-2 mb-2 text-sm text-white transition-all duration-200 bg-gray-900 rounded-lg opacity-0 bottom-full group-hover:opacity-100 group-hover:visible whitespace-nowrap">
                     <div className="font-mono">Exact: {account?.balance || "0"} ETH</div>
-                    <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
+                    <div className="absolute w-0 h-0 border-t-4 border-l-4 border-r-4 top-full left-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
                   </div>
                 </span>
                 {formData.amount &&
                   parseFloat(formData.amount) > parseFloat(account?.balance || "0") && (
-                    <span className="text-red-600 ml-2">⚠️ Insufficient balance</span>
+                    <span className="ml-2 text-red-600">⚠️ Insufficient balance</span>
                   )}
               </div>
             </div>
 
             {/* Gas Estimation */}
             {gasEstimate && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-900 mb-2">Gas Estimation</h3>
+              <div className="p-4 rounded-lg bg-gray-50">
+                <h3 className="mb-2 text-sm font-medium text-gray-900">Gas Estimation</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-500">Call Gas:</span>
@@ -546,10 +558,10 @@ export default function TransferPage() {
                 type="button"
                 onClick={estimateGas}
                 disabled={loading.estimate || !formData.to || !formData.amount}
-                className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading.estimate ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                  <div className="w-4 h-4 mr-2 border-b-2 border-gray-600 rounded-full animate-spin"></div>
                 ) : null}
                 Estimate Gas
               </button>
@@ -565,9 +577,9 @@ export default function TransferPage() {
                 }`}
               >
                 {loading.transfer ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
                 ) : (
-                  <ArrowUpIcon className="h-4 w-4 mr-2" />
+                  <ArrowUpIcon className="w-4 h-4 mr-2" />
                 )}
                 {formData.amount &&
                 parseFloat(formData.amount) > parseFloat(account?.balance || "0")
@@ -579,13 +591,13 @@ export default function TransferPage() {
         </div>
 
         {/* Info */}
-        <div className="mt-6 bg-blue-50 rounded-lg p-4">
+        <div className="p-4 mt-6 rounded-lg bg-blue-50">
           <div className="flex">
-            <InformationCircleIcon className="h-5 w-5 text-blue-400" />
+            <InformationCircleIcon className="w-5 h-5 text-blue-400" />
             <div className="ml-3">
               <h3 className="text-sm font-medium text-blue-800">How it works</h3>
               <div className="mt-2 text-sm text-blue-700">
-                <ul className="list-disc list-inside space-y-1">
+                <ul className="space-y-1 list-disc list-inside">
                   <li>Gas fees are automatically handled - no need to hold ETH for gas</li>
                   <li>BLS nodes are automatically selected from the gossip network</li>
                   <li>Transaction uses ERC-4337 UserOperation</li>

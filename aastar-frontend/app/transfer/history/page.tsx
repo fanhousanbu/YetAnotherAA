@@ -78,14 +78,6 @@ export default function TransferHistoryPage() {
     }
   };
 
-  const truncateAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
-
-  const truncateHash = (hash: string) => {
-    return `${hash.slice(0, 10)}...${hash.slice(-8)}`;
-  };
-
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }));
   };

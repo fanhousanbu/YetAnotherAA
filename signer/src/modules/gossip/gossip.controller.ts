@@ -138,7 +138,6 @@ export class GossipController {
   @ApiResponse({ status: 200, description: "Health status of the gossip service" })
   getHealth(): { success: boolean; health: any } {
     const stats = this.gossipService.getStats();
-    const peers = this.gossipService.getPeers();
 
     const health = {
       status: "healthy",

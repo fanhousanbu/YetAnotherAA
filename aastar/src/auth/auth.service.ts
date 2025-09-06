@@ -69,7 +69,7 @@ export class AuthService {
 
     await this.databaseService.saveUser(user);
 
-    const { password, encryptedPrivateKey: _, ...result } = user;
+    const { password: _password, encryptedPrivateKey: _encryptedPrivateKey, ...result } = user;
     return {
       user: result,
       access_token: this.generateToken(user),
@@ -87,7 +87,7 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    const { password, ...result } = user;
+    const { password: _password, ...result } = user;
     return {
       user: result,
       access_token: this.generateToken(user),
@@ -97,7 +97,7 @@ export class AuthService {
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.databaseService.findUserByEmail(email);
     if (user && (await bcrypt.compare(pass, user.password))) {
-      const { password, ...result } = user;
+      const { password: _password, ...result } = user;
       return result;
     }
     return null;
@@ -108,7 +108,7 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException("User not found");
     }
-    const { password, ...result } = user;
+    const { password: _password, ...result } = user;
     return result;
   }
 
@@ -237,12 +237,12 @@ export class AuthService {
       // 清除challenge
       this.challengeStore.delete(registerDto.email);
 
-      const { password, ...result } = user;
+      const { password: _password, ...result } = user;
       return {
         user: result,
         access_token: this.generateToken(user),
       };
-    } catch (error) {
+    } catch {
       this.challengeStore.delete(registerDto.email);
       throw new UnauthorizedException("Passkey registration failed");
     }
@@ -314,12 +314,12 @@ export class AuthService {
       // 清除challenge
       this.challengeStore.delete(`login_${expectedChallenge}`);
 
-      const { password, ...result } = user;
+      const { password: _password, ...result } = user;
       return {
         user: result,
         access_token: this.generateToken(user),
       };
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException("Passkey authentication failed");
     }
   }
@@ -425,7 +425,7 @@ export class AuthService {
       return {
         message: "Device passkey registered successfully",
       };
-    } catch (error) {
+    } catch {
       this.challengeStore.delete(`device_${registerDto.email}`);
       throw new UnauthorizedException("Passkey registration failed");
     }
