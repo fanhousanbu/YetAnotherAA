@@ -98,7 +98,7 @@ export class BlsService implements OnModuleInit {
 
           return activeNodes;
         }
-      } catch (error) {
+      } catch {
         // Continue with next seed node
       }
     }
@@ -128,7 +128,9 @@ export class BlsService implements OnModuleInit {
             await this.updateSignerNodeCache(activeNodes);
             return activeNodes;
           }
-        } catch (error) {}
+        } catch {
+          // Continue with next fallback endpoint
+        }
       }
     }
 
@@ -170,9 +172,6 @@ export class BlsService implements OnModuleInit {
           });
 
           const signatureEIP = response.data.signature;
-          const formattedSignatureEIP = signatureEIP.startsWith("0x")
-            ? signatureEIP
-            : `0x${signatureEIP}`;
 
           // For aggregation, use compact format if available, otherwise use EIP format
           const signatureForAggregation = response.data.signatureCompact || signatureEIP;
@@ -183,7 +182,7 @@ export class BlsService implements OnModuleInit {
           signerNodeSignatures.push(formattedSignatureForAggregation);
           signerNodePublicKeys.push(response.data.publicKey);
           signerNodeIds.push(response.data.nodeId);
-        } catch (error) {
+        } catch {
           // Continue with other nodes
         }
       }
