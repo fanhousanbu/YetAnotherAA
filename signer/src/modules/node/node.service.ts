@@ -120,14 +120,12 @@ export class NodeService implements OnModuleInit {
     const privateKeyBytes = randomBytes(32);
     const privateKey = "0x" + privateKeyBytes.toString("hex");
     const publicKey = await this.blsService.getPublicKeyFromPrivateKey(privateKey);
-    const contractNodeId = this.generateContractNodeId(nodeId);
 
     this.nodeState = {
       nodeId,
       nodeName: `node_${nodeId.substring(2, 8)}`,
       privateKey,
       publicKey,
-      contractNodeId,
       registrationStatus: "pending",
       contractAddress: this.contractAddress,
       createdAt: new Date().toISOString(),
@@ -137,9 +135,6 @@ export class NodeService implements OnModuleInit {
     this.saveNodeState();
   }
 
-  private generateContractNodeId(nodeId: string): string {
-    return "0x" + createHash("sha256").update(nodeId).digest("hex");
-  }
 
   private saveNodeState(): void {
     try {
@@ -159,8 +154,7 @@ export class NodeService implements OnModuleInit {
   getNodeForSigning(): NodeKeyPair {
     const currentNode = this.getCurrentNode();
     return {
-      originalNodeId: currentNode.nodeId,
-      contractNodeId: currentNode.contractNodeId,
+      nodeId: currentNode.nodeId,
       nodeName: currentNode.nodeName,
       privateKey: currentNode.privateKey,
       publicKey: currentNode.publicKey,
@@ -180,7 +174,7 @@ export class NodeService implements OnModuleInit {
       // Check current registration status on-chain
       const isRegistered = await this.blockchainService.checkNodeRegistration(
         this.contractAddress,
-        this.nodeState.contractNodeId
+        this.nodeState.nodeId
       );
 
       if (isRegistered) {
@@ -210,7 +204,7 @@ export class NodeService implements OnModuleInit {
 
       const txHash = await this.blockchainService.registerNodeOnChain(
         this.contractAddress,
-        this.nodeState.contractNodeId,
+        this.nodeState.nodeId,
         eip2537PublicKey
       );
 

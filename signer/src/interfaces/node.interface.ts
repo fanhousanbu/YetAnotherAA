@@ -1,6 +1,5 @@
 export interface NodeKeyPair {
-  originalNodeId: string;
-  contractNodeId: string;
+  nodeId: string;
   nodeName: string;
   privateKey: string;
   publicKey: string;
@@ -13,7 +12,6 @@ export interface NodeState {
   nodeName: string;
   privateKey: string;
   publicKey: string;
-  contractNodeId: string;
   registrationStatus: "pending" | "registered" | "failed";
   registeredAt?: string;
   contractAddress?: string;

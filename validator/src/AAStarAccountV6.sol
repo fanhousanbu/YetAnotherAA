@@ -146,17 +146,19 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
     }
 
     /**
-     * @dev Enhanced signature validation with AAStarValidator support using dual verification
-     * Signature format: [nodeIds][blsSignature][messagePoint][aaSignature]
+     * @dev Enhanced signature validation with AAStarValidator support using triple verification
+     * Signature format: [nodeIds][blsSignature][messagePoint][aaSignature][messagePointSignature]
      * - nodeIds: bytes32[] array of BLS node identifiers (dynamic length)
      * - blsSignature: 256 bytes G2 BLS aggregate signature
      * - messagePoint: 256 bytes G2 point (provided by signer, verified by BLS)
      * - aaSignature: 65 bytes ECDSA signature from account owner (validates userOpHash)
+     * - messagePointSignature: 65 bytes ECDSA signature from account owner (validates messagePoint)
      *
      * Security Model:
      * - AA signature validates userOpHash (ensures binding to specific UserOperation)
      * - BLS signature validates messagePoint (leverages aggregate signature security)
-     * - Dual verification provides security even if messagePoint is manipulated
+     * - MessagePoint signature validates messagePoint commitment (prevents manipulation)
+     * - Triple verification provides enhanced security against signature manipulation attacks
      */
     function _validateSignature(
         UserOperation calldata userOp,
@@ -183,9 +185,9 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
     }
 
     /**
-     * @dev Parse and validate AAStarValidator signature format with dual verification
+     * @dev Parse and validate AAStarValidator signature format with triple verification
      * This is a public function to allow try/catch pattern
-     * Dual verification: AA signature validates userOpHash, BLS validates messagePoint
+     * Triple verification: AA signature validates userOpHash, messagePoint signature validates messagePoint, BLS validates messagePoint
      */
     function _parseAndValidateAAStarSignature(
         bytes calldata signature,
@@ -198,10 +200,11 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
             bytes32[] memory nodeIds,
             bytes memory blsSignature,
             bytes memory messagePoint,
-            bytes memory aaSignature
+            bytes memory aaSignature,
+            bytes memory messagePointSignature
         ) = _parseAAStarSignature(signature);
 
-        // SECURITY: AA signature must validate userOpHash (ensures binding to specific userOp)
+        // SECURITY 1: AA signature must validate userOpHash (ensures binding to specific userOp)
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         address recoveredSigner = ECDSA.recover(hash, aaSignature);
 
@@ -210,13 +213,23 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
             return false;
         }
 
-        // Use AAStarValidator for BLS validation
+        // SECURITY 2: MessagePoint signature must validate messagePoint (prevents manipulation)
+        bytes32 messagePointHash = keccak256(messagePoint).toEthSignedMessageHash();
+        address recoveredMessagePointSigner = ECDSA.recover(messagePointHash, messagePointSignature);
+
+        // Validate that the messagePoint signature is from the signer
+        if (recoveredMessagePointSigner != signer) {
+            return false;
+        }
+
+        // SECURITY 3: Use AAStarValidator for BLS validation
         return aaStarValidator.validateAggregateSignature(nodeIds, blsSignature, messagePoint);
     }
 
     /**
-     * @dev Parse AAStarValidator signature format
-     * Format: [nodeIdsLength(32)][nodeIds...][blsSignature(256)][messagePoint(256)][aaSignature(65)]
+     * @dev Parse AAStarValidator signature format (new format only)
+     * Format: [nodeIdsLength(32)][nodeIds...][blsSignature(256)][messagePoint(256)][aaSignature(65)][messagePointSignature(65)]
+     * Total length: 674 bytes + (nodeIdsLength * 32) bytes
      */
     function _parseAAStarSignature(
         bytes calldata signature
@@ -227,33 +240,33 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
             bytes32[] memory nodeIds,
             bytes memory blsSignature,
             bytes memory messagePoint,
-            bytes memory aaSignature
+            bytes memory aaSignature,
+            bytes memory messagePointSignature
         )
     {
-        require(signature.length >= 32 + 256 + 256 + 65, "Invalid signature length");
-
-        // Parse nodeIds length
+        // Parse nodeIds length and validate
         uint256 nodeIdsLength = abi.decode(signature[0:32], (uint256));
         require(nodeIdsLength > 0 && nodeIdsLength <= 100, "Invalid nodeIds length");
 
+        // Calculate expected signature length (new format only)
         uint256 nodeIdsDataLength = nodeIdsLength * 32;
-        require(signature.length >= 32 + nodeIdsDataLength + 256 + 256 + 65, "Signature too short");
+        uint256 expectedLength = 32 + nodeIdsDataLength + 256 + 256 + 65 + 65; // 674 bytes + nodeIds
+        require(signature.length == expectedLength, "Invalid signature length");
 
-        // Parse nodeIds array
+        // Parse nodeIds
         nodeIds = new bytes32[](nodeIdsLength);
         for (uint256 i = 0; i < nodeIdsLength; i++) {
-            uint256 offset = 32 + i * 32;
-            nodeIds[i] = bytes32(signature[offset:offset + 32]);
+            nodeIds[i] = bytes32(signature[32 + i * 32:64 + i * 32]);
         }
 
-        // Parse other components
-        uint256 blsOffset = 32 + nodeIdsDataLength;
-        uint256 messagePointOffset = blsOffset + 256;
-        uint256 aaOffset = messagePointOffset + 256;
+        // Calculate base offset for other components
+        uint256 baseOffset = 32 + nodeIdsDataLength;
 
-        blsSignature = signature[blsOffset:messagePointOffset];
-        messagePoint = signature[messagePointOffset:aaOffset];
-        aaSignature = signature[aaOffset:aaOffset + 65];
+        // Extract all components (messagePointSignature is now required)
+        blsSignature = signature[baseOffset:baseOffset + 256];
+        messagePoint = signature[baseOffset + 256:baseOffset + 512];
+        aaSignature = signature[baseOffset + 512:baseOffset + 577];
+        messagePointSignature = signature[baseOffset + 577:baseOffset + 642];
     }
 
     /**
@@ -317,7 +330,8 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
             bytes32[] memory nodeIds,
             bytes memory blsSignature,
             bytes memory messagePoint,
-            bytes memory aaSignature
+            bytes memory aaSignature,
+            bytes memory messagePointSignature
         )
     {
         return _parseAAStarSignature(signature);
@@ -336,10 +350,11 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
             bytes32[] memory nodeIds,
             bytes memory blsSignature,
             bytes memory messagePoint,
-            bytes memory aaSignature
+            bytes memory aaSignature,
+            bytes memory messagePointSignature
         ) = _parseAAStarSignature(signature);
 
-        // SECURITY: AA signature must validate userOpHash (ensures binding to specific userOp)
+        // SECURITY 1: AA signature must validate userOpHash (ensures binding to specific userOp)
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         address recoveredSigner = ECDSA.recover(hash, aaSignature);
 
@@ -348,7 +363,16 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
             return false;
         }
 
-        // Use AAStarValidator for BLS validation (if enabled)
+        // SECURITY 2: MessagePoint signature must validate messagePoint (prevents manipulation)
+        bytes32 messagePointHash = keccak256(messagePoint).toEthSignedMessageHash();
+        address recoveredMessagePointSigner = ECDSA.recover(messagePointHash, messagePointSignature);
+
+        // Validate that the messagePoint signature is from the signer
+        if (recoveredMessagePointSigner != signer) {
+            return false;
+        }
+
+        // SECURITY 3: Use AAStarValidator for BLS validation (if enabled)
         if (useAAStarValidator && address(aaStarValidator) != address(0)) {
             return aaStarValidator.validateAggregateSignature(nodeIds, blsSignature, messagePoint);
         }
@@ -365,11 +389,27 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         bytes32 userOpHash
     ) external pure returns (address recoveredAddress) {
         // Parse signature to get AA signature
-        (, , , bytes memory aaSignature) = _parseAAStarSignature(signature);
+        (, , , bytes memory aaSignature, ) = _parseAAStarSignature(signature);
 
         // Recover address from userOpHash
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         return ECDSA.recover(hash, aaSignature);
+    }
+
+    /**
+     * @dev Test function to get recovered address from messagePoint signature
+     * FOR TESTING ONLY - DO NOT USE IN PRODUCTION
+     */
+    function testRecoverMessagePointAddress(
+        bytes calldata signature,
+        bytes calldata messagePoint
+    ) external pure returns (address recoveredAddress) {
+        // Parse signature to get messagePoint signature
+        (, , , , bytes memory messagePointSignature) = _parseAAStarSignature(signature);
+
+        // Recover address from messagePoint hash (messagePointSignature is now always present)
+        bytes32 messagePointHash = keccak256(messagePoint).toEthSignedMessageHash();
+        return ECDSA.recover(messagePointHash, messagePointSignature);
     }
 
     receive() external payable {}

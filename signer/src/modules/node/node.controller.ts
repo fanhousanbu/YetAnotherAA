@@ -18,7 +18,6 @@ export class NodeController {
         nodeName: { type: "string", description: "Name of the node" },
         publicKey: { type: "string", description: "Public key in hex format" },
         privateKey: { type: "string", description: "Always hidden for security" },
-        contractNodeId: { type: "string", description: "Contract node ID derived from nodeId" },
         registrationStatus: { type: "string", description: "Registration status on-chain" },
         createdAt: { type: "string", description: "Node creation timestamp" },
         contractAddress: { type: "string", description: "Contract address" },

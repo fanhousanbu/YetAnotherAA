@@ -76,6 +76,7 @@ export class EthereumService {
 
   async getUserOpHash(userOp: UserOperation): Promise<string> {
     const entryPoint = this.getEntryPointContract();
+    // Per ERC-4337, signature must be "0x" when calculating userOpHash
     const userOpArray = [
       userOp.sender,
       userOp.nonce,
@@ -87,7 +88,7 @@ export class EthereumService {
       userOp.maxFeePerGas,
       userOp.maxPriorityFeePerGas,
       userOp.paymasterAndData,
-      userOp.signature,
+      "0x", // Always use empty signature for hash calculation
     ];
     return await entryPoint.getUserOpHash(userOpArray);
   }

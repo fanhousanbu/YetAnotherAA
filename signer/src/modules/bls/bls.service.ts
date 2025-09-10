@@ -16,7 +16,7 @@ export class BlsService {
 
     // Return both compact and EIP-2537 formats
     return {
-      nodeId: node.contractNodeId,
+      nodeId: node.nodeId,
       signature: this.encodeToEIP2537(signature), // Use EIP-2537 format as default
       signatureCompact: signature.toHex(), // Keep compact format for backward compatibility
       publicKey: publicKey.toHex(),
