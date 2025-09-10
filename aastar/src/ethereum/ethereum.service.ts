@@ -30,11 +30,10 @@ export class EthereumService {
   ];
 
   constructor(private configService: ConfigService) {
-    const rpcUrl = this.configService.get<string>("ETH_RPC_URL");
-    const bundlerRpcUrl = this.configService.get<string>("BUNDLER_RPC_URL");
-
-    this.provider = new ethers.JsonRpcProvider(rpcUrl);
-    this.bundlerProvider = new ethers.JsonRpcProvider(bundlerRpcUrl);
+    this.provider = new ethers.JsonRpcProvider(this.configService.get<string>("ethRpcUrl"));
+    this.bundlerProvider = new ethers.JsonRpcProvider(
+      this.configService.get<string>("bundlerRpcUrl")
+    );
   }
 
   getProvider(): ethers.JsonRpcProvider {
@@ -46,18 +45,27 @@ export class EthereumService {
   }
 
   getFactoryContract(): ethers.Contract {
-    const address = this.configService.get<string>("AASTAR_ACCOUNT_FACTORY_ADDRESS");
-    return new ethers.Contract(address, this.FACTORY_ABI, this.provider);
+    return new ethers.Contract(
+      this.configService.get<string>("aastarAccountFactoryAddress"),
+      this.FACTORY_ABI,
+      this.provider
+    );
   }
 
   getEntryPointContract(): ethers.Contract {
-    const address = this.configService.get<string>("ENTRY_POINT_ADDRESS");
-    return new ethers.Contract(address, this.ENTRY_POINT_ABI, this.provider);
+    return new ethers.Contract(
+      this.configService.get<string>("entryPointAddress"),
+      this.ENTRY_POINT_ABI,
+      this.provider
+    );
   }
 
   getValidatorContract(): ethers.Contract {
-    const address = this.configService.get<string>("VALIDATOR_CONTRACT_ADDRESS");
-    return new ethers.Contract(address, this.VALIDATOR_ABI, this.provider);
+    return new ethers.Contract(
+      this.configService.get<string>("validatorContractAddress"),
+      this.VALIDATOR_ABI,
+      this.provider
+    );
   }
 
   getAccountContract(address: string): ethers.Contract {
@@ -97,7 +105,7 @@ export class EthereumService {
     try {
       return await this.bundlerProvider.send("eth_estimateUserOperationGas", [
         userOp,
-        this.configService.get("ENTRY_POINT_ADDRESS"),
+        this.configService.get<string>("entryPointAddress"),
       ]);
     } catch {
       // Return default values if estimation fails
@@ -112,7 +120,7 @@ export class EthereumService {
   async sendUserOperation(userOp: any): Promise<string> {
     return await this.bundlerProvider.send("eth_sendUserOperation", [
       userOp,
-      this.configService.get("ENTRY_POINT_ADDRESS"),
+      this.configService.get<string>("entryPointAddress"),
     ]);
   }
 

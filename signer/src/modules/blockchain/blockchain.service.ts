@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { ethers } from "ethers";
 
 @Injectable()
@@ -7,17 +8,15 @@ export class BlockchainService {
   private provider: ethers.Provider;
   private wallet: ethers.Wallet;
 
-  constructor() {
+  constructor(private configService: ConfigService) {
     this.initializeProvider();
   }
 
   private initializeProvider(): void {
-    const rpcUrl =
-      process.env.ETH_RPC_URL || "https://sepolia.infura.io/v3/7051eb377c77490881070faaf93aef20";
-    const privateKey = process.env.ETH_PRIVATE_KEY;
+    const privateKey = this.configService.get<string>("ethPrivateKey");
 
     // Create provider (read-only connection)
-    this.provider = new ethers.JsonRpcProvider(rpcUrl);
+    this.provider = new ethers.JsonRpcProvider(this.configService.get<string>("ethRpcUrl"));
 
     if (!privateKey || privateKey === "your_eth_private_key_here") {
       this.logger.warn(

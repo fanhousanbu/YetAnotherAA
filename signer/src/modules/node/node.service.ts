@@ -15,10 +15,10 @@ export class NodeService implements OnModuleInit {
   private contractAddress: string;
 
   constructor(
-    private configService: ConfigService,
     @Inject(forwardRef(() => BlsService))
     private blsService: BlsService,
-    private blockchainService: BlockchainService
+    private blockchainService: BlockchainService,
+    private configService: ConfigService
   ) {}
 
   async onModuleInit() {
@@ -28,25 +28,21 @@ export class NodeService implements OnModuleInit {
   private async initializeNode(): Promise<void> {
     this.loadContractAddress();
 
-    if (process.env.NODE_ID) {
-      await this.initializeWithSpecificNodeId(process.env.NODE_ID);
-    } else if (process.env.NODE_STATE_FILE) {
-      await this.initializeWithStateFile(process.env.NODE_STATE_FILE);
+    const nodeId = this.configService.get<string>("nodeId");
+    const nodeStateFile = this.configService.get<string>("nodeStateFile");
+
+    if (nodeId) {
+      await this.initializeWithSpecificNodeId(nodeId);
+    } else if (nodeStateFile) {
+      await this.initializeWithStateFile(nodeStateFile);
     } else {
       await this.initializeWithAutoDiscovery();
     }
   }
 
   private loadContractAddress(): void {
-    this.contractAddress =
-      process.env.VALIDATOR_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS || "";
-
-    if (this.contractAddress) {
-      this.logger.log(`Using contract address from environment: ${this.contractAddress}`);
-    } else {
-      this.logger.error("VALIDATOR_CONTRACT_ADDRESS environment variable is required");
-      throw new Error("VALIDATOR_CONTRACT_ADDRESS environment variable is required");
-    }
+    this.contractAddress = this.configService.get<string>("validatorContractAddress")!;
+    this.logger.log(`Using contract address from environment: ${this.contractAddress}`);
   }
 
   private async initializeWithSpecificNodeId(nodeId: string): Promise<void> {

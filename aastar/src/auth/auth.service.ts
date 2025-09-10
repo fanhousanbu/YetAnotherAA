@@ -32,9 +32,9 @@ export class AuthService {
     private configService: ConfigService
   ) {
     // Load WebAuthn configuration from environment variables
-    this.rpName = this.configService.get<string>("WEBAUTHN_RP_NAME") || "AAstar";
-    this.rpID = this.configService.get<string>("WEBAUTHN_RP_ID") || "localhost";
-    this.origin = this.configService.get<string>("WEBAUTHN_ORIGIN") || "http://localhost:8080";
+    this.rpName = this.configService.get<string>("webauthnRpName");
+    this.rpID = this.configService.get<string>("webauthnRpId");
+    this.origin = this.configService.get<string>("webauthnOrigin");
     this.expectedOrigin = this.origin;
   }
 
@@ -48,8 +48,7 @@ export class AuthService {
 
     // Generate HDWallet for the user
     const userWallet = ethers.Wallet.createRandom();
-    const encryptionKey =
-      this.configService.get<string>("USER_ENCRYPTION_KEY") || "default-key-change-in-production";
+    const encryptionKey = this.configService.get<string>("userEncryptionKey");
     const encryptedPrivateKey = CryptoUtil.encrypt(userWallet.privateKey, encryptionKey);
 
     console.log("User Registration Debug:");
@@ -122,10 +121,7 @@ export class AuthService {
       throw new Error(`User wallet not initialized for userId: ${userId}`);
     }
 
-    const encryptionKey = this.configService.get<string>("USER_ENCRYPTION_KEY");
-    if (!encryptionKey || encryptionKey === "default-key-change-in-production") {
-      throw new Error("USER_ENCRYPTION_KEY not properly configured");
-    }
+    const encryptionKey = this.configService.get<string>("userEncryptionKey");
 
     try {
       const privateKey = CryptoUtil.decrypt(user.encryptedPrivateKey, encryptionKey);
@@ -229,8 +225,8 @@ export class AuthService {
 
       // Generate HDWallet for the user (same as regular registration)
       const userWallet = ethers.Wallet.createRandom();
-      const encryptionKey =
-        this.configService.get<string>("USER_ENCRYPTION_KEY") || "default-key-change-in-production";
+      const encryptionKey = this.configService.get<string>("userEncryptionKey");
+
       const encryptedPrivateKey = CryptoUtil.encrypt(userWallet.privateKey, encryptionKey);
 
       console.log("Passkey User Registration Debug:");

@@ -5,11 +5,13 @@ import { DatabaseService } from "./database.service";
 import { JsonAdapter } from "./adapters/json.adapter";
 import { PostgresAdapter } from "./adapters/postgres.adapter";
 import { User, Account, Transfer, Passkey, BlsConfig } from "../entities";
+import { EnvConfigService } from "../config/env.config";
 
 @Global()
 @Module({})
 export class DatabaseModule {
   static forRoot(): DynamicModule {
+    // Use environment variable directly for module initialization
     const dbType = process.env.DB_TYPE || "json";
 
     const imports: any[] = [ConfigModule];
@@ -21,39 +23,25 @@ export class DatabaseModule {
         TypeOrmModule.forRootAsync({
           imports: [ConfigModule],
           useFactory: async (configService: ConfigService) => {
-            const dbUrl = configService.get<string>("DATABASE_URL");
-
-            // Support both DATABASE_URL and individual params for backward compatibility
-            if (dbUrl) {
-              return {
-                type: "postgres",
-                url: dbUrl,
-                entities: [User, Account, Transfer, Passkey, BlsConfig],
-                synchronize: true, // Auto-create tables
-                logging: configService.get<string>("NODE_ENV") === "development",
-                ssl:
-                  dbUrl.includes("sslmode=require") || dbUrl.includes("ssl=true")
-                    ? { rejectUnauthorized: false }
-                    : undefined,
-              };
-            } else {
-              // Fallback to individual params
-              return {
-                type: "postgres",
-                host: configService.get<string>("DB_HOST", "localhost"),
-                port: configService.get<number>("DB_PORT", 5432),
-                username: configService.get<string>("DB_USERNAME", "postgres"),
-                password: configService.get<string>("DB_PASSWORD", ""),
-                database: configService.get<string>("DB_NAME", "aastar"),
-                entities: [User, Account, Transfer, Passkey, BlsConfig],
-                synchronize: true, // Auto-create tables
-                logging: configService.get<string>("NODE_ENV") === "development",
-                ssl:
-                  configService.get<string>("PGSSLMODE") === "true"
-                    ? { rejectUnauthorized: false }
-                    : undefined,
-              };
+            const databaseUrl = configService.get<string>("DATABASE_URL");
+            if (!databaseUrl) {
+              throw new Error(
+                "DATABASE_URL environment variable is required when DB_TYPE is 'postgres'"
+              );
             }
+
+            return {
+              type: "postgres",
+              url: databaseUrl,
+              entities: [User, Account, Transfer, Passkey, BlsConfig],
+              synchronize: true, // Auto-create tables
+              logging: configService.get<string>("NODE_ENV") === "development",
+              ssl:
+                databaseUrl &&
+                (databaseUrl.includes("sslmode=require") || databaseUrl.includes("ssl=true"))
+                  ? { rejectUnauthorized: false }
+                  : undefined,
+            };
           },
           inject: [ConfigService],
         }),

@@ -3,6 +3,7 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module.js";
 import { ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { ConfigService } from "@nestjs/config";
 import { GossipService } from "./modules/gossip/gossip.service.js";
 
 async function bootstrap() {
@@ -29,9 +30,10 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("api", app, document);
 
-  const port = process.env.PORT || 3000;
-  const host = process.env.HOST || "0.0.0.0";
-  const publicUrl = process.env.PUBLIC_URL || `http://localhost:${port}`;
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>("port")!;
+  const host = configService.get<string>("host")!;
+  const publicUrl = configService.get<string>("publicUrl")!;
 
   // Get the HTTP server instance and pass it to GossipService
   const httpServer = app.getHttpServer();
