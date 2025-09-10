@@ -36,7 +36,6 @@ export class BlsService implements OnModuleInit {
       throw new Error("BLS configuration not found or invalid");
     }
 
-
     // Step 1: Try cached nodes first
     const cachedNodes = config.signerNodes.nodes || [];
     const activeCachedNodes = [];
@@ -94,7 +93,6 @@ export class BlsService implements OnModuleInit {
         );
 
         if (activeNodes.length > 0) {
-
           // Update cache with discovered nodes
           await this.updateSignerNodeCache(activeNodes);
 
@@ -118,7 +116,6 @@ export class BlsService implements OnModuleInit {
     }
 
     if (fallbackEndpoints.length > 0) {
-
       for (const endpoint of fallbackEndpoints) {
         try {
           const response = await axios.get(`${endpoint}/gossip/peers`, { timeout: 5000 });
@@ -131,8 +128,7 @@ export class BlsService implements OnModuleInit {
             await this.updateSignerNodeCache(activeNodes);
             return activeNodes;
           }
-        } catch (error) {
-        }
+        } catch (error) {}
       }
     }
 
@@ -141,13 +137,11 @@ export class BlsService implements OnModuleInit {
 
   private async updateSignerNodeCache(discoveredNodes: any[]): Promise<void> {
     try {
-
       // Persist to config file using database service
       await this.databaseService.updateSignerNodesCache(discoveredNodes);
 
       // Also update the in-memory config
       this.blsConfig = await this.databaseService.getBlsConfig();
-
     } catch (error) {
       console.warn("Failed to update signer node cache:", error.message);
     }
@@ -159,7 +153,6 @@ export class BlsService implements OnModuleInit {
     if (activeNodes.length < 1) {
       throw new Error("No active BLS signer nodes available");
     }
-
 
     // Use up to 3 active nodes for signing
     const selectedNodes = activeNodes.slice(0, Math.min(3, activeNodes.length));
@@ -190,7 +183,6 @@ export class BlsService implements OnModuleInit {
           signerNodeSignatures.push(formattedSignatureForAggregation);
           signerNodePublicKeys.push(response.data.publicKey);
           signerNodeIds.push(response.data.nodeId);
-
         } catch (error) {
           // Continue with other nodes
         }
@@ -199,7 +191,6 @@ export class BlsService implements OnModuleInit {
       if (signerNodeSignatures.length === 0) {
         throw new Error("Failed to get signatures from any BLS signer nodes");
       }
-
 
       let aggregatedSignature: string;
       let messagePoint: string;
@@ -217,7 +208,6 @@ export class BlsService implements OnModuleInit {
           aggregatedSignature = aggregateResponse.data.signature.startsWith("0x")
             ? aggregateResponse.data.signature
             : `0x${aggregateResponse.data.signature}`;
-
         } catch (error) {
           throw new Error(`BLS signature aggregation failed: ${error.message}`);
         }
@@ -235,7 +225,6 @@ export class BlsService implements OnModuleInit {
           aggregatedSignature = singleSignResponse.data.signature.startsWith("0x")
             ? singleSignResponse.data.signature
             : `0x${singleSignResponse.data.signature}`;
-
         } catch (error) {
           throw new Error(`Failed to get signature in EIP format: ${error.message}`);
         }
@@ -248,7 +237,6 @@ export class BlsService implements OnModuleInit {
         const messagePointBLS = await bls.G2.hashToCurve(messageBytes, { DST });
         const messageG2EIP = this.encodeG2Point(messagePointBLS);
         messagePoint = "0x" + Buffer.from(messageG2EIP).toString("hex");
-
       } catch (error) {
         throw new Error(`Failed to generate message point: ${error.message}`);
       }
@@ -263,12 +251,12 @@ export class BlsService implements OnModuleInit {
       let wallet: ethers.Wallet;
       try {
         wallet = await this.authService.getUserWallet(userId);
-        
+
         // Verify wallet address matches the account's signer address
         if (wallet.address.toLowerCase() !== account.signerAddress.toLowerCase()) {
           throw new Error(
             `Critical: Wallet address mismatch! ` +
-            `Wallet: ${wallet.address}, Expected: ${account.signerAddress}`
+              `Wallet: ${wallet.address}, Expected: ${account.signerAddress}`
           );
         }
       } catch (error) {
@@ -281,7 +269,6 @@ export class BlsService implements OnModuleInit {
       // Generate messagePoint ECDSA signature using user's wallet
       const messagePointHash = ethers.keccak256(messagePoint);
       const messagePointSignature = await wallet.signMessage(ethers.getBytes(messagePointHash));
-
 
       return {
         nodeIds: signerNodeIds,
@@ -300,7 +287,9 @@ export class BlsService implements OnModuleInit {
   async packSignature(blsData: BlsSignatureData): Promise<string> {
     // Only support the new extended format with messagePoint ECDSA signature
     if (!blsData.nodeIds || !blsData.aaSignature || !blsData.messagePointSignature) {
-      throw new Error("Missing required signature components: nodeIds, aaSignature, or messagePointSignature");
+      throw new Error(
+        "Missing required signature components: nodeIds, aaSignature, or messagePointSignature"
+      );
     }
 
     const nodeIdsLength = ethers.solidityPacked(["uint256"], [blsData.nodeIds.length]);

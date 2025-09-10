@@ -135,7 +135,6 @@ export class NodeService implements OnModuleInit {
     this.saveNodeState();
   }
 
-
   private saveNodeState(): void {
     try {
       writeFileSync(this.nodeStateFilePath, JSON.stringify(this.nodeState, null, 2), "utf8");

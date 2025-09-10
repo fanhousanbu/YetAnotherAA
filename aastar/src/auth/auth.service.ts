@@ -117,7 +117,7 @@ export class AuthService {
     if (!user) {
       throw new Error(`User not found for userId: ${userId}`);
     }
-    
+
     if (!user.encryptedPrivateKey) {
       throw new Error(`User wallet not initialized for userId: ${userId}`);
     }
@@ -129,26 +129,26 @@ export class AuthService {
 
     try {
       const privateKey = CryptoUtil.decrypt(user.encryptedPrivateKey, encryptionKey);
-      
+
       // Validate that the decrypted private key is valid
       if (!privateKey || !privateKey.startsWith("0x") || privateKey.length !== 66) {
         throw new Error("Decrypted private key is invalid");
       }
-      
+
       const wallet = new ethers.Wallet(privateKey);
-      
+
       // Verify that the wallet address matches the stored address
       if (wallet.address.toLowerCase() !== user.walletAddress.toLowerCase()) {
         throw new Error(
           `Wallet address mismatch! Expected: ${user.walletAddress}, Got: ${wallet.address}`
         );
       }
-      
+
       return wallet;
     } catch (error) {
       // Log the error for debugging but don't expose sensitive information
       console.error(`Failed to get user wallet for userId ${userId}:`, error.message);
-      
+
       // IMPORTANT: Never fall back to a default wallet!
       // Always throw an error to prevent security issues
       throw new Error(`Failed to decrypt user wallet: ${error.message}`);
