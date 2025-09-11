@@ -6,6 +6,8 @@ import { EthereumService } from "../ethereum/ethereum.service";
 import { DeploymentWalletService } from "../ethereum/deployment-wallet.service";
 import { AccountService } from "../account/account.service";
 import { BlsService } from "../bls/bls.service";
+import { PaymasterService } from "../paymaster/paymaster.service";
+import { TokenService } from "../token/token.service";
 import { ExecuteTransferDto } from "./dto/execute-transfer.dto";
 import { EstimateGasDto } from "./dto/estimate-gas.dto";
 import { UserOperation } from "../common/interfaces/erc4337.interface";
@@ -17,7 +19,9 @@ export class TransferService {
     private ethereumService: EthereumService,
     private deploymentWalletService: DeploymentWalletService,
     private accountService: AccountService,
-    private blsService: BlsService
+    private blsService: BlsService,
+    private paymasterService: PaymasterService,
+    private tokenService: TokenService
   ) {}
 
   async executeTransfer(userId: string, transferDto: ExecuteTransferDto) {
@@ -76,12 +80,16 @@ export class TransferService {
       console.log(`Smart Account prefunded successfully`);
     }
 
-    // Build UserOperation
+    // Build UserOperation with Paymaster support
     const userOp = await this.buildUserOperation(
       account.address,
       transferDto.to,
       transferDto.amount,
-      transferDto.data || "0x"
+      transferDto.data || "0x",
+      transferDto.usePaymaster,
+      transferDto.paymasterAddress,
+      transferDto.paymasterData,
+      transferDto.tokenAddress
     );
 
     // Get UserOp hash
@@ -186,12 +194,16 @@ export class TransferService {
       throw new NotFoundException("User account not found");
     }
 
-    // Build UserOperation for estimation
+    // Build UserOperation for estimation (without paymaster for gas estimation)
     const userOp = await this.buildUserOperation(
       account.address,
       estimateDto.to,
       estimateDto.amount,
-      estimateDto.data || "0x"
+      estimateDto.data || "0x",
+      false, // Don't use paymaster for estimation
+      undefined,
+      undefined,
+      (estimateDto as any).tokenAddress // Support token estimation
     );
 
     // Format for bundler
@@ -292,7 +304,11 @@ export class TransferService {
     sender: string,
     to: string,
     amount: string,
-    data: string
+    data: string,
+    usePaymaster?: boolean,
+    paymasterAddress?: string,
+    _paymasterData?: string,
+    tokenAddress?: string
   ): Promise<UserOperation> {
     const accountContract = this.ethereumService.getAccountContract(sender);
     const nonce = await this.ethereumService.getNonce(sender);
@@ -331,11 +347,25 @@ export class TransferService {
     }
 
     // Encode execute function call
-    const callData = accountContract.interface.encodeFunctionData("execute", [
-      to,
-      ethers.parseEther(amount),
-      data,
-    ]);
+    let callData: string;
+    if (tokenAddress) {
+      // ERC20 token transfer
+      const tokenInfo = await this.tokenService.getTokenInfo(tokenAddress);
+      const transferCalldata = this.tokenService.generateTransferCalldata(to, amount, tokenInfo.decimals);
+      
+      callData = accountContract.interface.encodeFunctionData("execute", [
+        tokenAddress, // target is the token contract
+        0, // value is 0 for token transfers
+        transferCalldata,
+      ]);
+    } else {
+      // ETH transfer
+      callData = accountContract.interface.encodeFunctionData("execute", [
+        to,
+        ethers.parseEther(amount),
+        data,
+      ]);
+    }
 
     // Initial UserOp for gas estimation
     const baseUserOp = {
@@ -352,7 +382,53 @@ export class TransferService {
       signature: "0x",
     };
 
-    // Estimate gas
+    // Add Paymaster data if requested
+    let paymasterAndData = "0x";
+    if (usePaymaster) {
+      try {
+        // Determine which paymaster to use
+        let paymasterName = "pimlico-sepolia"; // default to pimlico-sepolia
+        
+        if (paymasterAddress) {
+          // Check if this is a known paymaster
+          const availablePaymasters = this.paymasterService.getAvailablePaymasters();
+          const knownPaymaster = availablePaymasters.find(
+            pm => pm.address.toLowerCase() === paymasterAddress.toLowerCase()
+          );
+          if (knownPaymaster) {
+            paymasterName = knownPaymaster.name;
+          }
+        } else {
+          // Use the first configured paymaster (prefer pimlico-sepolia)
+          const availablePaymasters = this.paymasterService.getAvailablePaymasters();
+          const pimlicoPaymaster = availablePaymasters.find(pm => pm.name === "pimlico-sepolia" && pm.configured);
+          if (pimlicoPaymaster) {
+            paymasterName = "pimlico-sepolia";
+          } else {
+            const configuredPaymaster = availablePaymasters.find(pm => pm.configured);
+            if (configuredPaymaster) {
+              paymasterName = configuredPaymaster.name;
+            }
+          }
+        }
+
+        // Get paymaster sponsorship data
+        const entryPoint = this.ethereumService.getEntryPointContract().target as string;
+        paymasterAndData = await this.paymasterService.getPaymasterData(
+          paymasterName,
+          baseUserOp,
+          entryPoint
+        );
+        
+        if (paymasterAndData !== "0x") {
+          baseUserOp.paymasterAndData = paymasterAndData;
+        }
+      } catch (error) {
+        // Continue without paymaster if setup fails
+      }
+    }
+
+    // Estimate gas (with paymaster data if applicable)
     const gasEstimates = await this.ethereumService.estimateUserOperationGas(baseUserOp);
 
     return {
@@ -365,10 +441,11 @@ export class TransferService {
       preVerificationGas: BigInt(gasEstimates.preVerificationGas),
       maxFeePerGas: ethers.parseUnits("1", "gwei"),
       maxPriorityFeePerGas: ethers.parseUnits("0.1", "gwei"),
-      paymasterAndData: "0x",
+      paymasterAndData,
       signature: "0x",
     };
   }
+
 
   private formatUserOpForBundler(userOp: UserOperation): any {
     return {

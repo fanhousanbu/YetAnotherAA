@@ -8,6 +8,8 @@ import { BlsModule } from "./bls/bls.module";
 import { EthereumModule } from "./ethereum/ethereum.module";
 import { DatabaseModule } from "./database/database.module";
 import { AppConfigModule } from "./config/config.module";
+import { PaymasterModule } from "./paymaster/paymaster.module";
+import { TokenModule } from "./token/token.module";
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { AppConfigModule } from "./config/config.module";
     TransferModule,
     BlsModule,
     EthereumModule,
+    PaymasterModule,
+    TokenModule,
   ],
   controllers: [AppController],
   providers: [AppService],

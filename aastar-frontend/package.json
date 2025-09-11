@@ -13,6 +13,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.7",
     "@heroicons/react": "^2.2.0",
     "@simplewebauthn/browser": "^13.1.2",
     "@types/node": "^24",

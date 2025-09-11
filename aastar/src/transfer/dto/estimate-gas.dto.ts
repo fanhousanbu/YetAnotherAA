@@ -6,9 +6,14 @@ export class EstimateGasDto {
   @IsEthereumAddress()
   to: string;
 
-  @ApiProperty({ description: "Amount of ETH to transfer", example: "0.001" })
+  @ApiProperty({ description: "Amount to transfer", example: "0.001" })
   @IsString()
   amount: string;
+
+  @ApiProperty({ description: "Token contract address (optional, if not provided, estimates ETH transfer)", required: false })
+  @IsOptional()
+  @IsEthereumAddress()
+  tokenAddress?: string;
 
   @ApiProperty({ description: "Call data (optional)", required: false })
   @IsOptional()

@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import CopyButton from "@/components/CopyButton";
-import { accountAPI, transferAPI } from "@/lib/api";
-import { Account, Transfer, User } from "@/lib/types";
+import { accountAPI, transferAPI, paymasterAPI, tokenAPI } from "@/lib/api";
+import { Account, Transfer, User, TokenBalance } from "@/lib/types";
 import { getStoredAuth } from "@/lib/auth";
 import toast from "react-hot-toast";
 import {
@@ -22,6 +22,8 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
+  const [paymasters, setPaymasters] = useState<any[]>([]);
+  const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState("");
   const router = useRouter();
@@ -37,6 +39,8 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
+      let accountData = null;
+      
       // Try to get account
       try {
         const accountResponse = await accountAPI.getAccount();
@@ -44,7 +48,8 @@ export default function DashboardPage() {
         console.log("Account data:", accountResponse.data);
         console.log("Account address:", accountResponse.data?.address);
         console.log("Account creatorAddress:", accountResponse.data?.creatorAddress);
-        setAccount(accountResponse.data);
+        accountData = accountResponse.data;
+        setAccount(accountData);
       } catch {
         // Account doesn't exist yet
         setAccount(null);
@@ -56,6 +61,24 @@ export default function DashboardPage() {
         setTransfers(transferResponse.data.transfers);
       } catch {
         setTransfers([]);
+      }
+
+      // Get available paymasters
+      try {
+        const paymasterResponse = await paymasterAPI.getAvailable();
+        setPaymasters(paymasterResponse.data);
+      } catch {
+        setPaymasters([]);
+      }
+
+      // Get token balances if account exists
+      if (accountData?.address) {
+        try {
+          const tokenResponse = await tokenAPI.getAllTokenBalances(accountData.address);
+          setTokenBalances(tokenResponse.data);
+        } catch {
+          setTokenBalances([]);
+        }
       }
     } catch (error: any) {
       console.error("Failed to load dashboard data:", error);
@@ -324,6 +347,126 @@ export default function DashboardPage() {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Token Balances */}
+        {account && tokenBalances.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm mb-6">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Token Balances</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {tokenBalances
+                  .filter(balance => parseFloat(balance.formattedBalance) > 0)
+                  .map((tokenBalance) => (
+                    <div
+                      key={tokenBalance.token.address}
+                      className="p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                    >
+                      <div className="flex items-center">
+                        {tokenBalance.token.logoUrl && (
+                          <img
+                            src={tokenBalance.token.logoUrl}
+                            alt={tokenBalance.token.symbol}
+                            className="w-8 h-8 mr-3 rounded-full"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-gray-900">
+                              {tokenBalance.token.symbol}
+                            </span>
+                            <span className="text-sm font-semibold text-gray-900">
+                              {parseFloat(tokenBalance.formattedBalance).toFixed(4)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {tokenBalance.token.name}
+                          </p>
+                          {tokenBalance.token.isCustom && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+                              Custom
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+              {tokenBalances.filter(balance => parseFloat(balance.formattedBalance) > 0).length === 0 && (
+                <div className="text-center py-6">
+                  <WalletIcon className="w-12 h-12 mx-auto text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No token balances</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Your account doesn&apos;t have any ERC20 tokens yet.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Paymaster Status */}
+        <div className="bg-white rounded-lg shadow-sm mb-6">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                🎉 Paymaster Status
+              </h3>
+            </div>
+            <div className="space-y-3">
+              {paymasters.filter(pm => pm.configured).length > 0 ? (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Available gas sponsors for your transactions:
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {paymasters
+                      .filter(pm => pm.configured)
+                      .map(paymaster => (
+                        <div
+                          key={paymaster.name}
+                          className="p-3 border border-green-200 rounded-lg bg-green-50"
+                        >
+                          <div className="flex items-center">
+                            <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {paymaster.name === "pimlico-sepolia" ? "Pimlico" : paymaster.name}
+                              </p>
+                              <p className="text-xs text-gray-500 font-mono">
+                                {paymaster.address.slice(0, 10)}...{paymaster.address.slice(-8)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-3">
+                    ✨ Enable &quot;Use Paymaster&quot; when sending transfers for sponsored gas!
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 border border-yellow-200 rounded-lg bg-yellow-50">
+                  <div className="flex">
+                    <ExclamationCircleIcon className="w-5 h-5 text-yellow-400 mr-2" />
+                    <div>
+                      <p className="text-sm text-yellow-800">
+                        No Paymaster configured. Transactions will use your account balance for gas.
+                      </p>
+                      <p className="text-xs text-yellow-600 mt-1">
+                        Configure a Paymaster API key in the backend to enable gas sponsorship.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

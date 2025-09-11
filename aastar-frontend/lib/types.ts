@@ -55,3 +55,28 @@ export interface GasEstimate {
   maxFeePerGas: string;
   maxPriorityFeePerGas: string;
 }
+
+// ERC20 Token types
+export interface Token {
+  address: string;
+  symbol: string;
+  name: string;
+  decimals: number;
+  logoUrl?: string;
+  isCustom?: boolean;
+  chainId?: number;
+}
+
+export interface TokenBalance {
+  token: Token;
+  balance: string;
+  formattedBalance: string;
+  usdValue?: string;
+}
+
+export interface TokenTransfer extends Omit<Transfer, 'amount'> {
+  tokenAddress?: string;
+  tokenAmount?: string;
+  tokenSymbol?: string;
+  amount: string; // For ETH transfers, this is ETH amount; for token transfers, this is "0"
+}

@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
-import { accountAPI, transferAPI } from "@/lib/api";
-import { Account, GasEstimate } from "@/lib/types";
+import TokenSelector from "@/components/TokenSelector";
+import { accountAPI, transferAPI, tokenAPI } from "@/lib/api";
+import { Account, GasEstimate, Token, TokenBalance } from "@/lib/types";
 import toast from "react-hot-toast";
 import {
   ArrowUpIcon,
@@ -18,7 +19,11 @@ export default function TransferPage() {
   const [formData, setFormData] = useState({
     to: "",
     amount: "",
+    usePaymaster: false,
   });
+  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [tokenBalance, setTokenBalance] = useState<TokenBalance | null>(null);
+  const [loadingTokenBalance, setLoadingTokenBalance] = useState(false);
   const [gasEstimate, setGasEstimate] = useState<GasEstimate | null>(null);
   const [loading, setLoading] = useState({
     page: true,
@@ -60,11 +65,34 @@ export default function TransferPage() {
     }
   };
 
+  const loadTokenBalance = async (token: Token | null) => {
+    if (!token || token.address === "ETH") {
+      setTokenBalance(null);
+      return;
+    }
+
+    setLoadingTokenBalance(true);
+    try {
+      const response = await tokenAPI.getTokenBalance(token.address);
+      setTokenBalance(response.data);
+    } catch (error) {
+      console.error("Failed to load token balance:", error);
+      setTokenBalance(null);
+    } finally {
+      setLoadingTokenBalance(false);
+    }
+  };
+
+  // Load token balance when selected token changes
+  useEffect(() => {
+    loadTokenBalance(selectedToken);
+  }, [selectedToken]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
     }));
 
     // Clear gas estimate when form changes
@@ -84,6 +112,7 @@ export default function TransferPage() {
       const response = await transferAPI.estimate({
         to: formData.to,
         amount: formData.amount,
+        tokenAddress: selectedToken?.address === "ETH" ? undefined : selectedToken?.address,
       });
       setGasEstimate(response.data);
       toast.success("Gas estimated successfully");
@@ -103,12 +132,23 @@ export default function TransferPage() {
 
     // Check if amount exceeds available balance
     const transferAmount = parseFloat(formData.amount);
-    const availableBalance = parseFloat(account?.balance || "0");
-    if (transferAmount > availableBalance) {
-      toast.error(
-        `Insufficient balance: Trying to send ${transferAmount} ETH but only ${availableBalance} ETH available`
-      );
-      return;
+    
+    if (!selectedToken || selectedToken.address === "ETH") {
+      // ETH transfer validation
+      const availableBalance = parseFloat(account?.balance || "0");
+      if (transferAmount > availableBalance) {
+        toast.error(
+          `Insufficient balance: Trying to send ${transferAmount} ETH but only ${availableBalance} ETH available`
+        );
+        return;
+      }
+    } else {
+      // Token transfer validation - for now just check if token is selected
+      // Token balance validation will be implemented with the TokenSelector
+      if (!selectedToken) {
+        toast.error("Please select a token to transfer");
+        return;
+      }
     }
 
     // Stop any existing polling and clear previous results
@@ -121,6 +161,8 @@ export default function TransferPage() {
       const response = await transferAPI.execute({
         to: formData.to,
         amount: formData.amount,
+        usePaymaster: formData.usePaymaster,
+        tokenAddress: selectedToken?.address === "ETH" ? undefined : selectedToken?.address,
       });
 
       setTransferResult(response.data);
@@ -133,7 +175,9 @@ export default function TransferPage() {
       setFormData({
         to: "",
         amount: "",
+        usePaymaster: false,
       });
+      setSelectedToken(null);
       setGasEstimate(null);
     } catch (error: any) {
       const message = error.response?.data?.message || "Transfer failed";
@@ -230,9 +274,16 @@ export default function TransferPage() {
     }
 
     const transferAmount = parseFloat(formData.amount);
-    const availableBalance = parseFloat(account?.balance || "0");
+    if (transferAmount <= 0) return true;
 
-    return transferAmount > availableBalance || transferAmount <= 0;
+    // For ETH transfers, check ETH balance
+    if (!selectedToken || selectedToken.address === "ETH") {
+      const availableBalance = parseFloat(account?.balance || "0");
+      return transferAmount > availableBalance;
+    }
+
+    // For token transfers, we'll rely on the TokenSelector balance display for now
+    return false;
   };
 
   // Refresh account balance
@@ -486,10 +537,26 @@ export default function TransferPage() {
               />
             </div>
 
+            {/* Token Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Token
+              </label>
+              <TokenSelector
+                selectedToken={selectedToken}
+                onTokenChange={setSelectedToken}
+                accountAddress={account?.address}
+                showBalances={true}
+              />
+              <p className="mt-1 text-sm text-gray-500">
+                Choose ETH or an ERC20 token to transfer
+              </p>
+            </div>
+
             {/* Amount */}
             <div>
               <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
-                Amount (ETH)
+                Amount {selectedToken ? `(${selectedToken.symbol})` : ""}
               </label>
               <input
                 type="number"
@@ -503,19 +570,69 @@ export default function TransferPage() {
                 className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
               <div className="mt-1 text-sm text-gray-500">
-                Available:
-                <span className="relative ml-1 group">
-                  {formatBalance(account?.balance)} ETH
-                  {/* Tooltip for available balance */}
-                  <div className="absolute left-0 z-20 invisible px-3 py-2 mb-2 text-sm text-white transition-all duration-200 bg-gray-900 rounded-lg opacity-0 bottom-full group-hover:opacity-100 group-hover:visible whitespace-nowrap">
-                    <div className="font-mono">Exact: {account?.balance || "0"} ETH</div>
-                    <div className="absolute w-0 h-0 border-t-4 border-l-4 border-r-4 top-full left-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
-                  </div>
-                </span>
-                {formData.amount &&
-                  parseFloat(formData.amount) > parseFloat(account?.balance || "0") && (
-                    <span className="ml-2 text-red-600">⚠️ Insufficient balance</span>
+                Available: 
+                {selectedToken?.address === "ETH" || !selectedToken ? (
+                  <span className="relative ml-1 group">
+                    {formatBalance(account?.balance)} ETH
+                    {/* Tooltip for available balance */}
+                    <div className="absolute left-0 z-20 invisible px-3 py-2 mb-2 text-sm text-white transition-all duration-200 bg-gray-900 rounded-lg opacity-0 bottom-full group-hover:opacity-100 group-hover:visible whitespace-nowrap">
+                      <div className="font-mono">Exact: {account?.balance || "0"} ETH</div>
+                      <div className="absolute w-0 h-0 border-t-4 border-l-4 border-r-4 top-full left-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
+                    </div>
+                  </span>
+                ) : loadingTokenBalance ? (
+                  <span className="ml-1 text-gray-600">Loading {selectedToken.symbol} balance...</span>
+                ) : tokenBalance ? (
+                  <span className="relative ml-1 group">
+                    {tokenBalance.formattedBalance} {selectedToken.symbol}
+                    {/* Tooltip for available balance */}
+                    <div className="absolute left-0 z-20 invisible px-3 py-2 mb-2 text-sm text-white transition-all duration-200 bg-gray-900 rounded-lg opacity-0 bottom-full group-hover:opacity-100 group-hover:visible whitespace-nowrap">
+                      <div className="font-mono">Exact: {tokenBalance.formattedBalance} {selectedToken.symbol}</div>
+                      <div className="absolute w-0 h-0 border-t-4 border-l-4 border-r-4 top-full left-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
+                    </div>
+                  </span>
+                ) : (
+                  <span className="ml-1 text-red-600">0 {selectedToken.symbol}</span>
+                )}
+                {/* Show insufficient balance warning */}
+                {formData.amount && (
+                  (selectedToken?.address === "ETH" && 
+                    parseFloat(formData.amount) > parseFloat(account?.balance || "0")) ||
+                  (selectedToken && selectedToken.address !== "ETH" && tokenBalance &&
+                    parseFloat(formData.amount) > parseFloat(tokenBalance.formattedBalance || "0"))
+                ) && (
+                  <span className="ml-2 text-red-600">⚠️ Insufficient balance</span>
+                )}
+              </div>
+            </div>
+
+            {/* Paymaster Option */}
+            <div className="p-4 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200">
+              <div className="flex items-start">
+                <div className="flex items-center h-5">
+                  <input
+                    id="usePaymaster"
+                    name="usePaymaster"
+                    type="checkbox"
+                    checked={formData.usePaymaster}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                </div>
+                <div className="ml-3">
+                  <label htmlFor="usePaymaster" className="text-sm font-medium text-gray-900">
+                    Use Paymaster (Sponsored Gas) ✨
+                  </label>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Enable this to have gas fees sponsored by Pimlico Paymaster.
+                    Perfect for users without ETH for gas!
+                  </p>
+                  {formData.usePaymaster && (
+                    <div className="mt-2 text-xs text-purple-700 bg-purple-100 rounded px-2 py-1 inline-block">
+                      🎉 Gas will be sponsored - No ETH needed for fees!
+                    </div>
                   )}
+                </div>
               </div>
             </div>
 
@@ -581,10 +698,18 @@ export default function TransferPage() {
                 ) : (
                   <ArrowUpIcon className="w-4 h-4 mr-2" />
                 )}
-                {formData.amount &&
-                parseFloat(formData.amount) > parseFloat(account?.balance || "0")
-                  ? "Insufficient Balance"
-                  : "Send Transfer"}
+                {(() => {
+                  if (!formData.amount) return "Send Transfer";
+                  const transferAmount = parseFloat(formData.amount);
+                  
+                  if (!selectedToken || selectedToken.address === "ETH") {
+                    return transferAmount > parseFloat(account?.balance || "0")
+                      ? "Insufficient ETH Balance"
+                      : "Send Transfer";
+                  }
+                  
+                  return `Send ${selectedToken.symbol}`;
+                })()}
               </button>
             </div>
           </div>
@@ -598,10 +723,12 @@ export default function TransferPage() {
               <h3 className="text-sm font-medium text-blue-800">How it works</h3>
               <div className="mt-2 text-sm text-blue-700">
                 <ul className="space-y-1 list-disc list-inside">
+                  <li>Support for ETH and ERC20 token transfers (PNTs, PIM, and custom tokens)</li>
                   <li>Gas fees are automatically handled - no need to hold ETH for gas</li>
+                  <li>Enable Paymaster for sponsored transactions (zero gas cost!)</li>
+                  <li>Add custom tokens by entering their contract address</li>
                   <li>BLS nodes are automatically selected from the gossip network</li>
-                  <li>Transaction uses ERC-4337 UserOperation</li>
-                  <li>BLS signatures reduce verification costs</li>
+                  <li>Uses ERC-4337 UserOperation with BLS aggregate signatures</li>
                 </ul>
               </div>
             </div>
