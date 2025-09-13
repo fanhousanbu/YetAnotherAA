@@ -193,7 +193,9 @@ export default function LoginPage() {
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">Passkey Authentication</h3>
+                      <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                        Passkey Authentication
+                      </h3>
                       <div className="mt-1 text-sm text-blue-700 dark:text-blue-300">
                         <p>
                           Click the button below to authenticate using your device&apos;s passkey
@@ -262,7 +264,10 @@ export default function LoginPage() {
               <form className="mt-8 space-y-6" onSubmit={handleDevicePasskeyRegister}>
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label
+                      htmlFor="email"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >
                       Email address
                     </label>
                     <input
@@ -279,7 +284,10 @@ export default function LoginPage() {
                   </div>
 
                   <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >
                       Password
                     </label>
                     <input
@@ -312,7 +320,9 @@ export default function LoginPage() {
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Device Registration</h3>
+                      <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                        Device Registration
+                      </h3>
                       <div className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
                         <p>
                           This will register a new passkey specifically for this device. You&apos;ll

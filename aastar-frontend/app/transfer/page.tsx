@@ -158,7 +158,6 @@ export default function TransferPage() {
 
     setLoading(prev => ({ ...prev, transfer: true }));
 
-
     try {
       const requestData = {
         to: formData.to,
@@ -183,13 +182,16 @@ export default function TransferPage() {
       setSelectedToken(null);
       setGasEstimate(null);
     } catch (error: any) {
-
       // Extract detailed error information
       const errorData = error.response?.data;
 
-      if (errorData?.error === "PaymasterSponsorshipRejected" || errorData?.error === "PaymasterSponsorshipFailed") {
+      if (
+        errorData?.error === "PaymasterSponsorshipRejected" ||
+        errorData?.error === "PaymasterSponsorshipFailed"
+      ) {
         // Show detailed Paymaster error
-        const details = errorData.details || errorData.message || "Paymaster could not sponsor this transaction";
+        const details =
+          errorData.details || errorData.message || "Paymaster could not sponsor this transaction";
 
         // Create a more detailed error toast for Paymaster failures
         toast.error(
@@ -200,8 +202,8 @@ export default function TransferPage() {
           {
             duration: 8000, // Show for longer since it has more info
             style: {
-              maxWidth: '500px',
-            }
+              maxWidth: "500px",
+            },
           }
         );
       } else {
@@ -409,7 +411,9 @@ export default function TransferPage() {
         <div className="p-4 mb-6 border border-blue-200 dark:border-gray-700 rounded-lg bg-blue-50 dark:bg-blue-900/20">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-200">Account Balance</p>
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
+                Account Balance
+              </p>
               <div className="relative group">
                 <div className="text-lg font-semibold text-blue-900 dark:text-blue-200">
                   {formatBalance(account?.balance)} ETH
@@ -537,7 +541,9 @@ export default function TransferPage() {
                     </p>
                   )}
                   {transferStatus?.bundlerUserOpHash && !transferStatus?.transactionHash && (
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Bundler processing transaction...</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Bundler processing transaction...
+                    </p>
                   )}
                 </div>
               </div>
@@ -550,7 +556,10 @@ export default function TransferPage() {
           <div className="p-6 space-y-6">
             {/* Recipient */}
             <div>
-              <label htmlFor="to" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="to"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Recipient Address
               </label>
               <input
@@ -566,7 +575,9 @@ export default function TransferPage() {
 
             {/* Asset Selection */}
             <div>
-              <label className="block mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">Select Asset</label>
+              <label className="block mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                Select Asset
+              </label>
 
               {/* Current Selection Display */}
               <div className="p-3 mb-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900">
@@ -574,27 +585,29 @@ export default function TransferPage() {
                   <div className="flex items-center">
                     <div className="flex items-center justify-center w-8 h-8 mr-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
                       <span className="text-sm font-bold text-white">
-                        {selectedToken ? selectedToken.symbol.charAt(0) : 'Ξ'}
+                        {selectedToken ? selectedToken.symbol.charAt(0) : "Ξ"}
                       </span>
                     </div>
                     <div>
                       <div className="font-medium text-gray-900 dark:text-white">
-                        {selectedToken ? selectedToken.symbol : 'ETH'}
+                        {selectedToken ? selectedToken.symbol : "ETH"}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {selectedToken ? selectedToken.name : 'Ethereum'}
+                        {selectedToken ? selectedToken.name : "Ethereum"}
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      {selectedToken ? (
-                        tokenBalance ? `${tokenBalance.formattedBalance} ${selectedToken.symbol}` : '0'
-                      ) : (
-                        `${formatBalance(account?.balance)} ETH`
-                      )}
+                      {selectedToken
+                        ? tokenBalance
+                          ? `${tokenBalance.formattedBalance} ${selectedToken.symbol}`
+                          : "0"
+                        : `${formatBalance(account?.balance)} ETH`}
                     </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">Available Balance</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                      Available Balance
+                    </div>
                   </div>
                 </div>
               </div>
@@ -602,14 +615,16 @@ export default function TransferPage() {
               {/* Token Selector for ERC20 */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Switch to ERC20 Token:</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    Switch to ERC20 Token:
+                  </span>
                   <button
                     type="button"
                     onClick={() => setSelectedToken(null)}
                     className={`px-3 py-1 text-xs rounded-full border ${
                       !selectedToken
-                        ? 'bg-blue-100 dark:bg-blue-900/40 border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300'
-                        : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        ? "bg-blue-100 dark:bg-blue-900/40 border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300"
+                        : "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
                     }`}
                   >
                     Use ETH
@@ -625,14 +640,18 @@ export default function TransferPage() {
               </div>
 
               <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-                💡 Tip: ETH transfers work best with Paymaster sponsorship. ERC20 transfers may not be sponsored by all paymasters.
+                💡 Tip: ETH transfers work best with Paymaster sponsorship. ERC20 transfers may not
+                be sponsored by all paymasters.
               </p>
             </div>
 
             {/* Amount */}
             <div>
-              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Amount {selectedToken ? `(${selectedToken.symbol})` : '(ETH)'}
+              <label
+                htmlFor="amount"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Amount {selectedToken ? `(${selectedToken.symbol})` : "(ETH)"}
               </label>
               <input
                 type="number"
@@ -642,20 +661,20 @@ export default function TransferPage() {
                 min="0"
                 value={formData.amount}
                 onChange={handleChange}
-                placeholder={selectedToken ? '1' : '0.001'}
+                placeholder={selectedToken ? "1" : "0.001"}
                 className="block w-full mt-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow-sm focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm placeholder-gray-500 dark:placeholder-gray-400"
               />
               {/* Show insufficient balance warning */}
-              {formData.amount && (
+              {formData.amount &&
                 (() => {
                   const inputAmount = parseFloat(formData.amount);
                   let availableAmount = 0;
-                  let symbol = '';
+                  let symbol = "";
 
                   if (!selectedToken) {
                     // ETH
                     availableAmount = parseFloat(account?.balance || "0");
-                    symbol = 'ETH';
+                    symbol = "ETH";
                   } else {
                     // ERC20 Token
                     availableAmount = parseFloat(tokenBalance?.formattedBalance || "0");
@@ -666,15 +685,18 @@ export default function TransferPage() {
                     return (
                       <div className="flex items-center mt-1 text-sm text-red-600 dark:text-red-400">
                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                            clipRule="evenodd"
+                          />
                         </svg>
                         Insufficient balance. Available: {availableAmount} {symbol}
                       </div>
                     );
                   }
                   return null;
-                })()
-              )}
+                })()}
             </div>
 
             {/* Paymaster Option */}
@@ -691,7 +713,10 @@ export default function TransferPage() {
                   />
                 </div>
                 <div className="ml-3">
-                  <label htmlFor="usePaymaster" className="text-sm font-medium text-gray-900 dark:text-white">
+                  <label
+                    htmlFor="usePaymaster"
+                    className="text-sm font-medium text-gray-900 dark:text-white"
+                  >
                     Use Paymaster (Sponsored Gas) ✨
                   </label>
 
@@ -702,7 +727,8 @@ export default function TransferPage() {
                         ⚠️ ERC20 transfers may not be sponsored by all paymasters
                       </p>
                       <p className="mt-1 text-xs text-gray-700 dark:text-gray-300">
-                        Some paymasters don&apos;t support token transfers. Try ETH transfer if this fails.
+                        Some paymasters don&apos;t support token transfers. Try ETH transfer if this
+                        fails.
                       </p>
                     </div>
                   ) : (
@@ -728,7 +754,9 @@ export default function TransferPage() {
             {/* Gas Estimation */}
             {gasEstimate && (
               <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-900">
-                <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-white">Gas Estimation</h3>
+                <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                  Gas Estimation
+                </h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-600 dark:text-gray-400">Call Gas:</span>

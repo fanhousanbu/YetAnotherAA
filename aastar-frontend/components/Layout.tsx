@@ -78,16 +78,18 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                 <button
                   onClick={toggleTheme}
                   className="p-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-md"
-                  title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+                  title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
                 >
-                  {theme === 'light' ? (
+                  {theme === "light" ? (
                     <MoonIcon className="h-5 w-5" />
                   ) : (
                     <SunIcon className="h-5 w-5" />
                   )}
                 </button>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">{user.username || user.email}</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {user.username || user.email}
+                  </span>
                   <button
                     onClick={handleLogout}
                     className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm font-medium"
@@ -135,18 +137,20 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                 >
                   Transfer
                 </button>
-                <div className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">{user.username || user.email}</div>
+                <div className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
+                  {user.username || user.email}
+                </div>
                 {/* Mobile Theme Toggle */}
                 <button
                   onClick={toggleTheme}
                   className="flex items-center px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 w-full text-left"
                 >
-                  {theme === 'light' ? (
+                  {theme === "light" ? (
                     <MoonIcon className="h-5 w-5 mr-2" />
                   ) : (
                     <SunIcon className="h-5 w-5 mr-2" />
                   )}
-                  {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+                  {theme === "light" ? "Dark Mode" : "Light Mode"}
                 </button>
                 <button
                   onClick={handleLogout}

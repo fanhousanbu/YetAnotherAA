@@ -100,7 +100,9 @@ export default function TransferHistoryPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Transfer History</h1>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">View all your ERC-4337 transfers</p>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                View all your ERC-4337 transfers
+              </p>
             </div>
             <div className="flex space-x-3">
               <button
@@ -186,7 +188,9 @@ export default function TransferHistoryPage() {
                           {transfer.transactionHash ? (
                             <CopyButton text={transfer.transactionHash} className="text-sm" />
                           ) : (
-                            <div className="text-sm text-gray-600 dark:text-gray-400">Pending...</div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              Pending...
+                            </div>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -277,7 +281,9 @@ export default function TransferHistoryPage() {
           ) : (
             <div className="text-center py-12">
               <ClockIcon className="mx-auto h-12 w-12 text-gray-500 dark:text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No transfers yet</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                No transfers yet
+              </h3>
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                 Get started by making your first transfer.
               </p>
