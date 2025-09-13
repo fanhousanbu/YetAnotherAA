@@ -30,7 +30,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Run npm audit (Backend)
         working-directory: ./aastar
@@ -78,7 +77,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
@@ -122,7 +120,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
@@ -148,7 +145,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
@@ -204,7 +200,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
