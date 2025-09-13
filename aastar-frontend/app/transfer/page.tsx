@@ -89,14 +89,53 @@ export default function TransferPage() {
   }, [selectedToken]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, type, checked } = e.target;
+    let { value } = e.target;
 
-    // Handle amount input with decimal validation
+    // Handle amount input with decimal validation based on token decimals
     if (name === "amount") {
-      // Allow empty string, digits, and one decimal point
-      const isValidAmount = value === "" || /^\d*\.?\d*$/.test(value);
-      if (!isValidAmount) {
-        return; // Prevent invalid input
+      // Get the decimals for the selected token
+      const decimals = selectedToken ? selectedToken.decimals : 18; // ETH has 18 decimals
+
+      // If token has 0 decimals, don't allow decimal point
+      if (decimals === 0) {
+        const isValidAmount = value === "" || /^\d+$/.test(value);
+        if (!isValidAmount) {
+          return; // Prevent decimal input for tokens with 0 decimals
+        }
+      } else {
+        // Replace various decimal separators with English period
+        // 12290 = Chinese period (。), 65294 = fullwidth period (．)
+        value = value.replace(/[。．]/g, '.');
+
+        // Also handle comma as decimal separator (common in some locales)
+        // But only if there's no period already and it looks like a decimal
+        if (!value.includes('.') && value.match(/^\d+,\d*$/)) {
+          value = value.replace(',', '.');
+        }
+
+        // Handle special case: user types just "."
+        if (value === ".") {
+          value = "0.";
+        }
+
+        // Check for valid number format with optional decimal point
+        const isValidAmount = value === "" || /^\d*\.?\d*$/.test(value);
+        if (!isValidAmount) {
+          return; // Prevent invalid input
+        }
+
+        // Check if there's a decimal point and limit decimal places
+        if (value.includes('.')) {
+          const parts = value.split('.');
+          // Allow the decimal point even if there are no digits after it yet
+          if (parts.length > 2) {
+            return; // Prevent multiple decimal points
+          }
+          if (parts[1] && parts[1].length > decimals) {
+            return; // Prevent more decimal places than allowed
+          }
+        }
       }
     }
 
@@ -664,6 +703,11 @@ export default function TransferPage() {
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 Amount {selectedToken ? `(${selectedToken.symbol})` : "(ETH)"}
+                {selectedToken && selectedToken.decimals === 0 && (
+                  <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">
+                    (whole numbers only)
+                  </span>
+                )}
               </label>
               <input
                 type="text"
@@ -671,9 +715,21 @@ export default function TransferPage() {
                 id="amount"
                 value={formData.amount}
                 onChange={handleChange}
-                placeholder={selectedToken ? "1" : "0.001"}
+                placeholder={
+                  selectedToken
+                    ? selectedToken.decimals === 0
+                      ? "100"
+                      : "1"
+                    : "0.001"
+                }
                 className="block w-full mt-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow-sm focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm placeholder-gray-500 dark:placeholder-gray-400"
               />
+              {/* Show decimal places info for tokens with decimals */}
+              {selectedToken && selectedToken.decimals > 0 && (
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  Maximum {selectedToken.decimals} decimal places allowed
+                </p>
+              )}
               {/* Show insufficient balance warning */}
               {formData.amount &&
                 (() => {
