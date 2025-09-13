@@ -59,7 +59,7 @@ export default function TokenSelector({
       // Load user tokens with balances
       const response = await userTokenAPI.getUserTokens({
         activeOnly: true,
-        withBalances: accountAddress && showBalances,
+        withBalances: !!accountAddress && showBalances,
       });
       setUserTokens(response.data);
     } catch (error: any) {
@@ -69,7 +69,7 @@ export default function TokenSelector({
           await userTokenAPI.initializeDefaultTokens();
           const response = await userTokenAPI.getUserTokens({
             activeOnly: true,
-            withBalances: accountAddress && showBalances,
+            withBalances: !!accountAddress && showBalances,
           });
           setUserTokens(response.data);
         } catch (initError) {
@@ -152,8 +152,11 @@ export default function TokenSelector({
     }
   };
 
-  const getTokenBalance = (token: UserTokenWithBalance) => {
-    return token.balance?.formattedBalance || null;
+  const getTokenBalance = (token: UserTokenWithBalance | Token) => {
+    if ("balance" in token) {
+      return (token as UserTokenWithBalance).balance?.formattedBalance || null;
+    }
+    return null;
   };
 
   const applyFilters = () => {
