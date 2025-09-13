@@ -1,0 +1,17 @@
+name: Render Multi-Service Keep Alive
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+jobs:
+  ping-all:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service_url:
+          - "https://aastar-frontend.onrender.com/"
+          - "https://aastar.onrender.com/api/v1/health"
+          - "https://signer-001.onrender.com/node/health"
+    steps:
+      - name: Ping Render Service
+        run: |
+          curl -sSfL -X HEAD "${{ matrix.service_url }}"
