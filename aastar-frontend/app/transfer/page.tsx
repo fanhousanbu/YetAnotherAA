@@ -106,12 +106,12 @@ export default function TransferPage() {
       } else {
         // Replace various decimal separators with English period
         // 12290 = Chinese period (。), 65294 = fullwidth period (．)
-        value = value.replace(/[。．]/g, '.');
+        value = value.replace(/[。．]/g, ".");
 
         // Also handle comma as decimal separator (common in some locales)
         // But only if there's no period already and it looks like a decimal
-        if (!value.includes('.') && value.match(/^\d+,\d*$/)) {
-          value = value.replace(',', '.');
+        if (!value.includes(".") && value.match(/^\d+,\d*$/)) {
+          value = value.replace(",", ".");
         }
 
         // Handle special case: user types just "."
@@ -126,8 +126,8 @@ export default function TransferPage() {
         }
 
         // Check if there's a decimal point and limit decimal places
-        if (value.includes('.')) {
-          const parts = value.split('.');
+        if (value.includes(".")) {
+          const parts = value.split(".");
           // Allow the decimal point even if there are no digits after it yet
           if (parts.length > 2) {
             return; // Prevent multiple decimal points
@@ -715,13 +715,7 @@ export default function TransferPage() {
                 id="amount"
                 value={formData.amount}
                 onChange={handleChange}
-                placeholder={
-                  selectedToken
-                    ? selectedToken.decimals === 0
-                      ? "100"
-                      : "1"
-                    : "0.001"
-                }
+                placeholder={selectedToken ? (selectedToken.decimals === 0 ? "100" : "1") : "0.001"}
                 className="block w-full mt-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow-sm focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm placeholder-gray-500 dark:placeholder-gray-400"
               />
               {/* Show decimal places info for tokens with decimals */}
