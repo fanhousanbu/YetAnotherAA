@@ -1,80 +1,88 @@
-# Multi-stage build for combined aastar application
-FROM node:20.19.0 AS base
+# Single stage build for YetAnotherAA Docker AIO
+FROM node:20.19.0-alpine
 
-# Backend dependencies
-FROM base AS backend-deps
-WORKDIR /app/backend
-COPY aastar/package*.json ./
-RUN npm install --omit=dev
-
-# Backend build
-FROM base AS backend-build
-WORKDIR /app/backend
-COPY aastar/package*.json ./
-RUN npm install
-COPY aastar/ ./
-RUN npm run build
-
-# Frontend dependencies
-FROM base AS frontend-deps
-WORKDIR /app/frontend
-COPY aastar-frontend/package*.json ./
-# Need all dependencies for Next.js build
-RUN npm install
-
-# Frontend build
-FROM base AS frontend-build
-WORKDIR /app/frontend
-COPY aastar-frontend/package*.json ./
-RUN npm install
-COPY aastar-frontend/ ./
-ENV NEXT_PUBLIC_API_URL=/api/v1
-ENV SKIP_ENV_VALIDATION=true
-RUN npm run build
-
-# Production image with both services
-FROM base AS production
 WORKDIR /app
 
-# Install PM2 for process management
-RUN npm install -g pm2
+# Install pm2 and necessary tools
+RUN npm install -g pm2 && apk add --no-cache git
 
-# Create non-root user with home directory
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 --home /home/nodejs --shell /bin/bash nodejs
+# Copy all source code first
+COPY . .
 
-# Copy backend
-COPY --from=backend-deps /app/backend/node_modules ./backend/node_modules
-COPY --from=backend-build /app/backend/dist ./backend/dist
-COPY --from=backend-build /app/backend/package*.json ./backend/
+# Install dependencies and build with correct environment variables
+ENV NEXT_PUBLIC_API_URL=/api/v1
+ENV BACKEND_API_URL=http://localhost:3000
+# Default values for development, can be overridden at runtime
+ENV APP_DOMAIN=http://localhost:8080
+ENV WEBAUTHN_ORIGIN=http://localhost:8080
+RUN npm ci --include=dev && npm run build
 
-# Copy frontend (only production dependencies)
-# Install production-only dependencies in a new stage
-FROM base AS frontend-prod-deps
-WORKDIR /app/frontend
-COPY aastar-frontend/package*.json ./
-RUN npm install --omit=dev
+# Copy the node configuration file for signer (in case it wasn't copied)
+COPY signer/node_dev_001.json ./signer/node_dev_001.json
 
-# Copy frontend
-COPY --from=frontend-prod-deps /app/frontend/node_modules ./frontend/node_modules
-COPY --from=frontend-build /app/frontend/.next ./frontend/.next
-COPY --from=frontend-build /app/frontend/public ./frontend/public
-COPY --from=frontend-build /app/frontend/package*.json ./frontend/
-COPY --from=frontend-build /app/frontend/next.config.ts ./frontend/
+# Create pm2 ecosystem file with configurable domain support
+RUN echo 'module.exports = {' > ecosystem.config.js && \
+    echo '  apps: [' >> ecosystem.config.js && \
+    echo '    {' >> ecosystem.config.js && \
+    echo '      name: "signer-node1",' >> ecosystem.config.js && \
+    echo '      cwd: "./signer",' >> ecosystem.config.js && \
+    echo '      script: "node",' >> ecosystem.config.js && \
+    echo '      args: "dist/main.js",' >> ecosystem.config.js && \
+    echo '      env: {' >> ecosystem.config.js && \
+    echo '        NODE_STATE_FILE: "./node_dev_001.json",' >> ecosystem.config.js && \
+    echo '        PORT: "3001",' >> ecosystem.config.js && \
+    echo '        GOSSIP_PUBLIC_URL: process.env.GOSSIP_PUBLIC_URL || "ws://localhost:3001/ws",' >> ecosystem.config.js && \
+    echo '        GOSSIP_BOOTSTRAP_PEERS: process.env.GOSSIP_BOOTSTRAP_PEERS || "",' >> ecosystem.config.js && \
+    echo '        VALIDATOR_CONTRACT_ADDRESS: process.env.VALIDATOR_CONTRACT_ADDRESS || "0xD9756c11686B59F7DDf39E6360230316710485af",' >> ecosystem.config.js && \
+    echo '        ETH_RPC_URL: process.env.ETH_RPC_URL || "https://sepolia.infura.io/v3/7051eb377c77490881070faaf93aef20"' >> ecosystem.config.js && \
+    echo '      }' >> ecosystem.config.js && \
+    echo '    },' >> ecosystem.config.js && \
+    echo '    {' >> ecosystem.config.js && \
+    echo '      name: "aastar-backend",' >> ecosystem.config.js && \
+    echo '      cwd: "./aastar",' >> ecosystem.config.js && \
+    echo '      script: "node",' >> ecosystem.config.js && \
+    echo '      args: "dist/main.js",' >> ecosystem.config.js && \
+    echo '      env: {' >> ecosystem.config.js && \
+    echo '        PORT: "3000",' >> ecosystem.config.js && \
+    echo '        NODE_ENV: process.env.NODE_ENV || "development",' >> ecosystem.config.js && \
+    echo '        DB_TYPE: process.env.DB_TYPE || "json",' >> ecosystem.config.js && \
+    echo '        JWT_SECRET: process.env.JWT_SECRET || "your-development-jwt-secret-key",' >> ecosystem.config.js && \
+    echo '        JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",' >> ecosystem.config.js && \
+    echo '        WEBAUTHN_ORIGIN: process.env.WEBAUTHN_ORIGIN || "http://localhost:8080",' >> ecosystem.config.js && \
+    echo '        ETH_RPC_URL: process.env.ETH_RPC_URL || "https://sepolia.infura.io/v3/7051eb377c77490881070faaf93aef20",' >> ecosystem.config.js && \
+    echo '        ETH_PRIVATE_KEY: process.env.ETH_PRIVATE_KEY || "0x72966a3f12beed253d475a19f4c8c73e5f7c14f2280bcda4499f72602b4d6c1a",' >> ecosystem.config.js && \
+    echo '        BUNDLER_RPC_URL: process.env.BUNDLER_RPC_URL || "https://api.pimlico.io/v2/11155111/rpc?apikey=pim_gcVkLnianG5Fj4AvFYhAEh",' >> ecosystem.config.js && \
+    echo '        BLS_SEED_NODES: process.env.BLS_SEED_NODES || "http://localhost:3001",' >> ecosystem.config.js && \
+    echo '        ENTRY_POINT_ADDRESS: process.env.ENTRY_POINT_ADDRESS || "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",' >> ecosystem.config.js && \
+    echo '        AASTAR_ACCOUNT_FACTORY_ADDRESS: process.env.AASTAR_ACCOUNT_FACTORY_ADDRESS || "0xec687B9231341aAe645FE5A825C0f28323183697",' >> ecosystem.config.js && \
+    echo '        VALIDATOR_CONTRACT_ADDRESS: process.env.VALIDATOR_CONTRACT_ADDRESS || "0xD9756c11686B59F7DDf39E6360230316710485af",' >> ecosystem.config.js && \
+    echo '        USER_ENCRYPTION_KEY: process.env.USER_ENCRYPTION_KEY || "your-secret-encryption-key-32-chars",' >> ecosystem.config.js && \
+    echo '        PAYMASTER_ADDRESS: process.env.PAYMASTER_ADDRESS || "0x0000000000325602a77416A16136FDafd04b299f",' >> ecosystem.config.js && \
+    echo '        PIMLICO_API_KEY: process.env.PIMLICO_API_KEY || "pim_gcVkLnianG5Fj4AvFYhAEh",' >> ecosystem.config.js && \
+    echo '        PIMLICO_SPONSORSHIP_POLICY_ID: process.env.PIMLICO_SPONSORSHIP_POLICY_ID || "sp_lying_ironclad"' >> ecosystem.config.js && \
+    echo '      }' >> ecosystem.config.js && \
+    echo '    },' >> ecosystem.config.js && \
+    echo '    {' >> ecosystem.config.js && \
+    echo '      name: "aastar-frontend",' >> ecosystem.config.js && \
+    echo '      cwd: "./aastar-frontend",' >> ecosystem.config.js && \
+    echo '      script: "npm",' >> ecosystem.config.js && \
+    echo '      args: "run start",' >> ecosystem.config.js && \
+    echo '      env: {' >> ecosystem.config.js && \
+    echo '        NODE_ENV: process.env.NODE_ENV || "development",' >> ecosystem.config.js && \
+    echo '        PORT: "8080",' >> ecosystem.config.js && \
+    echo '        NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "/api/v1",' >> ecosystem.config.js && \
+    echo '        BACKEND_API_URL: process.env.BACKEND_API_URL || "http://localhost:3000"' >> ecosystem.config.js && \
+    echo '      }' >> ecosystem.config.js && \
+    echo '    }' >> ecosystem.config.js && \
+    echo '  ]' >> ecosystem.config.js && \
+    echo '};' >> ecosystem.config.js
 
-# Copy PM2 ecosystem file
-COPY ecosystem.config.js ./
+# Expose port 8080 for frontend (as requested)
+EXPOSE 8080
 
-# Copy data directory with configurations
-COPY aastar/data ./backend/data/
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1
 
-# Change ownership
-RUN chown -R nodejs:nodejs /app
-RUN mkdir -p /home/nodejs/.pm2 && chown -R nodejs:nodejs /home/nodejs
-
-USER nodejs
-ENV PM2_HOME=/home/nodejs/.pm2
-
-EXPOSE 80
-
+# Start all applications with pm2
 CMD ["pm2-runtime", "start", "ecosystem.config.js"]
