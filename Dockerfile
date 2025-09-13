@@ -13,7 +13,6 @@ COPY . .
 ENV NEXT_PUBLIC_API_URL=/api/v1
 ENV BACKEND_API_URL=http://localhost:3000
 # Default values for development, can be overridden at runtime
-ENV APP_DOMAIN=http://localhost:8080
 ENV WEBAUTHN_ORIGIN=http://localhost:8080
 RUN npm ci --include=dev && npm run build
 
