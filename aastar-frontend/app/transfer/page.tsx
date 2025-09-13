@@ -132,7 +132,7 @@ export default function TransferPage() {
 
     // Check if amount exceeds available balance
     const transferAmount = parseFloat(formData.amount);
-    
+
     if (!selectedToken || selectedToken.address === "ETH") {
       // ETH transfer validation
       const availableBalance = parseFloat(account?.balance || "0");
@@ -539,18 +539,14 @@ export default function TransferPage() {
 
             {/* Token Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Token
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select Token</label>
               <TokenSelector
                 selectedToken={selectedToken}
                 onTokenChange={setSelectedToken}
                 accountAddress={account?.address}
                 showBalances={true}
               />
-              <p className="mt-1 text-sm text-gray-500">
-                Choose ETH or an ERC20 token to transfer
-              </p>
+              <p className="mt-1 text-sm text-gray-500">Choose ETH or an ERC20 token to transfer</p>
             </div>
 
             {/* Amount */}
@@ -570,7 +566,7 @@ export default function TransferPage() {
                 className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
               <div className="mt-1 text-sm text-gray-500">
-                Available: 
+                Available:
                 {selectedToken?.address === "ETH" || !selectedToken ? (
                   <span className="relative ml-1 group">
                     {formatBalance(account?.balance)} ETH
@@ -581,13 +577,17 @@ export default function TransferPage() {
                     </div>
                   </span>
                 ) : loadingTokenBalance ? (
-                  <span className="ml-1 text-gray-600">Loading {selectedToken.symbol} balance...</span>
+                  <span className="ml-1 text-gray-600">
+                    Loading {selectedToken.symbol} balance...
+                  </span>
                 ) : tokenBalance ? (
                   <span className="relative ml-1 group">
                     {tokenBalance.formattedBalance} {selectedToken.symbol}
                     {/* Tooltip for available balance */}
                     <div className="absolute left-0 z-20 invisible px-3 py-2 mb-2 text-sm text-white transition-all duration-200 bg-gray-900 rounded-lg opacity-0 bottom-full group-hover:opacity-100 group-hover:visible whitespace-nowrap">
-                      <div className="font-mono">Exact: {tokenBalance.formattedBalance} {selectedToken.symbol}</div>
+                      <div className="font-mono">
+                        Exact: {tokenBalance.formattedBalance} {selectedToken.symbol}
+                      </div>
                       <div className="absolute w-0 h-0 border-t-4 border-l-4 border-r-4 top-full left-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
                     </div>
                   </span>
@@ -595,14 +595,16 @@ export default function TransferPage() {
                   <span className="ml-1 text-red-600">0 {selectedToken.symbol}</span>
                 )}
                 {/* Show insufficient balance warning */}
-                {formData.amount && (
-                  (selectedToken?.address === "ETH" && 
+                {formData.amount &&
+                  ((selectedToken?.address === "ETH" &&
                     parseFloat(formData.amount) > parseFloat(account?.balance || "0")) ||
-                  (selectedToken && selectedToken.address !== "ETH" && tokenBalance &&
-                    parseFloat(formData.amount) > parseFloat(tokenBalance.formattedBalance || "0"))
-                ) && (
-                  <span className="ml-2 text-red-600">⚠️ Insufficient balance</span>
-                )}
+                    (selectedToken &&
+                      selectedToken.address !== "ETH" &&
+                      tokenBalance &&
+                      parseFloat(formData.amount) >
+                        parseFloat(tokenBalance.formattedBalance || "0"))) && (
+                    <span className="ml-2 text-red-600">⚠️ Insufficient balance</span>
+                  )}
               </div>
             </div>
 
@@ -624,8 +626,8 @@ export default function TransferPage() {
                     Use Paymaster (Sponsored Gas) ✨
                   </label>
                   <p className="text-xs text-gray-600 mt-1">
-                    Enable this to have gas fees sponsored by Pimlico Paymaster.
-                    Perfect for users without ETH for gas!
+                    Enable this to have gas fees sponsored by Pimlico Paymaster. Perfect for users
+                    without ETH for gas!
                   </p>
                   {formData.usePaymaster && (
                     <div className="mt-2 text-xs text-purple-700 bg-purple-100 rounded px-2 py-1 inline-block">
@@ -701,13 +703,13 @@ export default function TransferPage() {
                 {(() => {
                   if (!formData.amount) return "Send Transfer";
                   const transferAmount = parseFloat(formData.amount);
-                  
+
                   if (!selectedToken || selectedToken.address === "ETH") {
                     return transferAmount > parseFloat(account?.balance || "0")
                       ? "Insufficient ETH Balance"
                       : "Send Transfer";
                   }
-                  
+
                   return `Send ${selectedToken.symbol}`;
                 })()}
               </button>

@@ -21,7 +21,7 @@ export interface TokenBalance {
 @Injectable()
 export class TokenService {
   private provider: ethers.JsonRpcProvider;
-  
+
   // Pre-configured tokens for Sepolia testnet
   private readonly PRESET_TOKENS: Token[] = [
     {
@@ -34,7 +34,7 @@ export class TokenService {
       chainId: 11155111, // Sepolia
     },
     {
-      address: "0xFC3e86566895Fb007c6A0d3809eb2827DF94F751", 
+      address: "0xFC3e86566895Fb007c6A0d3809eb2827DF94F751",
       symbol: "PIM",
       name: "Pimlico Token",
       decimals: 6,
@@ -47,7 +47,7 @@ export class TokenService {
   // ERC20 ABI for basic token operations
   private readonly ERC20_ABI = [
     "function name() view returns (string)",
-    "function symbol() view returns (string)", 
+    "function symbol() view returns (string)",
     "function decimals() view returns (uint8)",
     "function totalSupply() view returns (uint256)",
     "function balanceOf(address owner) view returns (uint256)",
@@ -57,9 +57,7 @@ export class TokenService {
   ];
 
   constructor(private configService: ConfigService) {
-    this.provider = new ethers.JsonRpcProvider(
-      this.configService.get<string>("ethRpcUrl")
-    );
+    this.provider = new ethers.JsonRpcProvider(this.configService.get<string>("ethRpcUrl"));
   }
 
   /**
@@ -75,10 +73,10 @@ export class TokenService {
   async getTokenInfo(tokenAddress: string): Promise<Token> {
     try {
       const contract = new ethers.Contract(tokenAddress, this.ERC20_ABI, this.provider);
-      
+
       const [name, symbol, decimals] = await Promise.all([
         contract.name(),
-        contract.symbol(), 
+        contract.symbol(),
         contract.decimals(),
       ]);
 
@@ -114,33 +112,35 @@ export class TokenService {
    * Retry function with exponential backoff for rate limiting
    */
   private async retryWithDelay<T>(
-    fn: () => Promise<T>, 
-    maxRetries: number = 3, 
+    fn: () => Promise<T>,
+    maxRetries: number = 3,
     baseDelay: number = 1000
   ): Promise<T> {
     let lastError: Error;
-    
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         return await fn();
       } catch (error: any) {
         lastError = error;
-        
+
         // Check if it's a rate limiting error
-        if (error.code === 'BAD_DATA' && error.message?.includes('Too Many Requests')) {
+        if (error.code === "BAD_DATA" && error.message?.includes("Too Many Requests")) {
           if (attempt < maxRetries) {
             const delay = baseDelay * Math.pow(2, attempt);
-            console.log(`Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
+            console.log(
+              `Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`
+            );
             await new Promise(resolve => setTimeout(resolve, delay));
             continue;
           }
         }
-        
+
         // If it's not a rate limiting error or we've exhausted retries, throw immediately
         throw error;
       }
     }
-    
+
     throw lastError;
   }
 
@@ -148,7 +148,7 @@ export class TokenService {
    * Get formatted token balance with decimals
    */
   async getFormattedTokenBalance(
-    tokenAddress: string, 
+    tokenAddress: string,
     walletAddress: string
   ): Promise<TokenBalance> {
     // Execute sequentially to avoid rate limiting
@@ -180,10 +180,10 @@ export class TokenService {
         if (i > 0) {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
-        
+
         const rawBalance = await this.getTokenBalance(token.address, walletAddress);
         const formattedBalance = ethers.formatUnits(rawBalance, token.decimals);
-        
+
         balances.push({
           token,
           balance: rawBalance,
@@ -219,11 +219,7 @@ export class TokenService {
     try {
       const contract = new ethers.Contract(tokenAddress, this.ERC20_ABI, this.provider);
       // Try to call basic ERC20 functions
-      await Promise.all([
-        contract.name(),
-        contract.symbol(),
-        contract.decimals(),
-      ]);
+      await Promise.all([contract.name(), contract.symbol(), contract.decimals()]);
       return true;
     } catch {
       return false;
@@ -236,7 +232,7 @@ export class TokenService {
   formatTokenAmount(amount: string, decimals: number, precision = 6): string {
     const formatted = ethers.formatUnits(amount, decimals);
     const num = parseFloat(formatted);
-    
+
     if (num === 0) return "0";
     if (num >= 1) return num.toFixed(Math.min(4, precision));
     if (num >= 0.0001) return num.toFixed(precision);

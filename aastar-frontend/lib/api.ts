@@ -83,27 +83,25 @@ export const accountAPI = {
 
 // Transfer API
 export const transferAPI = {
-  execute: (data: { 
-    to: string; 
-    amount: string; 
-    data?: string; 
+  execute: (data: {
+    to: string;
+    amount: string;
+    data?: string;
     nodeIndices?: number[];
     usePaymaster?: boolean;
     paymasterAddress?: string;
     paymasterData?: string;
     tokenAddress?: string;
-  }) =>
-    api.post("/transfer/execute", data),
+  }) => api.post("/transfer/execute", data),
 
-  estimate: (data: { 
-    to: string; 
-    amount: string; 
-    data?: string; 
+  estimate: (data: {
+    to: string;
+    amount: string;
+    data?: string;
     nodeIndices?: number[];
     usePaymaster?: boolean;
     tokenAddress?: string;
-  }) =>
-    api.post("/transfer/estimate", data),
+  }) => api.post("/transfer/estimate", data),
 
   getStatus: (id: string) => api.get(`/transfer/status/${id}`),
 
@@ -123,25 +121,20 @@ export const blsAPI = {
 export const paymasterAPI = {
   getAvailable: () => api.get("/paymaster/available"),
 
-  sponsor: (data: { 
-    paymasterName: string; 
-    userOp: any; 
-    entryPoint?: string;
-  }) =>
+  sponsor: (data: { paymasterName: string; userOp: any; entryPoint?: string }) =>
     api.post("/paymaster/sponsor", data),
 };
 
 // Token API
 export const tokenAPI = {
   getPresetTokens: () => api.get("/tokens/preset"),
-  
+
   getTokenInfo: (address: string) => api.get(`/tokens/info/${address}`),
-  
-  validateToken: (data: { address: string }) =>
-    api.post("/tokens/validate", data),
-  
+
+  validateToken: (data: { address: string }) => api.post("/tokens/validate", data),
+
   getTokenBalance: (address: string) => api.get(`/tokens/balance/${address}`),
-  
+
   getAllTokenBalances: (accountAddress?: string) => {
     const params = accountAddress ? { address: accountAddress } : {};
     return api.get("/tokens/balances", { params });

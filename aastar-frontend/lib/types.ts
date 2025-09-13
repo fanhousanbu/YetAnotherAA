@@ -74,7 +74,7 @@ export interface TokenBalance {
   usdValue?: string;
 }
 
-export interface TokenTransfer extends Omit<Transfer, 'amount'> {
+export interface TokenTransfer extends Omit<Transfer, "amount"> {
   tokenAddress?: string;
   tokenAmount?: string;
   tokenSymbol?: string;

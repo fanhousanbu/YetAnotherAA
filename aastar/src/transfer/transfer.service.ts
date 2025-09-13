@@ -351,8 +351,12 @@ export class TransferService {
     if (tokenAddress) {
       // ERC20 token transfer
       const tokenInfo = await this.tokenService.getTokenInfo(tokenAddress);
-      const transferCalldata = this.tokenService.generateTransferCalldata(to, amount, tokenInfo.decimals);
-      
+      const transferCalldata = this.tokenService.generateTransferCalldata(
+        to,
+        amount,
+        tokenInfo.decimals
+      );
+
       callData = accountContract.interface.encodeFunctionData("execute", [
         tokenAddress, // target is the token contract
         0, // value is 0 for token transfers
@@ -388,7 +392,7 @@ export class TransferService {
       try {
         // Determine which paymaster to use
         let paymasterName = "pimlico-sepolia"; // default to pimlico-sepolia
-        
+
         if (paymasterAddress) {
           // Check if this is a known paymaster
           const availablePaymasters = this.paymasterService.getAvailablePaymasters();
@@ -401,7 +405,9 @@ export class TransferService {
         } else {
           // Use the first configured paymaster (prefer pimlico-sepolia)
           const availablePaymasters = this.paymasterService.getAvailablePaymasters();
-          const pimlicoPaymaster = availablePaymasters.find(pm => pm.name === "pimlico-sepolia" && pm.configured);
+          const pimlicoPaymaster = availablePaymasters.find(
+            pm => pm.name === "pimlico-sepolia" && pm.configured
+          );
           if (pimlicoPaymaster) {
             paymasterName = "pimlico-sepolia";
           } else {
@@ -419,7 +425,7 @@ export class TransferService {
           baseUserOp,
           entryPoint
         );
-        
+
         if (paymasterAndData !== "0x") {
           baseUserOp.paymasterAndData = paymasterAndData;
         }
@@ -445,7 +451,6 @@ export class TransferService {
       signature: "0x",
     };
   }
-
 
   private formatUserOpForBundler(userOp: UserOperation): any {
     return {

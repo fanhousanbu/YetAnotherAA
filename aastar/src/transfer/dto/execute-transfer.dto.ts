@@ -10,7 +10,10 @@ export class ExecuteTransferDto {
   @IsString()
   amount: string;
 
-  @ApiProperty({ description: "Token contract address (optional, if not provided, transfers ETH)", required: false })
+  @ApiProperty({
+    description: "Token contract address (optional, if not provided, transfers ETH)",
+    required: false,
+  })
   @IsOptional()
   @IsEthereumAddress()
   tokenAddress?: string;
@@ -20,12 +23,19 @@ export class ExecuteTransferDto {
   @IsString()
   data?: string;
 
-  @ApiProperty({ description: "Use Paymaster for gas sponsorship", required: false, default: false })
+  @ApiProperty({
+    description: "Use Paymaster for gas sponsorship",
+    required: false,
+    default: false,
+  })
   @IsOptional()
   @IsBoolean()
   usePaymaster?: boolean;
 
-  @ApiProperty({ description: "Paymaster address (optional, uses default if not provided)", required: false })
+  @ApiProperty({
+    description: "Paymaster address (optional, uses default if not provided)",
+    required: false,
+  })
   @IsOptional()
   @IsEthereumAddress()
   paymasterAddress?: string;

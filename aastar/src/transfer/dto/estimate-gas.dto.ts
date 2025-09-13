@@ -10,7 +10,10 @@ export class EstimateGasDto {
   @IsString()
   amount: string;
 
-  @ApiProperty({ description: "Token contract address (optional, if not provided, estimates ETH transfer)", required: false })
+  @ApiProperty({
+    description: "Token contract address (optional, if not provided, estimates ETH transfer)",
+    required: false,
+  })
   @IsOptional()
   @IsEthereumAddress()
   tokenAddress?: string;

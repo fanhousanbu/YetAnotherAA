@@ -1,5 +1,12 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Query, Request } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from "@nestjs/swagger";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from "@nestjs/swagger";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { TokenService } from "./token.service";
 import { AccountService } from "../account/account.service";
@@ -82,12 +89,12 @@ export class TokenController {
   })
   async validateToken(@Body() body: { address: string }) {
     const isValid = await this.tokenService.validateToken(body.address);
-    
+
     if (isValid) {
       const token = await this.tokenService.getTokenInfo(body.address);
       return { isValid: true, token };
     }
-    
+
     return { isValid: false, token: null };
   }
 
@@ -119,7 +126,7 @@ export class TokenController {
   async getTokenBalance(@Param("address") tokenAddress: string, @Request() req) {
     // Get user's account address from AccountService
     const accountAddress = await this.accountService.getAccountAddress(req.user.sub);
-    
+
     if (!accountAddress) {
       throw new Error("User account not found. Please create an account first.");
     }
@@ -131,10 +138,10 @@ export class TokenController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get all token balances for user's account" })
-  @ApiQuery({ 
-    name: "address", 
+  @ApiQuery({
+    name: "address",
     description: "Account address (optional, uses user's account if not provided)",
-    required: false 
+    required: false,
   })
   @ApiResponse({
     status: 200,
@@ -161,8 +168,8 @@ export class TokenController {
   })
   async getAllTokenBalances(@Request() req, @Query("address") accountAddress?: string) {
     // Use provided address or get user's account address
-    const address = accountAddress || await this.accountService.getAccountAddress(req.user.sub);
-    
+    const address = accountAddress || (await this.accountService.getAccountAddress(req.user.sub));
+
     if (!address) {
       throw new Error("Account address not found. Please create an account first.");
     }

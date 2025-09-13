@@ -49,7 +49,10 @@ export class PaymasterService {
     // Add custom paymaster from environment if configured
     if (process.env.PAYMASTER_ADDRESS) {
       // Check if it's Pimlico Paymaster address
-      if (process.env.PAYMASTER_ADDRESS.toLowerCase() === "0x0000000000325602a77416A16136FDafd04b299f".toLowerCase()) {
+      if (
+        process.env.PAYMASTER_ADDRESS.toLowerCase() ===
+        "0x0000000000325602a77416A16136FDafd04b299f".toLowerCase()
+      ) {
         // Override pimlico-sepolia with the actual API key from env
         const pimlicoConfig = this.paymasters.get("pimlico-sepolia");
         if (pimlicoConfig && process.env.PIMLICO_API_KEY) {
@@ -84,11 +87,7 @@ export class PaymasterService {
   /**
    * Get paymaster sponsorship data
    */
-  async getPaymasterData(
-    paymasterName: string,
-    userOp: any,
-    entryPoint: string
-  ): Promise<string> {
+  async getPaymasterData(paymasterName: string, userOp: any, entryPoint: string): Promise<string> {
     const config = this.paymasters.get(paymasterName);
     if (!config) {
       throw new Error(`Paymaster ${paymasterName} not found`);
@@ -107,7 +106,11 @@ export class PaymasterService {
         return this.getAlchemyPaymasterData(config, userOp, entryPoint);
       case "custom":
         // Check if this is actually Pimlico paymaster by address
-        if (config.address.toLowerCase() === "0x0000000000325602a77416A16136FDafd04b299f".toLowerCase() && config.apiKey) {
+        if (
+          config.address.toLowerCase() ===
+            "0x0000000000325602a77416A16136FDafd04b299f".toLowerCase() &&
+          config.apiKey
+        ) {
           // Use Pimlico method for Pimlico paymaster
           return this.getPimlicoPaymasterData(
             { ...config, type: "pimlico", endpoint: "https://api.pimlico.io/v2/11155111/rpc" },
@@ -310,11 +313,12 @@ export class PaymasterService {
 
         if (decoded && decoded.args[0] && decoded.args[0].length > 0) {
           const userOp = decoded.args[0][0];
-          
+
           // Check paymasterAndData field
           const paymasterAndData = userOp.paymasterAndData;
-          usedPaymaster = paymasterAndData && paymasterAndData !== "0x" && paymasterAndData.length > 2;
-          
+          usedPaymaster =
+            paymasterAndData && paymasterAndData !== "0x" && paymasterAndData.length > 2;
+
           if (usedPaymaster && paymasterAndData.length >= 42) {
             // Extract paymaster address (first 20 bytes)
             paymasterAddress = "0x" + paymasterAndData.slice(2, 42);
@@ -337,8 +341,8 @@ export class PaymasterService {
       }
 
       // Analyze who paid for gas
-      const gasPaidBy = usedPaymaster 
-        ? `Paymaster (${paymasterAddress || "Unknown"})` 
+      const gasPaidBy = usedPaymaster
+        ? `Paymaster (${paymasterAddress || "Unknown"})`
         : "User's Smart Account";
 
       // Get bundler info
@@ -366,8 +370,8 @@ export class PaymasterService {
           paidBy: gasPaidBy,
         },
         userOperation: userOpDetails,
-        summary: usedPaymaster 
-          ? `✅ This transaction used a Paymaster for gas sponsorship` 
+        summary: usedPaymaster
+          ? `✅ This transaction used a Paymaster for gas sponsorship`
           : `❌ This transaction did NOT use a Paymaster (user paid for gas)`,
       };
     } catch (error: any) {

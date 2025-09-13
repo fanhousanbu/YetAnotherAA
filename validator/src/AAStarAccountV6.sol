@@ -313,6 +313,5 @@ contract AAStarAccountV6 is IAccount, UUPSUpgradeable, Initializable {
         _onlyCreator();
     }
 
-
     receive() external payable {}
 }

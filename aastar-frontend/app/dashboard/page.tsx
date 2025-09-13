@@ -40,7 +40,7 @@ export default function DashboardPage() {
     setLoading(true);
     try {
       let accountData = null;
-      
+
       // Try to get account
       try {
         const accountResponse = await accountAPI.getAccount();
@@ -361,7 +361,7 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {tokenBalances
                   .filter(balance => parseFloat(balance.formattedBalance) > 0)
-                  .map((tokenBalance) => (
+                  .map(tokenBalance => (
                     <div
                       key={tokenBalance.token.address}
                       className="p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
@@ -372,7 +372,7 @@ export default function DashboardPage() {
                             src={tokenBalance.token.logoUrl}
                             alt={tokenBalance.token.symbol}
                             className="w-8 h-8 mr-3 rounded-full"
-                            onError={(e) => {
+                            onError={e => {
                               (e.target as HTMLImageElement).style.display = "none";
                             }}
                           />
@@ -386,9 +386,7 @@ export default function DashboardPage() {
                               {parseFloat(tokenBalance.formattedBalance).toFixed(4)}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500">
-                            {tokenBalance.token.name}
-                          </p>
+                          <p className="text-xs text-gray-500">{tokenBalance.token.name}</p>
                           {tokenBalance.token.isCustom && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
                               Custom
@@ -399,7 +397,8 @@ export default function DashboardPage() {
                     </div>
                   ))}
               </div>
-              {tokenBalances.filter(balance => parseFloat(balance.formattedBalance) > 0).length === 0 && (
+              {tokenBalances.filter(balance => parseFloat(balance.formattedBalance) > 0).length ===
+                0 && (
                 <div className="text-center py-6">
                   <WalletIcon className="w-12 h-12 mx-auto text-gray-400" />
                   <h3 className="mt-2 text-sm font-medium text-gray-900">No token balances</h3>
@@ -416,9 +415,7 @@ export default function DashboardPage() {
         <div className="bg-white rounded-lg shadow-sm mb-6">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                🎉 Paymaster Status
-              </h3>
+              <h3 className="text-lg font-medium text-gray-900">🎉 Paymaster Status</h3>
             </div>
             <div className="space-y-3">
               {paymasters.filter(pm => pm.configured).length > 0 ? (

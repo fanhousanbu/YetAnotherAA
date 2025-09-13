@@ -61,22 +61,22 @@ export default function TokenSelector({
   const loadBalances = async (tokensToLoad: Token[]) => {
     try {
       const newBalances: { [address: string]: TokenBalance } = {};
-      
+
       // Process tokens sequentially to avoid rate limiting
       for (let i = 0; i < tokensToLoad.length; i++) {
         const token = tokensToLoad[i];
-        
+
         // Skip non-ERC20 tokens
         if (!token.address || token.address === "ETH") {
           continue;
         }
-        
+
         try {
           // Add delay between requests to avoid rate limiting
           if (i > 0) {
             await new Promise(resolve => setTimeout(resolve, 800));
           }
-          
+
           const response = await tokenAPI.getTokenBalance(token.address);
           console.log(`Token ${token.symbol} balance response:`, response.data);
           if (response.data) {
@@ -89,7 +89,7 @@ export default function TokenSelector({
         }
       }
 
-      console.log('Final balances to set:', newBalances);
+      console.log("Final balances to set:", newBalances);
       setBalances(newBalances);
     } catch (error) {
       console.error("Failed to load balances:", error);
@@ -105,12 +105,12 @@ export default function TokenSelector({
     setValidatingToken(true);
     try {
       const response = await tokenAPI.validateToken({ address: customTokenAddress });
-      
+
       if (response.data.isValid) {
         const newToken = response.data.token;
         const updatedTokens = [...tokens, newToken];
         setTokens(updatedTokens);
-        
+
         // Load balance for the new token
         if (accountAddress && showBalances) {
           try {
@@ -123,7 +123,7 @@ export default function TokenSelector({
             // Ignore balance loading errors for custom tokens
           }
         }
-        
+
         toast.success(`Added ${newToken.symbol} token`);
         setCustomTokenAddress("");
         setShowCustomTokenModal(false);
@@ -139,7 +139,7 @@ export default function TokenSelector({
 
   const refreshSingleTokenBalance = async (token: Token) => {
     if (!accountAddress || !showBalances || token.address === "ETH") return;
-    
+
     setRefreshingBalances(prev => ({ ...prev, [token.address]: true }));
     try {
       const response = await tokenAPI.getTokenBalance(token.address);
@@ -207,7 +207,7 @@ export default function TokenSelector({
                         src={selectedToken.logoUrl}
                         alt={selectedToken.symbol}
                         className="w-6 h-6 mr-3 rounded-full"
-                        onError={(e) => {
+                        onError={e => {
                           (e.target as HTMLImageElement).style.display = "none";
                         }}
                       />
@@ -216,9 +216,7 @@ export default function TokenSelector({
                       <span className="block font-medium text-gray-900">
                         {selectedToken.symbol}
                       </span>
-                      <span className="block text-sm text-gray-500">
-                        {selectedToken.name}
-                      </span>
+                      <span className="block text-sm text-gray-500">{selectedToken.name}</span>
                     </div>
                     {showBalances && accountAddress && (
                       <span className="text-sm text-gray-500">
@@ -242,7 +240,7 @@ export default function TokenSelector({
               leaveTo="opacity-0"
             >
               <Listbox.Options className="absolute z-10 w-full py-1 mt-1 overflow-auto text-base bg-white rounded-md shadow-lg max-h-60 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                {tokens.map((token) => (
+                {tokens.map(token => (
                   <Listbox.Option
                     key={token.address}
                     className={({ active }) =>
@@ -260,7 +258,7 @@ export default function TokenSelector({
                               src={token.logoUrl}
                               alt={token.symbol}
                               className="w-6 h-6 mr-3 rounded-full"
-                              onError={(e) => {
+                              onError={e => {
                                 (e.target as HTMLImageElement).style.display = "none";
                               }}
                             />
@@ -284,30 +282,28 @@ export default function TokenSelector({
                           {showBalances && accountAddress && (
                             <div className="flex items-center space-x-2">
                               <span
-                                className={`text-sm ${
-                                  active ? "text-blue-200" : "text-gray-500"
-                                }`}
+                                className={`text-sm ${active ? "text-blue-200" : "text-gray-500"}`}
                               >
                                 {getTokenBalance(token) || "0"}
                               </span>
                               {token.address !== "ETH" && (
                                 <button
-                                  onClick={(e) => {
+                                  onClick={e => {
                                     e.stopPropagation();
                                     refreshSingleTokenBalance(token);
                                   }}
                                   disabled={refreshingBalances[token.address]}
                                   className={`p-1 rounded hover:bg-opacity-20 disabled:opacity-50 disabled:cursor-not-allowed ${
-                                    active 
-                                      ? "text-blue-200 hover:bg-white" 
+                                    active
+                                      ? "text-blue-200 hover:bg-white"
                                       : "text-gray-400 hover:bg-gray-200"
                                   }`}
                                   title={`Refresh ${token.symbol} balance`}
                                 >
-                                  <ArrowPathIcon 
+                                  <ArrowPathIcon
                                     className={`w-4 h-4 ${
-                                      refreshingBalances[token.address] ? 'animate-spin' : ''
-                                    }`} 
+                                      refreshingBalances[token.address] ? "animate-spin" : ""
+                                    }`}
                                   />
                                 </button>
                               )}
@@ -328,7 +324,7 @@ export default function TokenSelector({
                     )}
                   </Listbox.Option>
                 ))}
-                
+
                 {/* Add Custom Token Option */}
                 <div className="border-t border-gray-200">
                   <button
@@ -376,10 +372,7 @@ export default function TokenSelector({
                 leaveTo="opacity-0 scale-95"
               >
                 <Dialog.Panel className="w-full max-w-md p-6 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
-                  <Dialog.Title
-                    as="h3"
-                    className="text-lg font-medium leading-6 text-gray-900"
-                  >
+                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
                     Add Custom Token
                   </Dialog.Title>
 
@@ -390,7 +383,7 @@ export default function TokenSelector({
                     <input
                       type="text"
                       value={customTokenAddress}
-                      onChange={(e) => setCustomTokenAddress(e.target.value)}
+                      onChange={e => setCustomTokenAddress(e.target.value)}
                       placeholder="0x..."
                       className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     />
