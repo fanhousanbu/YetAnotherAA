@@ -130,43 +130,43 @@ export default function ServiceStatus() {
 
       {/* Status Panel */}
       {isVisible && (
-        <div className="fixed bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg z-50 transition-all">
+        <div className="fixed bottom-4 right-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-lg z-50 transition-all">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-700">Service Status</h3>
+          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Service Status</h3>
             <div className="flex items-center space-x-1">
               {/* Refresh Button */}
               <button
                 onClick={checkHealth}
                 disabled={isRefreshing}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                 title="Refresh Status"
               >
                 <ArrowPathIcon
-                  className={`w-4 h-4 text-gray-600 ${isRefreshing ? "animate-spin" : ""}`}
+                  className={`w-4 h-4 text-gray-600 dark:text-gray-400 ${isRefreshing ? "animate-spin" : ""}`}
                 />
               </button>
 
               {/* Expand/Collapse Button */}
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                 title={isExpanded ? "Collapse" : "Expand"}
               >
                 {isExpanded ? (
-                  <ChevronDownIcon className="w-4 h-4 text-gray-600" />
+                  <ChevronDownIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                 ) : (
-                  <ChevronUpIcon className="w-4 h-4 text-gray-600" />
+                  <ChevronUpIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                 )}
               </button>
 
               {/* Close Button */}
               <button
                 onClick={() => setIsVisible(false)}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                 title="Close"
               >
-                <XMarkIcon className="w-4 h-4 text-gray-600" />
+                <XMarkIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
               </button>
             </div>
           </div>
@@ -179,7 +179,7 @@ export default function ServiceStatus() {
                 <div className={`w-3 h-3 rounded-full ${getBackendColor()}`} />
                 <div className="text-sm">
                   <span className="font-medium">Backend:</span>
-                  <span className="ml-2 text-gray-600">
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">
                     {backendStatus === "online"
                       ? "Online"
                       : backendStatus === "offline"
@@ -194,7 +194,7 @@ export default function ServiceStatus() {
                 <div className={`w-3 h-3 rounded-full ${getSignerColor()}`} />
                 <div className="text-sm">
                   <span className="font-medium">Signers:</span>
-                  <span className="ml-2 text-gray-600">
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">
                     {signerStatus === "checking" ? "Checking..." : `${signerCount} active`}
                   </span>
                 </div>
@@ -205,13 +205,13 @@ export default function ServiceStatus() {
                 <>
                   {/* Last Check Time */}
                   {lastCheck && (
-                    <div className="text-xs text-gray-500 pt-1 border-t border-gray-200">
+                    <div className="text-xs text-gray-600 dark:text-gray-400 pt-1 border-t border-gray-200 dark:border-gray-700">
                       Last check: {lastCheck.toLocaleTimeString()}
                     </div>
                   )}
 
                   {/* Legend */}
-                  <div className="text-xs text-gray-500 space-y-1 pt-2 border-t border-gray-200">
+                  <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1 pt-2 border-t border-gray-200 dark:border-gray-700">
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 rounded-full bg-green-500" />
                       <span>Service healthy</span>

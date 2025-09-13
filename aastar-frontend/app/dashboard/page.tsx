@@ -156,7 +156,7 @@ export default function DashboardPage() {
       case "submitted":
         return <ClockIcon className="w-5 h-5 text-yellow-500" />;
       default:
-        return <ClockIcon className="w-5 h-5 text-gray-500" />;
+        return <ClockIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />;
     }
   };
 
@@ -175,10 +175,10 @@ export default function DashboardPage() {
       <div className="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Welcome back, {user?.username || user?.email}!
           </h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Manage your ERC-4337 smart account - no need to manage gas fees!
           </p>
         </div>
@@ -187,14 +187,14 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-3">
           {/* Account Card */}
           <div className="col-span-1 lg:col-span-2">
-            <div className="overflow-hidden bg-white rounded-lg shadow-sm">
+            <div className="overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm">
               <div className="p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <WalletIcon className="w-8 h-8 text-blue-500" />
                   </div>
                   <div className="flex-1 ml-4">
-                    <h3 className="text-lg font-medium text-gray-900">Smart Account</h3>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">Smart Account</h3>
                     {(() => {
                       console.log("Rendering account:", account);
                       console.log("Account address in render:", account?.address);
@@ -204,17 +204,17 @@ export default function DashboardPage() {
                     {account ? (
                       <div className="mt-2 space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500">Account Address:</span>
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Account Address:</span>
                           <CopyButton text={account.address} className="flex-shrink-0" />
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500">Balance:</span>
-                          <span className="text-sm font-semibold">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Balance:</span>
+                          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                             {account.balance || "0"} ETH
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500">Status:</span>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Status:</span>
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               account.deployed
@@ -227,7 +227,7 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     ) : (
-                      <p className="mt-2 text-sm text-gray-600">
+                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                         No smart account found. Create one to get started - deployment and gas fees
                         are automatically handled!
                       </p>
@@ -260,7 +260,7 @@ export default function DashboardPage() {
                       </button>
                       <button
                         onClick={showTopUpInfo}
-                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
                         <PlusIcon className="w-4 h-4 mr-2" />
                         Top Up
@@ -300,9 +300,9 @@ export default function DashboardPage() {
 
           {/* Quick Actions */}
           <div className="col-span-1">
-            <div className="overflow-hidden bg-white rounded-lg shadow-sm">
+            <div className="overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm">
               <div className="p-6">
-                <h3 className="mb-4 text-lg font-medium text-gray-900">Quick Actions</h3>
+                <h3 className="mb-4 text-lg font-medium text-gray-900 dark:text-white">Quick Actions</h3>
                 <div className="space-y-3">
                   <button
                     onClick={() => router.push("/transfer")}
@@ -314,7 +314,7 @@ export default function DashboardPage() {
                   </button>
                   <button
                     onClick={() => loadDashboardData()}
-                    className="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     <EyeIcon className="w-4 h-4 mr-2" />
                     Refresh Data
@@ -353,10 +353,10 @@ export default function DashboardPage() {
 
         {/* Token Balances */}
         {account && tokenBalances.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Token Balances</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Token Balances</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {tokenBalances
@@ -364,7 +364,7 @@ export default function DashboardPage() {
                   .map(tokenBalance => (
                     <div
                       key={tokenBalance.token.address}
-                      className="p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
                     >
                       <div className="flex items-center">
                         {tokenBalance.token.logoUrl && (
@@ -379,14 +379,14 @@ export default function DashboardPage() {
                         )}
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <span className="font-medium text-gray-900">
+                            <span className="font-medium text-gray-900 dark:text-white">
                               {tokenBalance.token.symbol}
                             </span>
-                            <span className="text-sm font-semibold text-gray-900">
+                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
                               {parseFloat(tokenBalance.formattedBalance).toFixed(4)}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500">{tokenBalance.token.name}</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">{tokenBalance.token.name}</p>
                           {tokenBalance.token.isCustom && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
                               Custom
@@ -400,9 +400,9 @@ export default function DashboardPage() {
               {tokenBalances.filter(balance => parseFloat(balance.formattedBalance) > 0).length ===
                 0 && (
                 <div className="text-center py-6">
-                  <WalletIcon className="w-12 h-12 mx-auto text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No token balances</h3>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <WalletIcon className="w-12 h-12 mx-auto text-gray-500 dark:text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No token balances</h3>
+                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                     Your account doesn&apos;t have any ERC20 tokens yet.
                   </p>
                 </div>
@@ -412,15 +412,15 @@ export default function DashboardPage() {
         )}
 
         {/* Paymaster Status */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">🎉 Paymaster Status</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">🎉 Paymaster Status</h3>
             </div>
             <div className="space-y-3">
               {paymasters.filter(pm => pm.configured).length > 0 ? (
                 <div>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                     Available gas sponsors for your transactions:
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -429,15 +429,15 @@ export default function DashboardPage() {
                       .map(paymaster => (
                         <div
                           key={paymaster.name}
-                          className="p-3 border border-green-200 rounded-lg bg-green-50"
+                          className="p-3 border border-green-200 dark:border-green-800 rounded-lg bg-green-50 dark:bg-green-900/20"
                         >
                           <div className="flex items-center">
                             <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2" />
                             <div>
-                              <p className="text-sm font-medium text-gray-900">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
                                 {paymaster.name === "pimlico-sepolia" ? "Pimlico" : paymaster.name}
                               </p>
-                              <p className="text-xs text-gray-500 font-mono">
+                              <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">
                                 {paymaster.address.slice(0, 10)}...{paymaster.address.slice(-8)}
                               </p>
                             </div>
@@ -445,19 +445,19 @@ export default function DashboardPage() {
                         </div>
                       ))}
                   </div>
-                  <p className="text-xs text-gray-500 mt-3">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-3">
                     ✨ Enable &quot;Use Paymaster&quot; when sending transfers for sponsored gas!
                   </p>
                 </div>
               ) : (
-                <div className="p-4 border border-yellow-200 rounded-lg bg-yellow-50">
+                <div className="p-4 border border-yellow-200 dark:border-yellow-800 rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
                   <div className="flex">
                     <ExclamationCircleIcon className="w-5 h-5 text-yellow-400 mr-2" />
                     <div>
-                      <p className="text-sm text-yellow-800">
+                      <p className="text-sm text-yellow-800 dark:text-yellow-200">
                         No Paymaster configured. Transactions will use your account balance for gas.
                       </p>
-                      <p className="text-xs text-yellow-600 mt-1">
+                      <p className="text-xs text-yellow-600 dark:text-yellow-300 mt-1">
                         Configure a Paymaster API key in the backend to enable gas sponsorship.
                       </p>
                     </div>
@@ -469,10 +469,10 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Transfers */}
-        <div className="bg-white rounded-lg shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Recent Transfers</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Recent Transfers</h3>
               <button
                 onClick={() => router.push("/transfer/history")}
                 className="text-sm text-blue-600 hover:text-blue-500"
@@ -486,22 +486,22 @@ export default function DashboardPage() {
                 {transfers.map(transfer => (
                   <div
                     key={transfer.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
+                    className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
                   >
                     <div className="flex items-center">
                       <div className="mr-3">{getStatusIcon(transfer.status)}</div>
                       <div>
                         <div className="flex items-center space-x-1">
-                          <span className="text-sm font-medium text-gray-900">To:</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">To:</span>
                           <CopyButton text={transfer.to} className="text-sm" />
                         </div>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
                           {new Date(transfer.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-gray-900">-{transfer.amount} ETH</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">-{transfer.amount} ETH</p>
                       <p
                         className={`text-xs capitalize ${
                           transfer.status === "completed"
@@ -519,9 +519,9 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="py-6 text-center">
-                <WalletIcon className="w-12 h-12 mx-auto text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No transfers yet</h3>
-                <p className="mt-1 text-sm text-gray-500">Start by sending your first transfer!</p>
+                <WalletIcon className="w-12 h-12 mx-auto text-gray-500 dark:text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No transfers yet</h3>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Start by sending your first transfer!</p>
               </div>
             )}
           </div>

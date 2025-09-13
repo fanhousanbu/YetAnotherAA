@@ -61,12 +61,12 @@ export default function CopyButton({
 
   return (
     <div className={`inline-flex items-center space-x-2 ${className}`}>
-      <span className="text-sm font-mono" title={text || ""}>
+      <span className="text-sm font-mono text-gray-800 dark:text-gray-200" title={text || ""}>
         {displayText || (showFullText ? text || "" : truncateAddress(text))}
       </span>
       <button
         onClick={copyToClipboard}
-        className="p-1 text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 transition-colors"
+        className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none focus:text-gray-700 dark:focus:text-gray-300 transition-colors"
         title="Copy address to clipboard"
       >
         {copied ? (

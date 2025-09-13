@@ -183,10 +183,10 @@ export default function TokenSelector({
   if (loading) {
     return (
       <div className={`relative ${className}`}>
-        <div className="w-full p-3 border border-gray-300 rounded-md bg-gray-50">
+        <div className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-800">
           <div className="flex items-center justify-center">
-            <div className="w-4 h-4 border-b-2 border-blue-500 rounded-full animate-spin"></div>
-            <span className="ml-2 text-sm text-gray-500">Loading tokens...</span>
+            <div className="w-4 h-4 border-b-2 border-blue-500 dark:border-blue-400 rounded-full animate-spin"></div>
+            <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">Loading tokens...</span>
           </div>
         </div>
       </div>
@@ -198,38 +198,53 @@ export default function TokenSelector({
       <div className={`relative ${className}`}>
         <Listbox value={selectedToken} onChange={onTokenChange}>
           <div className="relative">
-            <Listbox.Button className="relative w-full py-3 pl-3 pr-10 text-left bg-white border border-gray-300 rounded-md shadow-sm cursor-default focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            <Listbox.Button className="relative w-full py-3 pl-3 pr-10 text-left bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm cursor-default focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm">
               <div className="flex items-center">
                 {selectedToken ? (
                   <>
-                    {selectedToken.logoUrl && (
-                      <img
-                        src={selectedToken.logoUrl}
-                        alt={selectedToken.symbol}
-                        className="w-6 h-6 mr-3 rounded-full"
-                        onError={e => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                        }}
-                      />
-                    )}
+                    <div className="flex items-center justify-center w-6 h-6 mr-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
+                      {selectedToken.logoUrl ? (
+                        <img
+                          src={selectedToken.logoUrl}
+                          alt={selectedToken.symbol}
+                          className="w-6 h-6 rounded-full"
+                          onError={e => {
+                            // Replace failed image with fallback
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = "none";
+                            const parent = target.parentElement;
+                            if (parent && !parent.querySelector('.fallback-icon')) {
+                              const fallback = document.createElement('span');
+                              fallback.className = 'fallback-icon text-sm font-bold text-white';
+                              fallback.textContent = selectedToken.symbol.charAt(0);
+                              parent.appendChild(fallback);
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span className="text-sm font-bold text-white">
+                          {selectedToken.symbol.charAt(0)}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex-1">
-                      <span className="block font-medium text-gray-900">
+                      <span className="block font-medium text-gray-900 dark:text-gray-100">
                         {selectedToken.symbol}
                       </span>
-                      <span className="block text-sm text-gray-500">{selectedToken.name}</span>
+                      <span className="block text-sm text-gray-600 dark:text-gray-400">{selectedToken.name}</span>
                     </div>
                     {showBalances && accountAddress && (
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
                         {getTokenBalance(selectedToken) || "0"}
                       </span>
                     )}
                   </>
                 ) : (
-                  <span className="block text-gray-400">Select a token</span>
+                  <span className="block text-gray-500 dark:text-gray-400">Select an ERC20 token (optional)</span>
                 )}
               </div>
               <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                <ChevronUpDownIcon className="w-5 h-5 text-gray-400" />
+                <ChevronUpDownIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               </span>
             </Listbox.Button>
 
@@ -239,13 +254,13 @@ export default function TokenSelector({
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <Listbox.Options className="absolute z-10 w-full py-1 mt-1 overflow-auto text-base bg-white rounded-md shadow-lg max-h-60 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+              <Listbox.Options className="absolute z-10 w-full py-1 mt-1 overflow-auto text-base bg-white dark:bg-gray-800 rounded-md shadow-lg max-h-60 ring-1 ring-black dark:ring-gray-600 ring-opacity-5 dark:ring-opacity-50 focus:outline-none sm:text-sm">
                 {tokens.map(token => (
                   <Listbox.Option
                     key={token.address}
                     className={({ active }) =>
                       `relative cursor-default select-none py-2 pl-3 pr-9 ${
-                        active ? "bg-blue-600 text-white" : "text-gray-900"
+                        active ? "bg-blue-600 dark:bg-blue-600 text-white" : "text-gray-900 dark:text-gray-100"
                       }`
                     }
                     value={token}
@@ -253,16 +268,31 @@ export default function TokenSelector({
                     {({ selected, active }) => (
                       <>
                         <div className="flex items-center">
-                          {token.logoUrl && (
-                            <img
-                              src={token.logoUrl}
-                              alt={token.symbol}
-                              className="w-6 h-6 mr-3 rounded-full"
-                              onError={e => {
-                                (e.target as HTMLImageElement).style.display = "none";
-                              }}
-                            />
-                          )}
+                          <div className="flex items-center justify-center w-6 h-6 mr-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
+                            {token.logoUrl ? (
+                              <img
+                                src={token.logoUrl}
+                                alt={token.symbol}
+                                className="w-6 h-6 rounded-full"
+                                onError={e => {
+                                  // Replace failed image with fallback
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = "none";
+                                  const parent = target.parentElement;
+                                  if (parent && !parent.querySelector('.fallback-icon')) {
+                                    const fallback = document.createElement('span');
+                                    fallback.className = 'fallback-icon text-sm font-bold text-white';
+                                    fallback.textContent = token.symbol.charAt(0);
+                                    parent.appendChild(fallback);
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <span className="text-sm font-bold text-white">
+                                {token.symbol.charAt(0)}
+                              </span>
+                            )}
+                          </div>
                           <div className="flex-1">
                             <span
                               className={`block font-medium ${
@@ -273,7 +303,7 @@ export default function TokenSelector({
                             </span>
                             <span
                               className={`block text-sm ${
-                                active ? "text-blue-200" : "text-gray-500"
+                                active ? "text-blue-200 dark:text-blue-200" : "text-gray-600 dark:text-gray-400"
                               }`}
                             >
                               {token.name}
@@ -282,7 +312,7 @@ export default function TokenSelector({
                           {showBalances && accountAddress && (
                             <div className="flex items-center space-x-2">
                               <span
-                                className={`text-sm ${active ? "text-blue-200" : "text-gray-500"}`}
+                                className={`text-sm ${active ? "text-blue-200 dark:text-blue-200" : "text-gray-600 dark:text-gray-400"}`}
                               >
                                 {getTokenBalance(token) || "0"}
                               </span>
@@ -295,8 +325,8 @@ export default function TokenSelector({
                                   disabled={refreshingBalances[token.address]}
                                   className={`p-1 rounded hover:bg-opacity-20 disabled:opacity-50 disabled:cursor-not-allowed ${
                                     active
-                                      ? "text-blue-200 hover:bg-white"
-                                      : "text-gray-400 hover:bg-gray-200"
+                                      ? "text-blue-200 dark:text-blue-200 hover:bg-white dark:hover:bg-gray-700"
+                                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                                   }`}
                                   title={`Refresh ${token.symbol} balance`}
                                 >
@@ -314,7 +344,7 @@ export default function TokenSelector({
                         {selected ? (
                           <span
                             className={`absolute inset-y-0 right-0 flex items-center pr-4 ${
-                              active ? "text-white" : "text-blue-600"
+                              active ? "text-white" : "text-blue-600 dark:text-blue-400"
                             }`}
                           >
                             <CheckIcon className="w-5 h-5" />
@@ -326,12 +356,12 @@ export default function TokenSelector({
                 ))}
 
                 {/* Add Custom Token Option */}
-                <div className="border-t border-gray-200">
+                <div className="border-t border-gray-200 dark:border-gray-600">
                   <button
                     onClick={() => setShowCustomTokenModal(true)}
-                    className="relative flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    className="relative flex items-center w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
-                    <PlusIcon className="w-5 h-5 mr-3 text-gray-400" />
+                    <PlusIcon className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
                     <span>Add Custom Token</span>
                   </button>
                 </div>
@@ -357,7 +387,7 @@ export default function TokenSelector({
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-black bg-opacity-25" />
+            <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-25 dark:bg-opacity-50" />
           </Transition.Child>
 
           <div className="fixed inset-0 overflow-y-auto">
@@ -371,13 +401,13 @@ export default function TokenSelector({
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
               >
-                <Dialog.Panel className="w-full max-w-md p-6 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
-                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
+                <Dialog.Panel className="w-full max-w-md p-6 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-2xl">
+                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">
                     Add Custom Token
                   </Dialog.Title>
 
                   <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Token Contract Address
                     </label>
                     <input
@@ -385,9 +415,9 @@ export default function TokenSelector({
                       value={customTokenAddress}
                       onChange={e => setCustomTokenAddress(e.target.value)}
                       placeholder="0x..."
-                      className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="block w-full mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-md shadow-sm focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm"
                     />
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
                       Enter the contract address of an ERC20 token
                     </p>
                   </div>
@@ -397,7 +427,7 @@ export default function TokenSelector({
                       type="button"
                       onClick={() => setShowCustomTokenModal(false)}
                       disabled={validatingToken}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                      className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50"
                     >
                       Cancel
                     </button>
@@ -405,11 +435,11 @@ export default function TokenSelector({
                       type="button"
                       onClick={addCustomToken}
                       disabled={validatingToken || !customTokenAddress}
-                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {validatingToken ? (
                         <>
-                          <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
+                          <div className="w-4 h-4 mr-2 border-b-2 border-white dark:border-white rounded-full animate-spin"></div>
                           Validating...
                         </>
                       ) : (

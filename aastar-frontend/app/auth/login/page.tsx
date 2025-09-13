@@ -154,34 +154,34 @@ export default function LoginPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           {!showDeviceRegister ? (
             <>
               <div>
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
                   Sign in with Passkey
                 </h2>
-                <p className="mt-2 text-center text-sm text-gray-600">
+                <p className="mt-2 text-center text-sm text-gray-700 dark:text-gray-300">
                   Or{" "}
                   <Link
                     href="/auth/register"
-                    className="font-medium text-blue-600 hover:text-blue-500"
+                    className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
                   >
                     create a new account
                   </Link>
                 </p>
-                <p className="mt-1 text-center text-xs text-gray-500">
+                <p className="mt-1 text-center text-xs text-gray-600 dark:text-gray-400">
                   Login requires only your passkey
                 </p>
               </div>
 
               <div className="mt-8 space-y-6">
-                <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-4">
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
                       <svg
-                        className="h-5 w-5 text-blue-400"
+                        className="h-5 w-5 text-blue-400 dark:text-blue-300"
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -193,8 +193,8 @@ export default function LoginPage() {
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <h3 className="text-sm font-medium text-blue-800">Passkey Authentication</h3>
-                      <div className="mt-1 text-sm text-blue-700">
+                      <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">Passkey Authentication</h3>
+                      <div className="mt-1 text-sm text-blue-700 dark:text-blue-300">
                         <p>
                           Click the button below to authenticate using your device&apos;s passkey
                           (Face ID, Touch ID, Windows Hello, etc.).
@@ -208,7 +208,7 @@ export default function LoginPage() {
                   <button
                     onClick={handlePasskeyLogin}
                     disabled={loading}
-                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <div className="flex items-center">
@@ -233,7 +233,7 @@ export default function LoginPage() {
                 <div className="text-center">
                   <button
                     onClick={() => setShowDeviceRegister(true)}
-                    className="text-sm text-gray-600 hover:text-gray-900 underline"
+                    className="text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white underline"
                   >
                     New device? Register passkey for this device
                   </button>
@@ -243,16 +243,16 @@ export default function LoginPage() {
           ) : (
             <>
               <div>
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
                   Register Passkey for This Device
                 </h2>
-                <p className="mt-2 text-center text-sm text-gray-600">
+                <p className="mt-2 text-center text-sm text-gray-700 dark:text-gray-300">
                   Enter your email and password to register a passkey for this device
                 </p>
                 <div className="text-center mt-2">
                   <button
                     onClick={() => setShowDeviceRegister(false)}
-                    className="text-sm text-blue-600 hover:text-blue-500 underline"
+                    className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline"
                   >
                     ← Back to passkey login
                   </button>
@@ -262,7 +262,7 @@ export default function LoginPage() {
               <form className="mt-8 space-y-6" onSubmit={handleDevicePasskeyRegister}>
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Email address
                     </label>
                     <input
@@ -273,13 +273,13 @@ export default function LoginPage() {
                       required
                       value={deviceFormData.email}
                       onChange={handleDeviceFormChange}
-                      className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                      className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-600 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                       placeholder="Enter your email"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Password
                     </label>
                     <input
@@ -290,17 +290,17 @@ export default function LoginPage() {
                       required
                       value={deviceFormData.password}
                       onChange={handleDeviceFormChange}
-                      className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                      className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-600 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                       placeholder="Enter your password"
                     />
                   </div>
                 </div>
 
-                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-4">
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
                       <svg
-                        className="h-5 w-5 text-yellow-400"
+                        className="h-5 w-5 text-yellow-400 dark:text-yellow-300"
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -312,8 +312,8 @@ export default function LoginPage() {
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <h3 className="text-sm font-medium text-yellow-800">Device Registration</h3>
-                      <div className="mt-1 text-sm text-yellow-700">
+                      <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Device Registration</h3>
+                      <div className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
                         <p>
                           This will register a new passkey specifically for this device. You&apos;ll
                           need your existing credentials to verify your identity.
@@ -327,7 +327,7 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <div className="flex items-center">

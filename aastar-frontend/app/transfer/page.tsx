@@ -21,7 +21,7 @@ export default function TransferPage() {
     amount: "",
     usePaymaster: false,
   });
-  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [selectedToken, setSelectedToken] = useState<Token | null>(null); // null means ETH
   const [tokenBalance, setTokenBalance] = useState<TokenBalance | null>(null);
   const [loadingTokenBalance, setLoadingTokenBalance] = useState(false);
   const [gasEstimate, setGasEstimate] = useState<GasEstimate | null>(null);
@@ -112,7 +112,7 @@ export default function TransferPage() {
       const response = await transferAPI.estimate({
         to: formData.to,
         amount: formData.amount,
-        tokenAddress: selectedToken?.address === "ETH" ? undefined : selectedToken?.address,
+        tokenAddress: selectedToken?.address, // undefined = ETH transfer
       });
       setGasEstimate(response.data);
       toast.success("Gas estimated successfully");
@@ -133,7 +133,7 @@ export default function TransferPage() {
     // Check if amount exceeds available balance
     const transferAmount = parseFloat(formData.amount);
 
-    if (!selectedToken || selectedToken.address === "ETH") {
+    if (!selectedToken) {
       // ETH transfer validation
       const availableBalance = parseFloat(account?.balance || "0");
       if (transferAmount > availableBalance) {
@@ -157,14 +157,17 @@ export default function TransferPage() {
     setTransferStatus(null);
 
     setLoading(prev => ({ ...prev, transfer: true }));
+
+
     try {
-      const response = await transferAPI.execute({
+      const requestData = {
         to: formData.to,
         amount: formData.amount,
         usePaymaster: formData.usePaymaster,
-        tokenAddress: selectedToken?.address === "ETH" ? undefined : selectedToken?.address,
-      });
+        tokenAddress: selectedToken?.address, // undefined = ETH transfer
+      };
 
+      const response = await transferAPI.execute(requestData);
       setTransferResult(response.data);
       toast.success("Transfer submitted! Tracking status...");
 
@@ -180,8 +183,32 @@ export default function TransferPage() {
       setSelectedToken(null);
       setGasEstimate(null);
     } catch (error: any) {
-      const message = error.response?.data?.message || "Transfer failed";
-      toast.error(message);
+
+      // Extract detailed error information
+      const errorData = error.response?.data;
+
+      if (errorData?.error === "PaymasterSponsorshipRejected" || errorData?.error === "PaymasterSponsorshipFailed") {
+        // Show detailed Paymaster error
+        const details = errorData.details || errorData.message || "Paymaster could not sponsor this transaction";
+
+        // Create a more detailed error toast for Paymaster failures
+        toast.error(
+          <div>
+            <div className="mb-1 font-semibold">Paymaster Sponsorship Failed</div>
+            <div className="text-sm whitespace-pre-line">{details}</div>
+          </div>,
+          {
+            duration: 8000, // Show for longer since it has more info
+            style: {
+              maxWidth: '500px',
+            }
+          }
+        );
+      } else {
+        // Regular error message
+        const message = errorData?.message || error.message || "Transfer failed";
+        toast.error(message);
+      }
     } finally {
       setLoading(prev => ({ ...prev, transfer: false }));
     }
@@ -277,7 +304,7 @@ export default function TransferPage() {
     if (transferAmount <= 0) return true;
 
     // For ETH transfers, check ETH balance
-    if (!selectedToken || selectedToken.address === "ETH") {
+    if (!selectedToken) {
       const availableBalance = parseFloat(account?.balance || "0");
       return transferAmount > availableBalance;
     }
@@ -341,8 +368,8 @@ export default function TransferPage() {
           <div className="flex items-center">
             <ArrowUpIcon className="w-8 h-8 mr-3 text-blue-500" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Send Transfer</h1>
-              <p className="text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Send Transfer</h1>
+              <p className="text-sm text-gray-700 dark:text-gray-300">
                 Send ETH using ERC-4337 account abstraction - gas fees handled automatically
               </p>
             </div>
@@ -351,13 +378,13 @@ export default function TransferPage() {
 
         {/* Deployment Banner */}
         {showDeploymentBanner && (
-          <div className="p-4 mb-6 border-l-4 border-blue-400 bg-blue-50">
+          <div className="p-4 mb-6 border-l-4 border-blue-400 bg-blue-50 dark:bg-blue-900/20">
             <div className="flex">
               <div className="flex-shrink-0">
                 <InformationCircleIcon className="w-5 h-5 text-blue-400" />
               </div>
               <div className="flex-1 ml-3">
-                <p className="text-sm text-blue-700">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
                   <strong>First Transfer:</strong> Your smart account will be automatically deployed
                   with your first transfer - no additional gas fees required!
                 </p>
@@ -367,7 +394,7 @@ export default function TransferPage() {
                   <button
                     type="button"
                     onClick={() => setShowDeploymentBanner(false)}
-                    className="inline-flex bg-blue-50 rounded-md p-1.5 text-blue-500 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-50 focus:ring-blue-600"
+                    className="inline-flex bg-blue-50 dark:bg-blue-900/20 rounded-md p-1.5 text-blue-500 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-50 dark:focus:ring-offset-blue-900/20 focus:ring-blue-600 dark:focus:ring-blue-400"
                   >
                     <span className="sr-only">Dismiss</span>
                     <XMarkIcon className="w-5 h-5" />
@@ -379,30 +406,30 @@ export default function TransferPage() {
         )}
 
         {/* Account Info */}
-        <div className="p-4 mb-6 border border-blue-200 rounded-lg bg-blue-50">
+        <div className="p-4 mb-6 border border-blue-200 dark:border-gray-700 rounded-lg bg-blue-50 dark:bg-blue-900/20">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <p className="text-sm font-medium text-blue-900">Account Balance</p>
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-200">Account Balance</p>
               <div className="relative group">
-                <div className="text-lg font-semibold text-blue-900">
+                <div className="text-lg font-semibold text-blue-900 dark:text-blue-200">
                   {formatBalance(account?.balance)} ETH
                 </div>
                 {/* Tooltip */}
-                <div className="absolute left-0 z-10 invisible px-3 py-2 mb-2 text-sm text-white transition-all duration-200 bg-gray-900 rounded-lg opacity-0 bottom-full group-hover:opacity-100 group-hover:visible whitespace-nowrap">
+                <div className="absolute left-0 z-10 invisible px-3 py-2 mb-2 text-sm text-white transition-all duration-200 bg-gray-900 dark:bg-gray-800 rounded-lg opacity-0 bottom-full group-hover:opacity-100 group-hover:visible whitespace-nowrap">
                   <div className="font-mono">{account?.balance || "0"} ETH</div>
-                  <div className="absolute w-0 h-0 border-t-4 border-l-4 border-r-4 top-full left-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
+                  <div className="absolute w-0 h-0 border-t-4 border-l-4 border-r-4 top-full left-4 border-l-transparent border-r-transparent border-t-gray-900 dark:border-t-gray-800"></div>
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm text-blue-700">Account Address</p>
-              <p className="font-mono text-sm text-blue-900">
+              <p className="text-sm text-blue-700 dark:text-blue-300">Account Address</p>
+              <p className="font-mono text-sm text-blue-900 dark:text-blue-200">
                 {account?.address.slice(0, 10)}...{account?.address.slice(-8)}
               </p>
               <div className="flex justify-end mt-2 space-x-2">
                 <button
                   onClick={refreshBalance}
-                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-white border border-blue-200 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-800 border border-blue-200 dark:border-gray-600 rounded-md hover:bg-blue-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 >
                   <svg
                     className="w-3 h-3 mr-1"
@@ -423,7 +450,7 @@ export default function TransferPage() {
                   <button
                     onClick={sponsorAccount}
                     disabled={loading.sponsor}
-                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 border border-green-200 rounded-md bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 dark:text-green-400 border border-green-200 dark:border-green-600 rounded-md bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading.sponsor ? (
                       <div className="w-3 h-3 mr-1 border-b-2 border-green-600 rounded-full animate-spin"></div>
@@ -455,10 +482,10 @@ export default function TransferPage() {
           <div
             className={`border rounded-lg p-4 mb-6 ${
               transferStatus?.status === "completed"
-                ? "bg-green-50 border-green-200"
+                ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700"
                 : transferStatus?.status === "failed"
-                  ? "bg-red-50 border-red-200"
-                  : "bg-blue-50 border-blue-200"
+                  ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
+                  : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
             }`}
           >
             <div className="flex">
@@ -473,44 +500,44 @@ export default function TransferPage() {
                 <h3
                   className={`text-sm font-medium ${
                     transferStatus?.status === "completed"
-                      ? "text-green-800"
+                      ? "text-green-800 dark:text-green-200"
                       : transferStatus?.status === "failed"
-                        ? "text-red-800"
-                        : "text-blue-800"
+                        ? "text-red-800 dark:text-red-200"
+                        : "text-blue-800 dark:text-blue-200"
                   }`}
                 >
                   {transferStatus?.statusDescription || "Transfer Submitted"}
                 </h3>
                 <div className="mt-2 space-y-1 text-sm">
-                  <p className="text-gray-600">
+                  <p className="text-gray-700 dark:text-gray-300">
                     Status:{" "}
                     <span className="font-medium">
                       {transferStatus?.status || transferResult.status}
                     </span>
                     {transferStatus?.elapsedSeconds && (
-                      <span className="ml-2 text-gray-500">
+                      <span className="ml-2 text-gray-600 dark:text-gray-400">
                         ({transferStatus.elapsedSeconds}s elapsed)
                       </span>
                     )}
                   </p>
-                  <p className="font-mono text-xs text-gray-500">
+                  <p className="font-mono text-xs text-gray-600 dark:text-gray-400">
                     Transfer ID: {transferResult.transferId}
                   </p>
                   {transferStatus?.transactionHash && (
-                    <p className="font-mono text-xs text-gray-600">
+                    <p className="font-mono text-xs text-gray-700 dark:text-gray-300">
                       Transaction:
                       <a
                         href={transferStatus.explorerUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="ml-1 text-blue-600 underline hover:text-blue-800"
+                        className="ml-1 text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300"
                       >
                         {transferStatus.transactionHash.slice(0, 20)}...
                       </a>
                     </p>
                   )}
                   {transferStatus?.bundlerUserOpHash && !transferStatus?.transactionHash && (
-                    <p className="text-xs text-gray-500">Bundler processing transaction...</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Bundler processing transaction...</p>
                   )}
                 </div>
               </div>
@@ -519,11 +546,11 @@ export default function TransferPage() {
         )}
 
         {/* Transfer Form */}
-        <div className="bg-white rounded-lg shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <div className="p-6 space-y-6">
             {/* Recipient */}
             <div>
-              <label htmlFor="to" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="to" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Recipient Address
               </label>
               <input
@@ -533,26 +560,79 @@ export default function TransferPage() {
                 value={formData.to}
                 onChange={handleChange}
                 placeholder="0x..."
-                className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="block w-full mt-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow-sm focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm placeholder-gray-500 dark:placeholder-gray-400"
               />
             </div>
 
-            {/* Token Selection */}
+            {/* Asset Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Select Token</label>
-              <TokenSelector
-                selectedToken={selectedToken}
-                onTokenChange={setSelectedToken}
-                accountAddress={account?.address}
-                showBalances={true}
-              />
-              <p className="mt-1 text-sm text-gray-500">Choose ETH or an ERC20 token to transfer</p>
+              <label className="block mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">Select Asset</label>
+
+              {/* Current Selection Display */}
+              <div className="p-3 mb-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="flex items-center justify-center w-8 h-8 mr-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
+                      <span className="text-sm font-bold text-white">
+                        {selectedToken ? selectedToken.symbol.charAt(0) : 'Ξ'}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900 dark:text-white">
+                        {selectedToken ? selectedToken.symbol : 'ETH'}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedToken ? selectedToken.name : 'Ethereum'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      {selectedToken ? (
+                        tokenBalance ? `${tokenBalance.formattedBalance} ${selectedToken.symbol}` : '0'
+                      ) : (
+                        `${formatBalance(account?.balance)} ETH`
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">Available Balance</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Token Selector for ERC20 */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Switch to ERC20 Token:</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedToken(null)}
+                    className={`px-3 py-1 text-xs rounded-full border ${
+                      !selectedToken
+                        ? 'bg-blue-100 dark:bg-blue-900/40 border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300'
+                        : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    Use ETH
+                  </button>
+                </div>
+
+                <TokenSelector
+                  selectedToken={selectedToken}
+                  onTokenChange={setSelectedToken}
+                  accountAddress={account?.address}
+                  showBalances={true}
+                />
+              </div>
+
+              <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                💡 Tip: ETH transfers work best with Paymaster sponsorship. ERC20 transfers may not be sponsored by all paymasters.
+              </p>
             </div>
 
             {/* Amount */}
             <div>
-              <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
-                Amount {selectedToken ? `(${selectedToken.symbol})` : ""}
+              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Amount {selectedToken ? `(${selectedToken.symbol})` : '(ETH)'}
               </label>
               <input
                 type="number"
@@ -562,54 +642,43 @@ export default function TransferPage() {
                 min="0"
                 value={formData.amount}
                 onChange={handleChange}
-                placeholder="0.001"
-                className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder={selectedToken ? '1' : '0.001'}
+                className="block w-full mt-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow-sm focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm placeholder-gray-500 dark:placeholder-gray-400"
               />
-              <div className="mt-1 text-sm text-gray-500">
-                Available:
-                {selectedToken?.address === "ETH" || !selectedToken ? (
-                  <span className="relative ml-1 group">
-                    {formatBalance(account?.balance)} ETH
-                    {/* Tooltip for available balance */}
-                    <div className="absolute left-0 z-20 invisible px-3 py-2 mb-2 text-sm text-white transition-all duration-200 bg-gray-900 rounded-lg opacity-0 bottom-full group-hover:opacity-100 group-hover:visible whitespace-nowrap">
-                      <div className="font-mono">Exact: {account?.balance || "0"} ETH</div>
-                      <div className="absolute w-0 h-0 border-t-4 border-l-4 border-r-4 top-full left-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
-                    </div>
-                  </span>
-                ) : loadingTokenBalance ? (
-                  <span className="ml-1 text-gray-600">
-                    Loading {selectedToken.symbol} balance...
-                  </span>
-                ) : tokenBalance ? (
-                  <span className="relative ml-1 group">
-                    {tokenBalance.formattedBalance} {selectedToken.symbol}
-                    {/* Tooltip for available balance */}
-                    <div className="absolute left-0 z-20 invisible px-3 py-2 mb-2 text-sm text-white transition-all duration-200 bg-gray-900 rounded-lg opacity-0 bottom-full group-hover:opacity-100 group-hover:visible whitespace-nowrap">
-                      <div className="font-mono">
-                        Exact: {tokenBalance.formattedBalance} {selectedToken.symbol}
+              {/* Show insufficient balance warning */}
+              {formData.amount && (
+                (() => {
+                  const inputAmount = parseFloat(formData.amount);
+                  let availableAmount = 0;
+                  let symbol = '';
+
+                  if (!selectedToken) {
+                    // ETH
+                    availableAmount = parseFloat(account?.balance || "0");
+                    symbol = 'ETH';
+                  } else {
+                    // ERC20 Token
+                    availableAmount = parseFloat(tokenBalance?.formattedBalance || "0");
+                    symbol = selectedToken.symbol;
+                  }
+
+                  if (inputAmount > availableAmount) {
+                    return (
+                      <div className="flex items-center mt-1 text-sm text-red-600 dark:text-red-400">
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        Insufficient balance. Available: {availableAmount} {symbol}
                       </div>
-                      <div className="absolute w-0 h-0 border-t-4 border-l-4 border-r-4 top-full left-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
-                    </div>
-                  </span>
-                ) : (
-                  <span className="ml-1 text-red-600">0 {selectedToken.symbol}</span>
-                )}
-                {/* Show insufficient balance warning */}
-                {formData.amount &&
-                  ((selectedToken?.address === "ETH" &&
-                    parseFloat(formData.amount) > parseFloat(account?.balance || "0")) ||
-                    (selectedToken &&
-                      selectedToken.address !== "ETH" &&
-                      tokenBalance &&
-                      parseFloat(formData.amount) >
-                        parseFloat(tokenBalance.formattedBalance || "0"))) && (
-                    <span className="ml-2 text-red-600">⚠️ Insufficient balance</span>
-                  )}
-              </div>
+                    );
+                  }
+                  return null;
+                })()
+              )}
             </div>
 
             {/* Paymaster Option */}
-            <div className="p-4 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200">
+            <div className="p-4 border border-purple-200 dark:border-purple-600 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
               <div className="flex items-start">
                 <div className="flex items-center h-5">
                   <input
@@ -618,20 +687,38 @@ export default function TransferPage() {
                     type="checkbox"
                     checked={formData.usePaymaster}
                     onChange={handleChange}
-                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    className="w-4 h-4 text-purple-600 dark:text-purple-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded focus:ring-purple-500 dark:focus:ring-purple-400"
                   />
                 </div>
                 <div className="ml-3">
-                  <label htmlFor="usePaymaster" className="text-sm font-medium text-gray-900">
+                  <label htmlFor="usePaymaster" className="text-sm font-medium text-gray-900 dark:text-white">
                     Use Paymaster (Sponsored Gas) ✨
                   </label>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Enable this to have gas fees sponsored by Pimlico Paymaster. Perfect for users
-                    without ETH for gas!
-                  </p>
+
+                  {/* Dynamic description based on asset selection */}
+                  {selectedToken ? (
+                    <div className="mt-1">
+                      <p className="inline-block px-2 py-1 text-xs rounded text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30">
+                        ⚠️ ERC20 transfers may not be sponsored by all paymasters
+                      </p>
+                      <p className="mt-1 text-xs text-gray-700 dark:text-gray-300">
+                        Some paymasters don&apos;t support token transfers. Try ETH transfer if this fails.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-1">
+                      <p className="inline-block px-2 py-1 text-xs text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 rounded">
+                        ✅ ETH transfers work best with paymaster sponsorship
+                      </p>
+                      <p className="mt-1 text-xs text-gray-700 dark:text-gray-300">
+                        Pimlico Paymaster will sponsor gas fees for ETH transfers.
+                      </p>
+                    </div>
+                  )}
+
                   {formData.usePaymaster && (
-                    <div className="mt-2 text-xs text-purple-700 bg-purple-100 rounded px-2 py-1 inline-block">
-                      🎉 Gas will be sponsored - No ETH needed for fees!
+                    <div className="inline-block px-2 py-1 mt-2 text-xs text-purple-700 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 rounded">
+                      🎉 Attempting gas sponsorship...
                     </div>
                   )}
                 </div>
@@ -640,29 +727,29 @@ export default function TransferPage() {
 
             {/* Gas Estimation */}
             {gasEstimate && (
-              <div className="p-4 rounded-lg bg-gray-50">
-                <h3 className="mb-2 text-sm font-medium text-gray-900">Gas Estimation</h3>
+              <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-900">
+                <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-white">Gas Estimation</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-500">Call Gas:</span>
+                    <span className="text-gray-600 dark:text-gray-400">Call Gas:</span>
                     <span className="ml-2 font-mono">
                       {parseInt(gasEstimate.callGasLimit, 16).toLocaleString()}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Verification Gas:</span>
+                    <span className="text-gray-600 dark:text-gray-400">Verification Gas:</span>
                     <span className="ml-2 font-mono">
                       {parseInt(gasEstimate.verificationGasLimit, 16).toLocaleString()}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Pre-verification:</span>
+                    <span className="text-gray-600 dark:text-gray-400">Pre-verification:</span>
                     <span className="ml-2 font-mono">
                       {parseInt(gasEstimate.preVerificationGas, 16).toLocaleString()}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Max Fee:</span>
+                    <span className="text-gray-600 dark:text-gray-400">Max Fee:</span>
                     <span className="ml-2 font-mono">
                       {formatGwei(gasEstimate.maxFeePerGas)} Gwei
                     </span>
@@ -677,7 +764,7 @@ export default function TransferPage() {
                 type="button"
                 onClick={estimateGas}
                 disabled={loading.estimate || !formData.to || !formData.amount}
-                className="inline-flex items-center justify-center flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading.estimate ? (
                   <div className="w-4 h-4 mr-2 border-b-2 border-gray-600 rounded-full animate-spin"></div>
@@ -718,12 +805,12 @@ export default function TransferPage() {
         </div>
 
         {/* Info */}
-        <div className="p-4 mt-6 rounded-lg bg-blue-50">
+        <div className="p-4 mt-6 rounded-lg bg-blue-50 dark:bg-blue-900/20">
           <div className="flex">
             <InformationCircleIcon className="w-5 h-5 text-blue-400" />
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">How it works</h3>
-              <div className="mt-2 text-sm text-blue-700">
+              <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">How it works</h3>
+              <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
                 <ul className="space-y-1 list-disc list-inside">
                   <li>Support for ETH and ERC20 token transfers (PNTs, PIM, and custom tokens)</li>
                   <li>Gas fees are automatically handled - no need to hold ETH for gas</li>
