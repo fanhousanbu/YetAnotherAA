@@ -213,9 +213,15 @@ export default function TokenSelector({
                             const target = e.target as HTMLImageElement;
                             target.style.display = "none";
                             const parent = target.parentElement;
+<<<<<<< HEAD
                             if (parent && !parent.querySelector('.fallback-icon')) {
                               const fallback = document.createElement('span');
                               fallback.className = 'fallback-icon text-sm font-bold text-white';
+=======
+                            if (parent && !parent.querySelector(".fallback-icon")) {
+                              const fallback = document.createElement("span");
+                              fallback.className = "fallback-icon text-sm font-bold text-white";
+>>>>>>> origin/master
                               fallback.textContent = selectedToken.symbol.charAt(0);
                               parent.appendChild(fallback);
                             }
@@ -231,7 +237,13 @@ export default function TokenSelector({
                       <span className="block font-medium text-gray-900 dark:text-gray-100">
                         {selectedToken.symbol}
                       </span>
+<<<<<<< HEAD
                       <span className="block text-sm text-gray-600 dark:text-gray-400">{selectedToken.name}</span>
+=======
+                      <span className="block text-sm text-gray-600 dark:text-gray-400">
+                        {selectedToken.name}
+                      </span>
+>>>>>>> origin/master
                     </div>
                     {showBalances && accountAddress && (
                       <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -240,7 +252,13 @@ export default function TokenSelector({
                     )}
                   </>
                 ) : (
+<<<<<<< HEAD
                   <span className="block text-gray-500 dark:text-gray-400">Select an ERC20 token (optional)</span>
+=======
+                  <span className="block text-gray-500 dark:text-gray-400">
+                    Select an ERC20 token (optional)
+                  </span>
+>>>>>>> origin/master
                 )}
               </div>
               <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
@@ -260,7 +278,13 @@ export default function TokenSelector({
                     key={token.address}
                     className={({ active }) =>
                       `relative cursor-default select-none py-2 pl-3 pr-9 ${
+<<<<<<< HEAD
                         active ? "bg-blue-600 dark:bg-blue-600 text-white" : "text-gray-900 dark:text-gray-100"
+=======
+                        active
+                          ? "bg-blue-600 dark:bg-blue-600 text-white"
+                          : "text-gray-900 dark:text-gray-100"
+>>>>>>> origin/master
                       }`
                     }
                     value={token}
@@ -279,9 +303,16 @@ export default function TokenSelector({
                                   const target = e.target as HTMLImageElement;
                                   target.style.display = "none";
                                   const parent = target.parentElement;
+<<<<<<< HEAD
                                   if (parent && !parent.querySelector('.fallback-icon')) {
                                     const fallback = document.createElement('span');
                                     fallback.className = 'fallback-icon text-sm font-bold text-white';
+=======
+                                  if (parent && !parent.querySelector(".fallback-icon")) {
+                                    const fallback = document.createElement("span");
+                                    fallback.className =
+                                      "fallback-icon text-sm font-bold text-white";
+>>>>>>> origin/master
                                     fallback.textContent = token.symbol.charAt(0);
                                     parent.appendChild(fallback);
                                   }
@@ -303,7 +334,13 @@ export default function TokenSelector({
                             </span>
                             <span
                               className={`block text-sm ${
+<<<<<<< HEAD
                                 active ? "text-blue-200 dark:text-blue-200" : "text-gray-600 dark:text-gray-400"
+=======
+                                active
+                                  ? "text-blue-200 dark:text-blue-200"
+                                  : "text-gray-600 dark:text-gray-400"
+>>>>>>> origin/master
                               }`}
                             >
                               {token.name}
@@ -402,7 +439,14 @@ export default function TokenSelector({
                 leaveTo="opacity-0 scale-95"
               >
                 <Dialog.Panel className="w-full max-w-md p-6 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-2xl">
+<<<<<<< HEAD
                   <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">
+=======
+                  <Dialog.Title
+                    as="h3"
+                    className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100"
+                  >
+>>>>>>> origin/master
                     Add Custom Token
                   </Dialog.Title>
 

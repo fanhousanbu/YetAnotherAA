@@ -133,7 +133,13 @@ export default function ServiceStatus() {
         <div className="fixed bottom-4 right-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-lg z-50 transition-all">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+<<<<<<< HEAD
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Service Status</h3>
+=======
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Service Status
+            </h3>
+>>>>>>> origin/master
             <div className="flex items-center space-x-1">
               {/* Refresh Button */}
               <button

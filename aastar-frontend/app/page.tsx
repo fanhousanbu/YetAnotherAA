@@ -30,7 +30,13 @@ export default function HomePage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
         <div className="max-w-md w-full space-y-8 p-8">
           <div className="text-center">
+<<<<<<< HEAD
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Welcome to AAStar</h1>
+=======
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Welcome to AAStar
+            </h1>
+>>>>>>> origin/master
             <p className="text-lg text-gray-700 dark:text-gray-300 mb-8">
               ERC-4337 Account Abstraction with BLS Aggregate Signatures
             </p>
