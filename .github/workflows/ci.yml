@@ -5,11 +5,6 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
-  pull_request_target: # Add this trigger to run CI for Dependabot PRs
-    types:
-      - opened
-      - synchronize
-      - reopened
   schedule:
     - cron: "0 0 * * 1" # Weekly security scan on Monday
 
@@ -27,7 +22,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Use Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
 
@@ -74,10 +69,9 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Use Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
@@ -118,10 +112,9 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Use Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
@@ -144,10 +137,9 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Use Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
@@ -200,10 +192,9 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Use Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
