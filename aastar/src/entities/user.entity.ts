@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryColumn, CreateDateColumn, OneToMany } from "type
 import { Account } from "./account.entity";
 import { Transfer } from "./transfer.entity";
 import { Passkey } from "./passkey.entity";
+import { UserToken } from "./user-token.entity";
 
 @Entity("users")
 export class User {
@@ -37,4 +38,7 @@ export class User {
 
   @OneToMany(() => Passkey, passkey => passkey.user)
   passkeys: Passkey[];
+
+  @OneToMany(() => UserToken, userToken => userToken.user)
+  userTokens: UserToken[];
 }

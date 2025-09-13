@@ -10,6 +10,7 @@ import { DatabaseModule } from "./database/database.module";
 import { AppConfigModule } from "./config/config.module";
 import { PaymasterModule } from "./paymaster/paymaster.module";
 import { TokenModule } from "./token/token.module";
+import { UserTokenModule } from "./user-token/user-token.module";
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { TokenModule } from "./token/token.module";
     EthereumModule,
     PaymasterModule,
     TokenModule,
+    UserTokenModule,
   ],
   controllers: [AppController],
   providers: [AppService],

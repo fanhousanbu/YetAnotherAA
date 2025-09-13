@@ -135,10 +135,57 @@ export const tokenAPI = {
 
   getTokenBalance: (address: string) => api.get(`/tokens/balance/${address}`),
 
+  getTokenBalances: (accountAddress?: string) => {
+    const params = accountAddress ? { address: accountAddress } : {};
+    return api.get("/tokens/balances", { params });
+  },
+
   getAllTokenBalances: (accountAddress?: string) => {
     const params = accountAddress ? { address: accountAddress } : {};
     return api.get("/tokens/balances", { params });
   },
+
+  getNonZeroBalances: () => api.get("/tokens/balances/non-zero"),
+
+  getTokenStats: () => api.get("/tokens/stats"),
+
+  searchTokens: (params: { query?: string; customOnly?: boolean }) =>
+    api.get("/tokens/search", { params }),
+};
+
+// User Token API
+export const userTokenAPI = {
+  getUserTokens: (params?: { activeOnly?: boolean; withBalances?: boolean }) =>
+    api.get("/user-tokens", { params }),
+
+  addUserToken: (data: {
+    address: string;
+    symbol?: string;
+    name?: string;
+    decimals?: number;
+    logoUrl?: string;
+  }) => api.post("/user-tokens", data),
+
+  updateUserToken: (
+    tokenId: string,
+    data: {
+      isActive?: boolean;
+      sortOrder?: number;
+      logoUrl?: string;
+    }
+  ) => api.put(`/user-tokens/${tokenId}`, data),
+
+  removeUserToken: (tokenId: string) => api.delete(`/user-tokens/${tokenId}`),
+
+  deleteUserToken: (tokenId: string) => api.delete(`/user-tokens/${tokenId}/permanent`),
+
+  searchUserTokens: (params: { query?: string; customOnly?: boolean; activeOnly?: boolean }) =>
+    api.get("/user-tokens/search", { params }),
+
+  initializeDefaultTokens: () => api.post("/user-tokens/initialize-defaults"),
+
+  updateTokensOrder: (tokenOrders: { tokenId: string; sortOrder: number }[]) =>
+    api.put("/user-tokens/reorder", { tokenOrders }),
 };
 
 export default api;

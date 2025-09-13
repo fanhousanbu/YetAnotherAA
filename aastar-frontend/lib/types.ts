@@ -74,9 +74,39 @@ export interface TokenBalance {
   usdValue?: string;
 }
 
+export interface TokenStats {
+  total: number;
+  custom: number;
+}
+
+export interface TokenFilters {
+  customOnly?: boolean;
+  query?: string;
+}
+
 export interface TokenTransfer extends Omit<Transfer, "amount"> {
   tokenAddress?: string;
   tokenAmount?: string;
   tokenSymbol?: string;
   amount: string; // For ETH transfers, this is ETH amount; for token transfers, this is "0"
+}
+
+// User Token types
+export interface UserToken {
+  id: string;
+  userId: string;
+  address: string;
+  symbol: string;
+  name: string;
+  decimals: number;
+  logoUrl?: string;
+  isCustom: boolean;
+  chainId?: number;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface UserTokenWithBalance extends UserToken {
+  balance?: TokenBalance;
 }

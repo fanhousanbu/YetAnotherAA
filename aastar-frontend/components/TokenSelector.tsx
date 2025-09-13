@@ -2,9 +2,16 @@
 
 import { useState, useEffect, Fragment } from "react";
 import { Listbox, Transition, Dialog } from "@headlessui/react";
-import { ChevronUpDownIcon, CheckIcon, PlusIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
-import { Token, TokenBalance } from "@/lib/types";
-import { tokenAPI } from "@/lib/api";
+import {
+  ChevronUpDownIcon,
+  CheckIcon,
+  PlusIcon,
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
+import { Token, TokenBalance, UserToken, UserTokenWithBalance } from "@/lib/types";
+import { tokenAPI, userTokenAPI } from "@/lib/api";
+import TokenIcon from "@/components/TokenIcon";
 import toast from "react-hot-toast";
 
 interface TokenSelectorProps {
@@ -13,6 +20,8 @@ interface TokenSelectorProps {
   accountAddress?: string;
   showBalances?: boolean;
   className?: string;
+  showSearch?: boolean;
+  showOnlyWithBalance?: boolean;
 }
 
 export default function TokenSelector({
@@ -21,14 +30,18 @@ export default function TokenSelector({
   accountAddress,
   showBalances = true,
   className = "",
+  showSearch = false,
+  showOnlyWithBalance = false,
 }: TokenSelectorProps) {
-  const [tokens, setTokens] = useState<Token[]>([]);
-  const [balances, setBalances] = useState<{ [address: string]: TokenBalance }>({});
+  const [userTokens, setUserTokens] = useState<UserTokenWithBalance[]>([]);
+  const [filteredTokens, setFilteredTokens] = useState<UserTokenWithBalance[]>([]);
   const [loading, setLoading] = useState(true);
+  const [balancesLoading, setBalancesLoading] = useState(false);
   const [refreshingBalances, setRefreshingBalances] = useState<{ [address: string]: boolean }>({});
   const [showCustomTokenModal, setShowCustomTokenModal] = useState(false);
   const [customTokenAddress, setCustomTokenAddress] = useState("");
   const [validatingToken, setValidatingToken] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // No ETH token in ERC20 selector
 
@@ -36,63 +49,57 @@ export default function TokenSelector({
     loadTokens();
   }, [accountAddress]);
 
+  useEffect(() => {
+    applyFilters();
+  }, [userTokens, searchQuery, showOnlyWithBalance]);
+
   const loadTokens = async () => {
     setLoading(true);
     try {
-      // Load preset tokens
-      const presetResponse = await tokenAPI.getPresetTokens();
-      const presetTokens = presetResponse.data;
-
-      // Only show ERC20 tokens, no ETH
-      setTokens(presetTokens);
-
-      // Load balances if account address is provided
-      if (accountAddress && showBalances) {
-        await loadBalances(presetTokens);
+      // Load user tokens with balances
+      const response = await userTokenAPI.getUserTokens({
+        activeOnly: true,
+        withBalances: accountAddress && showBalances,
+      });
+      setUserTokens(response.data);
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        // User has no tokens yet, initialize with defaults
+        try {
+          await userTokenAPI.initializeDefaultTokens();
+          const response = await userTokenAPI.getUserTokens({
+            activeOnly: true,
+            withBalances: accountAddress && showBalances,
+          });
+          setUserTokens(response.data);
+        } catch (initError) {
+          console.error("Failed to initialize tokens:", initError);
+          toast.error("Failed to load tokens");
+        }
+      } else {
+        console.error("Failed to load tokens:", error);
+        toast.error("Failed to load tokens");
       }
-    } catch (error) {
-      console.error("Failed to load tokens:", error);
-      toast.error("Failed to load tokens");
     } finally {
       setLoading(false);
     }
   };
 
-  const loadBalances = async (tokensToLoad: Token[]) => {
+  const loadBalances = async () => {
+    if (!accountAddress) return;
+
+    setBalancesLoading(true);
     try {
-      const newBalances: { [address: string]: TokenBalance } = {};
-
-      // Process tokens sequentially to avoid rate limiting
-      for (let i = 0; i < tokensToLoad.length; i++) {
-        const token = tokensToLoad[i];
-
-        // Skip non-ERC20 tokens
-        if (!token.address || token.address === "ETH") {
-          continue;
-        }
-
-        try {
-          // Add delay between requests to avoid rate limiting
-          if (i > 0) {
-            await new Promise(resolve => setTimeout(resolve, 800));
-          }
-
-          const response = await tokenAPI.getTokenBalance(token.address);
-          console.log(`Token ${token.symbol} balance response:`, response.data);
-          if (response.data) {
-            newBalances[token.address] = response.data;
-            console.log(`Added balance for ${token.symbol}:`, response.data);
-          }
-        } catch (error) {
-          console.error(`Failed to load balance for ${token.symbol}:`, error);
-          // Continue with next token instead of failing completely
-        }
-      }
-
-      console.log("Final balances to set:", newBalances);
-      setBalances(newBalances);
+      const response = await userTokenAPI.getUserTokens({
+        activeOnly: true,
+        withBalances: true,
+      });
+      setUserTokens(response.data);
     } catch (error) {
-      console.error("Failed to load balances:", error);
+      console.error("Failed to load token balances:", error);
+      // Don't show error toast for balances, as it's supplementary info
+    } finally {
+      setBalancesLoading(false);
     }
   };
 
@@ -104,34 +111,13 @@ export default function TokenSelector({
 
     setValidatingToken(true);
     try {
-      const response = await tokenAPI.validateToken({ address: customTokenAddress });
-
-      if (response.data.isValid) {
-        const newToken = response.data.token;
-        const updatedTokens = [...tokens, newToken];
-        setTokens(updatedTokens);
-
-        // Load balance for the new token
-        if (accountAddress && showBalances) {
-          try {
-            const balanceResponse = await tokenAPI.getTokenBalance(newToken.address);
-            setBalances(prev => ({
-              ...prev,
-              [newToken.address]: balanceResponse.data,
-            }));
-          } catch {
-            // Ignore balance loading errors for custom tokens
-          }
-        }
-
-        toast.success(`Added ${newToken.symbol} token`);
-        setCustomTokenAddress("");
-        setShowCustomTokenModal(false);
-      } else {
-        toast.error("Invalid token address or not an ERC20 token");
-      }
+      const response = await userTokenAPI.addUserToken({ address: customTokenAddress });
+      toast.success(`Added ${response.data.symbol} token`);
+      setCustomTokenAddress("");
+      setShowCustomTokenModal(false);
+      await loadTokens();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to validate token");
+      toast.error(error.response?.data?.message || "Failed to add token");
     } finally {
       setValidatingToken(false);
     }
@@ -142,14 +128,9 @@ export default function TokenSelector({
 
     setRefreshingBalances(prev => ({ ...prev, [token.address]: true }));
     try {
-      const response = await tokenAPI.getTokenBalance(token.address);
-      if (response.data) {
-        setBalances(prev => ({
-          ...prev,
-          [token.address]: response.data,
-        }));
-        toast.success(`${token.symbol} balance refreshed`);
-      }
+      // Refresh all user tokens with updated balances
+      await loadBalances();
+      toast.success(`${token.symbol} balance refreshed`);
     } catch (error) {
       console.error(`Failed to refresh ${token.symbol} balance:`, error);
       toast.error(`Failed to refresh ${token.symbol} balance`);
@@ -171,13 +152,52 @@ export default function TokenSelector({
     }
   };
 
-  const getTokenBalance = (token: Token) => {
-    const balance = balances[token.address];
-    console.log(`Getting balance for ${token.symbol}:`, balance);
-    if (!balance) return null;
-    // formattedBalance is already formatted, just return it directly
-    console.log(`Formatted balance for ${token.symbol}:`, balance.formattedBalance);
-    return balance.formattedBalance;
+  const getTokenBalance = (token: UserTokenWithBalance) => {
+    return token.balance?.formattedBalance || null;
+  };
+
+  const applyFilters = () => {
+    let filtered = [...userTokens];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(
+        token =>
+          token.symbol.toLowerCase().includes(query) ||
+          token.name.toLowerCase().includes(query) ||
+          token.address.toLowerCase().includes(query)
+      );
+    }
+
+    // Balance filter
+    if (showOnlyWithBalance) {
+      filtered = filtered.filter(token => {
+        const balance = token.balance;
+        return balance && parseFloat(balance.formattedBalance) > 0;
+      });
+    }
+
+    // Sort: by sortOrder first, tokens with balance, then alphabetically
+    filtered.sort((a, b) => {
+      // First by sort order
+      if (a.sortOrder !== b.sortOrder) {
+        return a.sortOrder - b.sortOrder;
+      }
+
+      // Then by balance
+      const aBalance = getTokenBalance(a);
+      const bBalance = getTokenBalance(b);
+      const aHasBalance = aBalance && parseFloat(aBalance) > 0;
+      const bHasBalance = bBalance && parseFloat(bBalance) > 0;
+
+      if (aHasBalance && !bHasBalance) return -1;
+      if (!aHasBalance && bHasBalance) return 1;
+
+      return a.symbol.localeCompare(b.symbol);
+    });
+
+    setFilteredTokens(filtered);
   };
 
   if (loading) {
@@ -202,31 +222,7 @@ export default function TokenSelector({
               <div className="flex items-center">
                 {selectedToken ? (
                   <>
-                    <div className="flex items-center justify-center w-6 h-6 mr-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
-                      {selectedToken.logoUrl ? (
-                        <img
-                          src={selectedToken.logoUrl}
-                          alt={selectedToken.symbol}
-                          className="w-6 h-6 rounded-full"
-                          onError={e => {
-                            // Replace failed image with fallback
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = "none";
-                            const parent = target.parentElement;
-                            if (parent && !parent.querySelector(".fallback-icon")) {
-                              const fallback = document.createElement("span");
-                              fallback.className = "fallback-icon text-sm font-bold text-white";
-                              fallback.textContent = selectedToken.symbol.charAt(0);
-                              parent.appendChild(fallback);
-                            }
-                          }}
-                        />
-                      ) : (
-                        <span className="text-sm font-bold text-white">
-                          {selectedToken.symbol.charAt(0)}
-                        </span>
-                      )}
-                    </div>
+                    <TokenIcon token={selectedToken} size="md" className="mr-3" />
                     <div className="flex-1">
                       <span className="block font-medium text-gray-900 dark:text-gray-100">
                         {selectedToken.symbol}
@@ -258,8 +254,40 @@ export default function TokenSelector({
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <Listbox.Options className="absolute z-10 w-full py-1 mt-1 overflow-auto text-base bg-white dark:bg-gray-800 rounded-md shadow-lg max-h-60 ring-1 ring-black dark:ring-gray-600 ring-opacity-5 dark:ring-opacity-50 focus:outline-none sm:text-sm">
-                {tokens.map(token => (
+              <Listbox.Options className="absolute z-10 w-full py-1 mt-1 overflow-auto text-base bg-white dark:bg-gray-800 rounded-md shadow-lg max-h-96 ring-1 ring-black dark:ring-gray-600 ring-opacity-5 dark:ring-opacity-50 focus:outline-none sm:text-sm">
+                {/* Search and Filter Section */}
+                {showSearch && (
+                  <div className="p-3 border-b border-gray-200 dark:border-gray-600 space-y-2">
+                    {/* Search Input */}
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <MagnifyingGlassIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Search tokens..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        onClick={e => e.stopPropagation()}
+                      />
+                    </div>
+
+                    {/* Balance Info */}
+                    {balancesLoading && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                        <ArrowPathIcon className="h-3 w-3 mr-1 animate-spin" />
+                        Loading balances...
+                      </div>
+                    )}
+
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {filteredTokens.length} of {userTokens.length} tokens
+                    </div>
+                  </div>
+                )}
+
+                {filteredTokens.map(token => (
                   <Listbox.Option
                     key={token.address}
                     className={({ active }) =>
@@ -274,32 +302,7 @@ export default function TokenSelector({
                     {({ selected, active }) => (
                       <>
                         <div className="flex items-center">
-                          <div className="flex items-center justify-center w-6 h-6 mr-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
-                            {token.logoUrl ? (
-                              <img
-                                src={token.logoUrl}
-                                alt={token.symbol}
-                                className="w-6 h-6 rounded-full"
-                                onError={e => {
-                                  // Replace failed image with fallback
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = "none";
-                                  const parent = target.parentElement;
-                                  if (parent && !parent.querySelector(".fallback-icon")) {
-                                    const fallback = document.createElement("span");
-                                    fallback.className =
-                                      "fallback-icon text-sm font-bold text-white";
-                                    fallback.textContent = token.symbol.charAt(0);
-                                    parent.appendChild(fallback);
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <span className="text-sm font-bold text-white">
-                                {token.symbol.charAt(0)}
-                              </span>
-                            )}
-                          </div>
+                          <TokenIcon token={token} size="md" className="mr-3" />
                           <div className="flex-1">
                             <span
                               className={`block font-medium ${
@@ -363,6 +366,21 @@ export default function TokenSelector({
                     )}
                   </Listbox.Option>
                 ))}
+
+                {/* Empty State */}
+                {filteredTokens.length === 0 && (
+                  <div className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                    {searchQuery ? (
+                      <>
+                        <MagnifyingGlassIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                        <div>No tokens found</div>
+                        <div className="text-xs mt-1">Try adjusting your search</div>
+                      </>
+                    ) : (
+                      <div>No tokens available</div>
+                    )}
+                  </div>
+                )}
 
                 {/* Add Custom Token Option */}
                 <div className="border-t border-gray-200 dark:border-gray-600">

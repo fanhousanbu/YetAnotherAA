@@ -74,6 +74,12 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                 >
                   Transfer
                 </button>
+                <button
+                  onClick={() => router.push("/tokens")}
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium"
+                >
+                  Tokens
+                </button>
                 {/* Theme Toggle Button */}
                 <button
                   onClick={toggleTheme}
@@ -136,6 +142,15 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                   className="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 w-full text-left"
                 >
                   Transfer
+                </button>
+                <button
+                  onClick={() => {
+                    router.push("/tokens");
+                    setMobileMenuOpen(false);
+                  }}
+                  className="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 w-full text-left"
+                >
+                  Tokens
                 </button>
                 <div className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
                   {user.username || user.email}
