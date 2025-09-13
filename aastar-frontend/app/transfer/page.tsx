@@ -90,6 +90,16 @@ export default function TransferPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
+
+    // Handle amount input with decimal validation
+    if (name === "amount") {
+      // Allow empty string, digits, and one decimal point
+      const isValidAmount = value === "" || /^\d*\.?\d*$/.test(value);
+      if (!isValidAmount) {
+        return; // Prevent invalid input
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -728,11 +738,9 @@ export default function TransferPage() {
 >>>>>>> origin/master
               </label>
               <input
-                type="number"
+                type="text"
                 name="amount"
                 id="amount"
-                step="0.001"
-                min="0"
                 value={formData.amount}
                 onChange={handleChange}
 <<<<<<< HEAD

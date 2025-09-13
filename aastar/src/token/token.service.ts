@@ -102,11 +102,7 @@ export class TokenService {
       const balance = await this.retryWithDelay(() => contract.balanceOf(walletAddress));
       return balance.toString();
     } catch (error) {
-<<<<<<< HEAD
-      console.error(`Failed to get token balance for ${tokenAddress}:`, error.message);
-=======
-      console.error('Failed to get token balance for %s: %s', tokenAddress, error.message);
->>>>>>> origin/master
+      console.error("Failed to get token balance for %s: %s", tokenAddress, error.message);
       // Return "0" instead of throwing error to prevent breaking the entire balance loading
       return "0";
     }
