@@ -145,4 +145,50 @@ export class EthereumService {
 
     throw new Error(`UserOp timeout: ${userOpHash}`);
   }
+
+  async getUserOperationGasPrice(): Promise<{
+    maxFeePerGas: string;
+    maxPriorityFeePerGas: string;
+  }> {
+    try {
+      // Try to get gas price from Pimlico
+      const gasPrice = await this.bundlerProvider.send("pimlico_getUserOperationGasPrice", []);
+      return {
+        maxFeePerGas: gasPrice.fast.maxFeePerGas,
+        maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas,
+      };
+    } catch (error) {
+      console.warn(
+        "Failed to get gas price from pimlico_getUserOperationGasPrice, using fallback:",
+        error.message
+      );
+
+      try {
+        // Fallback: get current gas price from network and apply multiplier
+        const feeData = await this.provider.getFeeData();
+        const baseFee = feeData.maxFeePerGas || ethers.parseUnits("20", "gwei"); // fallback to 20 gwei
+        const priorityFee = feeData.maxPriorityFeePerGas || ethers.parseUnits("2", "gwei"); // fallback to 2 gwei
+
+        // Apply 1.5x multiplier for safety
+        const maxFeePerGas = (baseFee * 3n) / 2n;
+        const maxPriorityFeePerGas = (priorityFee * 3n) / 2n;
+
+        return {
+          maxFeePerGas: "0x" + maxFeePerGas.toString(16),
+          maxPriorityFeePerGas: "0x" + maxPriorityFeePerGas.toString(16),
+        };
+      } catch (fallbackError) {
+        console.warn(
+          "Fallback gas price estimation also failed, using hardcoded values:",
+          fallbackError.message
+        );
+
+        // Last resort: use higher hardcoded values based on the error message
+        return {
+          maxFeePerGas: "0x" + ethers.parseUnits("3", "gwei").toString(16), // 3 gwei (higher than 2.088 gwei requirement)
+          maxPriorityFeePerGas: "0x" + ethers.parseUnits("1", "gwei").toString(16), // 1 gwei
+        };
+      }
+    }
+  }
 }

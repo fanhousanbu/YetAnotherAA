@@ -212,6 +212,9 @@ export class TransferService {
     // Get gas estimates
     const gasEstimates = await this.ethereumService.estimateUserOperationGas(formattedUserOp);
 
+    // Get current gas prices
+    const gasPrices = await this.ethereumService.getUserOperationGasPrice();
+
     // Get validator gas estimate for automatic node selection (default 3 nodes)
     const validatorContract = this.ethereumService.getValidatorContract();
     const nodeCount = 3; // Automatic selection uses 3 nodes
@@ -227,8 +230,8 @@ export class TransferService {
         BigInt(gasEstimates.verificationGasLimit) +
         BigInt(gasEstimates.preVerificationGas)
       ).toString(),
-      maxFeePerGas: ethers.parseUnits("1", "gwei").toString(),
-      maxPriorityFeePerGas: ethers.parseUnits("0.1", "gwei").toString(),
+      maxFeePerGas: gasPrices.maxFeePerGas,
+      maxPriorityFeePerGas: gasPrices.maxPriorityFeePerGas,
     };
   }
 
@@ -371,6 +374,9 @@ export class TransferService {
       ]);
     }
 
+    // Get current gas prices
+    const gasPrices = await this.ethereumService.getUserOperationGasPrice();
+
     // Initial UserOp for gas estimation
     const baseUserOp = {
       sender,
@@ -380,8 +386,8 @@ export class TransferService {
       callGasLimit: "0x0",
       verificationGasLimit: "0x0",
       preVerificationGas: "0x0",
-      maxFeePerGas: "0x" + ethers.parseUnits("1", "gwei").toString(16),
-      maxPriorityFeePerGas: "0x" + ethers.parseUnits("0.1", "gwei").toString(16),
+      maxFeePerGas: gasPrices.maxFeePerGas,
+      maxPriorityFeePerGas: gasPrices.maxPriorityFeePerGas,
       paymasterAndData: "0x",
       signature: "0x",
     };
@@ -445,8 +451,8 @@ export class TransferService {
       callGasLimit: BigInt(gasEstimates.callGasLimit),
       verificationGasLimit: BigInt(gasEstimates.verificationGasLimit),
       preVerificationGas: BigInt(gasEstimates.preVerificationGas),
-      maxFeePerGas: ethers.parseUnits("1", "gwei"),
-      maxPriorityFeePerGas: ethers.parseUnits("0.1", "gwei"),
+      maxFeePerGas: BigInt(gasPrices.maxFeePerGas),
+      maxPriorityFeePerGas: BigInt(gasPrices.maxPriorityFeePerGas),
       paymasterAndData,
       signature: "0x",
     };
