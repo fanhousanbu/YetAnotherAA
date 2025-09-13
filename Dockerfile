@@ -33,7 +33,7 @@ RUN echo 'module.exports = {' > ecosystem.config.js && \
     echo '        GOSSIP_PUBLIC_URL: process.env.GOSSIP_PUBLIC_URL || "ws://localhost:3001/ws",' >> ecosystem.config.js && \
     echo '        GOSSIP_BOOTSTRAP_PEERS: process.env.GOSSIP_BOOTSTRAP_PEERS || "",' >> ecosystem.config.js && \
     echo '        VALIDATOR_CONTRACT_ADDRESS: process.env.VALIDATOR_CONTRACT_ADDRESS || "0xD9756c11686B59F7DDf39E6360230316710485af",' >> ecosystem.config.js && \
-    echo '        ETH_RPC_URL: process.env.ETH_RPC_URL || "https://sepolia.infura.io/v3/7051eb377c77490881070faaf93aef20"' >> ecosystem.config.js && \
+    echo '        ETH_RPC_URL: process.env.ETH_RPC_URL' >> ecosystem.config.js && \
     echo '      }' >> ecosystem.config.js && \
     echo '    },' >> ecosystem.config.js && \
     echo '    {' >> ecosystem.config.js && \
@@ -48,17 +48,17 @@ RUN echo 'module.exports = {' > ecosystem.config.js && \
     echo '        JWT_SECRET: process.env.JWT_SECRET || "your-development-jwt-secret-key",' >> ecosystem.config.js && \
     echo '        JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",' >> ecosystem.config.js && \
     echo '        WEBAUTHN_ORIGIN: process.env.WEBAUTHN_ORIGIN || "http://localhost:8080",' >> ecosystem.config.js && \
-    echo '        ETH_RPC_URL: process.env.ETH_RPC_URL || "https://sepolia.infura.io/v3/7051eb377c77490881070faaf93aef20",' >> ecosystem.config.js && \
-    echo '        ETH_PRIVATE_KEY: process.env.ETH_PRIVATE_KEY || "0x72966a3f12beed253d475a19f4c8c73e5f7c14f2280bcda4499f72602b4d6c1a",' >> ecosystem.config.js && \
-    echo '        BUNDLER_RPC_URL: process.env.BUNDLER_RPC_URL || "https://api.pimlico.io/v2/11155111/rpc?apikey=pim_gcVkLnianG5Fj4AvFYhAEh",' >> ecosystem.config.js && \
+    echo '        ETH_RPC_URL: process.env.ETH_RPC_URL,' >> ecosystem.config.js && \
+    echo '        ETH_PRIVATE_KEY: process.env.ETH_PRIVATE_KEY,' >> ecosystem.config.js && \
+    echo '        BUNDLER_RPC_URL: process.env.BUNDLER_RPC_URL,' >> ecosystem.config.js && \
     echo '        BLS_SEED_NODES: process.env.BLS_SEED_NODES || "http://localhost:3001",' >> ecosystem.config.js && \
     echo '        ENTRY_POINT_ADDRESS: process.env.ENTRY_POINT_ADDRESS || "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",' >> ecosystem.config.js && \
     echo '        AASTAR_ACCOUNT_FACTORY_ADDRESS: process.env.AASTAR_ACCOUNT_FACTORY_ADDRESS || "0xec687B9231341aAe645FE5A825C0f28323183697",' >> ecosystem.config.js && \
     echo '        VALIDATOR_CONTRACT_ADDRESS: process.env.VALIDATOR_CONTRACT_ADDRESS || "0xD9756c11686B59F7DDf39E6360230316710485af",' >> ecosystem.config.js && \
     echo '        USER_ENCRYPTION_KEY: process.env.USER_ENCRYPTION_KEY || "your-secret-encryption-key-32-chars",' >> ecosystem.config.js && \
     echo '        PAYMASTER_ADDRESS: process.env.PAYMASTER_ADDRESS || "0x0000000000325602a77416A16136FDafd04b299f",' >> ecosystem.config.js && \
-    echo '        PIMLICO_API_KEY: process.env.PIMLICO_API_KEY || "pim_gcVkLnianG5Fj4AvFYhAEh",' >> ecosystem.config.js && \
-    echo '        PIMLICO_SPONSORSHIP_POLICY_ID: process.env.PIMLICO_SPONSORSHIP_POLICY_ID || "sp_lying_ironclad"' >> ecosystem.config.js && \
+    echo '        PIMLICO_API_KEY: process.env.PIMLICO_API_KEY,' >> ecosystem.config.js && \
+    echo '        PIMLICO_SPONSORSHIP_POLICY_ID: process.env.PIMLICO_SPONSORSHIP_POLICY_ID' >> ecosystem.config.js && \
     echo '      }' >> ecosystem.config.js && \
     echo '    },' >> ecosystem.config.js && \
     echo '    {' >> ecosystem.config.js && \
