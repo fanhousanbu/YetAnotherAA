@@ -16,7 +16,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.7",
     "@heroicons/react": "^2.2.0",
-    "@simplewebauthn/browser": "^13.1.2",
+    "@simplewebauthn/browser": "^13.2.0",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
