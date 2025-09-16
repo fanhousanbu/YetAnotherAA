@@ -87,7 +87,12 @@ export class PaymasterService {
   /**
    * Get paymaster sponsorship data
    */
-  async getPaymasterData(paymasterName: string, userOp: any, entryPoint: string, customAddress?: string): Promise<string> {
+  async getPaymasterData(
+    paymasterName: string,
+    userOp: any,
+    entryPoint: string,
+    customAddress?: string
+  ): Promise<string> {
     // Handle custom user-provided paymaster addresses
     if (paymasterName === "custom-user-provided" && customAddress) {
       console.log(`Processing custom paymaster: ${customAddress}`);

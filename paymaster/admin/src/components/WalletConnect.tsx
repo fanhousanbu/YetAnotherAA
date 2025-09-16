@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
+import React, { useState, useEffect } from "react";
+import { ethers } from "ethers";
 
 interface WalletConnectProps {
   onConnect: (address: string) => void;
@@ -14,21 +14,21 @@ declare global {
 
 export const WalletConnect: React.FC<WalletConnectProps> = ({ onConnect, onDisconnect }) => {
   const [isConnected, setIsConnected] = useState(false);
-  const [account, setAccount] = useState<string>('');
+  const [account, setAccount] = useState<string>("");
   const [chainId, setChainId] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [hasUserDisconnected, setHasUserDisconnected] = useState(false);
 
   const checkConnection = async () => {
     // Check if user has manually disconnected in this session
-    const wasDisconnected = sessionStorage.getItem('walletDisconnected') === 'true';
+    const wasDisconnected = sessionStorage.getItem("walletDisconnected") === "true";
     if (wasDisconnected) {
       setHasUserDisconnected(true);
       return;
     }
 
     // Don't auto-connect if user has manually disconnected or no ethereum
-    if (hasUserDisconnected || typeof window.ethereum === 'undefined') {
+    if (hasUserDisconnected || typeof window.ethereum === "undefined") {
       return;
     }
 
@@ -44,20 +44,20 @@ export const WalletConnect: React.FC<WalletConnectProps> = ({ onConnect, onDisco
         setChainId(network.chainId);
       }
     } catch (error) {
-      console.error('Error checking connection:', error);
+      console.error("Error checking connection:", error);
     }
   };
 
   const connectWallet = async () => {
-    if (typeof window.ethereum === 'undefined') {
-      alert('Please install MetaMask or another Web3 wallet');
+    if (typeof window.ethereum === "undefined") {
+      alert("Please install MetaMask or another Web3 wallet");
       return;
     }
 
     setLoading(true);
     try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send('eth_requestAccounts', []);
+      await provider.send("eth_requestAccounts", []);
       const signer = provider.getSigner();
       const address = await signer.getAddress();
       const network = await provider.getNetwork();
@@ -68,11 +68,11 @@ export const WalletConnect: React.FC<WalletConnectProps> = ({ onConnect, onDisco
       setHasUserDisconnected(false); // Reset disconnect flag on successful connect
 
       // Clear disconnect flag from sessionStorage
-      sessionStorage.removeItem('walletDisconnected');
+      sessionStorage.removeItem("walletDisconnected");
 
       onConnect(address);
     } catch (error) {
-      console.error('Error connecting wallet:', error);
+      console.error("Error connecting wallet:", error);
     } finally {
       setLoading(false);
     }
@@ -82,20 +82,20 @@ export const WalletConnect: React.FC<WalletConnectProps> = ({ onConnect, onDisco
     try {
       // Clear app state
       setIsConnected(false);
-      setAccount('');
+      setAccount("");
       setChainId(0);
       setHasUserDisconnected(true); // Mark that user manually disconnected
       onDisconnect();
 
       // Store disconnect state in sessionStorage to persist across page reloads
-      sessionStorage.setItem('walletDisconnected', 'true');
+      sessionStorage.setItem("walletDisconnected", "true");
 
-      console.log('Wallet disconnected from application');
+      console.log("Wallet disconnected from application");
     } catch (error) {
-      console.error('Error during disconnect:', error);
+      console.error("Error during disconnect:", error);
       // Still clear local state even if there's an error
       setIsConnected(false);
-      setAccount('');
+      setAccount("");
       setChainId(0);
       setHasUserDisconnected(true);
       onDisconnect();
@@ -105,21 +105,21 @@ export const WalletConnect: React.FC<WalletConnectProps> = ({ onConnect, onDisco
   const switchToEthereum = async () => {
     try {
       await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x1' }], // Ethereum mainnet
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: "0x1" }], // Ethereum mainnet
       });
     } catch (error) {
-      console.error('Error switching network:', error);
+      console.error("Error switching network:", error);
     }
   };
 
   const getNetworkName = (chainId: number): string => {
     const networks: { [key: number]: string } = {
-      1: 'Ethereum',
-      5: 'Goerli',
-      11155111: 'Sepolia',
-      137: 'Polygon',
-      80001: 'Mumbai',
+      1: "Ethereum",
+      5: "Goerli",
+      11155111: "Sepolia",
+      137: "Polygon",
+      80001: "Mumbai",
     };
     return networks[chainId] || `Chain ${chainId}`;
   };
@@ -127,8 +127,8 @@ export const WalletConnect: React.FC<WalletConnectProps> = ({ onConnect, onDisco
   useEffect(() => {
     checkConnection();
 
-    if (typeof window.ethereum !== 'undefined') {
-      window.ethereum.on('accountsChanged', (accounts: string[]) => {
+    if (typeof window.ethereum !== "undefined") {
+      window.ethereum.on("accountsChanged", (accounts: string[]) => {
         if (accounts.length === 0) {
           disconnectWallet();
         } else {
@@ -136,20 +136,20 @@ export const WalletConnect: React.FC<WalletConnectProps> = ({ onConnect, onDisco
           setAccount(accounts[0]);
           setIsConnected(true);
           setHasUserDisconnected(false);
-          sessionStorage.removeItem('walletDisconnected');
+          sessionStorage.removeItem("walletDisconnected");
           onConnect(accounts[0]);
         }
       });
 
-      window.ethereum.on('chainChanged', (chainId: string) => {
+      window.ethereum.on("chainChanged", (chainId: string) => {
         setChainId(parseInt(chainId, 16));
         window.location.reload();
       });
 
       return () => {
         if (window.ethereum.removeListener) {
-          window.ethereum.removeListener('accountsChanged', () => {});
-          window.ethereum.removeListener('chainChanged', () => {});
+          window.ethereum.removeListener("accountsChanged", () => {});
+          window.ethereum.removeListener("chainChanged", () => {});
         }
       };
     }
@@ -158,12 +158,8 @@ export const WalletConnect: React.FC<WalletConnectProps> = ({ onConnect, onDisco
   return (
     <div className="wallet-connect">
       {!isConnected ? (
-        <button
-          className="connect-button"
-          onClick={connectWallet}
-          disabled={loading}
-        >
-          {loading ? 'Connecting...' : 'Connect Wallet'}
+        <button className="connect-button" onClick={connectWallet} disabled={loading}>
+          {loading ? "Connecting..." : "Connect Wallet"}
         </button>
       ) : (
         <div className="wallet-info">
@@ -175,7 +171,7 @@ export const WalletConnect: React.FC<WalletConnectProps> = ({ onConnect, onDisco
           </div>
           <div className="network-info">
             <span className="network-label">Network:</span>
-            <span className={`network-name ${chainId !== 1 ? 'wrong-network' : ''}`}>
+            <span className={`network-name ${chainId !== 1 ? "wrong-network" : ""}`}>
               {getNetworkName(chainId)}
             </span>
             {chainId !== 1 && (

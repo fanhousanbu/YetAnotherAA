@@ -1,6 +1,8 @@
 # Paymaster Admin Panel
 
-A React-based frontend interface for managing ERC-4337 v0.6 paymaster contracts. This application provides a comprehensive dashboard to monitor and manage your paymaster contract's deposits, stakes, and operations.
+A React-based frontend interface for managing ERC-4337 v0.6 paymaster contracts.
+This application provides a comprehensive dashboard to monitor and manage your
+paymaster contract's deposits, stakes, and operations.
 
 ## Features
 
@@ -81,21 +83,25 @@ src/
 ## 功能详解
 
 ### 合约管理
+
 - 显示 paymaster 合约地址、所有者和当前存款
 - 实时更新合约状态和余额
 
 ### EntryPoint 操作
+
 - **存款**: 向 EntryPoint 存入 ETH 以支付 gas 费用
 - **提取**: 从 EntryPoint 提取资金到指定地址
 - **余额监控**: 实时显示 EntryPoint 中的可用余额
 
 ### 质押管理
+
 - **添加质押**: 质押 ETH 以获得 paymaster 验证权限
 - **解锁质押**: 开始质押解锁流程
 - **提取质押**: 解锁期结束后提取质押的 ETH
 - **质押状态**: 显示当前质押金额和解锁时间
 
 ### 网络支持
+
 - 主要支持以太坊主网
 - 可在测试网络（Goerli、Sepolia）上使用
 - 自动网络检测和切换提示
@@ -110,6 +116,7 @@ src/
 ## 开发环境
 
 此项目使用以下技术栈：
+
 - React 19 + TypeScript
 - Ethers.js v5 用于 Web3 集成
 - CSS3 响应式设计
@@ -146,4 +153,5 @@ MIT License - 详见 LICENSE 文件
 
 ---
 
-**注意**: 这是一个用于管理 ERC-4337 paymaster 合约的管理工具。请确保您了解相关风险并在生产环境中谨慎使用。
+**注意**: 这是一个用于管理 ERC-4337
+paymaster 合约的管理工具。请确保您了解相关风险并在生产环境中谨慎使用。

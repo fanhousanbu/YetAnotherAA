@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { WalletConnect } from './components/WalletConnect';
-import { PaymasterDashboard } from './components/PaymasterDashboard';
-import './App.css';
+import React, { useState } from "react";
+import { WalletConnect } from "./components/WalletConnect";
+import { PaymasterDashboard } from "./components/PaymasterDashboard";
+import "./App.css";
 
 function App() {
   const [isConnected, setIsConnected] = useState(false);
-  const [, setAccount] = useState<string>('');
-  const [paymasterAddress, setPaymasterAddress] = useState<string>('');
+  const [, setAccount] = useState<string>("");
+  const [paymasterAddress, setPaymasterAddress] = useState<string>("");
 
   const handleWalletConnect = (address: string) => {
     setIsConnected(true);
@@ -15,7 +15,7 @@ function App() {
 
   const handleWalletDisconnect = () => {
     setIsConnected(false);
-    setAccount('');
+    setAccount("");
   };
 
   return (
@@ -23,10 +23,7 @@ function App() {
       <header className="App-header">
         <h1>Paymaster Admin Panel</h1>
         <p>ERC-4337 v0.6 Paymaster Management Interface</p>
-        <WalletConnect
-          onConnect={handleWalletConnect}
-          onDisconnect={handleWalletDisconnect}
-        />
+        <WalletConnect onConnect={handleWalletConnect} onDisconnect={handleWalletDisconnect} />
       </header>
 
       <main className="App-main">
@@ -39,14 +36,12 @@ function App() {
                 type="text"
                 placeholder="0x..."
                 value={paymasterAddress}
-                onChange={(e) => setPaymasterAddress(e.target.value)}
+                onChange={e => setPaymasterAddress(e.target.value)}
                 className="address-input"
               />
             </div>
 
-            {paymasterAddress && (
-              <PaymasterDashboard paymasterAddress={paymasterAddress} />
-            )}
+            {paymasterAddress && <PaymasterDashboard paymasterAddress={paymasterAddress} />}
           </div>
         ) : (
           <div className="welcome-message">

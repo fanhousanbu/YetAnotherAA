@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { usePaymaster } from '../hooks/usePaymaster';
+import React, { useState } from "react";
+import { usePaymaster } from "../hooks/usePaymaster";
 
 interface PaymasterDashboardProps {
   paymasterAddress: string;
@@ -17,39 +17,39 @@ export const PaymasterDashboard: React.FC<PaymasterDashboardProps> = ({ paymaste
     addStake,
     unlockStake,
     withdrawStake,
-    refresh
+    refresh,
   } = usePaymaster(paymasterAddress);
 
-  const [depositAmount, setDepositAmount] = useState('');
-  const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [withdrawAddress, setWithdrawAddress] = useState('');
-  const [stakeAmount, setStakeAmount] = useState('');
-  const [unstakeDelay, setUnstakeDelay] = useState('86400');
-  const [stakeWithdrawAddress, setStakeWithdrawAddress] = useState('');
+  const [depositAmount, setDepositAmount] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawAddress, setWithdrawAddress] = useState("");
+  const [stakeAmount, setStakeAmount] = useState("");
+  const [unstakeDelay, setUnstakeDelay] = useState("86400");
+  const [stakeWithdrawAddress, setStakeWithdrawAddress] = useState("");
 
   const handleDeposit = async () => {
     if (!depositAmount) return;
     await deposit(depositAmount);
-    setDepositAmount('');
+    setDepositAmount("");
   };
 
   const handleWithdraw = async () => {
     if (!withdrawAmount || !withdrawAddress) return;
     await withdraw(withdrawAddress, withdrawAmount);
-    setWithdrawAmount('');
-    setWithdrawAddress('');
+    setWithdrawAmount("");
+    setWithdrawAddress("");
   };
 
   const handleAddStake = async () => {
     if (!stakeAmount) return;
     await addStake(stakeAmount, parseInt(unstakeDelay));
-    setStakeAmount('');
+    setStakeAmount("");
   };
 
   const handleWithdrawStake = async () => {
     if (!stakeWithdrawAddress) return;
     await withdrawStake(stakeWithdrawAddress);
-    setStakeWithdrawAddress('');
+    setStakeWithdrawAddress("");
   };
 
   if (loading && !config) {
@@ -65,7 +65,7 @@ export const PaymasterDashboard: React.FC<PaymasterDashboardProps> = ({ paymaste
       <div className="dashboard-header">
         <h2>Paymaster Admin Dashboard</h2>
         <button onClick={refresh} disabled={loading} className="refresh-button">
-          {loading ? 'Refreshing...' : 'Refresh'}
+          {loading ? "Refreshing..." : "Refresh"}
         </button>
       </div>
 
@@ -123,7 +123,7 @@ export const PaymasterDashboard: React.FC<PaymasterDashboardProps> = ({ paymaste
             </div>
             <div className="deposit-item">
               <label>Staked:</label>
-              <span>{depositInfo.staked ? 'Yes' : 'No'}</span>
+              <span>{depositInfo.staked ? "Yes" : "No"}</span>
             </div>
             <div className="deposit-item">
               <label>Stake Amount:</label>
@@ -135,7 +135,11 @@ export const PaymasterDashboard: React.FC<PaymasterDashboardProps> = ({ paymaste
             </div>
             <div className="deposit-item">
               <label>Withdraw Time:</label>
-              <span>{depositInfo.withdrawTime === '0' ? 'N/A' : new Date(parseInt(depositInfo.withdrawTime) * 1000).toLocaleString()}</span>
+              <span>
+                {depositInfo.withdrawTime === "0"
+                  ? "N/A"
+                  : new Date(parseInt(depositInfo.withdrawTime) * 1000).toLocaleString()}
+              </span>
             </div>
           </div>
         </div>
@@ -150,10 +154,14 @@ export const PaymasterDashboard: React.FC<PaymasterDashboardProps> = ({ paymaste
               step="0.01"
               placeholder="Amount (ETH)"
               value={depositAmount}
-              onChange={(e) => setDepositAmount(e.target.value)}
+              onChange={e => setDepositAmount(e.target.value)}
               className="amount-input"
             />
-            <button onClick={handleDeposit} disabled={loading || !depositAmount} className="action-button">
+            <button
+              onClick={handleDeposit}
+              disabled={loading || !depositAmount}
+              className="action-button"
+            >
               Deposit
             </button>
           </div>
@@ -166,7 +174,7 @@ export const PaymasterDashboard: React.FC<PaymasterDashboardProps> = ({ paymaste
               type="text"
               placeholder="Withdraw Address"
               value={withdrawAddress}
-              onChange={(e) => setWithdrawAddress(e.target.value)}
+              onChange={e => setWithdrawAddress(e.target.value)}
               className="address-input"
             />
             <input
@@ -174,10 +182,14 @@ export const PaymasterDashboard: React.FC<PaymasterDashboardProps> = ({ paymaste
               step="0.01"
               placeholder="Amount (ETH)"
               value={withdrawAmount}
-              onChange={(e) => setWithdrawAmount(e.target.value)}
+              onChange={e => setWithdrawAmount(e.target.value)}
               className="amount-input"
             />
-            <button onClick={handleWithdraw} disabled={loading || !withdrawAmount || !withdrawAddress} className="action-button">
+            <button
+              onClick={handleWithdraw}
+              disabled={loading || !withdrawAmount || !withdrawAddress}
+              className="action-button"
+            >
               Withdraw
             </button>
           </div>
@@ -191,17 +203,21 @@ export const PaymasterDashboard: React.FC<PaymasterDashboardProps> = ({ paymaste
               step="0.01"
               placeholder="Stake Amount (ETH)"
               value={stakeAmount}
-              onChange={(e) => setStakeAmount(e.target.value)}
+              onChange={e => setStakeAmount(e.target.value)}
               className="amount-input"
             />
             <input
               type="number"
               placeholder="Unstake Delay (seconds)"
               value={unstakeDelay}
-              onChange={(e) => setUnstakeDelay(e.target.value)}
+              onChange={e => setUnstakeDelay(e.target.value)}
               className="delay-input"
             />
-            <button onClick={handleAddStake} disabled={loading || !stakeAmount} className="action-button">
+            <button
+              onClick={handleAddStake}
+              disabled={loading || !stakeAmount}
+              className="action-button"
+            >
               Add Stake
             </button>
           </div>
@@ -210,17 +226,25 @@ export const PaymasterDashboard: React.FC<PaymasterDashboardProps> = ({ paymaste
         <div className="action-group">
           <h3>Stake Management</h3>
           <div className="action-form">
-            <button onClick={unlockStake} disabled={loading} className="action-button unlock-button">
+            <button
+              onClick={unlockStake}
+              disabled={loading}
+              className="action-button unlock-button"
+            >
               Unlock Stake
             </button>
             <input
               type="text"
               placeholder="Withdraw to Address"
               value={stakeWithdrawAddress}
-              onChange={(e) => setStakeWithdrawAddress(e.target.value)}
+              onChange={e => setStakeWithdrawAddress(e.target.value)}
               className="address-input"
             />
-            <button onClick={handleWithdrawStake} disabled={loading || !stakeWithdrawAddress} className="action-button">
+            <button
+              onClick={handleWithdrawStake}
+              disabled={loading || !stakeWithdrawAddress}
+              className="action-button"
+            >
               Withdraw Stake
             </button>
           </div>

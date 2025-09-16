@@ -6,9 +6,9 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell",
+    "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #f5f5f5;
@@ -95,10 +95,10 @@ body {
 }
 
 .features li::before {
-  content: '✓';
+  content: "✓";
   position: absolute;
   left: 0;
-  color: #4CAF50;
+  color: #4caf50;
   font-weight: bold;
 }
 
@@ -107,8 +107,9 @@ body {
   margin-top: 1rem;
 }
 
-.connect-button, .disconnect-button {
-  background: #4CAF50;
+.connect-button,
+.disconnect-button {
+  background: #4caf50;
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -118,7 +119,8 @@ body {
   transition: background-color 0.3s;
 }
 
-.connect-button:hover, .disconnect-button:hover {
+.connect-button:hover,
+.disconnect-button:hover {
   background: #45a049;
 }
 
@@ -144,7 +146,8 @@ body {
   flex-wrap: wrap;
 }
 
-.account-info, .network-info {
+.account-info,
+.network-info {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -153,7 +156,8 @@ body {
   border-radius: 6px;
 }
 
-.account-label, .network-label {
+.account-label,
+.network-label {
   font-weight: 600;
 }
 
@@ -200,7 +204,9 @@ body {
   color: #333;
 }
 
-.address-input, .amount-input, .delay-input {
+.address-input,
+.amount-input,
+.delay-input {
   width: 100%;
   padding: 0.75rem;
   border: 2px solid #ddd;
@@ -210,7 +216,9 @@ body {
   transition: border-color 0.3s;
 }
 
-.address-input:focus, .amount-input:focus, .delay-input:focus {
+.address-input:focus,
+.amount-input:focus,
+.delay-input:focus {
   outline: none;
   border-color: #667eea;
 }
@@ -255,14 +263,20 @@ body {
 }
 
 /* Section Styles */
-.config-section, .stats-section, .deposit-info-section, .actions-section {
+.config-section,
+.stats-section,
+.deposit-info-section,
+.actions-section {
   margin-bottom: 2rem;
   padding: 1.5rem;
   background: #f9f9f9;
   border-radius: 8px;
 }
 
-.config-section h3, .stats-section h3, .deposit-info-section h3, .actions-section h3 {
+.config-section h3,
+.stats-section h3,
+.deposit-info-section h3,
+.actions-section h3 {
   color: #333;
   margin-bottom: 1rem;
   font-size: 1.3rem;
@@ -271,20 +285,26 @@ body {
 }
 
 /* Grid Layouts */
-.config-grid, .stats-grid, .deposit-grid {
+.config-grid,
+.stats-grid,
+.deposit-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem;
 }
 
-.config-item, .stat-item, .deposit-item {
+.config-item,
+.stat-item,
+.deposit-item {
   background: white;
   padding: 1rem;
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.config-item label, .stat-item label, .deposit-item label {
+.config-item label,
+.stat-item label,
+.deposit-item label {
   display: block;
   font-weight: 600;
   color: #555;
@@ -292,7 +312,9 @@ body {
   font-size: 0.9rem;
 }
 
-.config-item span, .stat-item span, .deposit-item span {
+.config-item span,
+.stat-item span,
+.deposit-item span {
   display: block;
   font-size: 1.1rem;
   color: #333;
@@ -344,7 +366,7 @@ body {
 }
 
 .action-button {
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
   border: none;
   padding: 0.75rem 1.25rem;
@@ -412,7 +434,9 @@ body {
     padding: 1rem;
   }
 
-  .config-grid, .stats-grid, .deposit-grid {
+  .config-grid,
+  .stats-grid,
+  .deposit-grid {
     grid-template-columns: 1fr;
   }
 
@@ -432,7 +456,8 @@ body {
     text-align: center;
   }
 
-  .action-form input, .action-button {
+  .action-form input,
+  .action-button {
     width: 100%;
   }
 }

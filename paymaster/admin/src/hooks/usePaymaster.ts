@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
-import { PAYMASTER_ABI, ENTRY_POINT_ABI, ENTRY_POINT_ADDRESS } from '../constants/contracts';
-import { PaymasterConfig, PaymasterStats, DepositInfo } from '../types/paymaster';
+import { useState, useEffect } from "react";
+import { ethers } from "ethers";
+import { PAYMASTER_ABI, ENTRY_POINT_ABI, ENTRY_POINT_ADDRESS } from "../constants/contracts";
+import { PaymasterConfig, PaymasterStats, DepositInfo } from "../types/paymaster";
 
 declare global {
   interface Window {
@@ -27,10 +27,14 @@ export const usePaymaster = (paymasterAddress: string) => {
       const signer = provider.getSigner();
 
       const paymasterContract = new ethers.Contract(paymasterAddress, PAYMASTER_ABI, signer);
-      const entryPointContract = new ethers.Contract(ENTRY_POINT_ADDRESS, ENTRY_POINT_ABI, provider);
+      const entryPointContract = new ethers.Contract(
+        ENTRY_POINT_ADDRESS,
+        ENTRY_POINT_ABI,
+        provider
+      );
 
       const [owner, deposit, balance, depositInfoData] = await Promise.all([
-        paymasterContract.owner().catch(() => 'Unknown'),
+        paymasterContract.owner().catch(() => "Unknown"),
         paymasterContract.getDeposit().catch(() => ethers.BigNumber.from(0)),
         provider.getBalance(paymasterAddress),
         entryPointContract.getDepositInfo(paymasterAddress).catch(() => ({
@@ -38,22 +42,22 @@ export const usePaymaster = (paymasterAddress: string) => {
           staked: false,
           stake: ethers.BigNumber.from(0),
           unstakeDelaySec: ethers.BigNumber.from(0),
-          withdrawTime: ethers.BigNumber.from(0)
-        }))
+          withdrawTime: ethers.BigNumber.from(0),
+        })),
       ]);
 
       setConfig({
         address: paymasterAddress,
         owner,
         deposit: ethers.utils.formatEther(deposit),
-        withdrawStake: '0'
+        withdrawStake: "0",
       });
 
       setStats({
         totalOperations: 0,
-        totalGasSponsored: '0',
+        totalGasSponsored: "0",
         activeUsers: 0,
-        remainingBalance: ethers.utils.formatEther(balance)
+        remainingBalance: ethers.utils.formatEther(balance),
       });
 
       setDepositInfo({
@@ -61,10 +65,10 @@ export const usePaymaster = (paymasterAddress: string) => {
         staked: depositInfoData.staked,
         stake: ethers.utils.formatEther(depositInfoData.stake),
         unstakeDelaySec: depositInfoData.unstakeDelaySec.toString(),
-        withdrawTime: depositInfoData.withdrawTime.toString()
+        withdrawTime: depositInfoData.withdrawTime.toString(),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
     }
@@ -72,7 +76,7 @@ export const usePaymaster = (paymasterAddress: string) => {
 
   const deposit = async (amount: string) => {
     if (!window.ethereum) {
-      setError('Please install MetaMask');
+      setError("Please install MetaMask");
       return;
     }
 
@@ -83,12 +87,12 @@ export const usePaymaster = (paymasterAddress: string) => {
       const paymasterContract = new ethers.Contract(paymasterAddress, PAYMASTER_ABI, signer);
 
       const tx = await paymasterContract.deposit({
-        value: ethers.utils.parseEther(amount)
+        value: ethers.utils.parseEther(amount),
       });
       await tx.wait();
       await loadPaymasterData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Deposit failed');
+      setError(err instanceof Error ? err.message : "Deposit failed");
     } finally {
       setLoading(false);
     }
@@ -96,7 +100,7 @@ export const usePaymaster = (paymasterAddress: string) => {
 
   const withdraw = async (address: string, amount: string) => {
     if (!window.ethereum) {
-      setError('Please install MetaMask');
+      setError("Please install MetaMask");
       return;
     }
 
@@ -106,14 +110,11 @@ export const usePaymaster = (paymasterAddress: string) => {
       const signer = provider.getSigner();
       const paymasterContract = new ethers.Contract(paymasterAddress, PAYMASTER_ABI, signer);
 
-      const tx = await paymasterContract.withdrawTo(
-        address,
-        ethers.utils.parseEther(amount)
-      );
+      const tx = await paymasterContract.withdrawTo(address, ethers.utils.parseEther(amount));
       await tx.wait();
       await loadPaymasterData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Withdrawal failed');
+      setError(err instanceof Error ? err.message : "Withdrawal failed");
     } finally {
       setLoading(false);
     }
@@ -121,7 +122,7 @@ export const usePaymaster = (paymasterAddress: string) => {
 
   const addStake = async (amount: string, unstakeDelay: number) => {
     if (!window.ethereum) {
-      setError('Please install MetaMask');
+      setError("Please install MetaMask");
       return;
     }
 
@@ -132,12 +133,12 @@ export const usePaymaster = (paymasterAddress: string) => {
       const paymasterContract = new ethers.Contract(paymasterAddress, PAYMASTER_ABI, signer);
 
       const tx = await paymasterContract.addStake(unstakeDelay, {
-        value: ethers.utils.parseEther(amount)
+        value: ethers.utils.parseEther(amount),
       });
       await tx.wait();
       await loadPaymasterData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Add stake failed');
+      setError(err instanceof Error ? err.message : "Add stake failed");
     } finally {
       setLoading(false);
     }
@@ -145,7 +146,7 @@ export const usePaymaster = (paymasterAddress: string) => {
 
   const unlockStake = async () => {
     if (!window.ethereum) {
-      setError('Please install MetaMask');
+      setError("Please install MetaMask");
       return;
     }
 
@@ -159,7 +160,7 @@ export const usePaymaster = (paymasterAddress: string) => {
       await tx.wait();
       await loadPaymasterData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unlock stake failed');
+      setError(err instanceof Error ? err.message : "Unlock stake failed");
     } finally {
       setLoading(false);
     }
@@ -167,7 +168,7 @@ export const usePaymaster = (paymasterAddress: string) => {
 
   const withdrawStake = async (address: string) => {
     if (!window.ethereum) {
-      setError('Please install MetaMask');
+      setError("Please install MetaMask");
       return;
     }
 
@@ -181,7 +182,7 @@ export const usePaymaster = (paymasterAddress: string) => {
       await tx.wait();
       await loadPaymasterData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Withdraw stake failed');
+      setError(err instanceof Error ? err.message : "Withdraw stake failed");
     } finally {
       setLoading(false);
     }
@@ -204,6 +205,6 @@ export const usePaymaster = (paymasterAddress: string) => {
     addStake,
     unlockStake,
     withdrawStake,
-    refresh: loadPaymasterData
+    refresh: loadPaymasterData,
   };
 };
