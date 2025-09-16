@@ -15,7 +15,9 @@ ERC-4337 账户抽象系统。这是一个包含多个工作区的 monorepo：
 - `signer/` - 带有 WebSocket gossip 网络的 NestJS BLS 签名服务
 - `aastar/` - 带有 TypeORM 和 JWT 认证的 NestJS 后端 API
 - `aastar-frontend/` - 支持 WebAuthn 的 Next.js 15 前端
-- `paymaster/` - Paymaster 合约（开发中）
+- `paymaster/` - Paymaster 合约和管理界面
+  - `paymaster/contracts/` - Foundry 智能合约
+  - `paymaster/admin/` - React 管理界面
 
 ## 必要命令
 
@@ -26,6 +28,7 @@ ERC-4337 账户抽象系统。这是一个包含多个工作区的 monorepo：
 npm run start:dev -w aastar        # 后端 API，端口 3000
 npm run start:dev -w signer        # 签名服务，端口 3001
 npm run dev -w aastar-frontend     # 前端，端口 8080
+npm start -w paymaster/admin       # Paymaster 管理界面，端口 8081
 
 # 构建所有工作区
 npm run build
@@ -127,6 +130,7 @@ Node.js 20.19.0（在 .nvmrc 中指定）
 - 签名服务: 3001
 - 前端开发: 8080
 - 前端生产: 80
+- Paymaster 管理界面: 8081
 
 ### 环境变量
 

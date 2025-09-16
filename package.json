@@ -6,7 +6,8 @@
   "workspaces": [
     "signer",
     "aastar",
-    "aastar-frontend"
+    "aastar-frontend",
+    "paymaster/admin"
   ],
   "scripts": {
     "format": "prettier --write .",
