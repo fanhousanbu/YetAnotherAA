@@ -49,15 +49,19 @@ export class TransferService {
 
     // Check Smart Account balance and validate transfer amount
     const smartAccountBalance = parseFloat(await this.ethereumService.getBalance(account.address));
-    const transferAmount = parseFloat(transferDto.amount);
 
-    const minRequiredBalance = 0.0002; // Require at least 0.0002 ETH remaining after transfer for gas fees (typical gas cost ~0.0001 ETH)
+    // For token transfers, we only need gas fees, not the transfer amount
+    const isTokenTransfer = !!transferDto.tokenAddress;
+    const transferAmount = isTokenTransfer ? 0 : parseFloat(transferDto.amount); // Only need ETH for ETH transfers
+
+    const minRequiredBalance = 0.0002; // Require at least 0.0002 ETH for gas fees
     const totalNeeded = transferAmount + minRequiredBalance;
 
     // Check if Smart Account has sufficient balance for transfer + gas fees
     if (smartAccountBalance < totalNeeded) {
+      const transferType = isTokenTransfer ? "token" : "ETH";
       console.log(
-        `Smart Account needs prefunding: Current balance ${smartAccountBalance} ETH, needs ${totalNeeded} ETH (${transferAmount} transfer + ${minRequiredBalance} gas)`
+        `Smart Account needs prefunding for ${transferType} transfer: Current balance ${smartAccountBalance} ETH, needs ${totalNeeded} ETH (${transferAmount} transfer + ${minRequiredBalance} gas)`
       );
 
       const prefundAmount = Math.max(0.001, totalNeeded - smartAccountBalance + 0.0005); // Add 0.0005 safety margin
@@ -407,6 +411,10 @@ export class TransferService {
           );
           if (knownPaymaster) {
             paymasterName = knownPaymaster.name;
+          } else {
+            // For unknown paymaster addresses, register it temporarily as a custom paymaster
+            paymasterName = "custom-user-provided";
+            console.log(`Using custom paymaster address: ${paymasterAddress}`);
           }
         } else {
           // Use the first configured paymaster (prefer pimlico-sepolia)
@@ -429,7 +437,8 @@ export class TransferService {
         paymasterAndData = await this.paymasterService.getPaymasterData(
           paymasterName,
           baseUserOp,
-          entryPoint
+          entryPoint,
+          paymasterAddress // Pass the actual paymaster address for custom paymasters
         );
 
         if (paymasterAndData !== "0x") {

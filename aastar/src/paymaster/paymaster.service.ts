@@ -87,7 +87,15 @@ export class PaymasterService {
   /**
    * Get paymaster sponsorship data
    */
-  async getPaymasterData(paymasterName: string, userOp: any, entryPoint: string): Promise<string> {
+  async getPaymasterData(paymasterName: string, userOp: any, entryPoint: string, customAddress?: string): Promise<string> {
+    // Handle custom user-provided paymaster addresses
+    if (paymasterName === "custom-user-provided" && customAddress) {
+      console.log(`Processing custom paymaster: ${customAddress}`);
+      // For custom paymasters without API, just return the address as paymasterAndData
+      // This works for simple paymasters that don't require signatures
+      return customAddress;
+    }
+
     const config = this.paymasters.get(paymasterName);
     if (!config) {
       throw new Error(`Paymaster ${paymasterName} not found`);

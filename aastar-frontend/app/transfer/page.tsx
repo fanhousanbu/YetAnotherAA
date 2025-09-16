@@ -20,6 +20,7 @@ export default function TransferPage() {
     to: "",
     amount: "",
     usePaymaster: false,
+    paymasterAddress: "",
   });
   const [selectedToken, setSelectedToken] = useState<Token | null>(null); // null means ETH
   const [tokenBalance, setTokenBalance] = useState<TokenBalance | null>(null);
@@ -212,6 +213,7 @@ export default function TransferPage() {
         to: formData.to,
         amount: formData.amount,
         usePaymaster: formData.usePaymaster,
+        paymasterAddress: formData.usePaymaster && formData.paymasterAddress ? formData.paymasterAddress : undefined,
         tokenAddress: selectedToken?.address, // undefined = ETH transfer
       };
 
@@ -227,6 +229,7 @@ export default function TransferPage() {
         to: "",
         amount: "",
         usePaymaster: false,
+        paymasterAddress: "",
       });
       setSelectedToken(null);
       setGasEstimate(null);
@@ -772,7 +775,7 @@ export default function TransferPage() {
                     className="w-4 h-4 text-purple-600 dark:text-purple-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded focus:ring-purple-500 dark:focus:ring-purple-400"
                   />
                 </div>
-                <div className="ml-3">
+                <div className="ml-3 flex-1">
                   <label
                     htmlFor="usePaymaster"
                     className="text-sm font-medium text-gray-900 dark:text-white"
@@ -780,9 +783,47 @@ export default function TransferPage() {
                     Use Paymaster (Sponsored Gas) ✨
                   </label>
 
+                  {/* Paymaster Address Input - Only show when paymaster is enabled */}
+                  {formData.usePaymaster && (
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <label
+                          htmlFor="paymasterAddress"
+                          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        >
+                          Paymaster Contract Address (Optional)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, paymasterAddress: "0xdde25C1d254AeBcA592d8574Dc9421f87a491dF4" }))}
+                          className="px-2 py-1 text-xs text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 rounded hover:bg-purple-200 dark:hover:bg-purple-900/50 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
+                        >
+                          Use Test Paymaster
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        name="paymasterAddress"
+                        id="paymasterAddress"
+                        value={formData.paymasterAddress}
+                        onChange={handleChange}
+                        placeholder="0xdde25C1d254AeBcA592d8574Dc9421f87a491dF4"
+                        className="block w-full text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow-sm focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 placeholder-gray-500 dark:placeholder-gray-400"
+                      />
+                      <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                        Leave empty to use default Pimlico paymaster. Click "Use Test Paymaster" to use your deployed contract.
+                      </p>
+                      {formData.paymasterAddress && (
+                        <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded text-xs text-blue-700 dark:text-blue-300">
+                          💡 Using custom paymaster: {formData.paymasterAddress.slice(0, 10)}...{formData.paymasterAddress.slice(-8)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Dynamic description based on asset selection */}
                   {selectedToken ? (
-                    <div className="mt-1">
+                    <div className="mt-2">
                       <p className="inline-block px-2 py-1 text-xs rounded text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30">
                         ⚠️ ERC20 transfers may not be sponsored by all paymasters
                       </p>
@@ -792,12 +833,15 @@ export default function TransferPage() {
                       </p>
                     </div>
                   ) : (
-                    <div className="mt-1">
+                    <div className="mt-2">
                       <p className="inline-block px-2 py-1 text-xs text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 rounded">
                         ✅ ETH transfers work best with paymaster sponsorship
                       </p>
                       <p className="mt-1 text-xs text-gray-700 dark:text-gray-300">
-                        Pimlico Paymaster will sponsor gas fees for ETH transfers.
+                        {formData.paymasterAddress ?
+                          "Using your custom paymaster for gas sponsorship." :
+                          "Pimlico Paymaster will sponsor gas fees for ETH transfers."
+                        }
                       </p>
                     </div>
                   )}
