@@ -819,8 +819,8 @@ export default function TransferPage() {
                         className="block w-full text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow-sm focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 placeholder-gray-500 dark:placeholder-gray-400"
                       />
                       <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        Leave empty to use default Pimlico paymaster. Click &quot;Use Test Paymaster&quot; to
-                        use your deployed contract.
+                        Leave empty to use default Pimlico paymaster. Click &quot;Use Test
+                        Paymaster&quot; to use your deployed contract.
                       </p>
                       {formData.paymasterAddress && (
                         <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded text-xs text-blue-700 dark:text-blue-300">
