@@ -204,16 +204,73 @@ body {
   color: #333;
 }
 
+.address-input-container {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.address-history-select {
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.address-history-select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.address-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.address-history small {
+  color: #6b7280;
+  margin-right: 0.5rem;
+}
+
+.history-address-btn {
+  padding: 0.25rem 0.5rem;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: 'Courier New', monospace;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.history-address-btn:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
 .address-input,
 .amount-input,
 .delay-input {
-  width: 100%;
   padding: 0.75rem;
   border: 2px solid #ddd;
   border-radius: 8px;
   font-size: 1rem;
   font-family: monospace;
   transition: border-color 0.3s;
+}
+
+.address-input {
+  flex: 1;
+}
+
+.amount-input,
+.delay-input {
+  width: 100%;
 }
 
 .address-input:focus,

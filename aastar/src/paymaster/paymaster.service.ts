@@ -46,27 +46,9 @@ export class PaymasterService {
       apiKey: process.env.ALCHEMY_API_KEY,
     });
 
-    // Add custom paymaster from environment if configured
-    if (process.env.PAYMASTER_ADDRESS) {
-      // Check if it's Pimlico Paymaster address
-      if (
-        process.env.PAYMASTER_ADDRESS.toLowerCase() ===
-        "0x0000000000325602a77416A16136FDafd04b299f".toLowerCase()
-      ) {
-        // Override pimlico-sepolia with the actual API key from env
-        const pimlicoConfig = this.paymasters.get("pimlico-sepolia");
-        if (pimlicoConfig && process.env.PIMLICO_API_KEY) {
-          pimlicoConfig.apiKey = process.env.PIMLICO_API_KEY;
-        }
-      } else {
-        // Add as custom paymaster
-        this.paymasters.set("custom", {
-          address: process.env.PAYMASTER_ADDRESS,
-          type: "custom",
-          apiKey: process.env.PAYMASTER_API_KEY || process.env.PIMLICO_API_KEY,
-        });
-      }
-    }
+    // Note: Custom paymaster addresses should be provided by users at runtime
+    // No default PAYMASTER_ADDRESS configuration is loaded from environment
+    // Users can add custom paymasters through the API endpoints
   }
 
   /**
@@ -82,6 +64,35 @@ export class PaymasterService {
       });
     }
     return result;
+  }
+
+  /**
+   * Add a custom paymaster at runtime
+   */
+  addCustomPaymaster(
+    name: string,
+    address: string,
+    type: "pimlico" | "stackup" | "alchemy" | "custom" = "custom",
+    apiKey?: string,
+    endpoint?: string
+  ): void {
+    this.paymasters.set(name, {
+      address,
+      type,
+      apiKey,
+      endpoint,
+    });
+  }
+
+  /**
+   * Remove a custom paymaster
+   */
+  removeCustomPaymaster(name: string): boolean {
+    // Prevent removal of built-in paymasters
+    if (["pimlico-sepolia", "stackup-sepolia", "alchemy-sepolia"].includes(name)) {
+      return false;
+    }
+    return this.paymasters.delete(name);
   }
 
   /**

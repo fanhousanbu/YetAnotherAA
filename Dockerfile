@@ -56,7 +56,6 @@ RUN echo 'module.exports = {' > ecosystem.config.js && \
     echo '        AASTAR_ACCOUNT_FACTORY_ADDRESS: process.env.AASTAR_ACCOUNT_FACTORY_ADDRESS || "0xec687B9231341aAe645FE5A825C0f28323183697",' >> ecosystem.config.js && \
     echo '        VALIDATOR_CONTRACT_ADDRESS: process.env.VALIDATOR_CONTRACT_ADDRESS || "0xD9756c11686B59F7DDf39E6360230316710485af",' >> ecosystem.config.js && \
     echo '        USER_ENCRYPTION_KEY: process.env.USER_ENCRYPTION_KEY || "your-secret-encryption-key-32-chars",' >> ecosystem.config.js && \
-    echo '        PAYMASTER_ADDRESS: process.env.PAYMASTER_ADDRESS || "0x0000000000325602a77416A16136FDafd04b299f",' >> ecosystem.config.js && \
     echo '        PIMLICO_API_KEY: process.env.PIMLICO_API_KEY,' >> ecosystem.config.js && \
     echo '        PIMLICO_SPONSORSHIP_POLICY_ID: process.env.PIMLICO_SPONSORSHIP_POLICY_ID' >> ecosystem.config.js && \
     echo '      }' >> ecosystem.config.js && \

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { WalletConnect } from "./components/WalletConnect";
 import { PaymasterDashboard } from "./components/PaymasterDashboard";
 import "./App.css";
@@ -7,6 +7,7 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [, setAccount] = useState<string>("");
   const [paymasterAddress, setPaymasterAddress] = useState<string>("");
+  const [addressHistory, setAddressHistory] = useState<string[]>([]);
 
   const handleWalletConnect = (address: string) => {
     setIsConnected(true);
@@ -17,6 +18,36 @@ function App() {
     setIsConnected(false);
     setAccount("");
   };
+
+  const addToHistory = (address: string) => {
+    const trimmedAddress = address.trim();
+    if (!trimmedAddress || !trimmedAddress.match(/^0x[a-fA-F0-9]{40}$/)) return;
+
+    setAddressHistory(prev => {
+      const filtered = prev.filter(addr => addr.toLowerCase() !== trimmedAddress.toLowerCase());
+      const newHistory = [trimmedAddress, ...filtered].slice(0, 10); // 保留最近10个地址
+      localStorage.setItem('paymaster-address-history', JSON.stringify(newHistory));
+      return newHistory;
+    });
+  };
+
+  const handleAddressChange = (address: string) => {
+    setPaymasterAddress(address);
+    if (address && address.match(/^0x[a-fA-F0-9]{40}$/)) {
+      addToHistory(address);
+    }
+  };
+
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('paymaster-address-history');
+    if (savedHistory) {
+      try {
+        setAddressHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error('Failed to parse address history:', e);
+      }
+    }
+  }, []);
 
   return (
     <div className="App">
@@ -31,14 +62,45 @@ function App() {
           <div className="dashboard-container">
             <div className="paymaster-address-input">
               <label htmlFor="paymaster-address">Paymaster Contract Address:</label>
-              <input
-                id="paymaster-address"
-                type="text"
-                placeholder="0x..."
-                value={paymasterAddress}
-                onChange={e => setPaymasterAddress(e.target.value)}
-                className="address-input"
-              />
+              <div className="address-input-container">
+                <input
+                  id="paymaster-address"
+                  type="text"
+                  placeholder="0x..."
+                  value={paymasterAddress}
+                  onChange={e => handleAddressChange(e.target.value)}
+                  className="address-input"
+                />
+                {addressHistory.length > 0 && (
+                  <select
+                    className="address-history-select"
+                    value=""
+                    onChange={e => e.target.value && handleAddressChange(e.target.value)}
+                  >
+                    <option value="">选择历史地址</option>
+                    {addressHistory.map((addr, index) => (
+                      <option key={index} value={addr}>
+                        {`${addr.slice(0, 6)}...${addr.slice(-4)}`}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              {addressHistory.length > 0 && (
+                <div className="address-history">
+                  <small>最近使用过的地址：</small>
+                  {addressHistory.slice(0, 3).map((addr, index) => (
+                    <button
+                      key={index}
+                      className="history-address-btn"
+                      onClick={() => handleAddressChange(addr)}
+                      title={addr}
+                    >
+                      {`${addr.slice(0, 8)}...${addr.slice(-6)}`}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {paymasterAddress && <PaymasterDashboard paymasterAddress={paymasterAddress} />}
