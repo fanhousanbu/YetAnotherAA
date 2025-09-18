@@ -28,15 +28,15 @@ jobs:
 
       - name: Run npm audit (Backend)
         working-directory: ./aastar
-        run: npm ci && npm audit --audit-level=moderate
+        run: npm ci --omit=optional --omit=optional && npm audit --audit-level=moderate
 
       - name: Run npm audit (Frontend)
         working-directory: ./aastar-frontend
-        run: npm ci && npm audit --audit-level=moderate
+        run: npm ci --omit=optional --omit=optional && npm audit --audit-level=moderate
 
       - name: Run npm audit (Signer)
         working-directory: ./signer
-        run: npm ci && npm audit --audit-level=moderate
+        run: npm ci --omit=optional --omit=optional && npm audit --audit-level=moderate
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -75,7 +75,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
-        run: npm ci
+        run: npm ci --omit=optional
 
       - name: Check formatting
         working-directory: ./${{ matrix.project }}
@@ -118,7 +118,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
-        run: npm ci
+        run: npm ci --omit=optional
 
       - name: Build project
         working-directory: ./${{ matrix.project }}
@@ -143,7 +143,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
-        run: npm ci
+        run: npm ci --omit=optional
 
       - name: Run tests
         working-directory: ./${{ matrix.project }}
@@ -198,7 +198,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./${{ matrix.project }}
-        run: npm ci
+        run: npm ci --omit=optional
 
       - name: Run TypeScript compiler
         working-directory: ./${{ matrix.project }}
