@@ -4,14 +4,15 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import TokenSelector from "@/components/TokenSelector";
-import { accountAPI, transferAPI, tokenAPI } from "@/lib/api";
+import { accountAPI, transferAPI, tokenAPI, paymasterAPI } from "@/lib/api";
 import { Account, GasEstimate, Token, TokenBalance } from "@/lib/types";
 import toast from "react-hot-toast";
 import {
-  ArrowUpIcon,
+  ArrowTopRightOnSquareIcon,
   InformationCircleIcon,
   CheckCircleIcon,
   XMarkIcon,
+  WalletIcon,
 } from "@heroicons/react/24/outline";
 
 export default function TransferPage() {
@@ -30,7 +31,6 @@ export default function TransferPage() {
     page: true,
     estimate: false,
     transfer: false,
-    sponsor: false,
   });
   const [transferResult, setTransferResult] = useState<any>(null);
   const [transferStatus, setTransferStatus] = useState<any>(null);
@@ -56,11 +56,23 @@ export default function TransferPage() {
       }
     } catch (error: any) {
       console.error("Transfer page error:", error);
-      const message = error.response?.data?.message || "Failed to load account data";
-      console.error("Error message:", message);
-      console.error("Error status:", error.response?.status);
-      toast.error(message);
-      router.push("/dashboard");
+
+      // Check if it's a 404 (account not found) or similar
+      if (
+        error.response?.status === 404 ||
+        error.response?.data?.message?.includes("Account not found")
+      ) {
+        // Account doesn't exist yet, this is normal
+        setAccount(null);
+        console.log("No account found - user needs to create one first");
+      } else {
+        // Other errors - show error and redirect
+        const message = error.response?.data?.message || "Failed to load account data";
+        console.error("Error message:", message);
+        console.error("Error status:", error.response?.status);
+        toast.error(message);
+        router.push("/dashboard");
+      }
     } finally {
       setLoading(prev => ({ ...prev, page: false }));
     }
@@ -381,30 +393,35 @@ export default function TransferPage() {
     }
   };
 
-  // Sponsor account with 0.01 ETH
-  const sponsorAccount = async () => {
-    setLoading(prev => ({ ...prev, sponsor: true }));
-    try {
-      await accountAPI.sponsorAccount();
-      toast.success("Account sponsored successfully! 🎉");
-
-      // Refresh account data to update sponsored status and balance
-      await refreshBalance();
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Failed to sponsor account";
-      toast.error(message);
-    } finally {
-      setLoading(prev => ({ ...prev, sponsor: false }));
+  // Save paymaster address to system
+  const savePaymasterAddress = async () => {
+    if (!formData.paymasterAddress) {
+      toast.error("No paymaster address to save");
+      return;
     }
-  };
 
-  // Check if sponsor button should be shown
-  const shouldShowSponsorButton = () => {
-    if (!account) return false;
-    if (account.sponsored) return false;
+    // Validate address format
+    if (!formData.paymasterAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+      toast.error("Invalid paymaster address format");
+      return;
+    }
 
-    const balance = parseFloat(account.balance || "0");
-    return balance <= 0.01;
+    try {
+      // Generate a name for the paymaster
+      const shortAddress = `${formData.paymasterAddress.slice(0, 6)}...${formData.paymasterAddress.slice(-4)}`;
+      const paymasterName = `custom-${shortAddress}`;
+
+      await paymasterAPI.addCustom({
+        name: paymasterName,
+        address: formData.paymasterAddress,
+        type: "custom",
+      });
+
+      toast.success("Paymaster saved successfully! 🎉");
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to save paymaster";
+      toast.error(message);
+    }
   };
 
   if (loading.page) {
@@ -417,19 +434,58 @@ export default function TransferPage() {
     );
   }
 
+  // Show account creation prompt if no account exists
+  if (!account) {
+    return (
+      <Layout requireAuth={true}>
+        <div className="max-w-2xl px-4 py-6 mx-auto sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Send Transfer</h1>
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                Send ETH using ERC-4337 account abstraction
+              </p>
+            </div>
+          </div>
+
+          {/* Account Creation Required */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+            <div className="p-8 text-center">
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                <WalletIcon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h2 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
+                Create Your Smart Account First
+              </h2>
+              <p className="mb-6 text-gray-600 dark:text-gray-400">
+                You need to create a smart account before you can send transfers. Your account will
+                be deployed automatically with your first transaction.
+              </p>
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <WalletIcon className="w-4 h-4 mr-2" />
+                Go to Dashboard to Create Account
+              </button>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout requireAuth={true}>
       <div className="max-w-2xl px-4 py-6 mx-auto sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center">
-            <ArrowUpIcon className="w-8 h-8 mr-3 text-blue-500" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Send Transfer</h1>
-              <p className="text-sm text-gray-700 dark:text-gray-300">
-                Send ETH using ERC-4337 account abstraction - gas fees handled automatically
-              </p>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Send Transfer</h1>
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              Send ETH using ERC-4337 account abstraction - gas fees handled automatically
+            </p>
           </div>
         </div>
 
@@ -505,32 +561,6 @@ export default function TransferPage() {
                   </svg>
                   Refresh
                 </button>
-                {shouldShowSponsorButton() && (
-                  <button
-                    onClick={sponsorAccount}
-                    disabled={loading.sponsor}
-                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 dark:text-green-400 border border-green-200 dark:border-green-600 rounded-md bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading.sponsor ? (
-                      <div className="w-3 h-3 mr-1 border-b-2 border-green-600 rounded-full animate-spin"></div>
-                    ) : (
-                      <svg
-                        className="w-3 h-3 mr-1"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"
-                        />
-                      </svg>
-                    )}
-                    Sponsor
-                  </button>
-                )}
               </div>
             </div>
           </div>
@@ -789,25 +819,13 @@ export default function TransferPage() {
                   {/* Paymaster Address Input - Only show when paymaster is enabled */}
                   {formData.usePaymaster && (
                     <div className="mt-3">
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="mb-1">
                         <label
                           htmlFor="paymasterAddress"
                           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                         >
                           Paymaster Contract Address (Optional)
                         </label>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setFormData(prev => ({
-                              ...prev,
-                              paymasterAddress: "0xdde25C1d254AeBcA592d8574Dc9421f87a491dF4",
-                            }))
-                          }
-                          className="px-2 py-1 text-xs text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 rounded hover:bg-purple-200 dark:hover:bg-purple-900/50 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
-                        >
-                          Use Test Paymaster
-                        </button>
                       </div>
                       <input
                         type="text"
@@ -815,17 +833,40 @@ export default function TransferPage() {
                         id="paymasterAddress"
                         value={formData.paymasterAddress}
                         onChange={handleChange}
-                        placeholder="0xdde25C1d254AeBcA592d8574Dc9421f87a491dF4"
+                        placeholder="0x..."
                         className="block w-full text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow-sm focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 placeholder-gray-500 dark:placeholder-gray-400"
                       />
                       <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        Leave empty to use default Pimlico paymaster. Click &quot;Use Test
-                        Paymaster&quot; to use your deployed contract.
+                        Enter your paymaster contract address to sponsor gas fees. Leave empty for
+                        no paymaster.
                       </p>
                       {formData.paymasterAddress && (
-                        <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded text-xs text-blue-700 dark:text-blue-300">
-                          💡 Using custom paymaster: {formData.paymasterAddress.slice(0, 10)}...
-                          {formData.paymasterAddress.slice(-8)}
+                        <div className="mt-2 space-y-2">
+                          <div className="p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded text-xs text-blue-700 dark:text-blue-300">
+                            💡 Using custom paymaster: {formData.paymasterAddress.slice(0, 10)}...
+                            {formData.paymasterAddress.slice(-8)}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={savePaymasterAddress}
+                            disabled={loading.transfer}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-600 rounded hover:bg-green-200 dark:hover:bg-green-900/50 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <svg
+                              className="w-3 h-3 mr-1"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"
+                              />
+                            </svg>
+                            保存到我的 Paymaster 列表
+                          </button>
                         </div>
                       )}
                     </div>
@@ -850,7 +891,7 @@ export default function TransferPage() {
                       <p className="mt-1 text-xs text-gray-700 dark:text-gray-300">
                         {formData.paymasterAddress
                           ? "Using your custom paymaster for gas sponsorship."
-                          : "Pimlico Paymaster will sponsor gas fees for ETH transfers."}
+                          : "No paymaster specified - gas fees will not be sponsored."}
                       </p>
                     </div>
                   )}
@@ -926,7 +967,7 @@ export default function TransferPage() {
                 {loading.transfer ? (
                   <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
                 ) : (
-                  <ArrowUpIcon className="w-4 h-4 mr-2" />
+                  <ArrowTopRightOnSquareIcon className="w-4 h-4 mr-2" />
                 )}
                 {(() => {
                   if (!formData.amount) return "Send Transfer";

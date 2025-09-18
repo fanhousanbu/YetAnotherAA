@@ -243,7 +243,7 @@ body {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 0.875rem;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   cursor: pointer;
   transition: all 0.2s;
 }

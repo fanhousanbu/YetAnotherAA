@@ -1,104 +1,152 @@
 import { Injectable } from "@nestjs/common";
 import { ethers } from "ethers";
 import { ConfigService } from "@nestjs/config";
+import * as fs from "fs";
+import * as path from "path";
 
 export interface PaymasterConfig {
+  id?: string;
+  userId?: string;
+  name: string;
   address: string;
   apiKey?: string;
   type: "pimlico" | "stackup" | "alchemy" | "custom";
   endpoint?: string;
+  createdAt?: string;
 }
 
 @Injectable()
 export class PaymasterService {
-  private paymasters: Map<string, PaymasterConfig> = new Map();
   private provider: ethers.JsonRpcProvider;
+  private dataDir: string;
 
   constructor(private configService: ConfigService) {
-    this.initializePaymasters();
     this.provider = new ethers.JsonRpcProvider(
       this.configService.get<string>("ethRpcUrl") || "https://sepolia.infura.io/v3/YOUR_PROJECT_ID"
     );
-  }
+    this.dataDir = path.join(process.cwd(), "data");
 
-  private initializePaymasters() {
-    // Pimlico Paymaster (Sepolia)
-    this.paymasters.set("pimlico-sepolia", {
-      address: "0x0000000000325602a77416A16136FDafd04b299f",
-      type: "pimlico",
-      endpoint: "https://api.pimlico.io/v2/11155111/rpc",
-      apiKey: process.env.PIMLICO_API_KEY,
-    });
-
-    // StackUp Paymaster (Sepolia)
-    this.paymasters.set("stackup-sepolia", {
-      address: "0x474e0699E6D9d83E94b593e5d57C14da598F6321",
-      type: "stackup",
-      endpoint: "https://api.stackup.sh/v1/paymaster",
-      apiKey: process.env.STACKUP_API_KEY,
-    });
-
-    // Alchemy Gas Manager (Sepolia)
-    this.paymasters.set("alchemy-sepolia", {
-      address: "0x4Fd9098af9ddcB41DA48A1d78F91F1398965addc",
-      type: "alchemy",
-      endpoint: "https://eth-sepolia.g.alchemy.com/v2",
-      apiKey: process.env.ALCHEMY_API_KEY,
-    });
-
-    // Note: Custom paymaster addresses should be provided by users at runtime
-    // No default PAYMASTER_ADDRESS configuration is loaded from environment
-    // Users can add custom paymasters through the API endpoints
-  }
-
-  /**
-   * Get available paymaster services
-   */
-  getAvailablePaymasters(): { name: string; address: string; configured: boolean }[] {
-    const result = [];
-    for (const [name, config] of this.paymasters.entries()) {
-      result.push({
-        name,
-        address: config.address,
-        configured: !!config.apiKey,
-      });
+    // Ensure data directory exists
+    if (!fs.existsSync(this.dataDir)) {
+      fs.mkdirSync(this.dataDir, { recursive: true });
     }
-    return result;
   }
 
   /**
-   * Add a custom paymaster at runtime
+   * Get user paymasters file path
    */
-  addCustomPaymaster(
+  private getUserPaymastersFilePath(userId: string): string {
+    return path.join(this.dataDir, `user-paymasters-${userId}.json`);
+  }
+
+  /**
+   * Load user paymasters from JSON file
+   */
+  private async loadUserPaymastersFromFile(userId: string): Promise<PaymasterConfig[]> {
+    const filePath = this.getUserPaymastersFilePath(userId);
+    if (!fs.existsSync(filePath)) {
+      return [];
+    }
+
+    try {
+      const data = fs.readFileSync(filePath, "utf8");
+      return JSON.parse(data);
+    } catch (error) {
+      console.error("Error loading user paymasters from file:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Save user paymasters to JSON file
+   */
+  private async saveUserPaymastersToFile(
+    userId: string,
+    paymasters: PaymasterConfig[]
+  ): Promise<void> {
+    const filePath = this.getUserPaymastersFilePath(userId);
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(paymasters, null, 2));
+    } catch (error) {
+      console.error("Error saving user paymasters to file:", error);
+      throw new Error("Failed to save user paymasters");
+    }
+  }
+
+  /**
+   * Get available paymaster services for a specific user
+   */
+  async getAvailablePaymasters(
+    userId: string
+  ): Promise<{ name: string; address: string; configured: boolean }[]> {
+    const paymasters = await this.loadUserPaymastersFromFile(userId);
+    return paymasters.map(config => ({
+      name: config.name,
+      address: config.address,
+      configured: !!config.apiKey,
+    }));
+  }
+
+  /**
+   * Add a custom paymaster for a specific user
+   */
+  async addCustomPaymaster(
+    userId: string,
     name: string,
     address: string,
     type: "pimlico" | "stackup" | "alchemy" | "custom" = "custom",
     apiKey?: string,
     endpoint?: string
-  ): void {
-    this.paymasters.set(name, {
+  ): Promise<void> {
+    const paymasters = await this.loadUserPaymastersFromFile(userId);
+
+    // Check if paymaster with same name already exists
+    const existingIndex = paymasters.findIndex(p => p.name === name);
+
+    const newPaymaster: PaymasterConfig = {
+      id: `${userId}-${name}-${Date.now()}`,
+      userId,
+      name,
       address,
       type,
       apiKey,
       endpoint,
-    });
+      createdAt: new Date().toISOString(),
+    };
+
+    if (existingIndex >= 0) {
+      // Replace existing paymaster
+      paymasters[existingIndex] = newPaymaster;
+    } else {
+      // Add new paymaster
+      paymasters.push(newPaymaster);
+    }
+
+    await this.saveUserPaymastersToFile(userId, paymasters);
   }
 
   /**
-   * Remove a custom paymaster
+   * Remove a custom paymaster for a specific user
    */
-  removeCustomPaymaster(name: string): boolean {
-    // Prevent removal of built-in paymasters
-    if (["pimlico-sepolia", "stackup-sepolia", "alchemy-sepolia"].includes(name)) {
-      return false;
+  async removeCustomPaymaster(userId: string, name: string): Promise<boolean> {
+    const paymasters = await this.loadUserPaymastersFromFile(userId);
+    const originalLength = paymasters.length;
+
+    const filteredPaymasters = paymasters.filter(p => p.name !== name);
+
+    if (filteredPaymasters.length < originalLength) {
+      await this.saveUserPaymastersToFile(userId, filteredPaymasters);
+      return true;
     }
-    return this.paymasters.delete(name);
+
+    return false;
   }
 
   /**
    * Get paymaster sponsorship data
    */
   async getPaymasterData(
+    userId: string,
     paymasterName: string,
     userOp: any,
     entryPoint: string,
@@ -112,7 +160,9 @@ export class PaymasterService {
       return customAddress;
     }
 
-    const config = this.paymasters.get(paymasterName);
+    const paymasters = await this.loadUserPaymastersFromFile(userId);
+    const config = paymasters.find(p => p.name === paymasterName);
+
     if (!config) {
       throw new Error(`Paymaster ${paymasterName} not found`);
     }

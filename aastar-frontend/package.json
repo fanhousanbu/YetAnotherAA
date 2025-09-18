@@ -16,6 +16,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.8",
     "@heroicons/react": "^2.2.0",
+    "@next/swc-darwin-arm64": "^15.5.3",
     "@simplewebauthn/browser": "^13.2.0",
     "@types/node": "^24",
     "@types/react": "^19",

@@ -123,6 +123,16 @@ export const paymasterAPI = {
 
   sponsor: (data: { paymasterName: string; userOp: any; entryPoint?: string }) =>
     api.post("/paymaster/sponsor", data),
+
+  addCustom: (data: {
+    name: string;
+    address: string;
+    type?: "pimlico" | "stackup" | "alchemy" | "custom";
+    apiKey?: string;
+    endpoint?: string;
+  }) => api.post("/paymaster/add", data),
+
+  remove: (name: string) => api.delete(`/paymaster/${name}`),
 };
 
 // Token API

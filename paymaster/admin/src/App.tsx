@@ -26,7 +26,7 @@ function App() {
     setAddressHistory(prev => {
       const filtered = prev.filter(addr => addr.toLowerCase() !== trimmedAddress.toLowerCase());
       const newHistory = [trimmedAddress, ...filtered].slice(0, 10); // 保留最近10个地址
-      localStorage.setItem('paymaster-address-history', JSON.stringify(newHistory));
+      localStorage.setItem("paymaster-address-history", JSON.stringify(newHistory));
       return newHistory;
     });
   };
@@ -39,12 +39,12 @@ function App() {
   };
 
   useEffect(() => {
-    const savedHistory = localStorage.getItem('paymaster-address-history');
+    const savedHistory = localStorage.getItem("paymaster-address-history");
     if (savedHistory) {
       try {
         setAddressHistory(JSON.parse(savedHistory));
       } catch (e) {
-        console.error('Failed to parse address history:', e);
+        console.error("Failed to parse address history:", e);
       }
     }
   }, []);

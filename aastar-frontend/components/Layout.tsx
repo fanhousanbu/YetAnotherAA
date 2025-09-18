@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { clearStoredAuth, getStoredAuth } from "@/lib/auth";
 import { User } from "@/lib/types";
 import { useTheme } from "@/lib/theme";
@@ -18,6 +18,7 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const { token, user: storedUser } = getStoredAuth();
@@ -42,6 +43,23 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
     router.push("/");
   };
 
+  const getNavButtonClass = (path: string, isActive: boolean) => {
+    const baseClass = "px-3 py-2 text-sm font-medium transition-all duration-200 relative";
+    if (isActive) {
+      return `${baseClass} text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400`;
+    }
+    return `${baseClass} text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-b-2 hover:border-gray-300 dark:hover:border-gray-600`;
+  };
+
+  const getMobileNavButtonClass = (path: string, isActive: boolean) => {
+    const baseClass =
+      "block px-3 py-2 text-base font-medium w-full text-left transition-all duration-200";
+    if (isActive) {
+      return `${baseClass} text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/10 border-l-4 border-blue-600 dark:border-blue-400 font-semibold`;
+    }
+    return `${baseClass} text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700/50`;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -61,22 +79,22 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                 <h1 className="text-xl font-semibold text-gray-900 dark:text-white">AAStar</h1>
               </div>
 
-              <div className="hidden md:flex items-center space-x-4">
+              <div className="hidden md:flex items-center space-x-2">
                 <button
                   onClick={() => router.push("/dashboard")}
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium"
+                  className={getNavButtonClass("/dashboard", pathname === "/dashboard")}
                 >
                   Dashboard
                 </button>
                 <button
                   onClick={() => router.push("/transfer")}
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium"
+                  className={getNavButtonClass("/transfer", pathname.startsWith("/transfer"))}
                 >
                   Transfer
                 </button>
                 <button
                   onClick={() => router.push("/tokens")}
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium"
+                  className={getNavButtonClass("/tokens", pathname === "/tokens")}
                 >
                   Tokens
                 </button>
@@ -130,7 +148,7 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                     router.push("/dashboard");
                     setMobileMenuOpen(false);
                   }}
-                  className="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 w-full text-left"
+                  className={getMobileNavButtonClass("/dashboard", pathname === "/dashboard")}
                 >
                   Dashboard
                 </button>
@@ -139,7 +157,7 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                     router.push("/transfer");
                     setMobileMenuOpen(false);
                   }}
-                  className="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 w-full text-left"
+                  className={getMobileNavButtonClass("/transfer", pathname.startsWith("/transfer"))}
                 >
                   Transfer
                 </button>
@@ -148,7 +166,7 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                     router.push("/tokens");
                     setMobileMenuOpen(false);
                   }}
-                  className="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 w-full text-left"
+                  className={getMobileNavButtonClass("/tokens", pathname === "/tokens")}
                 >
                   Tokens
                 </button>

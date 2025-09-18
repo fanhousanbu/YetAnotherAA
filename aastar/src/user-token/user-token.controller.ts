@@ -59,11 +59,17 @@ export class UserTokenController {
     const userId = req.user.sub;
 
     if (withBalances) {
-      const accountAddress = await this.accountService.getAccountAddress(userId);
-      if (!accountAddress) {
-        throw new Error("User account not found. Please create an account first.");
+      try {
+        const accountAddress = await this.accountService.getAccountAddress(userId);
+        if (!accountAddress) {
+          // Return tokens without balances if no account exists
+          return this.userTokenService.getUserTokens(userId, activeOnly !== false);
+        }
+        return this.userTokenService.getUserTokensWithBalances(userId, accountAddress);
+      } catch (error) {
+        // If account service fails, still return tokens without balances
+        return this.userTokenService.getUserTokens(userId, activeOnly !== false);
       }
-      return this.userTokenService.getUserTokensWithBalances(userId, accountAddress);
     }
 
     return this.userTokenService.getUserTokens(userId, activeOnly !== false);

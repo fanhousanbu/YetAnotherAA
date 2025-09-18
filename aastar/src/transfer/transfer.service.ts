@@ -86,6 +86,7 @@ export class TransferService {
 
     // Build UserOperation with Paymaster support
     const userOp = await this.buildUserOperation(
+      userId,
       account.address,
       transferDto.to,
       transferDto.amount,
@@ -200,6 +201,7 @@ export class TransferService {
 
     // Build UserOperation for estimation (without paymaster for gas estimation)
     const userOp = await this.buildUserOperation(
+      userId,
       account.address,
       estimateDto.to,
       estimateDto.amount,
@@ -308,6 +310,7 @@ export class TransferService {
   }
 
   private async buildUserOperation(
+    userId: string,
     sender: string,
     to: string,
     amount: string,
@@ -405,7 +408,7 @@ export class TransferService {
 
         if (paymasterAddress) {
           // Check if this is a known paymaster
-          const availablePaymasters = this.paymasterService.getAvailablePaymasters();
+          const availablePaymasters = await this.paymasterService.getAvailablePaymasters(userId);
           const knownPaymaster = availablePaymasters.find(
             pm => pm.address.toLowerCase() === paymasterAddress.toLowerCase()
           );
@@ -417,24 +420,21 @@ export class TransferService {
             console.log(`Using custom paymaster address: ${paymasterAddress}`);
           }
         } else {
-          // Use the first configured paymaster (prefer pimlico-sepolia)
-          const availablePaymasters = this.paymasterService.getAvailablePaymasters();
-          const pimlicoPaymaster = availablePaymasters.find(
-            pm => pm.name === "pimlico-sepolia" && pm.configured
-          );
-          if (pimlicoPaymaster) {
-            paymasterName = "pimlico-sepolia";
+          // Use the first configured paymaster
+          const availablePaymasters = await this.paymasterService.getAvailablePaymasters(userId);
+          const configuredPaymaster = availablePaymasters.find(pm => pm.configured);
+          if (configuredPaymaster) {
+            paymasterName = configuredPaymaster.name;
           } else {
-            const configuredPaymaster = availablePaymasters.find(pm => pm.configured);
-            if (configuredPaymaster) {
-              paymasterName = configuredPaymaster.name;
-            }
+            // No configured paymaster found, fallback to custom user-provided
+            paymasterName = "custom-user-provided";
           }
         }
 
         // Get paymaster sponsorship data
         const entryPoint = this.ethereumService.getEntryPointContract().target as string;
         paymasterAndData = await this.paymasterService.getPaymasterData(
+          userId,
           paymasterName,
           baseUserOp,
           entryPoint,

@@ -121,6 +121,11 @@ export class UserTokenService {
   async getUserTokens(userId: string, activeOnly: boolean = true): Promise<UserToken[]> {
     let tokens = await this.loadUserTokensFromFile(userId);
 
+    // If no tokens found, return empty array instead of throwing error
+    if (!tokens || tokens.length === 0) {
+      return [];
+    }
+
     if (activeOnly) {
       tokens = tokens.filter(token => token.isActive);
     }

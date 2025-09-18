@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Param } from "@nestjs/common";
+import { Controller, Get, Post, Body, UseGuards, Param, Delete, Request } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { PaymasterService } from "./paymaster.service";
@@ -10,6 +10,8 @@ export class PaymasterController {
   constructor(private readonly paymasterService: PaymasterService) {}
 
   @Get("available")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: "Get available paymaster services" })
   @ApiResponse({
     status: 200,
@@ -26,8 +28,9 @@ export class PaymasterController {
       },
     },
   })
-  async getAvailablePaymasters() {
-    return this.paymasterService.getAvailablePaymasters();
+  async getAvailablePaymasters(@Request() req) {
+    const userId = req.user.sub;
+    return this.paymasterService.getAvailablePaymasters(userId);
   }
 
   @Post("sponsor")
@@ -46,6 +49,7 @@ export class PaymasterController {
     },
   })
   async sponsorUserOperation(
+    @Request() req,
     @Body()
     body: {
       paymasterName: string;
@@ -53,8 +57,10 @@ export class PaymasterController {
       entryPoint?: string;
     }
   ) {
+    const userId = req.user.sub;
     const entryPoint = body.entryPoint || "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
     const paymasterAndData = await this.paymasterService.getPaymasterData(
+      userId,
       body.paymasterName,
       body.userOp,
       entryPoint
@@ -64,6 +70,80 @@ export class PaymasterController {
       paymasterAndData,
       sponsored: paymasterAndData !== "0x",
     };
+  }
+
+  @Post("add")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Add a custom paymaster" })
+  @ApiResponse({
+    status: 200,
+    description: "Paymaster added successfully",
+    schema: {
+      type: "object",
+      properties: {
+        success: { type: "boolean", example: true },
+        message: { type: "string", example: "Paymaster added successfully" },
+      },
+    },
+  })
+  async addCustomPaymaster(
+    @Request() req,
+    @Body()
+    body: {
+      name: string;
+      address: string;
+      type?: "pimlico" | "stackup" | "alchemy" | "custom";
+      apiKey?: string;
+      endpoint?: string;
+    }
+  ) {
+    const userId = req.user.sub;
+    await this.paymasterService.addCustomPaymaster(
+      userId,
+      body.name,
+      body.address,
+      body.type || "custom",
+      body.apiKey,
+      body.endpoint
+    );
+
+    return {
+      success: true,
+      message: "Paymaster added successfully",
+    };
+  }
+
+  @Delete(":name")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Remove a custom paymaster" })
+  @ApiResponse({
+    status: 200,
+    description: "Paymaster removed successfully",
+    schema: {
+      type: "object",
+      properties: {
+        success: { type: "boolean", example: true },
+        message: { type: "string", example: "Paymaster removed successfully" },
+      },
+    },
+  })
+  async removeCustomPaymaster(@Request() req, @Param("name") name: string) {
+    const userId = req.user.sub;
+    const removed = await this.paymasterService.removeCustomPaymaster(userId, name);
+
+    if (removed) {
+      return {
+        success: true,
+        message: "Paymaster removed successfully",
+      };
+    } else {
+      return {
+        success: false,
+        message: "Paymaster not found",
+      };
+    }
   }
 
   @Get("analyze/:txHash")
