@@ -26,17 +26,11 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Run npm audit (Backend)
-        working-directory: ./aastar
-        run: npm ci --omit=optional --omit=optional && npm audit --audit-level=moderate
+      - name: Install root dependencies with force
+        run: npm ci --force
 
-      - name: Run npm audit (Frontend)
-        working-directory: ./aastar-frontend
-        run: npm ci --omit=optional --omit=optional && npm audit --audit-level=moderate
-
-      - name: Run npm audit (Signer)
-        working-directory: ./signer
-        run: npm ci --omit=optional --omit=optional && npm audit --audit-level=moderate
+      - name: Run npm audit (All workspaces)
+        run: npm audit --audit-level=moderate --workspaces --if-present
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -74,8 +68,7 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        working-directory: ./${{ matrix.project }}
-        run: npm ci --omit=optional
+        run: npm ci --force
 
       - name: Check formatting
         working-directory: ./${{ matrix.project }}
@@ -117,8 +110,7 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        working-directory: ./${{ matrix.project }}
-        run: npm ci --omit=optional
+        run: npm ci --force
 
       - name: Build project
         working-directory: ./${{ matrix.project }}
@@ -142,8 +134,7 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        working-directory: ./${{ matrix.project }}
-        run: npm ci --omit=optional
+        run: npm ci --force
 
       - name: Run tests
         working-directory: ./${{ matrix.project }}
@@ -197,8 +188,7 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        working-directory: ./${{ matrix.project }}
-        run: npm ci --omit=optional
+        run: npm ci --force
 
       - name: Run TypeScript compiler
         working-directory: ./${{ matrix.project }}
@@ -244,12 +234,12 @@ jobs:
     steps:
       - name: Check all jobs status
         run: |
-          if [[ "${{ needs.security.result }}" == "success" && 
-                "${{ needs.quality.result }}" == "success" && 
-                "${{ needs.build.result }}" == "success" && 
-                "${{ needs.test.result }}" == "success" && 
-                "${{ needs.contracts.result }}" == "success" && 
-                "${{ needs.typecheck.result }}" == "success" && 
+          if [[ "${{ needs.security.result }}" == "success" &&
+                "${{ needs.quality.result }}" == "success" &&
+                "${{ needs.build.result }}" == "success" &&
+                "${{ needs.test.result }}" == "success" &&
+                "${{ needs.contracts.result }}" == "success" &&
+                "${{ needs.typecheck.result }}" == "success" &&
                 "${{ needs.codeql.result }}" == "success" ]]; then
             echo "All CI checks passed!"
           else
