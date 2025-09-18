@@ -1,0 +1,52 @@
+module.exports = {
+  apps: [
+    {
+      name: 'signer-node1',
+      cwd: './signer',
+      script: 'node',
+      args: 'dist/main.js',
+      env: {
+        NODE_STATE_FILE: './node_dev_001.json',
+        PORT: '3001',
+        GOSSIP_PUBLIC_URL: process.env.GOSSIP_PUBLIC_URL || 'ws://localhost:3001/ws',
+        GOSSIP_BOOTSTRAP_PEERS: process.env.GOSSIP_BOOTSTRAP_PEERS || '',
+        VALIDATOR_CONTRACT_ADDRESS: process.env.VALIDATOR_CONTRACT_ADDRESS || '0xD9756c11686B59F7DDf39E6360230316710485af',
+        ETH_RPC_URL: process.env.ETH_RPC_URL
+      }
+    },
+    {
+      name: 'aastar-backend',
+      cwd: './aastar',
+      script: 'node',
+      args: 'dist/main.js',
+      env: {
+        PORT: '3000',
+        NODE_ENV: process.env.NODE_ENV || 'production',
+        DB_TYPE: process.env.DB_TYPE || 'json',
+        JWT_SECRET: process.env.JWT_SECRET || 'your-jwt-secret-key-change-in-production',
+        JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
+        WEBAUTHN_ORIGIN: process.env.WEBAUTHN_ORIGIN || 'http://localhost',
+        ETH_RPC_URL: process.env.ETH_RPC_URL,
+        ETH_PRIVATE_KEY: process.env.ETH_PRIVATE_KEY,
+        BUNDLER_RPC_URL: process.env.BUNDLER_RPC_URL,
+        BLS_SEED_NODES: process.env.BLS_SEED_NODES || 'http://localhost:3001',
+        ENTRY_POINT_ADDRESS: process.env.ENTRY_POINT_ADDRESS || '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789',
+        AASTAR_ACCOUNT_FACTORY_ADDRESS: process.env.AASTAR_ACCOUNT_FACTORY_ADDRESS || '0xec687B9231341aAe645FE5A825C0f28323183697',
+        VALIDATOR_CONTRACT_ADDRESS: process.env.VALIDATOR_CONTRACT_ADDRESS || '0xD9756c11686B59F7DDf39E6360230316710485af',
+        USER_ENCRYPTION_KEY: process.env.USER_ENCRYPTION_KEY || 'your-encryption-key-change-in-prod'
+      }
+    },
+    {
+      name: 'aastar-frontend',
+      cwd: './aastar-frontend',
+      script: 'npm',
+      args: 'run start:prod',
+      env: {
+        NODE_ENV: process.env.NODE_ENV || 'production',
+        PORT: '80',
+        NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || '/api/v1',
+        BACKEND_API_URL: process.env.BACKEND_API_URL || 'http://localhost:3000'
+      }
+    }
+  ]
+};
