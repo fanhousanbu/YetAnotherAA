@@ -113,7 +113,7 @@ export class AddressBookController {
   })
   async searchAddresses(@Request() req, @Query("q") query: string) {
     const userId = req.user.sub;
-    if (!query || query.length < 2) {
+    if (typeof query !== 'string' || query.length < 2) {
       return [];
     }
     return this.addressBookService.searchAddresses(userId, query);
