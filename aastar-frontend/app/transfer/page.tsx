@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import TokenSelector from "@/components/TokenSelector";
-import { accountAPI, transferAPI, tokenAPI, paymasterAPI } from "@/lib/api";
+import { accountAPI, transferAPI, tokenAPI, paymasterAPI, addressBookAPI } from "@/lib/api";
 import { Account, GasEstimate, Token, TokenBalance } from "@/lib/types";
 import toast from "react-hot-toast";
 import {
@@ -27,6 +27,10 @@ export default function TransferPage() {
   const [tokenBalance, setTokenBalance] = useState<TokenBalance | null>(null);
   const [loadingTokenBalance, setLoadingTokenBalance] = useState(false);
   const [gasEstimate, setGasEstimate] = useState<GasEstimate | null>(null);
+  const [savedPaymasters, setSavedPaymasters] = useState<any[]>([]);
+  const [showPaymasterDropdown, setShowPaymasterDropdown] = useState(false);
+  const [addressBook, setAddressBook] = useState<any[]>([]);
+  const [showAddressDropdown, setShowAddressDropdown] = useState(false);
   const [loading, setLoading] = useState({
     page: true,
     estimate: false,
@@ -53,6 +57,24 @@ export default function TransferPage() {
       // Show deployment banner if account is not deployed
       if (!accountResponse.data.deployed) {
         setShowDeploymentBanner(true);
+      }
+
+      // Load saved paymasters
+      try {
+        const paymasterResponse = await paymasterAPI.getAvailable();
+        setSavedPaymasters(paymasterResponse.data);
+      } catch (error) {
+        console.error("Failed to load saved paymasters:", error);
+        setSavedPaymasters([]);
+      }
+
+      // Load address book
+      try {
+        const addressBookResponse = await addressBookAPI.getAddressBook();
+        setAddressBook(addressBookResponse.data);
+      } catch (error) {
+        console.error("Failed to load address book:", error);
+        setAddressBook([]);
       }
     } catch (error: any) {
       console.error("Transfer page error:", error);
@@ -417,6 +439,14 @@ export default function TransferPage() {
         type: "custom",
       });
 
+      // Refresh saved paymasters list
+      try {
+        const paymasterResponse = await paymasterAPI.getAvailable();
+        setSavedPaymasters(paymasterResponse.data);
+      } catch (error) {
+        console.error("Failed to refresh paymaster list:", error);
+      }
+
       toast.success("Paymaster saved successfully! 🎉");
     } catch (error: any) {
       const message = error.response?.data?.message || "Failed to save paymaster";
@@ -647,13 +677,80 @@ export default function TransferPage() {
               >
                 Recipient Address
               </label>
+
+              {/* Address Book Selection */}
+              {addressBook.length > 0 && (
+                <div className="mb-2">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddressDropdown(!showAddressDropdown)}
+                      className="flex items-center justify-between w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    >
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Choose from address book ({addressBook.length})
+                      </span>
+                      <svg
+                        className={`w-4 h-4 transition-transform ${
+                          showAddressDropdown ? "rotate-180" : ""
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+                    {showAddressDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                        {addressBook.map(entry => (
+                          <button
+                            key={entry.address}
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                to: entry.address,
+                              }));
+                              setShowAddressDropdown(false);
+                            }}
+                            className="block w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                {entry.name && (
+                                  <div className="font-medium text-gray-900 dark:text-white truncate">
+                                    {entry.name}
+                                  </div>
+                                )}
+                                <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                                  {entry.address}
+                                </div>
+                              </div>
+                              <div className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                                Used {entry.usageCount}x
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <input
                 type="text"
                 name="to"
                 id="to"
                 value={formData.to}
                 onChange={handleChange}
-                placeholder="0x..."
+                placeholder="0x... or select from address book above"
                 className="block w-full mt-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow-sm focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm placeholder-gray-500 dark:placeholder-gray-400"
               />
             </div>
@@ -827,13 +924,72 @@ export default function TransferPage() {
                           Paymaster Contract Address (Optional)
                         </label>
                       </div>
+
+                      {/* Saved Paymaster Selection */}
+                      {savedPaymasters.length > 0 && (
+                        <div className="mb-2">
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setShowPaymasterDropdown(!showPaymasterDropdown)}
+                              className="flex items-center justify-between w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
+                            >
+                              <span className="text-gray-600 dark:text-gray-400">
+                                Choose from saved paymasters ({savedPaymasters.length})
+                              </span>
+                              <svg
+                                className={`w-4 h-4 transition-transform ${
+                                  showPaymasterDropdown ? "rotate-180" : ""
+                                }`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 9l-7 7-7-7"
+                                />
+                              </svg>
+                            </button>
+                            {showPaymasterDropdown && (
+                              <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                                {savedPaymasters.map(paymaster => (
+                                  <button
+                                    key={paymaster.address}
+                                    type="button"
+                                    onClick={() => {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        paymasterAddress: paymaster.address,
+                                      }));
+                                      setShowPaymasterDropdown(false);
+                                    }}
+                                    className="block w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700"
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-medium">{paymaster.name}</span>
+                                      <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                                        {paymaster.address.slice(0, 8)}...
+                                        {paymaster.address.slice(-6)}
+                                      </span>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       <input
                         type="text"
                         name="paymasterAddress"
                         id="paymasterAddress"
                         value={formData.paymasterAddress}
                         onChange={handleChange}
-                        placeholder="0x..."
+                        placeholder="0x... or select from saved paymasters above"
                         className="block w-full text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow-sm focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 placeholder-gray-500 dark:placeholder-gray-400"
                       />
                       <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
@@ -865,7 +1021,7 @@ export default function TransferPage() {
                                 d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"
                               />
                             </svg>
-                            保存到我的 Paymaster 列表
+                            Save to My Paymaster List
                           </button>
                         </div>
                       )}

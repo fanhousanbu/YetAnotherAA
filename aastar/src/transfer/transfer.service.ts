@@ -8,6 +8,7 @@ import { AccountService } from "../account/account.service";
 import { BlsService } from "../bls/bls.service";
 import { PaymasterService } from "../paymaster/paymaster.service";
 import { TokenService } from "../token/token.service";
+import { AddressBookService } from "./address-book.service";
 import { ExecuteTransferDto } from "./dto/execute-transfer.dto";
 import { EstimateGasDto } from "./dto/estimate-gas.dto";
 import { UserOperation } from "../common/interfaces/erc4337.interface";
@@ -21,7 +22,8 @@ export class TransferService {
     private accountService: AccountService,
     private blsService: BlsService,
     private paymasterService: PaymasterService,
-    private tokenService: TokenService
+    private tokenService: TokenService,
+    private addressBookService: AddressBookService
   ) {}
 
   async executeTransfer(userId: string, transferDto: ExecuteTransferDto) {
@@ -156,6 +158,22 @@ export class TransferService {
       });
 
       console.log(`Transfer ${transferId} completed with tx: ${txHash}`);
+
+      // Record successful transfer in address book
+      try {
+        const transfer = await this.databaseService.findTransferById(transferId);
+        if (transfer && transfer.to) {
+          await this.addressBookService.recordSuccessfulTransfer(
+            transfer.userId,
+            transfer.to,
+            txHash
+          );
+          console.log(`Recorded successful transfer to ${transfer.to} in address book`);
+        }
+      } catch (error) {
+        console.error("Failed to record transfer in address book:", error);
+        // Don't fail the entire transfer if address book update fails
+      }
 
       // Check if this was a deployment transaction and update account status
       const provider = this.ethereumService.getProvider();
@@ -432,11 +450,14 @@ export class TransferService {
           paymasterAddress // Pass the actual paymaster address for custom paymasters
         );
 
-        if (paymasterAndData !== "0x") {
+        if (paymasterAndData && paymasterAndData !== "0x") {
           baseUserOp.paymasterAndData = paymasterAndData;
           console.log(`Paymaster configured successfully: ${paymasterAndData.slice(0, 42)}`);
         } else {
-          throw new BadRequestException(`Paymaster failed to provide sponsorship data`);
+          console.error(`Paymaster returned empty data for address: ${paymasterAddress}`);
+          throw new BadRequestException(
+            `Paymaster failed to provide sponsorship data. The paymaster at ${paymasterAddress} may not be configured correctly or may not support this transaction.`
+          );
         }
       } catch (error) {
         console.error(`Paymaster setup failed:`, error.message);

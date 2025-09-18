@@ -198,4 +198,12 @@ export const userTokenAPI = {
     api.put("/user-tokens/reorder", { tokenOrders }),
 };
 
+export const addressBookAPI = {
+  getAddressBook: () => api.get("/address-book"),
+  setAddressName: (address: string, name: string) =>
+    api.post("/address-book/name", { address, name }),
+  removeAddress: (address: string) => api.delete(`/address-book/${address}`),
+  searchAddresses: (query: string) => api.get("/address-book/search", { params: { q: query } }),
+};
+
 export default api;

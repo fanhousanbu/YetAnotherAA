@@ -179,16 +179,24 @@ export class PaymasterService {
       throw new Error(`Paymaster ${paymasterName} not found`);
     }
 
-    if (!config.apiKey) {
-      return "0x";
-    }
-
     switch (config.type) {
       case "pimlico":
+        if (!config.apiKey) {
+          console.warn(`No API key for Pimlico paymaster ${paymasterName}`);
+          return "0x";
+        }
         return this.getPimlicoPaymasterData(config, userOp, entryPoint);
       case "stackup":
+        if (!config.apiKey) {
+          console.warn(`No API key for StackUp paymaster ${paymasterName}`);
+          return "0x";
+        }
         return this.getStackUpPaymasterData(config, userOp, entryPoint);
       case "alchemy":
+        if (!config.apiKey) {
+          console.warn(`No API key for Alchemy paymaster ${paymasterName}`);
+          return "0x";
+        }
         return this.getAlchemyPaymasterData(config, userOp, entryPoint);
       case "custom":
         // Check if this is actually Pimlico paymaster by address
@@ -204,7 +212,8 @@ export class PaymasterService {
             entryPoint
           );
         }
-        // For other custom paymasters, just return the address
+        // For custom paymasters, always return the address (they may work without API keys)
+        console.log(`Using custom paymaster ${paymasterName} at address ${config.address}`);
         return config.address;
       default:
         return "0x";

@@ -1,0 +1,340 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Layout from "@/components/Layout";
+import { paymasterAPI } from "@/lib/api";
+import toast from "react-hot-toast";
+import {
+  TrashIcon,
+  PlusIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+} from "@heroicons/react/24/outline";
+
+export default function PaymasterPage() {
+  const [paymasters, setPaymasters] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string>("");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newPaymaster, setNewPaymaster] = useState({
+    name: "",
+    address: "",
+    type: "custom" as "pimlico" | "stackup" | "alchemy" | "custom",
+    apiKey: "",
+    endpoint: "",
+  });
+  const router = useRouter();
+
+  useEffect(() => {
+    loadPaymasters();
+  }, []);
+
+  const loadPaymasters = async () => {
+    setLoading(true);
+    try {
+      const response = await paymasterAPI.getAvailable();
+      setPaymasters(response.data);
+    } catch (error) {
+      console.error("Failed to load paymasters:", error);
+      toast.error("Failed to load paymasters");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddPaymaster = async () => {
+    if (!newPaymaster.name || !newPaymaster.address) {
+      toast.error("Name and address are required");
+      return;
+    }
+
+    // Validate address format
+    if (!/^0x[a-fA-F0-9]{40}$/.test(newPaymaster.address)) {
+      toast.error("Invalid address format");
+      return;
+    }
+
+    setActionLoading("add");
+    try {
+      await paymasterAPI.addCustom({
+        name: newPaymaster.name,
+        address: newPaymaster.address,
+        type: newPaymaster.type,
+        apiKey: newPaymaster.apiKey || undefined,
+        endpoint: newPaymaster.endpoint || undefined,
+      });
+
+      toast.success("Paymaster added successfully!");
+      setNewPaymaster({
+        name: "",
+        address: "",
+        type: "custom",
+        apiKey: "",
+        endpoint: "",
+      });
+      setShowAddForm(false);
+      await loadPaymasters();
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to add paymaster";
+      toast.error(message);
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleRemovePaymaster = async (name: string) => {
+    if (!confirm(`Are you sure you want to remove paymaster "${name}"?`)) {
+      return;
+    }
+
+    setActionLoading(`remove-${name}`);
+    try {
+      await paymasterAPI.remove(name);
+      toast.success("Paymaster removed successfully!");
+      await loadPaymasters();
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to remove paymaster";
+      toast.error(message);
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  if (loading) {
+    return (
+      <Layout requireAuth={true}>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="w-32 h-32 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout requireAuth={true}>
+      <div className="max-w-4xl px-4 py-6 mx-auto sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Paymaster Management
+              </h1>
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                Manage your saved paymaster contracts for gas sponsorship
+              </p>
+            </div>
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <PlusIcon className="w-4 h-4 mr-2" />
+              Add Paymaster
+            </button>
+          </div>
+        </div>
+
+        {/* Add Paymaster Form */}
+        {showAddForm && (
+          <div className="p-6 mb-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700">
+            <h2 className="mb-4 text-lg font-medium text-gray-900 dark:text-white">
+              Add New Paymaster
+            </h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={newPaymaster.name}
+                  onChange={e => setNewPaymaster(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="My Paymaster"
+                  className="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Contract Address
+                </label>
+                <input
+                  type="text"
+                  value={newPaymaster.address}
+                  onChange={e => setNewPaymaster(prev => ({ ...prev, address: e.target.value }))}
+                  placeholder="0x..."
+                  className="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Type
+                </label>
+                <select
+                  value={newPaymaster.type}
+                  onChange={e =>
+                    setNewPaymaster(prev => ({
+                      ...prev,
+                      type: e.target.value as any,
+                    }))
+                  }
+                  className="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm"
+                >
+                  <option value="custom">Custom</option>
+                  <option value="pimlico">Pimlico</option>
+                  <option value="stackup">StackUp</option>
+                  <option value="alchemy">Alchemy</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  API Key (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newPaymaster.apiKey}
+                  onChange={e => setNewPaymaster(prev => ({ ...prev, apiKey: e.target.value }))}
+                  placeholder="For API-based paymasters"
+                  className="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm"
+                />
+              </div>
+              {newPaymaster.type !== "custom" && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Endpoint (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newPaymaster.endpoint}
+                    onChange={e => setNewPaymaster(prev => ({ ...prev, endpoint: e.target.value }))}
+                    placeholder="API endpoint URL"
+                    className="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm"
+                  />
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end mt-4 space-x-3">
+              <button
+                onClick={() => setShowAddForm(false)}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddPaymaster}
+                disabled={actionLoading === "add"}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {actionLoading === "add" ? (
+                  <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
+                ) : (
+                  <PlusIcon className="w-4 h-4 mr-2" />
+                )}
+                Add Paymaster
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Paymasters List */}
+        <div className="bg-white rounded-lg shadow-sm dark:bg-gray-800">
+          <div className="p-6">
+            <h2 className="mb-4 text-lg font-medium text-gray-900 dark:text-white">
+              Saved Paymasters ({paymasters.length})
+            </h2>
+
+            {paymasters.length === 0 ? (
+              <div className="py-12 text-center">
+                <ExclamationCircleIcon className="w-12 h-12 mx-auto text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                  No paymasters saved
+                </h3>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  Add your first paymaster to start using gas sponsorship
+                </p>
+                <div className="mt-6">
+                  <button
+                    onClick={() => setShowAddForm(true)}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <PlusIcon className="w-4 h-4 mr-2" />
+                    Add Paymaster
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {paymasters.map(paymaster => (
+                  <div
+                    key={paymaster.address}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg dark:border-gray-700"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                        {paymaster.configured ? (
+                          <CheckCircleIcon className="w-5 h-5 mr-2 text-green-500" />
+                        ) : (
+                          <ExclamationCircleIcon className="w-5 h-5 mr-2 text-yellow-500" />
+                        )}
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                            {paymaster.name}
+                          </h3>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">
+                            {paymaster.address}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        {paymaster.configured ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                            API Configured
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                            Address Only
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleRemovePaymaster(paymaster.name)}
+                      disabled={actionLoading === `remove-${paymaster.name}`}
+                      className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-md shadow-sm dark:bg-gray-800 dark:border-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                    >
+                      {actionLoading === `remove-${paymaster.name}` ? (
+                        <div className="w-4 h-4 border-b-2 border-red-600 rounded-full animate-spin"></div>
+                      ) : (
+                        <TrashIcon className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Info */}
+        <div className="p-4 mt-6 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+          <div className="flex">
+            <ExclamationCircleIcon className="w-5 h-5 text-blue-400" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                About Paymasters
+              </h3>
+              <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
+                <ul className="space-y-1 list-disc list-inside">
+                  <li>Paymasters sponsor gas fees for your transactions</li>
+                  <li>Address-only paymasters work without API keys</li>
+                  <li>API-configured paymasters provide better sponsorship reliability</li>
+                  <li>You can use multiple paymasters and choose per transaction</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Layout>
+  );
+}

@@ -98,6 +98,12 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                 >
                   Tokens
                 </button>
+                <button
+                  onClick={() => router.push("/paymaster")}
+                  className={getNavButtonClass("/paymaster", pathname === "/paymaster")}
+                >
+                  Paymasters
+                </button>
                 {/* Theme Toggle Button */}
                 <button
                   onClick={toggleTheme}
@@ -169,6 +175,15 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                   className={getMobileNavButtonClass("/tokens", pathname === "/tokens")}
                 >
                   Tokens
+                </button>
+                <button
+                  onClick={() => {
+                    router.push("/paymaster");
+                    setMobileMenuOpen(false);
+                  }}
+                  className={getMobileNavButtonClass("/paymaster", pathname === "/paymaster")}
+                >
+                  Paymasters
                 </button>
                 <div className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
                   {user.username || user.email}
