@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { ethers } from "ethers";
 import { v4 as uuidv4 } from "uuid";
 import { DatabaseService } from "../database/database.service";
@@ -54,34 +54,25 @@ export class TransferService {
     const isTokenTransfer = !!transferDto.tokenAddress;
     const transferAmount = isTokenTransfer ? 0 : parseFloat(transferDto.amount); // Only need ETH for ETH transfers
 
-    const minRequiredBalance = 0.0002; // Require at least 0.0002 ETH for gas fees
-    const totalNeeded = transferAmount + minRequiredBalance;
+    // Only check balance if NOT using paymaster
+    if (!transferDto.usePaymaster) {
+      const minRequiredBalance = 0.0002; // Require at least 0.0002 ETH for gas fees
+      const totalNeeded = transferAmount + minRequiredBalance;
 
-    // Check if Smart Account has sufficient balance for transfer + gas fees
-    if (smartAccountBalance < totalNeeded) {
-      const transferType = isTokenTransfer ? "token" : "ETH";
-      console.log(
-        `Smart Account needs prefunding for ${transferType} transfer: Current balance ${smartAccountBalance} ETH, needs ${totalNeeded} ETH (${transferAmount} transfer + ${minRequiredBalance} gas)`
-      );
-
-      const prefundAmount = Math.max(0.001, totalNeeded - smartAccountBalance + 0.0005); // Add 0.0005 safety margin
-
-      // Use deployment wallet to prefund Smart Account
-      const provider = this.ethereumService.getProvider();
-      const deploymentWallet = this.deploymentWalletService.getWallet(provider);
-
-      // Send ETH from deployment wallet to Smart Account
-      console.log(`Sending ${prefundAmount} ETH from deployment wallet to Smart Account...`);
-      const prefundTx = await deploymentWallet.sendTransaction({
-        to: account.address,
-        value: ethers.parseEther(prefundAmount.toString()),
-        maxFeePerGas: ethers.parseUnits("20", "gwei"),
-        maxPriorityFeePerGas: ethers.parseUnits("1", "gwei"),
-      });
-
-      console.log(`Prefund transaction hash: ${prefundTx.hash}`);
-      await prefundTx.wait();
-      console.log(`Smart Account prefunded successfully`);
+      // Check if Smart Account has sufficient balance for transfer + gas fees
+      if (smartAccountBalance < totalNeeded) {
+        const transferType = isTokenTransfer ? "token" : "ETH";
+        const message = `Insufficient balance: Smart Account has ${smartAccountBalance} ETH but needs ${totalNeeded} ETH (${transferAmount} for transfer + ${minRequiredBalance} for gas). Please use a paymaster or add funds to your account.`;
+        console.log(message);
+        throw new BadRequestException(message);
+      }
+    } else {
+      // When using paymaster, still check if account has enough for the transfer amount itself (for ETH transfers)
+      if (!isTokenTransfer && transferAmount > smartAccountBalance) {
+        const message = `Insufficient balance for ETH transfer: Account has ${smartAccountBalance} ETH but trying to send ${transferAmount} ETH.`;
+        console.log(message);
+        throw new BadRequestException(message);
+      }
     }
 
     // Build UserOperation with Paymaster support
@@ -443,9 +434,13 @@ export class TransferService {
 
         if (paymasterAndData !== "0x") {
           baseUserOp.paymasterAndData = paymasterAndData;
+          console.log(`Paymaster configured successfully: ${paymasterAndData.slice(0, 42)}`);
+        } else {
+          throw new BadRequestException(`Paymaster failed to provide sponsorship data`);
         }
       } catch (error) {
-        // Continue without paymaster if setup fails
+        console.error(`Paymaster setup failed:`, error.message);
+        throw new BadRequestException(`Paymaster setup failed: ${error.message}`);
       }
     }
 

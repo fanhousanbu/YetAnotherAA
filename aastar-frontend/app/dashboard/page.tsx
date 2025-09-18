@@ -271,32 +271,6 @@ export default function DashboardPage() {
                         <PlusIcon className="w-4 h-4 mr-2" />
                         Top Up
                       </button>
-                      {shouldShowSponsorButton() && (
-                        <button
-                          onClick={sponsorAccount}
-                          disabled={actionLoading === "sponsor"}
-                          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {actionLoading === "sponsor" ? (
-                            <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
-                          ) : (
-                            <svg
-                              className="w-4 h-4 mr-2"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"
-                              />
-                            </svg>
-                          )}
-                          Sponsor
-                        </button>
-                      )}
                     </>
                   )}
                 </div>
@@ -327,32 +301,6 @@ export default function DashboardPage() {
                     <EyeIcon className="w-4 h-4 mr-2" />
                     Refresh Data
                   </button>
-                  {shouldShowSponsorButton() && (
-                    <button
-                      onClick={sponsorAccount}
-                      disabled={actionLoading === "sponsor"}
-                      className="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {actionLoading === "sponsor" ? (
-                        <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
-                      ) : (
-                        <svg
-                          className="w-4 h-4 mr-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"
-                          />
-                        </svg>
-                      )}
-                      Sponsor
-                    </button>
-                  )}
                 </div>
               </div>
             </div>

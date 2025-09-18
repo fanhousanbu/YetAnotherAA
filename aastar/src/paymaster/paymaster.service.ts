@@ -155,9 +155,21 @@ export class PaymasterService {
     // Handle custom user-provided paymaster addresses
     if (paymasterName === "custom-user-provided" && customAddress) {
       console.log(`Processing custom paymaster: ${customAddress}`);
-      // For custom paymasters without API, just return the address as paymasterAndData
-      // This works for simple paymasters that don't require signatures
-      return customAddress;
+      // For custom paymasters without API integration, we need to format the address correctly
+      // paymasterAndData format: address (20 bytes) + data (variable)
+      // For simple paymasters that don't require additional data, just pad the address
+      const formattedAddress = customAddress.toLowerCase().startsWith("0x")
+        ? customAddress
+        : `0x${customAddress}`;
+
+      // Validate address format
+      if (!/^0x[a-fA-F0-9]{40}$/.test(formattedAddress)) {
+        throw new Error(`Invalid paymaster address format: ${customAddress}`);
+      }
+
+      // Return just the address for simple paymasters (no additional data or signatures needed)
+      // The paymaster contract must be able to sponsor transactions without requiring signatures
+      return formattedAddress;
     }
 
     const paymasters = await this.loadUserPaymastersFromFile(userId);
