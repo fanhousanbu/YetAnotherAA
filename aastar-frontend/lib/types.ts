@@ -35,6 +35,7 @@ export interface Transfer {
   status: "pending" | "submitted" | "completed" | "failed";
   nodeIndices: number[];
   error?: string;
+  tokenSymbol?: string;
   createdAt: string;
   completedAt?: string;
 }
