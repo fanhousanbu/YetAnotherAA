@@ -470,7 +470,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                        -{transfer.amount} ETH
+                        -{transfer.amount} {transfer.tokenSymbol || "ETH"}
                       </p>
                       <p
                         className={`text-xs capitalize ${

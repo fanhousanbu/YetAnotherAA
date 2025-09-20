@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import CopyButton from "@/components/CopyButton";
 import { transferAPI } from "@/lib/api";
-import { Transfer } from "@/lib/types";
+import { TokenTransfer } from "@/lib/types";
 import toast from "react-hot-toast";
 import {
   ClockIcon,
@@ -15,7 +15,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 export default function TransferHistoryPage() {
-  const [transfers, setTransfers] = useState<Transfer[]>([]);
+  const [transfers, setTransfers] = useState<TokenTransfer[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -173,7 +173,7 @@ export default function TransferHistoryPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                            {transfer.amount} ETH
+                            {transfer.amount} {transfer.tokenSymbol || "ETH"}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

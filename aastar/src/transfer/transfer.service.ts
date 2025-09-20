@@ -101,6 +101,20 @@ export class TransferService {
 
     // Create transfer record
     const transferId = uuidv4();
+    let tokenSymbol = "ETH"; // Default to ETH
+
+    // If it's a token transfer, get the token symbol
+    if (transferDto.tokenAddress) {
+      try {
+        const tokenInfo = await this.tokenService.getTokenInfo(transferDto.tokenAddress);
+        tokenSymbol = tokenInfo.symbol;
+      } catch (error) {
+        console.warn("Failed to get token symbol, using address:", error.message);
+        // If we can't get the symbol, use a shortened address as fallback
+        tokenSymbol = `${transferDto.tokenAddress.slice(0, 6)}...${transferDto.tokenAddress.slice(-4)}`;
+      }
+    }
+
     const transfer = {
       id: transferId,
       userId,
@@ -112,6 +126,8 @@ export class TransferService {
       status: "pending",
       nodeIndices: [], // Auto-selected by gossip network
       createdAt: new Date().toISOString(),
+      tokenAddress: transferDto.tokenAddress,
+      tokenSymbol,
     };
 
     await this.databaseService.saveTransfer(transfer);
