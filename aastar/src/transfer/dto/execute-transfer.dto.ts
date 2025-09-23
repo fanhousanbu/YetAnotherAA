@@ -47,7 +47,7 @@ export class ExecuteTransferDto {
 
   @ApiProperty({
     description: "Passkey verification credential (required for transaction verification)",
-    required: true
+    required: true,
   })
   @IsObject()
   passkeyCredential: any;

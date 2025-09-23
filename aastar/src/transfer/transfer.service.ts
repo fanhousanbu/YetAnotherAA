@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, UnauthorizedException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { ethers } from "ethers";
 import { v4 as uuidv4 } from "uuid";
 import { DatabaseService } from "../database/database.service";
