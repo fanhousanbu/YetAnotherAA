@@ -1,8 +1,27 @@
-# BLS Aggregate Signature + ERC-4337 Account Abstraction System
+# 🔐 WebAuthn + BLS + ERC-4337 Account Abstraction
 
-A complete implementation integrating BLS aggregate signatures with ERC-4337
-account abstraction, featuring WebAuthn/Passkey authentication, dynamic gas
-calculation and multi-node signature verification.
+[![GitHub Stars](https://img.shields.io/github/stars/fanhousanbu/YetAnotherAA?style=for-the-badge&logo=github)](https://github.com/fanhousanbu/YetAnotherAA/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/fanhousanbu/YetAnotherAA?style=for-the-badge&logo=github)](https://github.com/fanhousanbu/YetAnotherAA/network)
+[![CI Status](https://img.shields.io/github/actions/workflow/status/fanhousanbu/YetAnotherAA/ci.yml?branch=master&style=for-the-badge&logo=github-actions)](https://github.com/fanhousanbu/YetAnotherAA/actions)
+[![License](https://img.shields.io/github/license/fanhousanbu/YetAnotherAA?style=for-the-badge)](https://github.com/fanhousanbu/YetAnotherAA/blob/master/LICENSE)
+
+<div align="center">
+
+🚀 **Production-Ready** | 🔐 **WebAuthn/Passkey** | ⚡ **BLS Signatures** | 🏗️
+**ERC-4337 AA** | 🌐 **Full-Stack**
+
+</div>
+
+---
+
+A **complete, production-ready** implementation combining **biometric
+authentication** (Face ID, Touch ID, Windows Hello) with **BLS aggregate
+signatures** and **ERC-4337 account abstraction**. Features passwordless login,
+mandatory transaction verification, and optimized gas costs.
+
+> **🎯 Perfect for**: Web3 developers building secure wallets, DeFi applications
+> requiring enhanced security, and projects needing passwordless blockchain
+> authentication.
 
 > **⚠️ Security Notice**: This repository provides reference implementations and
 > example deployments for educational and testing purposes. For production use,
@@ -10,9 +29,53 @@ calculation and multi-node signature verification.
 > rely on the reference contract addresses provided in this documentation for
 > production applications.
 
+## ⚡ Quick Start
+
+```bash
+# Clone and install
+git clone https://github.com/fanhousanbu/YetAnotherAA.git
+cd YetAnotherAA && npm install
+
+# Start all services
+npm run start:dev -w aastar        # Backend API (port 3000)
+npm run start:dev -w signer        # BLS Signer (port 3001)
+npm run dev -w aastar-frontend     # Frontend (port 8080)
+
+# Visit http://localhost:8080 and register with Face ID/Touch ID!
+```
+
+## ✨ What Makes This Special
+
+<table>
+<tr>
+<td width="50%">
+
+### 🔐 **Biometric Security First**
+
+- **Passwordless Login**: Face ID, Touch ID, Windows Hello
+- **Transaction Verification**: Every transaction requires biometric
+  confirmation
+- **FIDO2 Compliant**: Industry-standard WebAuthn implementation
+- **Multi-Device Support**: Register passkeys on multiple devices
+
+</td>
+<td width="50%">
+
+### ⚡ **Advanced Cryptography**
+
+- **BLS12-381 Signatures**: Aggregate multiple signatures efficiently
+- **ERC-4337 Compatible**: Full account abstraction support
+- **Gas Optimized**: Dynamic gas calculation with EIP-2537
+- **Production Tested**: Verified on Sepolia testnet
+
+</td>
+</tr>
+</table>
+
 ## 🎯 System Features
 
-- **WebAuthn/Passkey Authentication**: Biometric authentication (Face ID, Touch ID, Windows Hello) for secure login and transaction verification
+- **WebAuthn/Passkey Authentication**: Biometric authentication (Face ID, Touch
+  ID, Windows Hello) for secure login and transaction verification
 - **BLS12-381 Aggregate Signatures**: Multi-node signature aggregation to reduce
   on-chain verification costs
 - **ERC-4337 Account Abstraction**: Full compatibility with Ethereum Account
@@ -147,12 +210,15 @@ Complete 705-byte signature structure:
 
 ### Authentication Features
 
-The system implements FIDO2-compliant WebAuthn authentication with the following security enhancements:
+The system implements FIDO2-compliant WebAuthn authentication with the following
+security enhancements:
 
 1. **Passwordless Login**: Users can log in using only biometric authentication
-2. **Multi-Device Support**: Register passkeys on multiple devices for convenience
+2. **Multi-Device Support**: Register passkeys on multiple devices for
+   convenience
 3. **Transaction Verification**: Every transaction requires passkey confirmation
-4. **Device Registration**: Secure process for adding new devices to existing accounts
+4. **Device Registration**: Secure process for adding new devices to existing
+   accounts
 
 ### Supported Authentication Methods
 
@@ -276,9 +342,12 @@ npm start
 ### 🔐 Authentication Security Model
 
 - **Login**: Requires biometric verification (Face ID, Touch ID, Windows Hello)
-- **Transaction Execution**: Mandatory passkey verification before each transaction
-- **Device Registration**: New devices require existing credentials for passkey setup
-- **Session Security**: JWT tokens combined with passkey verification for sensitive operations
+- **Transaction Execution**: Mandatory passkey verification before each
+  transaction
+- **Device Registration**: New devices require existing credentials for passkey
+  setup
+- **Session Security**: JWT tokens combined with passkey verification for
+  sensitive operations
 
 ## 🔒 Security Considerations
 
@@ -381,6 +450,7 @@ npm run dev
 ### Complete User Flow
 
 1. **Start all services**:
+
    ```bash
    npm run start:dev -w aastar        # Backend API, port 3000
    npm run start:dev -w signer        # Signer service, port 3001
@@ -410,10 +480,12 @@ npm run dev
 
 **Enhanced Features**:
 
-- ✅ **WebAuthn/Passkey Authentication**: Biometric security for login and transactions
+- ✅ **WebAuthn/Passkey Authentication**: Biometric security for login and
+  transactions
 - ✅ **Multi-node BLS signature aggregation**
 - ✅ **ERC-4337 account abstraction**
-- ✅ **Mandatory transaction verification**: No unauthorized transactions possible
+- ✅ **Mandatory transaction verification**: No unauthorized transactions
+  possible
 - ✅ **Gasless transaction support** via Paymaster
 - ✅ **Real-time gossip network**
 - ✅ **Complete user interface** with security indicators
@@ -430,5 +502,5 @@ Issues and Pull Requests are welcome to improve this project!
 
 ---
 
-**Project Status**: ✅ Production Ready | **Last Updated**: September 2025 |
-**Network**: Sepolia Testnet | **Security**: WebAuthn/Passkey Enhanced
+**Project Status**: ✅ **Last Updated**: September 2025 | **Network**: Sepolia
+Testnet | **Security**: WebAuthn/Passkey Enhanced
