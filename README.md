@@ -1,8 +1,8 @@
 # BLS Aggregate Signature + ERC-4337 Account Abstraction System
 
 A complete implementation integrating BLS aggregate signatures with ERC-4337
-account abstraction, featuring dynamic gas calculation and multi-node signature
-verification.
+account abstraction, featuring WebAuthn/Passkey authentication, dynamic gas
+calculation and multi-node signature verification.
 
 > **⚠️ Security Notice**: This repository provides reference implementations and
 > example deployments for educational and testing purposes. For production use,
@@ -12,6 +12,7 @@ verification.
 
 ## 🎯 System Features
 
+- **WebAuthn/Passkey Authentication**: Biometric authentication (Face ID, Touch ID, Windows Hello) for secure login and transaction verification
 - **BLS12-381 Aggregate Signatures**: Multi-node signature aggregation to reduce
   on-chain verification costs
 - **ERC-4337 Account Abstraction**: Full compatibility with Ethereum Account
@@ -21,6 +22,7 @@ verification.
 - **Gas Optimization**: Precise gas estimation based on EIP-2537 standards
 - **Dual Verification Mechanism**: AA signatures verify userOpHash, BLS
   signatures verify messagePoint
+- **Enhanced Security**: Mandatory passkey verification for all transactions
 - **Production Ready**: Complete verification on Sepolia testnet
 
 ## 📁 Project Structure
@@ -44,14 +46,17 @@ YetAnotherAA/
 │   ├── src/                      # BLS signing service
 │   └── README.md                 # Signer service documentation
 ├── aastar/                       # Backend API (NestJS)
-│   ├── src/                      # API source code
+│   ├── src/                      # API source code with WebAuthn/Passkey support
 │   ├── data/                     # JSON data storage
 │   └── README.md                 # API documentation
 ├── aastar-frontend/              # Frontend Application (Next.js)
-│   ├── app/                      # Next.js pages
+│   ├── app/                      # Next.js pages with biometric authentication
 │   ├── components/               # React components
 │   ├── lib/                      # Utilities and API client
 │   └── README.md                 # Frontend documentation
+├── paymaster/                    # Paymaster Implementation
+│   ├── contracts/                # Paymaster smart contracts
+│   └── admin/                    # Paymaster admin interface
 └── README.md                     # Project documentation
 ```
 
@@ -138,6 +143,45 @@ Complete 705-byte signature structure:
 | 3 nodes    | 600,000              | ~653k        | Moderate            |
 | 100 nodes  | 640,500              | Estimated    | Auto-scaling        |
 
+## 🔐 WebAuthn/Passkey Integration
+
+### Authentication Features
+
+The system implements FIDO2-compliant WebAuthn authentication with the following security enhancements:
+
+1. **Passwordless Login**: Users can log in using only biometric authentication
+2. **Multi-Device Support**: Register passkeys on multiple devices for convenience
+3. **Transaction Verification**: Every transaction requires passkey confirmation
+4. **Device Registration**: Secure process for adding new devices to existing accounts
+
+### Supported Authentication Methods
+
+- **Face ID** (iOS/macOS)
+- **Touch ID** (iOS/macOS)
+- **Windows Hello** (Windows)
+- **Android Biometric** (Android devices)
+- **Hardware Security Keys** (YubiKey, etc.)
+
+### Security Configuration
+
+```typescript
+// Passkey registration settings
+authenticatorSelection: {
+  residentKey: "required",           // Discoverable credentials
+  userVerification: "required",      // Mandatory biometric verification
+}
+
+// Verification requirements
+requireUserVerification: true        // Force biometric check
+```
+
+### API Endpoints
+
+- `POST /auth/passkey/login/begin` - Start passkey login
+- `POST /auth/passkey/login/complete` - Complete passkey login
+- `POST /auth/transaction/verify/begin` - Start transaction verification
+- `POST /auth/transaction/verify/complete` - Complete transaction verification
+
 ## 🔄 Automatic Node Selection
 
 The system now automatically selects active BLS nodes from the gossip network:
@@ -216,11 +260,25 @@ npm start
 
 ## 🛡️ Security Features
 
-1. **Dual Verification**: AA + BLS dual signature mechanism
-2. **Time Locks**: Support for validAfter/validUntil
-3. **Replay Protection**: Nonce mechanism prevents replay
-4. **Access Control**: Owner-only critical operations
-5. **Gas Limits**: Prevent DoS attacks
+1. **WebAuthn/Passkey Security**:
+   - Biometric authentication for all logins and transactions
+   - FIDO2-compliant passkey verification
+   - Mandatory user verification (userVerification: "required")
+   - No password-only access for sensitive operations
+
+2. **Dual Verification**: AA + BLS dual signature mechanism
+3. **Transaction Security**: Every transaction requires passkey verification
+4. **Time Locks**: Support for validAfter/validUntil
+5. **Replay Protection**: Nonce mechanism prevents replay
+6. **Access Control**: Owner-only critical operations
+7. **Gas Limits**: Prevent DoS attacks
+
+### 🔐 Authentication Security Model
+
+- **Login**: Requires biometric verification (Face ID, Touch ID, Windows Hello)
+- **Transaction Execution**: Mandatory passkey verification before each transaction
+- **Device Registration**: New devices require existing credentials for passkey setup
+- **Session Security**: JWT tokens combined with passkey verification for sensitive operations
 
 ## 🔒 Security Considerations
 
@@ -323,23 +381,44 @@ npm run dev
 ### Complete User Flow
 
 1. **Start all services**:
-   - Signer Service: HTTP API on port 3001, WebSocket Gossip on /ws path
-   - Backend API: Port 3000
-   - Frontend: Port 8080
-2. Visit http://localhost:8080
-3. Register new account or login
-4. Create ERC-4337 smart account
-5. Fund account and execute transfers
-6. View transfer history and status
+   ```bash
+   npm run start:dev -w aastar        # Backend API, port 3000
+   npm run start:dev -w signer        # Signer service, port 3001
+   npm run dev -w aastar-frontend     # Frontend, port 8080
+   npm start -w paymaster/admin       # Paymaster admin, port 8081
+   ```
 
-**Features**:
+2. **User Registration & Authentication**:
+   - Visit http://localhost:8080
+   - Register with email/password + setup passkey (biometric authentication)
+   - Login using passkey only (no password required after setup)
 
-- ✅ Multi-node BLS signature aggregation
-- ✅ ERC-4337 account abstraction
-- ✅ Gasless transaction support
-- ✅ Real-time gossip network
-- ✅ Complete user interface
-- ✅ No CORS issues (API proxy)
+3. **Account Management**:
+   - Create ERC-4337 smart account
+   - Fund account through various methods
+   - View account balance and details
+
+4. **Secure Transactions**:
+   - **Transaction Flow**: Amount → Passkey Verification → Execution
+   - Every transaction requires biometric authentication
+   - Real-time status tracking with polling
+
+5. **Advanced Features**:
+   - View transfer history and status
+   - Paymaster integration for gasless transactions
+   - Multi-device passkey support
+
+**Enhanced Features**:
+
+- ✅ **WebAuthn/Passkey Authentication**: Biometric security for login and transactions
+- ✅ **Multi-node BLS signature aggregation**
+- ✅ **ERC-4337 account abstraction**
+- ✅ **Mandatory transaction verification**: No unauthorized transactions possible
+- ✅ **Gasless transaction support** via Paymaster
+- ✅ **Real-time gossip network**
+- ✅ **Complete user interface** with security indicators
+- ✅ **No CORS issues** (API proxy)
+- ✅ **Multi-device support** for passkeys
 
 ## 📄 License
 
@@ -351,5 +430,5 @@ Issues and Pull Requests are welcome to improve this project!
 
 ---
 
-**Project Status**: ✅ Production Ready | **Last Updated**: August 2025 |
-**Network**: Sepolia Testnet
+**Project Status**: ✅ Production Ready | **Last Updated**: September 2025 |
+**Network**: Sepolia Testnet | **Security**: WebAuthn/Passkey Enhanced
