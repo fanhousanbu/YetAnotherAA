@@ -183,7 +183,7 @@ export class AuthService {
       })),
       authenticatorSelection: {
         residentKey: "required",
-        userVerification: "preferred",
+        userVerification: "required",
       },
     });
 
@@ -213,7 +213,7 @@ export class AuthService {
         expectedChallenge,
         expectedOrigin: this.expectedOrigin,
         expectedRPID: this.rpID,
-        requireUserVerification: false,
+        requireUserVerification: true,
       });
 
       if (!verification.verified) {
@@ -279,7 +279,7 @@ export class AuthService {
   async beginPasskeyLogin() {
     const options = await generateAuthenticationOptions({
       rpID: this.rpID,
-      userVerification: "preferred",
+      userVerification: "required",
     });
 
     // 使用challenge作为key存储临时数据
@@ -326,7 +326,7 @@ export class AuthService {
           counter: passkey.counter,
           transports: passkey.transports,
         },
-        requireUserVerification: false,
+        requireUserVerification: true,
       });
 
       if (!verification.verified) {
@@ -387,7 +387,7 @@ export class AuthService {
       })),
       authenticatorSelection: {
         residentKey: "required",
-        userVerification: "preferred",
+        userVerification: "required",
       },
     });
 
@@ -424,7 +424,7 @@ export class AuthService {
         expectedChallenge,
         expectedOrigin: this.expectedOrigin,
         expectedRPID: this.rpID,
-        requireUserVerification: false,
+        requireUserVerification: true,
       });
 
       if (!verification.verified) {
@@ -455,6 +455,94 @@ export class AuthService {
     } catch {
       this.challengeStore.delete(`device_${registerDto.email}`);
       throw new UnauthorizedException("Passkey registration failed");
+    }
+  }
+
+  // 交易Passkey验证流程 - 开始
+  async beginTransactionVerification(userId: string) {
+    const user = await this.databaseService.findUserById(userId);
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
+
+    const userPasskeys = await this.databaseService.findPasskeysByUserId(userId);
+    if (userPasskeys.length === 0) {
+      throw new UnauthorizedException("No passkey registered for this account");
+    }
+
+    const options = await generateAuthenticationOptions({
+      rpID: this.rpID,
+      userVerification: "required",
+      allowCredentials: userPasskeys.map(passkey => ({
+        id: passkey.credentialId,
+        transports: passkey.transports || [],
+      })),
+    });
+
+    // 使用challenge作为key存储临时数据
+    this.challengeStore.set(`tx_${userId}_${options.challenge}`, options.challenge);
+
+    return options;
+  }
+
+  // 交易Passkey验证流程 - 完成
+  async completeTransactionVerification(userId: string, credential: any) {
+    const credentialId = credential.id || credential.rawId;
+    const passkey = await this.databaseService.findPasskeyByCredentialId(credentialId);
+
+    if (!passkey) {
+      throw new UnauthorizedException("Passkey not found");
+    }
+
+    if (passkey.userId !== userId) {
+      throw new UnauthorizedException("Passkey does not belong to this user");
+    }
+
+    const expectedChallenge = this.challengeStore.get(
+      `tx_${userId}_${
+        credential.response.clientDataJSON
+          ? JSON.parse(atob(credential.response.clientDataJSON)).challenge
+          : ""
+      }`
+    );
+
+    if (!expectedChallenge) {
+      throw new UnauthorizedException("Invalid verification session");
+    }
+
+    try {
+      const verification = await verifyAuthenticationResponse({
+        response: credential,
+        expectedChallenge,
+        expectedOrigin: this.expectedOrigin,
+        expectedRPID: this.rpID,
+        credential: {
+          id: passkey.credentialId,
+          publicKey: new Uint8Array(passkey.publicKey),
+          counter: passkey.counter,
+          transports: passkey.transports,
+        },
+        requireUserVerification: true,
+      });
+
+      if (!verification.verified) {
+        throw new UnauthorizedException("Passkey verification failed");
+      }
+
+      // 更新counter
+      await this.databaseService.updatePasskey(passkey.credentialId, {
+        counter: verification.authenticationInfo.newCounter,
+      });
+
+      // 清除challenge
+      this.challengeStore.delete(`tx_${userId}_${expectedChallenge}`);
+
+      return {
+        verified: true,
+        message: "Transaction verification successful",
+      };
+    } catch {
+      throw new UnauthorizedException("Passkey verification failed");
     }
   }
 }

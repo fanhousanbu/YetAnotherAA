@@ -83,4 +83,21 @@ export class AuthController {
   async completeDevicePasskeyRegistration(@Body() registerDto: DevicePasskeyRegisterDto) {
     return this.authService.completeDevicePasskeyRegistration(registerDto);
   }
+
+  // 交易Passkey验证相关API
+  @Post("transaction/verify/begin")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Begin transaction passkey verification" })
+  async beginTransactionVerification(@Request() req) {
+    return this.authService.beginTransactionVerification(req.user.sub);
+  }
+
+  @Post("transaction/verify/complete")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Complete transaction passkey verification" })
+  async completeTransactionVerification(@Request() req, @Body() body: { credential: any }) {
+    return this.authService.completeTransactionVerification(req.user.sub, body.credential);
+  }
 }

@@ -63,6 +63,12 @@ export const authAPI = {
 
   completeDevicePasskeyRegistration: (data: { email: string; password: string; credential: any }) =>
     api.post("/auth/device/passkey/complete", data),
+
+  // Transaction verification
+  beginTransactionVerification: () => api.post("/auth/transaction/verify/begin"),
+
+  completeTransactionVerification: (credential: any) =>
+    api.post("/auth/transaction/verify/complete", { credential }),
 };
 
 // Account API
@@ -92,6 +98,7 @@ export const transferAPI = {
     paymasterAddress?: string;
     paymasterData?: string;
     tokenAddress?: string;
+    passkeyCredential: any;
   }) => api.post("/transfer/execute", data),
 
   estimate: (data: {

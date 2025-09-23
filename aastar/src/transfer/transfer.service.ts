@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException, UnauthorizedException } from "@nestjs/common";
 import { ethers } from "ethers";
 import { v4 as uuidv4 } from "uuid";
 import { DatabaseService } from "../database/database.service";
 import { EthereumService } from "../ethereum/ethereum.service";
 import { DeploymentWalletService } from "../ethereum/deployment-wallet.service";
 import { AccountService } from "../account/account.service";
+import { AuthService } from "../auth/auth.service";
 import { BlsService } from "../bls/bls.service";
 import { PaymasterService } from "../paymaster/paymaster.service";
 import { TokenService } from "../token/token.service";
@@ -20,6 +21,7 @@ export class TransferService {
     private ethereumService: EthereumService,
     private deploymentWalletService: DeploymentWalletService,
     private accountService: AccountService,
+    private authService: AuthService,
     private blsService: BlsService,
     private paymasterService: PaymasterService,
     private tokenService: TokenService,
@@ -29,6 +31,30 @@ export class TransferService {
   async executeTransfer(userId: string, transferDto: ExecuteTransferDto) {
     console.log("TransferService.executeTransfer called with userId:", userId);
     console.log("Transfer data:", transferDto);
+
+    // Verify passkey before proceeding with transaction
+    if (!transferDto.passkeyCredential) {
+      throw new BadRequestException("Passkey verification is required for transactions");
+    }
+
+    try {
+      const verification = await this.authService.completeTransactionVerification(
+        userId,
+        transferDto.passkeyCredential
+      );
+
+      if (!verification.verified) {
+        throw new UnauthorizedException("Passkey verification failed");
+      }
+
+      console.log("Passkey verification successful for transaction");
+    } catch (error) {
+      console.error("Passkey verification error:", error);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException("Transaction verification failed");
+    }
 
     // Get user's account
     const account = await this.accountService.getAccountByUserId(userId);

@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import TokenSelector from "@/components/TokenSelector";
-import { accountAPI, transferAPI, tokenAPI, paymasterAPI, addressBookAPI } from "@/lib/api";
+import { accountAPI, transferAPI, tokenAPI, paymasterAPI, addressBookAPI, authAPI } from "@/lib/api";
 import { Account, GasEstimate, Token, TokenBalance } from "@/lib/types";
 import toast from "react-hot-toast";
+import { startAuthentication } from "@simplewebauthn/browser";
 import {
   ArrowTopRightOnSquareIcon,
   InformationCircleIcon,
@@ -242,7 +243,23 @@ export default function TransferPage() {
 
     setLoading(prev => ({ ...prev, transfer: true }));
 
+    let passkeyCredential = null;
+    let loadingToast: string | null = null;
+
     try {
+      // Step 1: Begin passkey verification
+      loadingToast = toast.loading("Starting transaction verification...");
+      const beginResponse = await authAPI.beginTransactionVerification();
+      const options = beginResponse.data;
+
+      // Step 2: Authenticate with passkey
+      toast.dismiss(loadingToast);
+      loadingToast = toast.loading("Please verify with your passkey...");
+      passkeyCredential = await startAuthentication(options);
+
+      // Step 3: Continue with transfer
+      toast.dismiss(loadingToast);
+      loadingToast = toast.loading("Processing transfer...");
       const requestData = {
         to: formData.to,
         amount: formData.amount,
@@ -252,10 +269,15 @@ export default function TransferPage() {
             ? formData.paymasterAddress
             : undefined,
         tokenAddress: selectedToken?.address, // undefined = ETH transfer
+        passkeyCredential: passkeyCredential, // Add passkey credential
       };
 
       const response = await transferAPI.execute(requestData);
       setTransferResult(response.data);
+
+      if (loadingToast) {
+        toast.dismiss(loadingToast);
+      }
       toast.success("Transfer submitted! Tracking status...");
 
       // Start polling for status
@@ -271,6 +293,25 @@ export default function TransferPage() {
       setSelectedToken(null);
       setGasEstimate(null);
     } catch (error: any) {
+      if (loadingToast) {
+        toast.dismiss(loadingToast);
+      }
+
+      // Handle passkey verification errors
+      if (error.name === "NotAllowedError") {
+        toast.error("Transaction verification was cancelled");
+        setLoading(prev => ({ ...prev, transfer: false }));
+        return;
+      } else if (error.name === "NotSupportedError") {
+        toast.error("Passkeys are not supported on this device");
+        setLoading(prev => ({ ...prev, transfer: false }));
+        return;
+      } else if (error.name === "SecurityError") {
+        toast.error("Security error during verification");
+        setLoading(prev => ({ ...prev, transfer: false }));
+        return;
+      }
+
       // Extract detailed error information
       const errorData = error.response?.data;
 

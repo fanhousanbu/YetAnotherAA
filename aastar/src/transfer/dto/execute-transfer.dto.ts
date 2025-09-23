@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, IsOptional, IsEthereumAddress, IsBoolean } from "class-validator";
+import { IsString, IsOptional, IsEthereumAddress, IsBoolean, IsObject } from "class-validator";
 
 export class ExecuteTransferDto {
   @ApiProperty({ description: "Recipient address", example: "0x..." })
@@ -44,4 +44,11 @@ export class ExecuteTransferDto {
   @IsOptional()
   @IsString()
   paymasterData?: string;
+
+  @ApiProperty({
+    description: "Passkey verification credential (required for transaction verification)",
+    required: true
+  })
+  @IsObject()
+  passkeyCredential: any;
 }
