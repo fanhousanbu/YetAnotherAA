@@ -16,3 +16,6 @@
 [submodule "paymaster/contracts/lib/openzeppelin-contracts"]
 	path = paymaster/contracts/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "validator/lib/account-abstraction"]
+	path = validator/lib/account-abstraction
+	url = https://github.com/eth-infinitism/account-abstraction
