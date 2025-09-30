@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import axios from "axios";
 import { ethers } from "ethers";
-import { bls12_381 as bls } from "@noble/curves/bls12-381";
+import { bls12_381 as bls } from "@noble/curves/bls12-381.js";
 import { DatabaseService } from "../database/database.service";
 import { AccountService } from "../account/account.service";
 import { AuthService } from "../auth/auth.service";
