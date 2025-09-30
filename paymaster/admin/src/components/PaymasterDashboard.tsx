@@ -1,11 +1,16 @@
 import React, { useState } from "react";
 import { usePaymaster } from "../hooks/usePaymaster";
+import { EntryPointVersion } from "../types/paymaster";
 
 interface PaymasterDashboardProps {
   paymasterAddress: string;
+  entryPointVersion: EntryPointVersion;
 }
 
-export const PaymasterDashboard: React.FC<PaymasterDashboardProps> = ({ paymasterAddress }) => {
+export const PaymasterDashboard: React.FC<PaymasterDashboardProps> = ({
+  paymasterAddress,
+  entryPointVersion,
+}) => {
   const {
     config,
     stats,
@@ -18,7 +23,7 @@ export const PaymasterDashboard: React.FC<PaymasterDashboardProps> = ({ paymaste
     unlockStake,
     withdrawStake,
     refresh,
-  } = usePaymaster(paymasterAddress);
+  } = usePaymaster(paymasterAddress, entryPointVersion);
 
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
@@ -63,7 +68,7 @@ export const PaymasterDashboard: React.FC<PaymasterDashboardProps> = ({ paymaste
   return (
     <div className="paymaster-dashboard">
       <div className="dashboard-header">
-        <h2>Paymaster Admin Dashboard</h2>
+        <h2>Paymaster Admin Dashboard (EntryPoint {entryPointVersion})</h2>
         <button onClick={refresh} disabled={loading} className="refresh-button">
           {loading ? "Refreshing..." : "Refresh"}
         </button>

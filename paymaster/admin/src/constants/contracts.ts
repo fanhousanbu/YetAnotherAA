@@ -1,4 +1,16 @@
-export const ENTRY_POINT_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+// EntryPoint addresses for different versions
+export const ENTRY_POINT_ADDRESSES = {
+  v06: "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
+  v07: "0x0000000071727De22E5E9d8BAf0edAc6f37da032", // EntryPoint v0.7
+  v08: "0x4337084d9e255ff0702461cf8895ce9e3b5ff108", // EntryPoint v0.8
+};
+
+// Paymaster addresses for different versions
+export const PAYMASTER_ADDRESSES = {
+  v06: "0xdde25C1d254AeBcA592d8574Dc9421f87a491dF4",
+  v07: "0x8E9756738B2B9D96f1480c15302e1Ba2F788234A",
+  v08: "0x76721BaD7a22C8651517591110E5e60E1d40963f",
+};
 
 export const PAYMASTER_ABI = [
   {

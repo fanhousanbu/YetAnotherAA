@@ -26,10 +26,8 @@ import "../src/AAStarAccountFactoryV8.sol";
 
 contract DeployAAStarV8System is Script {
     // EntryPoint v0.8 addresses for different networks
-    // Note: These addresses are placeholders - update with actual v0.8 addresses when available
-    // Using v0.7 address as placeholder for now
-    address constant SEPOLIA_ENTRY_POINT_V8 = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
-    address constant MAINNET_ENTRY_POINT_V8 = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
+    address constant SEPOLIA_ENTRY_POINT_V8 = 0x0576a174D229E3cFA37253523E645A78A0C91B57;
+    address constant MAINNET_ENTRY_POINT_V8 = 0x0576a174D229E3cFA37253523E645A78A0C91B57;
 
     function run() external {
         vm.startBroadcast();

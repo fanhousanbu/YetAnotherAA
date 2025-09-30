@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import { PAYMASTER_ABI, ENTRY_POINT_ABI, ENTRY_POINT_ADDRESS } from "../constants/contracts";
-import { PaymasterConfig, PaymasterStats, DepositInfo } from "../types/paymaster";
+import { PAYMASTER_ABI, ENTRY_POINT_ABI, ENTRY_POINT_ADDRESSES } from "../constants/contracts";
+import {
+  PaymasterConfig,
+  PaymasterStats,
+  DepositInfo,
+  EntryPointVersion,
+} from "../types/paymaster";
 
 declare global {
   interface Window {
@@ -9,7 +14,10 @@ declare global {
   }
 }
 
-export const usePaymaster = (paymasterAddress: string) => {
+export const usePaymaster = (
+  paymasterAddress: string,
+  entryPointVersion: EntryPointVersion = "v06"
+) => {
   const [config, setConfig] = useState<PaymasterConfig | null>(null);
   const [stats, setStats] = useState<PaymasterStats | null>(null);
   const [depositInfo, setDepositInfo] = useState<DepositInfo | null>(null);
@@ -27,11 +35,8 @@ export const usePaymaster = (paymasterAddress: string) => {
       const signer = provider.getSigner();
 
       const paymasterContract = new ethers.Contract(paymasterAddress, PAYMASTER_ABI, signer);
-      const entryPointContract = new ethers.Contract(
-        ENTRY_POINT_ADDRESS,
-        ENTRY_POINT_ABI,
-        provider
-      );
+      const entryPointAddress = ENTRY_POINT_ADDRESSES[entryPointVersion];
+      const entryPointContract = new ethers.Contract(entryPointAddress, ENTRY_POINT_ABI, provider);
 
       const [owner, deposit, balance, depositInfoData] = await Promise.all([
         paymasterContract.owner().catch(() => "Unknown"),
@@ -192,7 +197,7 @@ export const usePaymaster = (paymasterAddress: string) => {
     if (paymasterAddress) {
       loadPaymasterData();
     }
-  }, [paymasterAddress]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [paymasterAddress, entryPointVersion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     config,

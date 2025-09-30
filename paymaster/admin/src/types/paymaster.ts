@@ -1,3 +1,5 @@
+export type EntryPointVersion = "v06" | "v07" | "v08";
+
 export interface UserOperation {
   sender: string;
   nonce: string;

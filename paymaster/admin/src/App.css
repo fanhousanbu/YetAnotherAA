@@ -477,6 +477,59 @@ body {
   margin-top: auto;
 }
 
+/* Version Selector Styles */
+.version-selector {
+  margin-bottom: 30px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.version-selector label {
+  display: block;
+  margin-bottom: 15px;
+  font-weight: 600;
+  color: #333;
+  font-size: 16px;
+}
+
+.version-buttons {
+  display: flex;
+  gap: 15px;
+}
+
+.version-btn {
+  flex: 1;
+  padding: 12px 24px;
+  background-color: white;
+  border: 2px solid #e1e4e8;
+  border-radius: 8px;
+  color: #666;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.version-btn:hover {
+  background-color: #f6f8fa;
+  border-color: #0366d6;
+  color: #0366d6;
+}
+
+.version-btn.active {
+  background-color: #0366d6;
+  border-color: #0366d6;
+  color: white;
+  font-weight: 600;
+}
+
+.version-btn.active:hover {
+  background-color: #0256c7;
+  border-color: #0256c7;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .App-header {
@@ -515,6 +568,14 @@ body {
 
   .action-form input,
   .action-button {
+    width: 100%;
+  }
+
+  .version-buttons {
+    flex-direction: column;
+  }
+
+  .version-btn {
     width: 100%;
   }
 }

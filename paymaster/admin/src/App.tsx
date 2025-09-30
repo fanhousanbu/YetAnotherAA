@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { WalletConnect } from "./components/WalletConnect";
 import { PaymasterDashboard } from "./components/PaymasterDashboard";
+import { PAYMASTER_ADDRESSES } from "./constants/contracts";
+import { EntryPointVersion } from "./types/paymaster";
 import "./App.css";
 
 function App() {
@@ -8,6 +10,7 @@ function App() {
   const [, setAccount] = useState<string>("");
   const [paymasterAddress, setPaymasterAddress] = useState<string>("");
   const [addressHistory, setAddressHistory] = useState<string[]>([]);
+  const [selectedVersion, setSelectedVersion] = useState<EntryPointVersion>("v06");
 
   const handleWalletConnect = (address: string) => {
     setIsConnected(true);
@@ -53,13 +56,47 @@ function App() {
     <div className="App">
       <header className="App-header">
         <h1>Paymaster Admin Panel</h1>
-        <p>ERC-4337 v0.6 Paymaster Management Interface</p>
+        <p>ERC-4337 Multi-Version Paymaster Management Interface</p>
         <WalletConnect onConnect={handleWalletConnect} onDisconnect={handleWalletDisconnect} />
       </header>
 
       <main className="App-main">
         {isConnected ? (
           <div className="dashboard-container">
+            <div className="version-selector">
+              <label>Select EntryPoint Version:</label>
+              <div className="version-buttons">
+                <button
+                  className={`version-btn ${selectedVersion === "v06" ? "active" : ""}`}
+                  onClick={() => {
+                    setSelectedVersion("v06");
+                    if (PAYMASTER_ADDRESSES.v06) {
+                      setPaymasterAddress(PAYMASTER_ADDRESSES.v06);
+                    }
+                  }}
+                >
+                  v0.6
+                </button>
+                <button
+                  className={`version-btn ${selectedVersion === "v07" ? "active" : ""}`}
+                  onClick={() => {
+                    setSelectedVersion("v07");
+                    setPaymasterAddress(PAYMASTER_ADDRESSES.v07);
+                  }}
+                >
+                  v0.7
+                </button>
+                <button
+                  className={`version-btn ${selectedVersion === "v08" ? "active" : ""}`}
+                  onClick={() => {
+                    setSelectedVersion("v08");
+                    setPaymasterAddress(PAYMASTER_ADDRESSES.v08);
+                  }}
+                >
+                  v0.8
+                </button>
+              </div>
+            </div>
             <div className="paymaster-address-input">
               <label htmlFor="paymaster-address">Paymaster Contract Address:</label>
               <div className="address-input-container">
@@ -103,7 +140,12 @@ function App() {
               )}
             </div>
 
-            {paymasterAddress && <PaymasterDashboard paymasterAddress={paymasterAddress} />}
+            {paymasterAddress && (
+              <PaymasterDashboard
+                paymasterAddress={paymasterAddress}
+                entryPointVersion={selectedVersion}
+              />
+            )}
           </div>
         ) : (
           <div className="welcome-message">
@@ -116,7 +158,7 @@ function App() {
                 <li>Manage EntryPoint deposits and withdrawals</li>
                 <li>Add and withdraw stakes</li>
                 <li>View real-time paymaster statistics</li>
-                <li>ERC-4337 v0.6 compatible</li>
+                <li>Supports EntryPoint v0.6, v0.7, and v0.8</li>
               </ul>
             </div>
           </div>

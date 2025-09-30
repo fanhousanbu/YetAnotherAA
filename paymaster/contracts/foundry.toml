@@ -35,12 +35,3 @@ optimism = "${OPTIMISM_RPC_URL}"
 polygon = "${POLYGON_RPC_URL}"
 base = "${BASE_RPC_URL}"
 localhost = "http://127.0.0.1:8545"
-
-# Etherscan verification
-[etherscan]
-mainnet = { key = "${ETHERSCAN_API_KEY}" }
-sepolia = { key = "${ETHERSCAN_API_KEY}" }
-arbitrum = { key = "${ARBISCAN_API_KEY}" }
-optimism = { key = "${OPTIMISM_ETHERSCAN_API_KEY}" }
-polygon = { key = "${POLYGONSCAN_API_KEY}" }
-base = { key = "${BASESCAN_API_KEY}" }
