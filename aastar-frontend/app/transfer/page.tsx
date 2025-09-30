@@ -865,7 +865,7 @@ export default function TransferPage() {
                   selectedToken={selectedToken}
                   onTokenChange={setSelectedToken}
                   accountAddress={account?.address}
-                  showBalances={true}
+                  showBalances={false}
                   showSearch={true}
                   showOnlyWithBalance={false}
                 />

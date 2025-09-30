@@ -3,25 +3,22 @@
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { userTokenAPI, tokenAPI } from "@/lib/api";
-import { UserToken, UserTokenWithBalance, Token } from "@/lib/types";
+import { UserToken, Token } from "@/lib/types";
 import TokenIcon from "@/components/TokenIcon";
 import toast from "react-hot-toast";
 import {
   MagnifyingGlassIcon,
   PlusIcon,
-  ArrowPathIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 
 export default function TokensPage() {
-  const [userTokens, setUserTokens] = useState<UserTokenWithBalance[]>([]);
-  const [filteredTokens, setFilteredTokens] = useState<UserTokenWithBalance[]>([]);
+  const [userTokens, setUserTokens] = useState<UserToken[]>([]);
+  const [filteredTokens, setFilteredTokens] = useState<UserToken[]>([]);
   const [loading, setLoading] = useState(true);
-  const [balancesLoading, setBalancesLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showOnlyWithBalance, setShowOnlyWithBalance] = useState(false);
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [modalMode, setModalMode] = useState<"preset" | "custom">("preset"); // preset or custom
   const [presetTokens, setPresetTokens] = useState<Token[]>([]);
@@ -36,14 +33,14 @@ export default function TokensPage() {
 
   useEffect(() => {
     applyFilters();
-  }, [userTokens, searchQuery, showOnlyWithBalance]);
+  }, [userTokens, searchQuery]);
 
-  const loadUserTokens = async (withBalances: boolean = true) => {
+  const loadUserTokens = async () => {
     try {
       setLoading(true);
       const response = await userTokenAPI.getUserTokens({
         activeOnly: true,
-        withBalances,
+        withBalances: false,
       });
       setUserTokens(response.data);
     } catch (error: any) {
@@ -81,19 +78,6 @@ export default function TokensPage() {
     setSelectedPresetTokens(new Set());
     setShowTokenModal(true);
     loadPresetTokens();
-  };
-
-  const refreshBalances = async () => {
-    try {
-      setBalancesLoading(true);
-      await loadUserTokens(true);
-      toast.success("Balances refreshed");
-    } catch (error: any) {
-      toast.error("Failed to refresh balances");
-      console.error(error);
-    } finally {
-      setBalancesLoading(false);
-    }
   };
 
   const addTokens = async () => {
@@ -173,14 +157,6 @@ export default function TokensPage() {
       );
     }
 
-    // Balance filter
-    if (showOnlyWithBalance) {
-      filtered = filtered.filter(token => {
-        const balance = token.balance;
-        return balance && parseFloat(balance.formattedBalance) > 0;
-      });
-    }
-
     // Sort: by sortOrder first, then alphabetically
     filtered.sort((a, b) => {
       if (a.sortOrder !== b.sortOrder) {
@@ -190,14 +166,6 @@ export default function TokensPage() {
     });
 
     setFilteredTokens(filtered);
-  };
-
-  const formatBalance = (balance: string) => {
-    const num = parseFloat(balance);
-    if (num === 0) return "0";
-    if (num >= 1) return num.toFixed(4);
-    if (num >= 0.0001) return num.toFixed(6);
-    return num.toExponential(2);
   };
 
   if (loading) {
@@ -239,17 +207,6 @@ export default function TokensPage() {
 
           {/* Filter Controls */}
           <div className="flex flex-wrap gap-4 items-center">
-            {/* With Balance Only */}
-            <label className="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300">
-              <input
-                type="checkbox"
-                checked={showOnlyWithBalance}
-                onChange={e => setShowOnlyWithBalance(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>With balance only</span>
-            </label>
-
             {/* Add Token Button */}
             <button
               onClick={openAddTokenModal}
@@ -257,16 +214,6 @@ export default function TokensPage() {
             >
               <PlusIcon className="h-4 w-4 mr-2" />
               Add Token
-            </button>
-
-            {/* Refresh Balances */}
-            <button
-              onClick={refreshBalances}
-              disabled={balancesLoading}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <ArrowPathIcon className={`h-4 w-4 mr-2 ${balancesLoading ? "animate-spin" : ""}`} />
-              Refresh
             </button>
 
             {/* Results Count */}
@@ -317,18 +264,6 @@ export default function TokensPage() {
                 </div>
               </div>
 
-              {/* Balance */}
-              <div className="mb-4">
-                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Balance</div>
-                <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {token.balance ? formatBalance(token.balance.formattedBalance) : "0"}{" "}
-                  {token.symbol}
-                </div>
-                {balancesLoading && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Loading...</div>
-                )}
-              </div>
-
               {/* Footer */}
               <div className="flex items-center justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
                 {/* Address */}
@@ -357,11 +292,11 @@ export default function TokensPage() {
               No tokens found
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {searchQuery || showOnlyWithBalance
-                ? "Try adjusting your search query or filters."
+              {searchQuery
+                ? "Try adjusting your search query."
                 : "Add tokens from our preset list or add custom tokens to get started."}
             </p>
-            {!searchQuery && !showOnlyWithBalance && (
+            {!searchQuery && (
               <button
                 onClick={openAddTokenModal}
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
