@@ -6,11 +6,7 @@ import { userTokenAPI, tokenAPI } from "@/lib/api";
 import { UserToken, Token } from "@/lib/types";
 import TokenIcon from "@/components/TokenIcon";
 import toast from "react-hot-toast";
-import {
-  MagnifyingGlassIcon,
-  PlusIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 
