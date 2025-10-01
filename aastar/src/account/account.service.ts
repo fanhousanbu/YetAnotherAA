@@ -34,8 +34,9 @@ export class AccountService {
     }
 
     const factory = this.ethereumService.getFactoryContract(version);
-    const validatorAddress = this.ethereumService.getValidatorContract(version).target ||
-                            this.ethereumService.getValidatorContract(version).address;
+    const validatorAddress =
+      this.ethereumService.getValidatorContract(version).target ||
+      this.ethereumService.getValidatorContract(version).address;
 
     // Use deployment wallet as the owner (from .secret file)
     const deploymentWallet = this.deploymentWalletService.getWallet();

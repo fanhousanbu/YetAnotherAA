@@ -296,7 +296,10 @@ export class TransferService {
     const formattedUserOp = this.formatUserOpForBundler(userOp, version);
 
     // Get gas estimates
-    const gasEstimates = await this.ethereumService.estimateUserOperationGas(formattedUserOp, version);
+    const gasEstimates = await this.ethereumService.estimateUserOperationGas(
+      formattedUserOp,
+      version
+    );
 
     // Get current gas prices
     const gasPrices = await this.ethereumService.getUserOperationGasPrice();
@@ -421,20 +424,18 @@ export class TransferService {
 
         // Encode factory deployment call
         // v0.7 and v0.8 use "createAccount" method, v0.6 uses "createAccountWithAAStarValidator"
-        const methodName = (version === EntryPointVersion.V0_7 || version === EntryPointVersion.V0_8)
-          ? "createAccount"
-          : "createAccountWithAAStarValidator";
+        const methodName =
+          version === EntryPointVersion.V0_7 || version === EntryPointVersion.V0_8
+            ? "createAccount"
+            : "createAccountWithAAStarValidator";
 
-        const deployCalldata = factory.interface.encodeFunctionData(
-          methodName,
-          [
-            account.creatorAddress,
-            account.signerAddress, // signerAddress for AA signature verification
-            account.validatorAddress,
-            true, // useAAStarValidator
-            account.salt,
-          ]
-        );
+        const deployCalldata = factory.interface.encodeFunctionData(methodName, [
+          account.creatorAddress,
+          account.signerAddress, // signerAddress for AA signature verification
+          account.validatorAddress,
+          true, // useAAStarValidator
+          account.salt,
+        ]);
 
         // initCode = factory address + deployment calldata
         initCode = ethers.concat([factoryAddress, deployCalldata]);
@@ -519,7 +520,9 @@ export class TransferService {
               undefined
             );
           } else {
-            throw new BadRequestException("No paymaster configured and no paymaster address provided");
+            throw new BadRequestException(
+              "No paymaster configured and no paymaster address provided"
+            );
           }
         }
 
@@ -592,7 +595,11 @@ export class TransferService {
       let paymasterPostOpGasLimit: string | undefined;
       let paymasterData: string | undefined;
 
-      if (packedOp.paymasterAndData && packedOp.paymasterAndData !== "0x" && packedOp.paymasterAndData.length > 2) {
+      if (
+        packedOp.paymasterAndData &&
+        packedOp.paymasterAndData !== "0x" &&
+        packedOp.paymasterAndData.length > 2
+      ) {
         // First 20 bytes is the paymaster address
         paymaster = packedOp.paymasterAndData.slice(0, 42);
 
@@ -617,19 +624,21 @@ export class TransferService {
       // Build the unpacked UserOperation object for v0.7
       const result: any = {
         sender: packedOp.sender,
-        nonce: typeof packedOp.nonce === "bigint"
-          ? "0x" + packedOp.nonce.toString(16)
-          : packedOp.nonce.toString().startsWith("0x")
-            ? packedOp.nonce.toString()
-            : "0x" + BigInt(packedOp.nonce).toString(16),
+        nonce:
+          typeof packedOp.nonce === "bigint"
+            ? "0x" + packedOp.nonce.toString(16)
+            : packedOp.nonce.toString().startsWith("0x")
+              ? packedOp.nonce.toString()
+              : "0x" + BigInt(packedOp.nonce).toString(16),
         callData: packedOp.callData,
         callGasLimit: "0x" + gasLimits.callGasLimit.toString(16),
         verificationGasLimit: "0x" + gasLimits.verificationGasLimit.toString(16),
-        preVerificationGas: typeof packedOp.preVerificationGas === "bigint"
-          ? "0x" + packedOp.preVerificationGas.toString(16)
-          : packedOp.preVerificationGas.toString().startsWith("0x")
-            ? packedOp.preVerificationGas.toString()
-            : "0x" + BigInt(packedOp.preVerificationGas).toString(16),
+        preVerificationGas:
+          typeof packedOp.preVerificationGas === "bigint"
+            ? "0x" + packedOp.preVerificationGas.toString(16)
+            : packedOp.preVerificationGas.toString().startsWith("0x")
+              ? packedOp.preVerificationGas.toString()
+              : "0x" + BigInt(packedOp.preVerificationGas).toString(16),
         maxFeePerGas: "0x" + gasFees.maxFeePerGas.toString(16),
         maxPriorityFeePerGas: "0x" + gasFees.maxPriorityFeePerGas.toString(16),
         signature: packedOp.signature || "0x",

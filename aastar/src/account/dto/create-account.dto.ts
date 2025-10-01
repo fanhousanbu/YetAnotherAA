@@ -4,7 +4,7 @@ import { IsOptional, IsNumber, IsBoolean, IsString, IsEnum } from "class-validat
 export enum EntryPointVersionDto {
   V0_6 = "0.6",
   V0_7 = "0.7",
-  V0_8 = "0.8"
+  V0_8 = "0.8",
 }
 
 export class CreateAccountDto {
@@ -27,7 +27,7 @@ export class CreateAccountDto {
     description: "EntryPoint version to use",
     enum: EntryPointVersionDto,
     default: EntryPointVersionDto.V0_6,
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsEnum(EntryPointVersionDto)

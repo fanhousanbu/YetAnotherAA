@@ -63,10 +63,7 @@ export function packUserOperation(userOp: any): PackedUserOperation {
     nonce: userOp.nonce,
     initCode: userOp.initCode || "0x",
     callData: userOp.callData,
-    accountGasLimits: packAccountGasLimits(
-      userOp.verificationGasLimit,
-      userOp.callGasLimit
-    ),
+    accountGasLimits: packAccountGasLimits(userOp.verificationGasLimit, userOp.callGasLimit),
     preVerificationGas: userOp.preVerificationGas,
     gasFees: packGasFees(userOp.maxPriorityFeePerGas, userOp.maxFeePerGas),
     paymasterAndData: userOp.paymasterAndData || "0x",

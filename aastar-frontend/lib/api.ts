@@ -78,8 +78,7 @@ export const accountAPI = {
     fundAmount?: string;
     salt?: number;
     entryPointVersion?: string;
-  }) =>
-    api.post("/account/create", data),
+  }) => api.post("/account/create", data),
 
   getAccount: () => api.get("/account"),
 

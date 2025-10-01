@@ -49,7 +49,7 @@ export default function EntryPointVersionSelector({
       )}
 
       <div className="grid grid-cols-1 gap-2">
-        {Object.values(EntryPointVersion).map((version) => {
+        {Object.values(EntryPointVersion).map(version => {
           const info = versionInfo[version];
           const isSelected = value === version;
 
@@ -114,7 +114,8 @@ export default function EntryPointVersionSelector({
           <InformationCircleIcon className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
           <div className="ml-2 flex-1">
             <p className="text-xs text-blue-700 dark:text-blue-300">
-              <strong>Note:</strong> Each version requires corresponding smart contracts deployed on-chain.
+              <strong>Note:</strong> Each version requires corresponding smart contracts deployed
+              on-chain.
               {value === EntryPointVersion.V0_7 && (
                 <span className="block mt-1">
                   v0.7 uses packed format for gas optimization and is recommended for new accounts.

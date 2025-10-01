@@ -1,11 +1,6 @@
 export default () => {
   // Validate required environment variables
-  const requiredVars = [
-    "JWT_SECRET",
-    "USER_ENCRYPTION_KEY",
-    "ETH_RPC_URL",
-    "BUNDLER_RPC_URL",
-  ];
+  const requiredVars = ["JWT_SECRET", "USER_ENCRYPTION_KEY", "ETH_RPC_URL", "BUNDLER_RPC_URL"];
 
   const missingVars = requiredVars.filter(varName => !process.env[varName]);
 
@@ -21,20 +16,23 @@ export default () => {
   }
 
   // Check if at least one EntryPoint version is configured
-  const hasV6Config = process.env.ENTRY_POINT_ADDRESS &&
-                      process.env.AASTAR_ACCOUNT_FACTORY_ADDRESS &&
-                      process.env.VALIDATOR_CONTRACT_ADDRESS;
+  const hasV6Config =
+    process.env.ENTRY_POINT_ADDRESS &&
+    process.env.AASTAR_ACCOUNT_FACTORY_ADDRESS &&
+    process.env.VALIDATOR_CONTRACT_ADDRESS;
 
-  const hasV7Config = process.env.ENTRY_POINT_V7_ADDRESS &&
-                      process.env.AASTAR_ACCOUNT_FACTORY_V7_ADDRESS &&
-                      process.env.VALIDATOR_CONTRACT_V7_ADDRESS;
+  const hasV7Config =
+    process.env.ENTRY_POINT_V7_ADDRESS &&
+    process.env.AASTAR_ACCOUNT_FACTORY_V7_ADDRESS &&
+    process.env.VALIDATOR_CONTRACT_V7_ADDRESS;
 
-  const hasV8Config = process.env.ENTRY_POINT_V8_ADDRESS &&
-                      process.env.AASTAR_ACCOUNT_FACTORY_V8_ADDRESS &&
-                      process.env.VALIDATOR_CONTRACT_V8_ADDRESS;
+  const hasV8Config =
+    process.env.ENTRY_POINT_V8_ADDRESS &&
+    process.env.AASTAR_ACCOUNT_FACTORY_V8_ADDRESS &&
+    process.env.VALIDATOR_CONTRACT_V8_ADDRESS;
 
   if (!hasV6Config && !hasV7Config && !hasV8Config) {
-    throw new Error('At least one EntryPoint version must be configured');
+    throw new Error("At least one EntryPoint version must be configured");
   }
 
   console.log("✅ Environment configuration validated successfully");

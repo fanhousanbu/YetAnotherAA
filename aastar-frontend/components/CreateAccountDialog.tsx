@@ -83,7 +83,10 @@ export default function CreateAccountDialog({
                 </div>
 
                 <div>
-                  <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900 dark:text-white mb-4">
+                  <Dialog.Title
+                    as="h3"
+                    className="text-lg font-semibold leading-6 text-gray-900 dark:text-white mb-4"
+                  >
                     Create Smart Account
                   </Dialog.Title>
 
@@ -107,14 +110,17 @@ export default function CreateAccountDialog({
                     {showAdvanced && (
                       <div className="space-y-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                         <div>
-                          <label htmlFor="salt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <label
+                            htmlFor="salt"
+                            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          >
                             Salt (Optional)
                           </label>
                           <input
                             type="number"
                             id="salt"
                             value={salt}
-                            onChange={(e) => setSalt(e.target.value)}
+                            onChange={e => setSalt(e.target.value)}
                             placeholder="Leave empty for random salt"
                             disabled={loading}
                             className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2"

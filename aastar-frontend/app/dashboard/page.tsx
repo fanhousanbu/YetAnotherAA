@@ -106,7 +106,9 @@ export default function DashboardPage() {
     };
 
     return (
-      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${versionColors[version] || "bg-gray-100 text-gray-800"}`}>
+      <span
+        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${versionColors[version] || "bg-gray-100 text-gray-800"}`}
+      >
         v{version}
       </span>
     );

@@ -168,8 +168,9 @@ export class PaymasterService {
 
       // For EntryPoint v0.7/v0.8, we need to pack paymaster data with gas limits
       // Check if this is for v0.7 or v0.8 based on the entryPoint address
-      const isV07OrV08 = entryPoint.toLowerCase() === "0x0000000071727De22E5E9d8BAf0edAc6f37da032".toLowerCase() ||
-                         entryPoint.toLowerCase() === "0x0576a174D229E3cFA37253523E645A78A0C91B57".toLowerCase();
+      const isV07OrV08 =
+        entryPoint.toLowerCase() === "0x0000000071727De22E5E9d8BAf0edAc6f37da032".toLowerCase() ||
+        entryPoint.toLowerCase() === "0x0576a174D229E3cFA37253523E645A78A0C91B57".toLowerCase();
 
       if (isV07OrV08) {
         // For v0.7/v0.8, pack the paymaster address with default gas limits
@@ -182,7 +183,7 @@ export class PaymasterService {
           formattedAddress,
           ethers.zeroPadValue(ethers.toBeHex(paymasterVerificationGasLimit), 16),
           ethers.zeroPadValue(ethers.toBeHex(paymasterPostOpGasLimit), 16),
-          "0x" // No additional data for simple paymasters
+          "0x", // No additional data for simple paymasters
         ]);
 
         console.log(`Packed paymaster data for v0.7/v0.8: ${packedData.slice(0, 66)}...`);
@@ -276,21 +277,26 @@ export class PaymasterService {
 
       if (result.error) {
         console.error("Pimlico API error:", result.error);
-        throw new Error(`Pimlico sponsorship failed: ${result.error.message || JSON.stringify(result.error)}`);
+        throw new Error(
+          `Pimlico sponsorship failed: ${result.error.message || JSON.stringify(result.error)}`
+        );
       }
 
       // For EntryPoint v0.7/v0.8, Pimlico returns the data in a different format
       // It may return paymasterAndData or separate fields
       if (result.result) {
         if (result.result.paymasterAndData) {
-          console.log(`Received paymasterAndData: ${result.result.paymasterAndData.slice(0, 66)}...`);
+          console.log(
+            `Received paymasterAndData: ${result.result.paymasterAndData.slice(0, 66)}...`
+          );
           return result.result.paymasterAndData;
         } else if (result.result.paymaster) {
           // For v0.7/v0.8, might return structured data
           console.log(`Received structured paymaster data`);
           // Need to pack the paymaster data according to EntryPoint v0.7 format
           const paymaster = result.result.paymaster;
-          const paymasterVerificationGasLimit = result.result.paymasterVerificationGasLimit || "0x30000";
+          const paymasterVerificationGasLimit =
+            result.result.paymasterVerificationGasLimit || "0x30000";
           const paymasterPostOpGasLimit = result.result.paymasterPostOpGasLimit || "0x30000";
           const paymasterData = result.result.paymasterData || "0x";
 
@@ -299,7 +305,7 @@ export class PaymasterService {
             paymaster,
             ethers.zeroPadValue(ethers.toBeHex(BigInt(paymasterVerificationGasLimit)), 16),
             ethers.zeroPadValue(ethers.toBeHex(BigInt(paymasterPostOpGasLimit)), 16),
-            paymasterData
+            paymasterData,
           ]);
 
           console.log(`Packed paymasterAndData: ${packedData.slice(0, 66)}...`);

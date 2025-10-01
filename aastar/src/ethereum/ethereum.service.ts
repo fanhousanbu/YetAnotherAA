@@ -2,10 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ethers } from "ethers";
 import { UserOperation } from "../common/interfaces/erc4337.interface";
-import {
-  PackedUserOperation,
-  packUserOperation,
-} from "../common/interfaces/erc4337-v7.interface";
+import { PackedUserOperation, packUserOperation } from "../common/interfaces/erc4337-v7.interface";
 import {
   EntryPointVersion,
   ENTRYPOINT_ABI_V6,

@@ -1,7 +1,7 @@
 export enum EntryPointVersion {
   V0_6 = "0.6",
   V0_7 = "0.7",
-  V0_8 = "0.8"
+  V0_8 = "0.8",
 }
 
 export interface EntryPointConfig {
