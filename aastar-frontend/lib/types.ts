@@ -6,6 +6,12 @@ export interface User {
   createdAt: string;
 }
 
+export enum EntryPointVersion {
+  V0_6 = "0.6",
+  V0_7 = "0.7",
+  V0_8 = "0.8"
+}
+
 export interface Account {
   userId: string;
   address: string;
@@ -17,6 +23,8 @@ export interface Account {
   sponsored: boolean;
   sponsorTxHash?: string;
   validatorAddress: string;
+  entryPointVersion?: string;
+  factoryAddress?: string;
   balance?: string;
   nonce?: string;
   createdAt: string;

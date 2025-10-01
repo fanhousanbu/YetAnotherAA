@@ -155,9 +155,8 @@ export class PaymasterService {
     // Handle custom user-provided paymaster addresses
     if (paymasterName === "custom-user-provided" && customAddress) {
       console.log(`Processing custom paymaster: ${customAddress}`);
-      // For custom paymasters without API integration, we need to format the address correctly
-      // paymasterAndData format: address (20 bytes) + data (variable)
-      // For simple paymasters that don't require additional data, just pad the address
+
+      // For custom paymasters without API integration, we need to format the data correctly
       const formattedAddress = customAddress.toLowerCase().startsWith("0x")
         ? customAddress
         : `0x${customAddress}`;
@@ -167,8 +166,30 @@ export class PaymasterService {
         throw new Error(`Invalid paymaster address format: ${customAddress}`);
       }
 
-      // Return just the address for simple paymasters (no additional data or signatures needed)
-      // The paymaster contract must be able to sponsor transactions without requiring signatures
+      // For EntryPoint v0.7/v0.8, we need to pack paymaster data with gas limits
+      // Check if this is for v0.7 or v0.8 based on the entryPoint address
+      const isV07OrV08 = entryPoint.toLowerCase() === "0x0000000071727De22E5E9d8BAf0edAc6f37da032".toLowerCase() ||
+                         entryPoint.toLowerCase() === "0x0576a174D229E3cFA37253523E645A78A0C91B57".toLowerCase();
+
+      if (isV07OrV08) {
+        // For v0.7/v0.8, pack the paymaster address with default gas limits
+        // Format: paymaster address (20 bytes) + verificationGasLimit (16 bytes) + postOpGasLimit (16 bytes) + data
+        const paymasterVerificationGasLimit = BigInt(0x30000); // Default 196608
+        const paymasterPostOpGasLimit = BigInt(0x30000); // Default 196608
+
+        // Pack according to v0.7 format
+        const packedData = ethers.concat([
+          formattedAddress,
+          ethers.zeroPadValue(ethers.toBeHex(paymasterVerificationGasLimit), 16),
+          ethers.zeroPadValue(ethers.toBeHex(paymasterPostOpGasLimit), 16),
+          "0x" // No additional data for simple paymasters
+        ]);
+
+        console.log(`Packed paymaster data for v0.7/v0.8: ${packedData.slice(0, 66)}...`);
+        return packedData;
+      }
+
+      // For v0.6, return just the address
       return formattedAddress;
     }
 
@@ -230,6 +251,8 @@ export class PaymasterService {
   ): Promise<string> {
     try {
       const url = `${config.endpoint}?apikey=${config.apiKey}`;
+      console.log(`Calling Pimlico API at ${url} for entryPoint ${entryPoint}`);
+
       const response = await globalThis.fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -249,14 +272,45 @@ export class PaymasterService {
       });
 
       const result = await response.json();
+      console.log("Pimlico API response:", JSON.stringify(result, null, 2));
 
       if (result.error) {
-        return "0x";
+        console.error("Pimlico API error:", result.error);
+        throw new Error(`Pimlico sponsorship failed: ${result.error.message || JSON.stringify(result.error)}`);
       }
 
-      return result.result?.paymasterAndData || "0x";
-    } catch (error) {
-      return "0x";
+      // For EntryPoint v0.7/v0.8, Pimlico returns the data in a different format
+      // It may return paymasterAndData or separate fields
+      if (result.result) {
+        if (result.result.paymasterAndData) {
+          console.log(`Received paymasterAndData: ${result.result.paymasterAndData.slice(0, 66)}...`);
+          return result.result.paymasterAndData;
+        } else if (result.result.paymaster) {
+          // For v0.7/v0.8, might return structured data
+          console.log(`Received structured paymaster data`);
+          // Need to pack the paymaster data according to EntryPoint v0.7 format
+          const paymaster = result.result.paymaster;
+          const paymasterVerificationGasLimit = result.result.paymasterVerificationGasLimit || "0x30000";
+          const paymasterPostOpGasLimit = result.result.paymasterPostOpGasLimit || "0x30000";
+          const paymasterData = result.result.paymasterData || "0x";
+
+          // Pack according to v0.7 format: paymaster address + verification gas + postOp gas + data
+          const packedData = ethers.concat([
+            paymaster,
+            ethers.zeroPadValue(ethers.toBeHex(BigInt(paymasterVerificationGasLimit)), 16),
+            ethers.zeroPadValue(ethers.toBeHex(BigInt(paymasterPostOpGasLimit)), 16),
+            paymasterData
+          ]);
+
+          console.log(`Packed paymasterAndData: ${packedData.slice(0, 66)}...`);
+          return packedData;
+        }
+      }
+
+      throw new Error("Pimlico API did not return valid paymaster data");
+    } catch (error: any) {
+      console.error("Pimlico paymaster integration error:", error.message);
+      throw error;
     }
   }
 

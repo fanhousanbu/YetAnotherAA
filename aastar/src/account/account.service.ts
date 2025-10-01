@@ -5,7 +5,8 @@ import { DatabaseService } from "../database/database.service";
 import { EthereumService } from "../ethereum/ethereum.service";
 import { DeploymentWalletService } from "../ethereum/deployment-wallet.service";
 import { AuthService } from "../auth/auth.service";
-import { CreateAccountDto } from "./dto/create-account.dto";
+import { CreateAccountDto, EntryPointVersionDto } from "./dto/create-account.dto";
+import { EntryPointVersion } from "../common/constants/entrypoint.constants";
 
 @Injectable()
 export class AccountService {
@@ -18,14 +19,23 @@ export class AccountService {
   ) {}
 
   async createAccount(userId: string, createAccountDto: CreateAccountDto) {
-    // Check if user already has an account
-    const existingAccount = await this.databaseService.findAccountByUserId(userId);
+    // Check if user already has an account with the specified version
+    const existingAccounts = await this.databaseService.getAccounts();
+    const userAccounts = existingAccounts.filter(a => a.userId === userId);
+
+    // Determine the version to use
+    const versionDto = createAccountDto.entryPointVersion || EntryPointVersionDto.V0_6;
+    const version = versionDto as unknown as EntryPointVersion;
+
+    // Check if user already has an account with this version
+    const existingAccount = userAccounts.find(a => a.entryPointVersion === versionDto);
     if (existingAccount) {
       return existingAccount;
     }
 
-    const factory = this.ethereumService.getFactoryContract();
-    const validatorAddress = this.configService.get<string>("VALIDATOR_CONTRACT_ADDRESS");
+    const factory = this.ethereumService.getFactoryContract(version);
+    const validatorAddress = this.ethereumService.getValidatorContract(version).target ||
+                            this.ethereumService.getValidatorContract(version).address;
 
     // Use deployment wallet as the owner (from .secret file)
     const deploymentWallet = this.deploymentWalletService.getWallet();
@@ -44,6 +54,7 @@ export class AccountService {
 
     // Debug logging
     console.log("Account Creation Debug:");
+    console.log("- EntryPoint Version:", versionDto);
     console.log("- Deployment Wallet Address (Creator):", deploymentWallet.address);
     console.log("- User Wallet Address (Signer):", userWallet.address);
     console.log("- Validator Address:", validatorAddress);
@@ -84,6 +95,8 @@ export class AccountService {
       deployed,
       deploymentTxHash,
       validatorAddress,
+      entryPointVersion: versionDto,
+      factoryAddress: factory.target || factory.address,
       createdAt: new Date().toISOString(),
     };
 
@@ -116,8 +129,11 @@ export class AccountService {
       // Use default value if RPC fails
     }
 
+    // Get the version for this account
+    const version = (account.entryPointVersion || "0.6") as unknown as EntryPointVersion;
+
     // Get nonce
-    const nonce = await this.ethereumService.getNonce(account.address);
+    const nonce = await this.ethereumService.getNonce(account.address, 0, version);
 
     const finalResult = {
       ...account,

@@ -43,6 +43,12 @@ export class Account {
   @Column()
   validatorAddress: string;
 
+  @Column({ default: "0.6" })
+  entryPointVersion: string;
+
+  @Column({ nullable: true })
+  factoryAddress: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import CopyButton from "@/components/CopyButton";
+import CreateAccountDialog from "@/components/CreateAccountDialog";
 import { accountAPI, transferAPI, paymasterAPI, tokenAPI } from "@/lib/api";
-import { Account, Transfer, User, TokenBalance } from "@/lib/types";
+import { Account, Transfer, User, TokenBalance, EntryPointVersion } from "@/lib/types";
 import { getStoredAuth } from "@/lib/auth";
 import toast from "react-hot-toast";
 import {
@@ -16,6 +17,7 @@ import {
   CheckCircleIcon,
   ExclamationCircleIcon,
   EyeIcon,
+  CpuChipIcon,
 } from "@heroicons/react/24/outline";
 
 export default function DashboardPage() {
@@ -26,6 +28,7 @@ export default function DashboardPage() {
   const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState("");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -87,22 +90,26 @@ export default function DashboardPage() {
     }
   };
 
-  const createAccount = async () => {
-    setActionLoading("create");
-    try {
-      const response = await accountAPI.create({
-        deploy: true,
-      });
-      setAccount(response.data);
-      toast.success("Account created successfully!");
-      // Reload data to get updated balance
-      setTimeout(() => loadDashboardData(), 2000);
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Failed to create account";
-      toast.error(message);
-    } finally {
-      setActionLoading("");
-    }
+  const handleAccountCreated = (newAccount: Account) => {
+    setAccount(newAccount);
+    // Reload data to get updated balance
+    setTimeout(() => loadDashboardData(), 2000);
+  };
+
+  const getVersionBadge = (version?: string) => {
+    if (!version) return null;
+
+    const versionColors: Record<string, string> = {
+      "0.6": "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400",
+      "0.7": "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
+      "0.8": "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400",
+    };
+
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${versionColors[version] || "bg-gray-100 text-gray-800"}`}>
+        v{version}
+      </span>
+    );
   };
 
   const showTopUpInfo = () => {
@@ -194,15 +201,12 @@ export default function DashboardPage() {
                     <WalletIcon className="w-8 h-8 text-blue-500" />
                   </div>
                   <div className="flex-1 ml-4">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      Smart Account
-                    </h3>
-                    {(() => {
-                      console.log("Rendering account:", account);
-                      console.log("Account address in render:", account?.address);
-                      console.log("Account creatorAddress in render:", account?.creatorAddress);
-                      return null;
-                    })()}
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                        Smart Account
+                      </h3>
+                      {account && getVersionBadge(account.entryPointVersion)}
+                    </div>
                     {account ? (
                       <div className="mt-2 space-y-2">
                         <div className="flex items-center justify-between">
@@ -224,13 +228,24 @@ export default function DashboardPage() {
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               account.deployed
-                                ? "bg-green-100 text-green-800"
-                                : "bg-yellow-100 text-yellow-800"
+                                ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                                : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
                             }`}
                           >
                             {account.deployed ? "Deployed" : "Not Deployed"}
                           </span>
                         </div>
+                        {account.entryPointVersion && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              <CpuChipIcon className="inline w-3 h-3 mr-1" />
+                              EntryPoint:
+                            </span>
+                            <span className="text-sm font-mono text-gray-800 dark:text-gray-200">
+                              v{account.entryPointVersion}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -244,15 +259,10 @@ export default function DashboardPage() {
                 <div className="flex mt-6 space-x-3">
                   {!account ? (
                     <button
-                      onClick={createAccount}
-                      disabled={actionLoading === "create"}
-                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                      onClick={() => setShowCreateDialog(true)}
+                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                      {actionLoading === "create" ? (
-                        <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
-                      ) : (
-                        <PlusIcon className="w-4 h-4 mr-2" />
-                      )}
+                      <PlusIcon className="w-4 h-4 mr-2" />
                       Create Account
                     </button>
                   ) : (
@@ -501,6 +511,13 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Create Account Dialog */}
+      <CreateAccountDialog
+        isOpen={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+        onSuccess={handleAccountCreated}
+      />
     </Layout>
   );
 }

@@ -18,6 +18,14 @@ import { AddressBookService } from "./address-book.service";
 import { ExecuteTransferDto } from "./dto/execute-transfer.dto";
 import { EstimateGasDto } from "./dto/estimate-gas.dto";
 import { UserOperation } from "../common/interfaces/erc4337.interface";
+import {
+  PackedUserOperation,
+  packUserOperation,
+  unpackUserOperation,
+  unpackAccountGasLimits,
+  unpackGasFees,
+} from "../common/interfaces/erc4337-v7.interface";
+import { EntryPointVersion } from "../common/constants/entrypoint.constants";
 
 @Injectable()
 export class TransferService {
@@ -35,7 +43,9 @@ export class TransferService {
 
   async executeTransfer(userId: string, transferDto: ExecuteTransferDto) {
     console.log("TransferService.executeTransfer called with userId:", userId);
-    console.log("Transfer data:", transferDto);
+    console.log("Transfer data:", JSON.stringify(transferDto, null, 2));
+    console.log("usePaymaster:", transferDto.usePaymaster);
+    console.log("paymasterAddress:", transferDto.paymasterAddress);
 
     // Verify passkey before proceeding with transaction
     if (!transferDto.passkeyCredential) {
@@ -108,6 +118,9 @@ export class TransferService {
       }
     }
 
+    // Get account version
+    const version = (account.entryPointVersion || "0.6") as unknown as EntryPointVersion;
+
     // Build UserOperation with Paymaster support
     const userOp = await this.buildUserOperation(
       userId,
@@ -118,11 +131,12 @@ export class TransferService {
       transferDto.usePaymaster,
       transferDto.paymasterAddress,
       transferDto.paymasterData,
-      transferDto.tokenAddress
+      transferDto.tokenAddress,
+      version
     );
 
     // Get UserOp hash
-    const userOpHash = await this.ethereumService.getUserOpHash(userOp);
+    const userOpHash = await this.ethereumService.getUserOpHash(userOp, version);
 
     // Generate BLS signature using active signer nodes
     const blsData = await this.blsService.generateBLSSignature(userId, userOpHash);
@@ -164,7 +178,7 @@ export class TransferService {
     await this.databaseService.saveTransfer(transfer);
 
     // Process transfer asynchronously
-    this.processTransferAsync(transferId, userOp, account.address);
+    this.processTransferAsync(transferId, userOp, account.address, version);
 
     // Return immediately with transfer ID for tracking
     return {
@@ -180,11 +194,17 @@ export class TransferService {
   }
 
   // Async processing method
-  private async processTransferAsync(transferId: string, userOp: UserOperation, from: string) {
+  private async processTransferAsync(
+    transferId: string,
+    userOp: UserOperation | PackedUserOperation,
+    from: string,
+    version: EntryPointVersion = EntryPointVersion.V0_6
+  ) {
     try {
       // Submit UserOp to bundler
       const bundlerUserOpHash = await this.ethereumService.sendUserOperation(
-        this.formatUserOpForBundler(userOp)
+        this.formatUserOpForBundler(userOp, version),
+        version
       );
 
       // Update transfer status
@@ -255,6 +275,9 @@ export class TransferService {
       throw new NotFoundException("User account not found");
     }
 
+    // Get account version
+    const version = (account.entryPointVersion || "0.6") as unknown as EntryPointVersion;
+
     // Build UserOperation for estimation (without paymaster for gas estimation)
     const userOp = await this.buildUserOperation(
       userId,
@@ -265,20 +288,21 @@ export class TransferService {
       false, // Don't use paymaster for estimation
       undefined,
       undefined,
-      (estimateDto as any).tokenAddress // Support token estimation
+      (estimateDto as any).tokenAddress, // Support token estimation
+      version
     );
 
     // Format for bundler
-    const formattedUserOp = this.formatUserOpForBundler(userOp);
+    const formattedUserOp = this.formatUserOpForBundler(userOp, version);
 
     // Get gas estimates
-    const gasEstimates = await this.ethereumService.estimateUserOperationGas(formattedUserOp);
+    const gasEstimates = await this.ethereumService.estimateUserOperationGas(formattedUserOp, version);
 
     // Get current gas prices
     const gasPrices = await this.ethereumService.getUserOperationGasPrice();
 
     // Get validator gas estimate for automatic node selection (default 3 nodes)
-    const validatorContract = this.ethereumService.getValidatorContract();
+    const validatorContract = this.ethereumService.getValidatorContract(version);
     const nodeCount = 3; // Automatic selection uses 3 nodes
     const validatorGasEstimate = await validatorContract.getGasEstimate(nodeCount);
 
@@ -374,10 +398,11 @@ export class TransferService {
     usePaymaster?: boolean,
     paymasterAddress?: string,
     _paymasterData?: string,
-    tokenAddress?: string
-  ): Promise<UserOperation> {
+    tokenAddress?: string,
+    version: EntryPointVersion = EntryPointVersion.V0_6
+  ): Promise<UserOperation | PackedUserOperation> {
     const accountContract = this.ethereumService.getAccountContract(sender);
-    const nonce = await this.ethereumService.getNonce(sender);
+    const nonce = await this.ethereumService.getNonce(sender, 0, version);
 
     // Check if account needs deployment
     const provider = this.ethereumService.getProvider();
@@ -391,12 +416,17 @@ export class TransferService {
       const accounts = await this.databaseService.getAccounts();
       const account = accounts.find(a => a.address === sender);
       if (account) {
-        const factory = this.ethereumService.getFactoryContract();
+        const factory = this.ethereumService.getFactoryContract(version);
         const factoryAddress = await factory.getAddress();
 
         // Encode factory deployment call
+        // v0.7 and v0.8 use "createAccount" method, v0.6 uses "createAccountWithAAStarValidator"
+        const methodName = (version === EntryPointVersion.V0_7 || version === EntryPointVersion.V0_8)
+          ? "createAccount"
+          : "createAccountWithAAStarValidator";
+
         const deployCalldata = factory.interface.encodeFunctionData(
-          "createAccountWithAAStarValidator",
+          methodName,
           [
             account.creatorAddress,
             account.signerAddress, // signerAddress for AA signature verification
@@ -459,43 +489,39 @@ export class TransferService {
     let paymasterAndData = "0x";
     if (usePaymaster) {
       try {
-        // Determine which paymaster to use
-        let paymasterName = "pimlico-sepolia"; // default to pimlico-sepolia
-
+        // If a specific paymaster address is provided, use it directly
         if (paymasterAddress) {
-          // Check if this is a known paymaster
-          const availablePaymasters = await this.paymasterService.getAvailablePaymasters(userId);
-          const knownPaymaster = availablePaymasters.find(
-            pm => pm.address.toLowerCase() === paymasterAddress.toLowerCase()
+          console.log(`Using custom paymaster address: ${paymasterAddress}`);
+
+          // Get paymaster sponsorship data
+          const entryPoint = this.ethereumService.getEntryPointContract(version).target as string;
+
+          // Always pass "custom-user-provided" as the name when a specific address is provided
+          paymasterAndData = await this.paymasterService.getPaymasterData(
+            userId,
+            "custom-user-provided",
+            baseUserOp,
+            entryPoint,
+            paymasterAddress // Pass the actual paymaster address
           );
-          if (knownPaymaster) {
-            paymasterName = knownPaymaster.name;
-          } else {
-            // For unknown paymaster addresses, register it temporarily as a custom paymaster
-            paymasterName = "custom-user-provided";
-            console.log(`Using custom paymaster address: ${paymasterAddress}`);
-          }
         } else {
-          // Use the first configured paymaster
+          // No specific address provided, try to use a configured paymaster
           const availablePaymasters = await this.paymasterService.getAvailablePaymasters(userId);
           const configuredPaymaster = availablePaymasters.find(pm => pm.configured);
+
           if (configuredPaymaster) {
-            paymasterName = configuredPaymaster.name;
+            const entryPoint = this.ethereumService.getEntryPointContract(version).target as string;
+            paymasterAndData = await this.paymasterService.getPaymasterData(
+              userId,
+              configuredPaymaster.name,
+              baseUserOp,
+              entryPoint,
+              undefined
+            );
           } else {
-            // No configured paymaster found, fallback to custom user-provided
-            paymasterName = "custom-user-provided";
+            throw new BadRequestException("No paymaster configured and no paymaster address provided");
           }
         }
-
-        // Get paymaster sponsorship data
-        const entryPoint = this.ethereumService.getEntryPointContract().target as string;
-        paymasterAndData = await this.paymasterService.getPaymasterData(
-          userId,
-          paymasterName,
-          baseUserOp,
-          entryPoint,
-          paymasterAddress // Pass the actual paymaster address for custom paymasters
-        );
 
         if (paymasterAndData && paymasterAndData !== "0x") {
           baseUserOp.paymasterAndData = paymasterAndData;
@@ -513,9 +539,9 @@ export class TransferService {
     }
 
     // Estimate gas (with paymaster data if applicable)
-    const gasEstimates = await this.ethereumService.estimateUserOperationGas(baseUserOp);
+    const gasEstimates = await this.ethereumService.estimateUserOperationGas(baseUserOp, version);
 
-    return {
+    const standardUserOp: UserOperation = {
       sender,
       nonce,
       initCode,
@@ -528,21 +554,120 @@ export class TransferService {
       paymasterAndData,
       signature: "0x",
     };
+
+    // Convert to PackedUserOperation for v0.7 and v0.8
+    if (version === EntryPointVersion.V0_7 || version === EntryPointVersion.V0_8) {
+      return packUserOperation(standardUserOp);
+    }
+
+    return standardUserOp;
   }
 
-  private formatUserOpForBundler(userOp: UserOperation): any {
+  private formatUserOpForBundler(
+    userOp: UserOperation | PackedUserOperation,
+    version: EntryPointVersion = EntryPointVersion.V0_6
+  ): any {
+    if (version === EntryPointVersion.V0_7 || version === EntryPointVersion.V0_8) {
+      // For v0.7/v0.8, we need to send UNPACKED format to Pimlico bundler
+      // Even though the contract uses PackedUserOperation, bundlers expect the unpacked format
+      const packedOp = userOp as PackedUserOperation;
+
+      // Unpack the gas values
+      const gasLimits = unpackAccountGasLimits(packedOp.accountGasLimits);
+      const gasFees = unpackGasFees(packedOp.gasFees);
+
+      // Parse initCode to extract factory and factoryData
+      let factory: string | undefined;
+      let factoryData: string | undefined;
+      if (packedOp.initCode && packedOp.initCode !== "0x" && packedOp.initCode.length > 2) {
+        factory = packedOp.initCode.slice(0, 42); // First 20 bytes (address)
+        if (packedOp.initCode.length > 42) {
+          factoryData = "0x" + packedOp.initCode.slice(42);
+        }
+      }
+
+      // Parse paymasterAndData to extract components
+      let paymaster: string | undefined;
+      let paymasterVerificationGasLimit: string | undefined;
+      let paymasterPostOpGasLimit: string | undefined;
+      let paymasterData: string | undefined;
+
+      if (packedOp.paymasterAndData && packedOp.paymasterAndData !== "0x" && packedOp.paymasterAndData.length > 2) {
+        // First 20 bytes is the paymaster address
+        paymaster = packedOp.paymasterAndData.slice(0, 42);
+
+        if (packedOp.paymasterAndData.length >= 74) {
+          // Next 16 bytes (32 hex chars) is verification gas limit (not 32 bytes!)
+          const verificationGasHex = packedOp.paymasterAndData.slice(42, 74);
+          paymasterVerificationGasLimit = "0x" + BigInt("0x" + verificationGasHex).toString(16);
+        }
+
+        if (packedOp.paymasterAndData.length >= 106) {
+          // Next 16 bytes is post-op gas limit
+          const postOpGasHex = packedOp.paymasterAndData.slice(74, 106);
+          paymasterPostOpGasLimit = "0x" + BigInt("0x" + postOpGasHex).toString(16);
+        }
+
+        if (packedOp.paymasterAndData.length > 106) {
+          // Remaining bytes are paymaster data
+          paymasterData = "0x" + packedOp.paymasterAndData.slice(106);
+        }
+      }
+
+      // Build the unpacked UserOperation object for v0.7
+      const result: any = {
+        sender: packedOp.sender,
+        nonce: typeof packedOp.nonce === "bigint"
+          ? "0x" + packedOp.nonce.toString(16)
+          : packedOp.nonce.toString().startsWith("0x")
+            ? packedOp.nonce.toString()
+            : "0x" + BigInt(packedOp.nonce).toString(16),
+        callData: packedOp.callData,
+        callGasLimit: "0x" + gasLimits.callGasLimit.toString(16),
+        verificationGasLimit: "0x" + gasLimits.verificationGasLimit.toString(16),
+        preVerificationGas: typeof packedOp.preVerificationGas === "bigint"
+          ? "0x" + packedOp.preVerificationGas.toString(16)
+          : packedOp.preVerificationGas.toString().startsWith("0x")
+            ? packedOp.preVerificationGas.toString()
+            : "0x" + BigInt(packedOp.preVerificationGas).toString(16),
+        maxFeePerGas: "0x" + gasFees.maxFeePerGas.toString(16),
+        maxPriorityFeePerGas: "0x" + gasFees.maxPriorityFeePerGas.toString(16),
+        signature: packedOp.signature || "0x",
+      };
+
+      // Add optional fields only if they have values
+      if (factory) result.factory = factory;
+      if (factoryData) result.factoryData = factoryData;
+
+      // For paymaster, we need ALL fields or NONE
+      if (paymaster) {
+        result.paymaster = paymaster;
+        // Always set gas limits for v0.7/v0.8, even if not parsed
+        result.paymasterVerificationGasLimit = paymasterVerificationGasLimit || "0x30000";
+        result.paymasterPostOpGasLimit = paymasterPostOpGasLimit || "0x30000";
+        // paymasterData can be empty
+        if (paymasterData && paymasterData !== "0x") {
+          result.paymasterData = paymasterData;
+        }
+      }
+
+      return result;
+    }
+
+    // Format standard UserOperation for v0.6
+    const standardOp = userOp as UserOperation;
     return {
-      sender: userOp.sender,
-      nonce: "0x" + userOp.nonce.toString(16),
-      initCode: userOp.initCode,
-      callData: userOp.callData,
-      callGasLimit: "0x" + userOp.callGasLimit.toString(16),
-      verificationGasLimit: "0x" + userOp.verificationGasLimit.toString(16),
-      preVerificationGas: "0x" + userOp.preVerificationGas.toString(16),
-      maxFeePerGas: "0x" + userOp.maxFeePerGas.toString(16),
-      maxPriorityFeePerGas: "0x" + userOp.maxPriorityFeePerGas.toString(16),
-      paymasterAndData: userOp.paymasterAndData,
-      signature: userOp.signature,
+      sender: standardOp.sender,
+      nonce: "0x" + standardOp.nonce.toString(16),
+      initCode: standardOp.initCode,
+      callData: standardOp.callData,
+      callGasLimit: "0x" + standardOp.callGasLimit.toString(16),
+      verificationGasLimit: "0x" + standardOp.verificationGasLimit.toString(16),
+      preVerificationGas: "0x" + standardOp.preVerificationGas.toString(16),
+      maxFeePerGas: "0x" + standardOp.maxFeePerGas.toString(16),
+      maxPriorityFeePerGas: "0x" + standardOp.maxPriorityFeePerGas.toString(16),
+      paymasterAndData: standardOp.paymasterAndData,
+      signature: standardOp.signature,
     };
   }
 }

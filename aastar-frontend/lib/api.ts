@@ -73,7 +73,12 @@ export const authAPI = {
 
 // Account API
 export const accountAPI = {
-  create: (data: { deploy?: boolean; fundAmount?: string; salt?: number }) =>
+  create: (data: {
+    deploy?: boolean;
+    fundAmount?: string;
+    salt?: number;
+    entryPointVersion?: string;
+  }) =>
     api.post("/account/create", data),
 
   getAccount: () => api.get("/account"),

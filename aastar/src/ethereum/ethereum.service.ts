@@ -2,6 +2,17 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ethers } from "ethers";
 import { UserOperation } from "../common/interfaces/erc4337.interface";
+import {
+  PackedUserOperation,
+  packUserOperation,
+} from "../common/interfaces/erc4337-v7.interface";
+import {
+  EntryPointVersion,
+  ENTRYPOINT_ABI_V6,
+  ENTRYPOINT_ABI_V7_V8,
+  FACTORY_ABI_V6,
+  FACTORY_ABI_V7_V8,
+} from "../common/constants/entrypoint.constants";
 
 @Injectable()
 export class EthereumService {
@@ -9,20 +20,8 @@ export class EthereumService {
   private bundlerProvider: ethers.JsonRpcProvider;
 
   // Contract ABIs
-  private readonly FACTORY_ABI = [
-    "function getAddress(address creator, address signer, address validator, bool useAAStarValidator, uint256 salt) view returns (address)",
-    "function createAccountWithAAStarValidator(address creator, address signer, address aaStarValidator, bool useAAStarValidator, uint256 salt) returns (address)",
-  ];
-
   private readonly ACCOUNT_ABI = [
     "function execute(address dest, uint256 value, bytes calldata func) external",
-  ];
-
-  private readonly ENTRY_POINT_ABI = [
-    "function simulateValidation((address,uint256,bytes,bytes,uint256,uint256,uint256,uint256,uint256,bytes,bytes) userOp) external",
-    "function getNonce(address sender, uint192 key) external view returns (uint256 nonce)",
-    "function getUserOpHash((address,uint256,bytes,bytes,uint256,uint256,uint256,uint256,uint256,bytes,bytes) userOp) external view returns (bytes32)",
-    "function handleOps((address,uint256,bytes,bytes,uint256,uint256,uint256,uint256,uint256,bytes,bytes)[] ops, address payable beneficiary) external",
   ];
 
   private readonly VALIDATOR_ABI = [
@@ -44,32 +43,61 @@ export class EthereumService {
     return this.bundlerProvider;
   }
 
-  getFactoryContract(): ethers.Contract {
-    return new ethers.Contract(
-      this.configService.get<string>("aastarAccountFactoryAddress"),
-      this.FACTORY_ABI,
-      this.provider
-    );
+  getFactoryContract(version: EntryPointVersion = EntryPointVersion.V0_6): ethers.Contract {
+    const address = this.getFactoryAddress(version);
+    const abi = version === EntryPointVersion.V0_6 ? FACTORY_ABI_V6 : FACTORY_ABI_V7_V8;
+    return new ethers.Contract(address, abi, this.provider);
   }
 
-  getEntryPointContract(): ethers.Contract {
-    return new ethers.Contract(
-      this.configService.get<string>("entryPointAddress"),
-      this.ENTRY_POINT_ABI,
-      this.provider
-    );
+  getEntryPointContract(version: EntryPointVersion = EntryPointVersion.V0_6): ethers.Contract {
+    const address = this.getEntryPointAddress(version);
+    const abi = version === EntryPointVersion.V0_6 ? ENTRYPOINT_ABI_V6 : ENTRYPOINT_ABI_V7_V8;
+    return new ethers.Contract(address, abi, this.provider);
   }
 
-  getValidatorContract(): ethers.Contract {
-    return new ethers.Contract(
-      this.configService.get<string>("validatorContractAddress"),
-      this.VALIDATOR_ABI,
-      this.provider
-    );
+  getValidatorContract(version: EntryPointVersion = EntryPointVersion.V0_6): ethers.Contract {
+    const address = this.getValidatorAddress(version);
+    return new ethers.Contract(address, this.VALIDATOR_ABI, this.provider);
   }
 
   getAccountContract(address: string): ethers.Contract {
     return new ethers.Contract(address, this.ACCOUNT_ABI, this.provider);
+  }
+
+  private getEntryPointAddress(version: EntryPointVersion): string {
+    switch (version) {
+      case EntryPointVersion.V0_7:
+        return this.configService.get<string>("entryPointV7Address");
+      case EntryPointVersion.V0_8:
+        return this.configService.get<string>("entryPointV8Address");
+      case EntryPointVersion.V0_6:
+      default:
+        return this.configService.get<string>("entryPointAddress");
+    }
+  }
+
+  private getFactoryAddress(version: EntryPointVersion): string {
+    switch (version) {
+      case EntryPointVersion.V0_7:
+        return this.configService.get<string>("aastarAccountFactoryV7Address");
+      case EntryPointVersion.V0_8:
+        return this.configService.get<string>("aastarAccountFactoryV8Address");
+      case EntryPointVersion.V0_6:
+      default:
+        return this.configService.get<string>("aastarAccountFactoryAddress");
+    }
+  }
+
+  private getValidatorAddress(version: EntryPointVersion): string {
+    switch (version) {
+      case EntryPointVersion.V0_7:
+        return this.configService.get<string>("validatorContractV7Address");
+      case EntryPointVersion.V0_8:
+        return this.configService.get<string>("validatorContractV8Address");
+      case EntryPointVersion.V0_6:
+      default:
+        return this.configService.get<string>("validatorContractAddress");
+    }
   }
 
   async getBalance(address: string): Promise<string> {
@@ -77,35 +105,63 @@ export class EthereumService {
     return ethers.formatEther(balance);
   }
 
-  async getNonce(accountAddress: string, key: number = 0): Promise<bigint> {
-    const entryPoint = this.getEntryPointContract();
+  async getNonce(
+    accountAddress: string,
+    key: number = 0,
+    version: EntryPointVersion = EntryPointVersion.V0_6
+  ): Promise<bigint> {
+    const entryPoint = this.getEntryPointContract(version);
     return await entryPoint.getNonce(accountAddress, key);
   }
 
-  async getUserOpHash(userOp: UserOperation): Promise<string> {
-    const entryPoint = this.getEntryPointContract();
-    // Per ERC-4337, signature must be "0x" when calculating userOpHash
-    const userOpArray = [
-      userOp.sender,
-      userOp.nonce,
-      userOp.initCode,
-      userOp.callData,
-      userOp.callGasLimit,
-      userOp.verificationGasLimit,
-      userOp.preVerificationGas,
-      userOp.maxFeePerGas,
-      userOp.maxPriorityFeePerGas,
-      userOp.paymasterAndData,
-      "0x", // Always use empty signature for hash calculation
-    ];
-    return await entryPoint.getUserOpHash(userOpArray);
+  async getUserOpHash(
+    userOp: UserOperation | PackedUserOperation,
+    version: EntryPointVersion = EntryPointVersion.V0_6
+  ): Promise<string> {
+    const entryPoint = this.getEntryPointContract(version);
+
+    if (version === EntryPointVersion.V0_6) {
+      // v0.6: Use standard UserOperation format
+      const userOpArray = [
+        userOp.sender,
+        userOp.nonce,
+        userOp.initCode || "0x",
+        userOp.callData,
+        (userOp as UserOperation).callGasLimit,
+        (userOp as UserOperation).verificationGasLimit,
+        (userOp as UserOperation).preVerificationGas,
+        (userOp as UserOperation).maxFeePerGas,
+        (userOp as UserOperation).maxPriorityFeePerGas,
+        (userOp as UserOperation).paymasterAndData || "0x",
+        "0x", // Always use empty signature for hash calculation
+      ];
+      return await entryPoint.getUserOpHash(userOpArray);
+    } else {
+      // v0.7 and v0.8: Use PackedUserOperation format
+      const packedOp = userOp as PackedUserOperation;
+      const packedOpArray = [
+        packedOp.sender,
+        packedOp.nonce,
+        packedOp.initCode || "0x",
+        packedOp.callData,
+        packedOp.accountGasLimits,
+        packedOp.preVerificationGas,
+        packedOp.gasFees,
+        packedOp.paymasterAndData || "0x",
+        "0x", // Always use empty signature for hash calculation
+      ];
+      return await entryPoint.getUserOpHash(packedOpArray);
+    }
   }
 
-  async estimateUserOperationGas(userOp: any): Promise<any> {
+  async estimateUserOperationGas(
+    userOp: any,
+    version: EntryPointVersion = EntryPointVersion.V0_6
+  ): Promise<any> {
     try {
       return await this.bundlerProvider.send("eth_estimateUserOperationGas", [
         userOp,
-        this.configService.get<string>("entryPointAddress"),
+        this.getEntryPointAddress(version),
       ]);
     } catch {
       // Return default values if estimation fails
@@ -117,10 +173,13 @@ export class EthereumService {
     }
   }
 
-  async sendUserOperation(userOp: any): Promise<string> {
+  async sendUserOperation(
+    userOp: any,
+    version: EntryPointVersion = EntryPointVersion.V0_6
+  ): Promise<string> {
     return await this.bundlerProvider.send("eth_sendUserOperation", [
       userOp,
-      this.configService.get<string>("entryPointAddress"),
+      this.getEntryPointAddress(version),
     ]);
   }
 
@@ -190,5 +249,27 @@ export class EthereumService {
         };
       }
     }
+  }
+
+  // Helper function to detect which version a deployed account is using
+  async detectAccountVersion(accountAddress: string): Promise<EntryPointVersion> {
+    // Try to detect based on the factory that deployed it
+    // This is a simplified approach - in production you might want to
+    // store this information in the database or use a different detection method
+
+    // Check if account supports v0.8 executeUserOp function
+    try {
+      const accountContract = this.getAccountContract(accountAddress);
+      const code = await this.provider.getCode(accountAddress);
+      if (code && code !== "0x") {
+        // Try to call a v0.8-specific function (this is a heuristic)
+        // In practice, you might want to check the bytecode or use events
+        return EntryPointVersion.V0_6; // Default for now
+      }
+    } catch {
+      // Ignore errors
+    }
+
+    return EntryPointVersion.V0_6; // Default to v0.6
   }
 }
