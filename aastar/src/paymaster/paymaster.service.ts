@@ -252,8 +252,6 @@ export class PaymasterService {
   ): Promise<string> {
     try {
       const url = `${config.endpoint}?apikey=${config.apiKey}`;
-      // console.log(`Calling Pimlico API at ${url} for entryPoint ${entryPoint}`);
-
       const response = await globalThis.fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
