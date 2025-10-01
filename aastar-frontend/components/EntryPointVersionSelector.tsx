@@ -22,12 +22,12 @@ const versionInfo = {
     badge: "Recommended",
     badgeColor: "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
   },
-  [EntryPointVersion.V0_8]: {
-    label: "v0.8",
-    description: "Latest version with executeUserOp and further optimizations",
-    badge: "Latest",
-    badgeColor: "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400",
-  },
+  // [EntryPointVersion.V0_8]: {
+  //   label: "v0.8",
+  //   description: "Latest version with executeUserOp and further optimizations",
+  //   badge: "Latest",
+  //   badgeColor: "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400",
+  // },
 };
 
 export default function EntryPointVersionSelector({
@@ -119,11 +119,6 @@ export default function EntryPointVersionSelector({
               {value === EntryPointVersion.V0_7 && (
                 <span className="block mt-1">
                   v0.7 uses packed format for gas optimization and is recommended for new accounts.
-                </span>
-              )}
-              {value === EntryPointVersion.V0_8 && (
-                <span className="block mt-1">
-                  v0.8 is the latest version with additional optimizations.
                 </span>
               )}
             </p>
