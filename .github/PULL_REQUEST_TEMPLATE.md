@@ -1,69 +1,18 @@
-## 📋 Pull Request Description
+## 📝 What does this PR do?
 
-### 🔄 Changes Made
+Brief description of the changes.
 
-- [ ] WebAuthn/Passkey improvements
-- [ ] BLS signature enhancements
-- [ ] ERC-4337 functionality updates
-- [ ] Frontend improvements
-- [ ] Backend API changes
-- [ ] Smart contract modifications
-- [ ] Documentation updates
-- [ ] Bug fixes
-- [ ] Performance improvements
+## 🎯 Related Issue
 
-### 📝 Summary
+Fixes #(issue) or Relates to #(issue)
 
-Brief description of what this PR does.
+## 🧪 Testing
 
-### 🎯 Related Issue
-
-Fixes #(issue number) or Relates to #(issue number)
-
-### 🧪 Testing
-
-- [ ] Unit tests added/updated
-- [ ] Integration tests added/updated
-- [ ] Smart contract tests added/updated
-- [ ] Manual testing completed
-- [ ] WebAuthn/Passkey flow tested
-- [ ] BLS signature verification tested
-
-### 🔐 Security Considerations
-
-- [ ] No sensitive information exposed
-- [ ] WebAuthn security standards maintained
-- [ ] BLS signature integrity preserved
-- [ ] Smart contract security reviewed
-- [ ] Input validation added/maintained
-
-### 📚 Documentation
-
-- [ ] README updated (if needed)
-- [ ] Code comments added/updated
-- [ ] API documentation updated
-- [ ] Smart contract documentation updated
-
-### ✅ Checklist
-
-- [ ] Code follows project style guidelines
-- [ ] Self-review of code completed
-- [ ] Code compiles without warnings
 - [ ] Tests pass locally
-- [ ] Changes don't break existing functionality
-- [ ] Commit messages are clear and descriptive
+- [ ] Manual testing completed
 
-### 📸 Screenshots (if applicable)
+## ✅ Checklist
 
-Add screenshots to help explain your changes.
-
-### 🔄 Breaking Changes
-
-- [ ] This PR contains breaking changes
-- [ ] Migration guide provided (if breaking changes exist)
-
-**If breaking changes exist, describe them here:**
-
-### 📋 Additional Notes
-
-Any additional information that reviewers should know.
+- [ ] Code compiles without errors
+- [ ] No breaking changes (or migration guide provided)
+- [ ] Documentation updated if needed
