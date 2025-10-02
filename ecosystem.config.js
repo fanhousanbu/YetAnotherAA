@@ -56,6 +56,8 @@ module.exports = {
         USER_ENCRYPTION_KEY:
           process.env.USER_ENCRYPTION_KEY || "your-secret-encryption-key-32-chars",
         PIMLICO_API_KEY: process.env.PIMLICO_API_KEY,
+        KMS_ENABLED: "true",
+        KMS_ENDPOINT: "https://kms.aastar.io",
       },
     },
     {

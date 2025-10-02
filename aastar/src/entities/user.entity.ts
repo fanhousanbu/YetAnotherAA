@@ -21,11 +21,17 @@ export class User {
   @Column()
   walletAddress: string;
 
-  @Column()
-  encryptedPrivateKey: string;
+  @Column({ nullable: true })
+  encryptedPrivateKey?: string;
 
-  @Column()
-  mnemonic: string;
+  @Column({ nullable: true })
+  mnemonic?: string;
+
+  @Column({ nullable: true })
+  kmsKeyId?: string;
+
+  @Column({ default: false })
+  useKms: boolean;
 
   @CreateDateColumn()
   createdAt: Date;

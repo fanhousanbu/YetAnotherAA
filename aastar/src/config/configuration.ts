@@ -68,5 +68,8 @@ export default () => {
     defaultEntryPointVersion: process.env.DEFAULT_ENTRYPOINT_VERSION || "0.6",
     blsSeedNodes: process.env.BLS_SEED_NODES,
     blsFallbackEndpoints: process.env.BLS_FALLBACK_ENDPOINTS,
+    // KMS configuration
+    kmsEnabled: process.env.KMS_ENABLED === "true",
+    kmsEndpoint: process.env.KMS_ENDPOINT || "https://kms.aastar.io",
   };
 };

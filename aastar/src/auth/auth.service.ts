@@ -3,6 +3,7 @@ import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { DatabaseService } from "../database/database.service";
 import { CryptoUtil } from "../common/utils/crypto.util";
+import { KmsService } from "../kms/kms.service";
 import { ethers } from "ethers";
 import * as bcrypt from "bcrypt";
 import { RegisterDto } from "./dto/register.dto";
@@ -29,7 +30,8 @@ export class AuthService {
   constructor(
     private databaseService: DatabaseService,
     private jwtService: JwtService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private kmsService: KmsService
   ) {
     // Load WebAuthn configuration from environment variables
     this.rpName = this.configService.get<string>("webauthnRpName");
@@ -46,23 +48,48 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-    // Generate HDWallet for the user
-    const userWallet = ethers.Wallet.createRandom();
-    const encryptionKey = this.configService.get<string>("userEncryptionKey");
-    const encryptedPrivateKey = CryptoUtil.encrypt(userWallet.privateKey, encryptionKey);
+    let walletAddress: string;
+    let encryptedPrivateKey: string | undefined;
+    let mnemonic: string | undefined;
+    let kmsKeyId: string | undefined;
+    let useKms = false;
 
-    console.log("User Registration Debug:");
-    console.log("- Generated Wallet Address:", userWallet.address);
-    console.log("- Mnemonic:", userWallet.mnemonic?.phrase);
+    if (this.kmsService.isKmsEnabled()) {
+      // Use KMS to create wallet
+      useKms = true;
+      const description = `wallet-${registerDto.email}-${Date.now()}`;
+      const kmsResponse = await this.kmsService.createKey(description);
+
+      kmsKeyId = kmsResponse.KeyMetadata.KeyId;
+      // Get wallet address from KMS
+      walletAddress = await this.kmsService.getAddressForKey(kmsKeyId);
+
+      console.log("User Registration Debug (KMS):");
+      console.log("- KMS Key ID:", kmsKeyId);
+      console.log("- Wallet Address:", walletAddress);
+    } else {
+      // Generate HDWallet locally (existing logic)
+      const userWallet = ethers.Wallet.createRandom();
+      const encryptionKey = this.configService.get<string>("userEncryptionKey");
+      encryptedPrivateKey = CryptoUtil.encrypt(userWallet.privateKey, encryptionKey);
+      walletAddress = userWallet.address;
+      mnemonic = userWallet.mnemonic?.phrase;
+
+      console.log("User Registration Debug (Local):");
+      console.log("- Generated Wallet Address:", walletAddress);
+      console.log("- Mnemonic:", mnemonic);
+    }
 
     const user = {
       id: uuidv4(),
       email: registerDto.email,
       username: registerDto.username || registerDto.email.split("@")[0],
       password: hashedPassword,
-      walletAddress: userWallet.address,
+      walletAddress,
       encryptedPrivateKey,
-      mnemonic: userWallet.mnemonic?.phrase, // In production, this should also be encrypted
+      mnemonic, // In production, this should also be encrypted
+      kmsKeyId,
+      useKms,
       createdAt: new Date().toISOString(),
     };
 
@@ -111,10 +138,25 @@ export class AuthService {
     return result;
   }
 
-  async getUserWallet(userId: string): Promise<ethers.Wallet> {
+  async getUserWallet(userId: string): Promise<ethers.Wallet | any> {
     const user = await this.databaseService.findUserById(userId);
     if (!user) {
       throw new Error(`User not found for userId: ${userId}`);
+    }
+
+    if (user.useKms && user.kmsKeyId) {
+      // Return KMS signer
+      const kmsSigner = this.kmsService.createKmsSigner(user.kmsKeyId);
+
+      // Verify the address matches
+      const address = await kmsSigner.getAddress();
+      if (address.toLowerCase() !== user.walletAddress.toLowerCase()) {
+        throw new Error(
+          `KMS wallet address mismatch! Expected: ${user.walletAddress}, Got: ${address}`
+        );
+      }
+
+      return kmsSigner;
     }
 
     if (!user.encryptedPrivateKey) {
@@ -223,24 +265,48 @@ export class AuthService {
       // 创建用户（包含密码和钱包）
       const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-      // Generate HDWallet for the user (same as regular registration)
-      const userWallet = ethers.Wallet.createRandom();
-      const encryptionKey = this.configService.get<string>("userEncryptionKey");
+      let walletAddress: string;
+      let encryptedPrivateKey: string | undefined;
+      let mnemonic: string | undefined;
+      let kmsKeyId: string | undefined;
+      let useKms = false;
 
-      const encryptedPrivateKey = CryptoUtil.encrypt(userWallet.privateKey, encryptionKey);
+      if (this.kmsService.isKmsEnabled()) {
+        // Use KMS to create wallet
+        useKms = true;
+        const description = `wallet-${registerDto.email}-${Date.now()}`;
+        const kmsResponse = await this.kmsService.createKey(description);
 
-      console.log("Passkey User Registration Debug:");
-      console.log("- Generated Wallet Address:", userWallet.address);
-      console.log("- Mnemonic:", userWallet.mnemonic?.phrase);
+        kmsKeyId = kmsResponse.KeyMetadata.KeyId;
+        // Get wallet address from KMS
+        walletAddress = await this.kmsService.getAddressForKey(kmsKeyId);
+
+        console.log("Passkey User Registration Debug (KMS):");
+        console.log("- KMS Key ID:", kmsKeyId);
+        console.log("- Wallet Address:", walletAddress);
+      } else {
+        // Generate HDWallet locally (existing logic)
+        const userWallet = ethers.Wallet.createRandom();
+        const encryptionKey = this.configService.get<string>("userEncryptionKey");
+        encryptedPrivateKey = CryptoUtil.encrypt(userWallet.privateKey, encryptionKey);
+        walletAddress = userWallet.address;
+        mnemonic = userWallet.mnemonic?.phrase;
+
+        console.log("Passkey User Registration Debug (Local):");
+        console.log("- Generated Wallet Address:", walletAddress);
+        console.log("- Mnemonic:", mnemonic);
+      }
 
       const user = {
         id: uuidv4(),
         email: registerDto.email,
         username: registerDto.username || registerDto.email.split("@")[0],
         password: hashedPassword,
-        walletAddress: userWallet.address,
+        walletAddress,
         encryptedPrivateKey,
-        mnemonic: userWallet.mnemonic?.phrase, // In production, this should also be encrypted
+        mnemonic, // In production, this should also be encrypted
+        kmsKeyId,
+        useKms,
         createdAt: new Date().toISOString(),
       };
 
