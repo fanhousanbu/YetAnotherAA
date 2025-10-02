@@ -14,7 +14,7 @@ import {
   GossipStats,
   MessageHistory,
 } from "./gossip.interfaces.js";
-import { GossipEndpointValidator } from "./gossip-validator";
+import { GossipEndpointValidator } from "./gossip-validator.js";
 
 @Injectable()
 export class GossipService implements OnModuleInit, OnModuleDestroy {
@@ -60,13 +60,22 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
 
     // Validate bootstrap peers to prevent SSRF
     // In development mode, allow private networks for local testing
-    const allowPrivateNetworks = process.env.NODE_ENV === 'development' ||
-                                process.env.NODE_ENV === 'dev' ||
-                                process.env.NODE_ENV === 'local';
+    const allowPrivateNetworks =
+      process.env.NODE_ENV === "development" ||
+      process.env.NODE_ENV === "dev" ||
+      process.env.NODE_ENV === "local";
+
+    console.log(
+      `🔧 NODE_ENV: ${process.env.NODE_ENV}, Allow private networks: ${allowPrivateNetworks}`
+    );
+    console.log(`📝 Raw bootstrap peers: ${rawBootstrapPeers.join(", ")}`);
+
     this.bootstrapPeers = GossipEndpointValidator.validateEndpoints(
       rawBootstrapPeers,
       allowPrivateNetworks
     );
+
+    console.log(`✅ Validated bootstrap peers: ${this.bootstrapPeers.join(", ")}`);
 
     // Set up known peers file path (will be updated after node initialization)
     this.knownPeersFile = path.join(process.cwd(), "data/gossip-peers-temp.json");
@@ -232,9 +241,10 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
     try {
       // Validate and sanitize the endpoint to prevent SSRF attacks
       // Allow private networks in development mode
-      const allowPrivateNetworks = process.env.NODE_ENV === 'development' ||
-                                  process.env.NODE_ENV === 'dev' ||
-                                  process.env.NODE_ENV === 'local';
+      const allowPrivateNetworks =
+        process.env.NODE_ENV === "development" ||
+        process.env.NODE_ENV === "dev" ||
+        process.env.NODE_ENV === "local";
       const validatedEndpoint = GossipEndpointValidator.validateEndpoint(
         endpoint,
         allowPrivateNetworks
@@ -265,10 +275,16 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
       });
 
       ws.on("error", (error: Error) => {
-        console.error(`Connection error to ${endpoint}:`, error);
+        console.error(`❌ WebSocket error for ${endpoint}:`, error.message);
+        console.error(`    Error details:`, error);
       });
     } catch (error) {
-      console.error(`Failed to connect to ${endpoint}:`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Failed to connect to ${endpoint}: ${errorMessage}`);
+      if (error instanceof Error && error.stack) {
+        console.error(`    Stack trace:`, error.stack);
+      }
+      throw error; // Re-throw to properly handle in Promise.allSettled
     }
   }
 
@@ -352,20 +368,21 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
 
     const existingPeer = this.peers.get(peerId);
 
-    // Validate endpoints before accepting peer information
+    // Get endpoints from peer data or existing peer
     let validatedApiEndpoint = peerData.apiEndpoint || existingPeer?.apiEndpoint;
     let validatedGossipEndpoint = peerData.gossipEndpoint || existingPeer?.gossipEndpoint;
 
+    // Only validate gossip endpoint (WebSocket), not API endpoint (HTTP)
     try {
-      const allowPrivateNetworks = process.env.NODE_ENV === 'development' ||
-                                  process.env.NODE_ENV === 'dev' ||
-                                  process.env.NODE_ENV === 'local';
-      if (validatedApiEndpoint) {
-        validatedApiEndpoint = GossipEndpointValidator.validateEndpoint(
-          validatedApiEndpoint,
-          allowPrivateNetworks
-        );
-      }
+      const allowPrivateNetworks =
+        process.env.NODE_ENV === "development" ||
+        process.env.NODE_ENV === "dev" ||
+        process.env.NODE_ENV === "local";
+
+      // API endpoint can be HTTP/HTTPS, no validation needed for protocol
+      // Just store it as-is since it's for API calls, not WebSocket connections
+
+      // Only validate gossip endpoint which must be WebSocket
       if (validatedGossipEndpoint) {
         validatedGossipEndpoint = GossipEndpointValidator.validateEndpoint(
           validatedGossipEndpoint,
@@ -373,7 +390,8 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
         );
       }
     } catch (error) {
-      console.error(`⚠️ Rejected peer ${peerId} due to invalid endpoints: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`⚠️ Rejected peer ${peerId} due to invalid gossip endpoint: ${errorMessage}`);
       return; // Reject peer with invalid endpoints
     }
 
@@ -1182,16 +1200,14 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
    */
   private getNodeInfo(): any {
     const nodeState = this.nodeService.getNodeState();
+    const nodeId = this.getNodeId();
 
     return {
-      id: nodeState?.nodeId || process.env.NODE_ID || "unknown-node",
+      nodeId: nodeId, // Changed from 'id' to 'nodeId' to match peer data structure
       publicKey: nodeState?.publicKey,
-      apiEndpoint: nodeState?.nodeId
-        ? this.configService.get("PUBLIC_URL") || `http://localhost:${this.port}`
-        : undefined,
-      gossipEndpoint: nodeState?.nodeId
-        ? this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}/ws`
-        : undefined,
+      apiEndpoint: this.configService.get("PUBLIC_URL") || `http://localhost:${this.port}`,
+      gossipEndpoint:
+        this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}/ws`,
       region: "local",
       capabilities: ["bls-signing", "message-aggregation"],
       version: "1.0.0",
@@ -1214,7 +1230,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
   getAllPeersIncludingSelf(): PeerInfo[] {
     const nodeInfo = this.getNodeInfo();
     const selfPeer: PeerInfo = {
-      nodeId: nodeInfo.id,
+      nodeId: nodeInfo.nodeId, // Changed from nodeInfo.id to nodeInfo.nodeId
       publicKey: nodeInfo.publicKey,
       apiEndpoint: nodeInfo.apiEndpoint,
       gossipEndpoint: nodeInfo.gossipEndpoint,

@@ -9,14 +9,14 @@ export class GossipEndpointValidator {
 
   // Blocked IP ranges (private networks and loopback)
   private static readonly BLOCKED_IP_PATTERNS = [
-    /^127\./,                    // Loopback (127.0.0.0/8)
-    /^10\./,                      // Private network (10.0.0.0/8)
+    /^127\./, // Loopback (127.0.0.0/8)
+    /^10\./, // Private network (10.0.0.0/8)
     /^172\.(1[6-9]|2[0-9]|3[01])\./, // Private network (172.16.0.0/12)
-    /^192\.168\./,                // Private network (192.168.0.0/16)
-    /^169\.254\./,                // Link-local (169.254.0.0/16)
-    /^::1$/,                      // IPv6 loopback
-    /^fe80::/,                    // IPv6 link-local
-    /^fc00::/,                    // IPv6 unique local
+    /^192\.168\./, // Private network (192.168.0.0/16)
+    /^169\.254\./, // Link-local (169.254.0.0/16)
+    /^::1$/, // IPv6 loopback
+    /^fe80::/, // IPv6 link-local
+    /^fc00::/, // IPv6 unique local
   ];
 
   // Blocked hostnames
@@ -25,13 +25,13 @@ export class GossipEndpointValidator {
     "127.0.0.1",
     "0.0.0.0",
     "::1",
-    "metadata.google.internal",  // GCP metadata service
-    "169.254.169.254",           // AWS/Azure metadata service
+    "metadata.google.internal", // GCP metadata service
+    "169.254.169.254", // AWS/Azure metadata service
   ];
 
   // Allowed ports for gossip protocol
   private static readonly ALLOWED_PORTS = {
-    min: 1024,  // Avoid well-known ports
+    min: 1024, // Avoid well-known ports
     max: 65535,
     defaults: [3000, 3001, 3002, 3003, 3004, 3005, 8080, 8081], // Common gossip ports
   };
@@ -41,7 +41,7 @@ export class GossipEndpointValidator {
    */
   private static isDevelopmentMode(): boolean {
     const nodeEnv = process.env.NODE_ENV?.toLowerCase();
-    return nodeEnv === 'development' || nodeEnv === 'dev' || nodeEnv === 'local';
+    return nodeEnv === "development" || nodeEnv === "dev" || nodeEnv === "local";
   }
 
   /**
@@ -80,7 +80,7 @@ export class GossipEndpointValidator {
 
     // In development mode, allow localhost connections
     const isDev = this.isDevelopmentMode();
-    if (isDev && (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1')) {
+    if (isDev && (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1")) {
       console.log(`🔧 Development mode: Allowing local connection to ${hostname}`);
       // Skip further hostname validation for localhost in dev mode
     } else {
@@ -96,7 +96,7 @@ export class GossipEndpointValidator {
 
     if (ipv4Pattern.test(hostname) || ipv6Pattern.test(hostname)) {
       // Skip private network check for localhost in dev mode
-      if (!isDev || (hostname !== '127.0.0.1' && hostname !== '::1')) {
+      if (!isDev || (hostname !== "127.0.0.1" && hostname !== "::1")) {
         if (!allowPrivateNetworks) {
           // Check against blocked IP patterns
           for (const pattern of this.BLOCKED_IP_PATTERNS) {
@@ -106,7 +106,7 @@ export class GossipEndpointValidator {
           }
         }
       }
-    } else if (!isDev || hostname !== 'localhost') {
+    } else if (!isDev || hostname !== "localhost") {
       // Validate domain name
       const domainPattern = /^([a-z0-9-]+\.)*[a-z0-9-]+$/i;
       if (!domainPattern.test(hostname)) {
@@ -114,15 +114,21 @@ export class GossipEndpointValidator {
       }
 
       // Prevent DNS rebinding attacks - check for suspicious patterns
-      if (hostname.includes("xip.io") || hostname.includes("nip.io") || hostname.includes("sslip.io")) {
+      if (
+        hostname.includes("xip.io") ||
+        hostname.includes("nip.io") ||
+        hostname.includes("sslip.io")
+      ) {
         throw new Error(`Suspicious hostname pattern detected: ${hostname}`);
       }
     }
 
     // Validate port
-    const port = url.port ? parseInt(url.port, 10) : (url.protocol === "wss:" ? 443 : 80);
+    const port = url.port ? parseInt(url.port, 10) : url.protocol === "wss:" ? 443 : 80;
     if (isNaN(port) || port < this.ALLOWED_PORTS.min || port > this.ALLOWED_PORTS.max) {
-      throw new Error(`Invalid port: ${port}. Port must be between ${this.ALLOWED_PORTS.min} and ${this.ALLOWED_PORTS.max}`);
+      throw new Error(
+        `Invalid port: ${port}. Port must be between ${this.ALLOWED_PORTS.min} and ${this.ALLOWED_PORTS.max}`
+      );
     }
 
     // Warn about non-standard ports (but allow them)
@@ -161,7 +167,8 @@ export class GossipEndpointValidator {
         const validated = this.validateEndpoint(endpoint, allowPrivateNetworks);
         validatedEndpoints.push(validated);
       } catch (error) {
-        errors.push(`${endpoint}: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        errors.push(`${endpoint}: ${errorMessage}`);
       }
     }
 
@@ -206,7 +213,8 @@ export class GossipEndpointValidator {
         const validated = this.validateEndpoint(endpoint, false);
         whitelist.add(validated);
       } catch (error) {
-        console.error(`Failed to add endpoint to whitelist: ${endpoint} - ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`Failed to add endpoint to whitelist: ${endpoint} - ${errorMessage}`);
       }
     }
 
