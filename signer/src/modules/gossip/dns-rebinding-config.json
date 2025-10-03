@@ -1,0 +1,80 @@
+{
+  "description": "DNS rebinding protection configuration",
+  "version": "1.1.0",
+  "lastUpdated": "2025-10-02T03:43:23.460Z",
+  "suspiciousDomains": [
+    {
+      "domain": "lvh.me",
+      "reason": "Localhost alias",
+      "risk": "medium"
+    },
+    {
+      "domain": "localtest.me",
+      "reason": "Localhost alias",
+      "risk": "medium"
+    },
+    {
+      "domain": "vcap.me",
+      "reason": "Cloud Foundry localhost",
+      "risk": "medium"
+    },
+    {
+      "domain": "traefik.me",
+      "reason": "Localhost alias for Traefik",
+      "risk": "medium"
+    },
+    {
+      "domain": "xip.io",
+      "reason": "Dynamic DNS - IP in hostname",
+      "risk": "high"
+    },
+    {
+      "domain": "nip.io",
+      "reason": "Dynamic DNS - IP in hostname",
+      "risk": "high"
+    },
+    {
+      "domain": "sslip.io",
+      "reason": "Dynamic DNS - IP in hostname",
+      "risk": "high"
+    },
+    {
+      "domain": "ngrok.io",
+      "reason": "Tunneling service",
+      "risk": "high"
+    },
+    {
+      "domain": "localtunnel.me",
+      "reason": "Tunneling service",
+      "risk": "high"
+    }
+  ],
+  "suspiciousPatterns": [
+    {
+      "pattern": "^\\d{1,3}-\\d{1,3}-\\d{1,3}-\\d{1,3}\\.",
+      "description": "IP address with dashes in subdomain",
+      "risk": "high"
+    },
+    {
+      "pattern": "^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.",
+      "description": "IP address as subdomain",
+      "risk": "high"
+    },
+    {
+      "pattern": "(^|\\.)ip\\d+\\.",
+      "description": "Contains \"ip\" followed by numbers",
+      "risk": "medium"
+    },
+    {
+      "pattern": "\\.(local|internal|private|lan|home)\\.",
+      "description": "Internal network indicator",
+      "risk": "medium"
+    }
+  ],
+  "allowedDomains": [],
+  "customRules": {
+    "allowSubdomainDepth": 5,
+    "blockNumericSubdomains": true,
+    "requireTLD": true
+  }
+}

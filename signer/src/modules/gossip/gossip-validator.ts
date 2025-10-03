@@ -1,9 +1,33 @@
 import { URL } from "url";
+import * as fs from "fs";
+import * as path from "path";
+
+interface DnsRebindingConfig {
+  suspiciousDomains: Array<{
+    domain: string;
+    reason: string;
+    risk: string;
+  }>;
+  suspiciousPatterns: Array<{
+    pattern: string;
+    description: string;
+    risk: string;
+  }>;
+  allowedDomains: string[];
+  customRules: {
+    allowSubdomainDepth: number;
+    blockNumericSubdomains: boolean;
+    requireTLD: boolean;
+  };
+}
 
 /**
  * Validator class for gossip endpoints to prevent SSRF attacks
  */
 export class GossipEndpointValidator {
+  private static dnsConfig: DnsRebindingConfig | null = null;
+  private static configLastLoaded: number = 0;
+  private static readonly CONFIG_CACHE_TTL = 60000; // 1 minute cache
   // Allowed protocols for gossip connections
   private static readonly ALLOWED_PROTOCOLS = ["ws:", "wss:"];
 
@@ -35,6 +59,64 @@ export class GossipEndpointValidator {
     max: 65535,
     defaults: [3000, 3001, 3002, 3003, 3004, 3005, 8080, 8081], // Common gossip ports
   };
+
+  /**
+   * Load DNS rebinding configuration
+   */
+  private static loadDnsConfig(): DnsRebindingConfig {
+    // Use cached config if still valid
+    if (this.dnsConfig && Date.now() - this.configLastLoaded < this.CONFIG_CACHE_TTL) {
+      return this.dnsConfig;
+    }
+
+    try {
+      // Try to load from environment variable first
+      const configPath =
+        process.env.DNS_REBINDING_CONFIG_PATH || path.join(__dirname, "dns-rebinding-config.json");
+
+      // Also support config from environment variable directly
+      const configFromEnv = process.env.DNS_REBINDING_CONFIG;
+      if (configFromEnv) {
+        this.dnsConfig = JSON.parse(configFromEnv);
+      } else if (fs.existsSync(configPath)) {
+        const configContent = fs.readFileSync(configPath, "utf-8");
+        this.dnsConfig = JSON.parse(configContent);
+      } else {
+        // Fallback to minimal built-in config
+        this.dnsConfig = {
+          suspiciousDomains: [
+            { domain: "xip.io", reason: "Dynamic DNS", risk: "high" },
+            { domain: "nip.io", reason: "Dynamic DNS", risk: "high" },
+            { domain: "sslip.io", reason: "Dynamic DNS", risk: "high" },
+          ],
+          suspiciousPatterns: [],
+          allowedDomains: [],
+          customRules: {
+            allowSubdomainDepth: 5,
+            blockNumericSubdomains: true,
+            requireTLD: true,
+          },
+        };
+        console.warn("⚠️ Using fallback DNS rebinding config. Consider providing a config file.");
+      }
+
+      this.configLastLoaded = Date.now();
+      return this.dnsConfig!;
+    } catch (error) {
+      console.error("❌ Failed to load DNS rebinding config:", error);
+      // Return minimal config on error
+      return {
+        suspiciousDomains: [],
+        suspiciousPatterns: [],
+        allowedDomains: [],
+        customRules: {
+          allowSubdomainDepth: 5,
+          blockNumericSubdomains: false,
+          requireTLD: true,
+        },
+      };
+    }
+  }
 
   /**
    * Check if running in development mode
@@ -82,6 +164,9 @@ export class GossipEndpointValidator {
     const isDev = this.isDevelopmentMode();
     if (isDev && (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1")) {
       console.log(`🔧 Development mode: Allowing local connection to ${hostname}`);
+      console.warn(
+        `⚠️ SECURITY WARNING: Localhost connections are enabled. DO NOT use in production!`
+      );
       // Skip further hostname validation for localhost in dev mode
     } else {
       // Check against blocked hostnames in production
@@ -113,13 +198,63 @@ export class GossipEndpointValidator {
         throw new Error(`Invalid hostname: ${hostname}`);
       }
 
-      // Prevent DNS rebinding attacks - check for suspicious patterns
-      if (
-        hostname.includes("xip.io") ||
-        hostname.includes("nip.io") ||
-        hostname.includes("sslip.io")
-      ) {
-        throw new Error(`Suspicious hostname pattern detected: ${hostname}`);
+      // Load DNS rebinding configuration
+      const config = this.loadDnsConfig();
+
+      // Check against allowed domains first (whitelist)
+      if (config.allowedDomains && config.allowedDomains.length > 0) {
+        const isAllowed = config.allowedDomains.some(
+          allowed => hostname === allowed || hostname.endsWith(`.${allowed}`)
+        );
+        if (isAllowed) {
+          return url.toString(); // Skip further checks for whitelisted domains
+        }
+      }
+
+      // Check against suspicious domains from config
+      for (const suspiciousEntry of config.suspiciousDomains) {
+        if (
+          hostname === suspiciousEntry.domain ||
+          hostname.endsWith(`.${suspiciousEntry.domain}`)
+        ) {
+          console.warn(
+            `⚠️ Blocked ${suspiciousEntry.risk} risk domain: ${hostname} (${suspiciousEntry.reason})`
+          );
+          throw new Error(`DNS rebinding domain blocked: ${hostname}`);
+        }
+      }
+
+      // Check against suspicious patterns
+      for (const patternEntry of config.suspiciousPatterns) {
+        const regex = new RegExp(patternEntry.pattern);
+        if (regex.test(hostname)) {
+          console.warn(
+            `⚠️ Blocked by pattern (${patternEntry.risk} risk): ${hostname} - ${patternEntry.description}`
+          );
+          throw new Error(`Suspicious hostname pattern detected: ${hostname}`);
+        }
+      }
+
+      // Apply custom rules
+      if (config.customRules) {
+        // Check subdomain depth
+        const subdomainCount = (hostname.match(/\./g) || []).length;
+        if (subdomainCount > config.customRules.allowSubdomainDepth) {
+          throw new Error(`Too many subdomain levels (${subdomainCount}): ${hostname}`);
+        }
+
+        // Check for numeric subdomains (potential IP encoding)
+        if (config.customRules.blockNumericSubdomains) {
+          const numericPattern = /^\d+(-\d+)*\./;
+          if (numericPattern.test(hostname)) {
+            throw new Error(`Numeric subdomain pattern blocked: ${hostname}`);
+          }
+        }
+
+        // Require proper TLD
+        if (config.customRules.requireTLD && !hostname.includes(".")) {
+          throw new Error(`No TLD found in hostname: ${hostname}`);
+        }
       }
     }
 
