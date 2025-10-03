@@ -86,9 +86,8 @@ export const accountAPI = {
 
   getNonce: () => api.get("/account/nonce"),
 
-  fundAccount: (data: { amount: string }) => api.post("/account/fund", data),
-
-  sponsorAccount: () => api.post("/account/sponsor"),
+  // fundAccount and sponsorAccount removed - not needed with Paymaster
+  // All transactions are sponsored automatically
 };
 
 // Transfer API

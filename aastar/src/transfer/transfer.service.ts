@@ -8,7 +8,6 @@ import { ethers } from "ethers";
 import { v4 as uuidv4 } from "uuid";
 import { DatabaseService } from "../database/database.service";
 import { EthereumService } from "../ethereum/ethereum.service";
-import { DeploymentWalletService } from "../ethereum/deployment-wallet.service";
 import { AccountService } from "../account/account.service";
 import { AuthService } from "../auth/auth.service";
 import { BlsService } from "../bls/bls.service";
@@ -32,7 +31,6 @@ export class TransferService {
   constructor(
     private databaseService: DatabaseService,
     private ethereumService: EthereumService,
-    private deploymentWalletService: DeploymentWalletService,
     private accountService: AccountService,
     private authService: AuthService,
     private blsService: BlsService,
@@ -439,9 +437,11 @@ export class TransferService {
             ? "createAccount"
             : "createAccountWithAAStarValidator";
 
+        // Unified architecture: creator = signer
+        // This allows the account to be deployed via Paymaster without needing ETH in deployment wallet
         const deployCalldata = factory.interface.encodeFunctionData(methodName, [
-          account.creatorAddress,
-          account.signerAddress, // signerAddress for AA signature verification
+          account.signerAddress, // creator = signer (unified architecture)
+          account.signerAddress, // signer for AA signature verification
           account.validatorAddress,
           true, // useAAStarValidator
           account.salt,
@@ -450,6 +450,9 @@ export class TransferService {
         // initCode = factory address + deployment calldata
         initCode = ethers.concat([factoryAddress, deployCalldata]);
         console.log("Account needs deployment, adding initCode to UserOp");
+        console.log(
+          "Using unified Creator/Signer architecture - deployment will be sponsored by Paymaster"
+        );
       }
     }
 

@@ -2,7 +2,6 @@ import { Controller, Post, Get, Body, UseGuards, Request, HttpStatus, Res } from
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from "@nestjs/swagger";
 import { AccountService } from "./account.service";
 import { CreateAccountDto } from "./dto/create-account.dto";
-import { FundAccountDto } from "./dto/fund-account.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @ApiTags("account")
@@ -56,15 +55,6 @@ export class AccountController {
     return this.accountService.getAccountNonce(req.user.sub);
   }
 
-  @Post("fund")
-  @ApiOperation({ summary: "Fund account with ETH" })
-  async fundAccount(@Request() req, @Body() fundAccountDto: FundAccountDto) {
-    return this.accountService.fundAccount(req.user.sub, fundAccountDto.amount);
-  }
-
-  @Post("sponsor")
-  @ApiOperation({ summary: "Sponsor account with 0.01 ETH (one-time only)" })
-  async sponsorAccount(@Request() req) {
-    return this.accountService.sponsorAccount(req.user.sub);
-  }
+  // fund and sponsor endpoints removed - not needed with Paymaster
+  // All transactions are sponsored by Paymaster
 }

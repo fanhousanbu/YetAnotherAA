@@ -20,10 +20,7 @@ export class Account {
   address: string;
 
   @Column()
-  creatorAddress: string;
-
-  @Column()
-  signerAddress: string;
+  signerAddress: string; // Acts as both signer and creator in unified architecture
 
   @Column()
   salt: number;
