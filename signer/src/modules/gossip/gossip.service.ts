@@ -249,7 +249,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
           const message = JSON.parse(data.toString()) as GossipMessage;
           this.handleGossipMessage(ws, message);
         } catch (error) {
-          console.error('Failed to parse message from %s:', endpoint, error);
+          console.error("Failed to parse message from %s:", endpoint, error);
         }
       });
 
