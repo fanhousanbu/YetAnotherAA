@@ -259,7 +259,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
       });
 
       ws.on("error", (error: Error) => {
-        console.error(`❌ WebSocket error for ${endpoint}:`, error.message);
+        console.error("❌ WebSocket error for %s:", endpoint, error.message);
         console.error(`    Error details:`, error);
       });
     } catch (error) {
