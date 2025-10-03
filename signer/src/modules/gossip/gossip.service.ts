@@ -14,7 +14,7 @@ import {
   GossipStats,
   MessageHistory,
 } from "./gossip.interfaces.js";
-import { GossipEndpointValidator } from "./gossip-validator.js";
+import { GossipWhitelistValidator } from "./gossip-whitelist-validator.js";
 
 @Injectable()
 export class GossipService implements OnModuleInit, OnModuleDestroy {
@@ -58,22 +58,10 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
           .map((p: string) => p.trim())
       : [];
 
-    // Validate bootstrap peers to prevent SSRF
-    // In development mode, allow private networks for local testing
-    const allowPrivateNetworks =
-      process.env.NODE_ENV === "development" ||
-      process.env.NODE_ENV === "dev" ||
-      process.env.NODE_ENV === "local";
-
-    console.log(
-      `🔧 NODE_ENV: ${process.env.NODE_ENV}, Allow private networks: ${allowPrivateNetworks}`
-    );
     console.log(`📝 Raw bootstrap peers: ${rawBootstrapPeers.join(", ")}`);
 
-    this.bootstrapPeers = GossipEndpointValidator.validateEndpoints(
-      rawBootstrapPeers,
-      allowPrivateNetworks
-    );
+    // Validate bootstrap peers using whitelist mechanism
+    this.bootstrapPeers = GossipWhitelistValidator.validateEndpoints(rawBootstrapPeers);
 
     console.log(`✅ Validated bootstrap peers: ${this.bootstrapPeers.join(", ")}`);
 
@@ -236,20 +224,16 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Connect to a specific peer
+   *
+   * @param endpoint The WebSocket endpoint to connect to
    */
   private async connectToPeer(endpoint: string): Promise<void> {
     try {
-      // Validate and sanitize the endpoint to prevent SSRF attacks
-      // Allow private networks in development mode
-      const allowPrivateNetworks =
-        process.env.NODE_ENV === "development" ||
-        process.env.NODE_ENV === "dev" ||
-        process.env.NODE_ENV === "local";
-      const validatedEndpoint = GossipEndpointValidator.validateEndpoint(
-        endpoint,
-        allowPrivateNetworks
-      );
+      // Validate endpoint using whitelist mechanism
+      // Currently allows all nodes, will check on-chain staking in the future
+      const validatedEndpoint = GossipWhitelistValidator.validateEndpoint(endpoint);
       console.log(`🔗 Connecting to gossip peer: ${validatedEndpoint}`);
+
       const ws = new WebSocket(validatedEndpoint);
 
       ws.on("open", () => {
@@ -374,20 +358,13 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
 
     // Only validate gossip endpoint (WebSocket), not API endpoint (HTTP)
     try {
-      const allowPrivateNetworks =
-        process.env.NODE_ENV === "development" ||
-        process.env.NODE_ENV === "dev" ||
-        process.env.NODE_ENV === "local";
-
       // API endpoint can be HTTP/HTTPS, no validation needed for protocol
       // Just store it as-is since it's for API calls, not WebSocket connections
 
-      // Only validate gossip endpoint which must be WebSocket
+      // Validate gossip endpoint using whitelist mechanism
       if (validatedGossipEndpoint) {
-        validatedGossipEndpoint = GossipEndpointValidator.validateEndpoint(
-          validatedGossipEndpoint,
-          allowPrivateNetworks
-        );
+        validatedGossipEndpoint =
+          GossipWhitelistValidator.validateEndpoint(validatedGossipEndpoint);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

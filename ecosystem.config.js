@@ -13,7 +13,6 @@ module.exports = {
         VALIDATOR_CONTRACT_ADDRESS:
           process.env.VALIDATOR_CONTRACT_ADDRESS || "0xD9756c11686B59F7DDf39E6360230316710485af",
         ETH_RPC_URL: process.env.ETH_RPC_URL,
-        DNS_REBINDING_CONFIG_PATH: "./src/modules/gossip/dns-rebinding-config.json",
       },
     },
     {
