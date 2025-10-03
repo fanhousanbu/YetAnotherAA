@@ -33,7 +33,6 @@ Create `.env` file with your configuration (already provided):
 ```env
 # RPC Configuration
 ETH_RPC_URL=https://sepolia.infura.io/v3/YOUR_KEY
-ETH_PRIVATE_KEY=YOUR_PRIVATE_KEY
 BUNDLER_RPC_URL=https://api.pimlico.io/v2/11155111/rpc?apikey=YOUR_KEY
 
 # Contract Addresses (Sepolia)

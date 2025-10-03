@@ -7,15 +7,22 @@
 
 <div align="center">
 
-🚀 **Production-Ready** | 🔐 **WebAuthn/Passkey** | ⚡ **BLS Signatures** | 🏗️ **ERC-4337 AA** | 🔑 **KMS Integration**
+🚀 **Production-Ready** | 🔐 **WebAuthn/Passkey** | ⚡ **BLS Signatures** | 🏗️
+**ERC-4337 AA** | 🔑 **KMS Integration**
 
 </div>
 
 ---
 
-A **complete, production-ready** implementation combining **biometric authentication** (Face ID, Touch ID, Windows Hello), **BLS aggregate signatures**, and **ERC-4337 account abstraction**. Features passwordless login, mandatory transaction verification, **KMS-based key management**, and **gasless account deployment** via Paymaster sponsorship.
+A **complete, production-ready** implementation combining **biometric
+authentication** (Face ID, Touch ID, Windows Hello), **BLS aggregate
+signatures**, and **ERC-4337 account abstraction**. Features passwordless login,
+mandatory transaction verification, **KMS-based key management**, and **gasless
+account deployment** via Paymaster sponsorship.
 
-> **🎯 Perfect for**: Web3 developers building secure wallets, DeFi applications requiring enhanced security, and projects needing passwordless blockchain authentication with enterprise-grade key management.
+> **🎯 Perfect for**: Web3 developers building secure wallets, DeFi applications
+> requiring enhanced security, and projects needing passwordless blockchain
+> authentication with enterprise-grade key management.
 
 ## ⚡ Quick Start
 
@@ -36,37 +43,49 @@ npm run dev -w aastar-frontend     # Frontend (port 8080)
 
 ### 🔐 **1. WebAuthn/Passkey Authentication**
 
-- **Passwordless Experience**: Login and transactions using only biometrics (Face ID, Touch ID, Windows Hello)
-- **FIDO2 Compliant**: Industry-standard WebAuthn implementation with mandatory user verification
+- **Passwordless Experience**: Login and transactions using only biometrics
+  (Face ID, Touch ID, Windows Hello)
+- **FIDO2 Compliant**: Industry-standard WebAuthn implementation with mandatory
+  user verification
 - **Multi-Device Support**: Register passkeys across multiple devices
 - **Transaction Security**: Every transaction requires biometric confirmation
 
 ### ⚡ **2. BLS Signature Aggregation**
 
-- **Multi-Node Signatures**: Aggregate signatures from multiple BLS nodes efficiently
+- **Multi-Node Signatures**: Aggregate signatures from multiple BLS nodes
+  efficiently
 - **Dynamic Gas Optimization**: EIP-2537-based calculation adapts to node count
 - **Gossip Network**: Automatic node discovery and selection via P2P network
-- **Quantum-Ready**: BLS12-381 curve provides preparation for post-quantum security
+- **Quantum-Ready**: BLS12-381 curve provides preparation for post-quantum
+  security
 
 ### 🏗️ **3. ERC-4337 Account Abstraction**
 
 - **Multi-Version Support**: Compatible with EntryPoint v0.6, v0.7, and v0.8
-- **Unified Architecture**: User wallet acts as both creator and signer (no separate deployer)
-- **Gasless Deployment**: Account creation sponsored by Paymaster - **zero ETH required**
-- **Dual Verification**: AA signatures verify userOpHash, BLS signatures verify messagePoint
+- **Unified Architecture**: User wallet acts as both creator and signer (no
+  separate deployer)
+- **Gasless Deployment**: Account creation sponsored by Paymaster - **zero ETH
+  required**
+- **Dual Verification**: AA signatures verify userOpHash, BLS signatures verify
+  messagePoint
 
 ### 🔑 **4. KMS Integration (Production Ready)**
 
-- **Secure Key Management**: Production wallets managed by Key Management Service
+- **Secure Key Management**: Production wallets managed by Key Management
+  Service
 - **Zero Private Key Exposure**: Keys never leave the secure KMS environment
-- **Auto-Generated Wallets**: User wallets created automatically (KMS in production, local in dev)
-- **No Manual Configuration**: Private keys only needed for initial contract deployment
+- **Auto-Generated Wallets**: User wallets created automatically (KMS in
+  production, local in dev)
+- **No Manual Configuration**: Private keys only needed for initial contract
+  deployment
 
 ### 💰 **5. Paymaster Sponsorship**
 
-- **Gasless Onboarding**: Account deployment fully sponsored - users need zero ETH
+- **Gasless Onboarding**: Account deployment fully sponsored - users need zero
+  ETH
 - **Flexible Sponsorship**: Optional transaction sponsorship for improved UX
-- **True Web2 Experience**: Users can interact with blockchain without holding gas tokens
+- **True Web2 Experience**: Users can interact with blockchain without holding
+  gas tokens
 
 ## 🛠️ Technical Architecture
 
@@ -133,7 +152,8 @@ function _calculateRequiredGas(uint256 nodeCount) internal pure returns (uint256
 
 ### Successful Transfer Proof
 
-- **Transaction**: [0x8aa6fdef...714370a55](https://sepolia.etherscan.io/tx/0x8aa6fdef19f66e687a570c4fefeb7524538a32fcb06320251d25c5b714370a55)
+- **Transaction**:
+  [0x8aa6fdef...714370a55](https://sepolia.etherscan.io/tx/0x8aa6fdef19f66e687a570c4fefeb7524538a32fcb06320251d25c5b714370a55)
 - **Amount**: 0.002 ETH
 - **Gas Used**: 653,060
 - **Status**: ✅ BLS aggregate signature verified
@@ -196,7 +216,8 @@ YetAnotherAA/
 This project demonstrates:
 
 - **Modern Cryptography**: BLS12-381 pairing-based signatures and aggregation
-- **Account Abstraction**: ERC-4337 implementation with multiple EntryPoint versions
+- **Account Abstraction**: ERC-4337 implementation with multiple EntryPoint
+  versions
 - **Biometric Auth**: Production-grade WebAuthn/Passkey integration
 - **Key Management**: Enterprise KMS integration for secure key storage
 - **Gas Optimization**: Dynamic calculation based on EIP-2537 standards
@@ -208,12 +229,14 @@ This project demonstrates:
 
 For testing purposes only:
 
-- **AAStarValidator**: `0xAe7eA28a0aeA05cbB8631bDd7B10Cb0f387FC479`
-- **AAStarAccountFactory (v0.6)**: `0x559DD2D8Bf9180A70Da56FEFF57DA531BF3f2E1c`
+- **AAStarValidator**: `0xD9756c11686B59F7DDf39E6360230316710485af`
+- **AAStarAccountFactory (v0.6)**: `0xab18406D34B918A0431116755C45AC7af99DcDa6`
+- **AAStarAccountFactory (v0.7)**: `0xAae813Ae38418f38701142cEab08D4F52383bF34`
 - **EntryPoint v0.6**: `0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789`
 - **EntryPoint v0.7**: `0x0000000071727De22E5E9d8BAf0edAc6f37da032`
 
-> **⚠️ Production**: Deploy your own contracts. Private keys only needed for contract deployment - runtime wallets are KMS-managed.
+> **⚠️ Production**: Deploy your own contracts. Private keys only needed for
+> contract deployment - runtime wallets are KMS-managed.
 
 ## 🌟 Enhanced Features
 
@@ -235,4 +258,4 @@ Issues and Pull Requests are welcome!
 
 ---
 
-**Status**: ✅ Production Ready | **Network**: Sepolia Testnet | **Security**: WebAuthn + KMS Enhanced
+**Status**: **Network**: Sepolia Testnet | **Security**: WebAuthn + KMS Enhanced
