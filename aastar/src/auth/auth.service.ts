@@ -58,15 +58,30 @@ export class AuthService {
       // Use KMS to create wallet
       useKms = true;
       const description = `wallet-${registerDto.email}-${Date.now()}`;
+
+      console.log("════════════════════════════════════════════");
+      console.log("🚀 Starting KMS Wallet Creation");
+      console.log("════════════════════════════════════════════");
+      console.log(`👤 User Email: ${registerDto.email}`);
+      console.log(`📝 Description: ${description}`);
+      console.log("════════════════════════════════════════════");
+
       const kmsResponse = await this.kmsService.createKey(description);
 
       kmsKeyId = kmsResponse.KeyMetadata.KeyId;
-      // Get wallet address from KMS
-      walletAddress = await this.kmsService.getAddressForKey(kmsKeyId);
+      // Use the address from KMS CreateKey response
+      walletAddress = kmsResponse.KeyMetadata.Address || kmsResponse.Address;
 
-      console.log("User Registration Debug (KMS):");
-      console.log("- KMS Key ID:", kmsKeyId);
-      console.log("- Wallet Address:", walletAddress);
+      if (!walletAddress) {
+        throw new Error("KMS CreateKey response did not include an address");
+      }
+
+      console.log("════════════════════════════════════════════");
+      console.log("✅ KMS Wallet Created Successfully");
+      console.log("════════════════════════════════════════════");
+      console.log(`🔑 KMS Key ID: ${kmsKeyId}`);
+      console.log(`💰 Wallet Address: ${walletAddress}`);
+      console.log("════════════════════════════════════════════");
     } else {
       // Generate HDWallet locally (existing logic)
       const userWallet = ethers.Wallet.createRandom();
@@ -145,16 +160,19 @@ export class AuthService {
     }
 
     if (user.useKms && user.kmsKeyId) {
-      // Return KMS signer
-      const kmsSigner = this.kmsService.createKmsSigner(user.kmsKeyId);
+      // Return KMS signer with stored address
+      console.log("════════════════════════════════════════════");
+      console.log("🔐 Creating KMS Signer");
+      console.log("════════════════════════════════════════════");
+      console.log(`👤 User ID: ${userId}`);
+      console.log(`🔑 KMS Key ID: ${user.kmsKeyId}`);
+      console.log(`💰 Wallet Address: ${user.walletAddress}`);
+      console.log("════════════════════════════════════════════");
 
-      // Verify the address matches
-      const address = await kmsSigner.getAddress();
-      if (address.toLowerCase() !== user.walletAddress.toLowerCase()) {
-        throw new Error(
-          `KMS wallet address mismatch! Expected: ${user.walletAddress}, Got: ${address}`
-        );
-      }
+      const kmsSigner = this.kmsService.createKmsSigner(user.kmsKeyId, user.walletAddress);
+
+      console.log("✅ KMS Signer created successfully");
+      console.log("════════════════════════════════════════════");
 
       return kmsSigner;
     }
@@ -278,8 +296,12 @@ export class AuthService {
         const kmsResponse = await this.kmsService.createKey(description);
 
         kmsKeyId = kmsResponse.KeyMetadata.KeyId;
-        // Get wallet address from KMS
-        walletAddress = await this.kmsService.getAddressForKey(kmsKeyId);
+        // Use the address from KMS CreateKey response
+        walletAddress = kmsResponse.KeyMetadata.Address || kmsResponse.Address;
+
+        if (!walletAddress) {
+          throw new Error("KMS CreateKey response did not include an address");
+        }
 
         console.log("Passkey User Registration Debug (KMS):");
         console.log("- KMS Key ID:", kmsKeyId);

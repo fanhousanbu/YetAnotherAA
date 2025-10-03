@@ -13,14 +13,14 @@ export interface KmsCreateKeyResponse {
     KeyUsage: string;
     KeySpec: string;
     Origin: string;
+    Address?: string; // Address from KMS
   };
   Mnemonic: string;
-  Address?: string; // Will be computed from public key
+  Address?: string; // Alternative location for address
 }
 
-export interface KmsSignResponse {
+export interface KmsSignHashResponse {
   Signature: string;
-  TransactionHash: string;
 }
 
 @Injectable()
@@ -56,135 +56,205 @@ export class KmsService {
     }
 
     try {
-      this.logger.log(`Creating KMS key with description: ${description}`);
+      const requestPayload = {
+        Description: description,
+        KeyUsage: "SIGN_VERIFY",
+        KeySpec: "ECC_SECG_P256K1",
+        Origin: "AWS_KMS",
+      };
 
-      const response = await axios.post(
-        `${this.kmsEndpoint}/CreateKey`,
-        {
-          Description: description,
-          KeyUsage: "SIGN_VERIFY",
-          KeySpec: "ECC_SECG_P256K1",
-          Origin: "AWS_KMS",
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "x-amz-target": "TrentService.CreateKey",
-          },
-        }
-      );
+      const requestHeaders = {
+        "Content-Type": "application/json",
+        "x-amz-target": "TrentService.CreateKey",
+      };
+
+      // Log the request details
+      this.logger.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      this.logger.log("🔑 KMS CreateKey Request");
+      this.logger.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      this.logger.log(`📍 Endpoint: ${this.kmsEndpoint}/CreateKey`);
+      this.logger.log(`📋 Headers: ${JSON.stringify(requestHeaders, null, 2)}`);
+      this.logger.log(`📦 Payload: ${JSON.stringify(requestPayload, null, 2)}`);
+      this.logger.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+      const startTime = Date.now();
+      const response = await axios.post(`${this.kmsEndpoint}/CreateKey`, requestPayload, {
+        headers: requestHeaders,
+      });
+      const duration = Date.now() - startTime;
 
       const kmsResponse = response.data as KmsCreateKeyResponse;
 
-      // Derive the Ethereum address from the key (requires getting public key)
-      // For now, we'll need to get this from the first sign operation or add a GetPublicKey endpoint
+      // Log the response details
+      this.logger.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      this.logger.log("✅ KMS CreateKey Response");
+      this.logger.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      this.logger.log(`⏱️  Duration: ${duration}ms`);
+      this.logger.log(`🔑 KeyId: ${kmsResponse.KeyMetadata.KeyId}`);
+      this.logger.log(
+        `📍 Address: ${kmsResponse.KeyMetadata.Address || kmsResponse.Address || "N/A"}`
+      );
+      this.logger.log(`📝 Description: ${kmsResponse.KeyMetadata.Description}`);
+      this.logger.log(`🔐 KeySpec: ${kmsResponse.KeyMetadata.KeySpec}`);
+      this.logger.log(`📄 Full Response: ${JSON.stringify(kmsResponse, null, 2)}`);
+      this.logger.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-      this.logger.log(`KMS key created successfully: ${kmsResponse.KeyMetadata.KeyId}`);
       return kmsResponse;
     } catch (error) {
-      this.logger.error(`Failed to create KMS key: ${error.message}`);
+      this.logger.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      this.logger.error("❌ KMS CreateKey Failed");
+      this.logger.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      this.logger.error(`Error: ${error.message}`);
+      if (error.response) {
+        this.logger.error(`Status: ${error.response.status}`);
+        this.logger.error(`Response: ${JSON.stringify(error.response.data, null, 2)}`);
+      }
+      this.logger.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       throw new Error(`KMS key creation failed: ${error.message}`);
     }
   }
 
   /**
-   * Sign a message or transaction using KMS
+   * Sign a hash using KMS with address
    */
-  async sign(
-    keyId: string,
-    message: string,
-    derivationPath: string = "m/44'/60'/0'/0/0"
-  ): Promise<KmsSignResponse> {
+  async signHash(address: string, hash: string): Promise<KmsSignHashResponse> {
     if (!this.isEnabled) {
       throw new Error("KMS service is not enabled");
     }
 
     try {
-      this.logger.log(`Signing with KMS key ${keyId}`);
+      // Ensure hash has 0x prefix
+      const formattedHash = hash.startsWith("0x") ? hash : `0x${hash}`;
 
-      // Convert message to base64 if it's not already
-      const messageBase64 = this.isBase64(message)
-        ? message
-        : Buffer.from(message).toString("base64");
+      const requestPayload = {
+        Address: address,
+        Hash: formattedHash,
+      };
 
-      const response = await axios.post(
-        `${this.kmsEndpoint}/Sign`,
-        {
-          KeyId: keyId,
-          DerivationPath: derivationPath,
-          Message: messageBase64,
-          SigningAlgorithm: "ECC_SECG_P256K1",
-        },
-        {
-          headers: {
-            Accept: "*/*",
-            "Content-Type": "application/json",
-            "x-amz-target": "TrentService.Sign",
-          },
-        }
-      );
+      const requestHeaders = {
+        "Content-Type": "application/x-amz-json-1.1",
+        "x-amz-target": "TrentService.SignHash",
+      };
 
-      const signResponse = response.data as KmsSignResponse;
-      this.logger.log(`Message signed successfully with KMS`);
+      // Log the request details
+      this.logger.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      this.logger.log("🖊️  KMS SignHash Request");
+      this.logger.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      this.logger.log(`📍 Endpoint: ${this.kmsEndpoint}/SignHash`);
+      this.logger.log(`📋 Headers: ${JSON.stringify(requestHeaders, null, 2)}`);
+      this.logger.log(`📦 Payload:`);
+      this.logger.log(`   Address: ${address}`);
+      this.logger.log(`   Hash: ${formattedHash}`);
+      this.logger.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+      const startTime = Date.now();
+      const response = await axios.post(`${this.kmsEndpoint}/SignHash`, requestPayload, {
+        headers: requestHeaders,
+      });
+      const duration = Date.now() - startTime;
+
+      const signResponse = response.data as KmsSignHashResponse;
+
+      // Log the response details
+      this.logger.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      this.logger.log("✅ KMS SignHash Response");
+      this.logger.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      this.logger.log(`⏱️  Duration: ${duration}ms`);
+      this.logger.log(`🖊️  Signature: 0x${signResponse.Signature}`);
+      this.logger.log(`📄 Full Response: ${JSON.stringify(signResponse, null, 2)}`);
+
+      // Verify signature recovery if possible
+      try {
+        const sig = ethers.Signature.from("0x" + signResponse.Signature);
+        const recoveredAddress = ethers.recoverAddress(formattedHash, sig);
+        this.logger.log(`✔️  Recovered Address: ${recoveredAddress}`);
+        this.logger.log(
+          `✔️  Address Match: ${recoveredAddress.toLowerCase() === address.toLowerCase() ? "✅ YES" : "❌ NO"}`
+        );
+      } catch (e) {
+        // Signature recovery is optional, just for debugging
+      }
+
+      this.logger.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
       return signResponse;
     } catch (error) {
-      this.logger.error(`Failed to sign with KMS: ${error.message}`);
+      this.logger.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      this.logger.error("❌ KMS SignHash Failed");
+      this.logger.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      this.logger.error(`Error: ${error.message}`);
+      if (error.response) {
+        this.logger.error(`Status: ${error.response.status}`);
+        this.logger.error(`Response: ${JSON.stringify(error.response.data, null, 2)}`);
+      }
+      this.logger.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       throw new Error(`KMS signing failed: ${error.message}`);
     }
   }
 
   /**
-   * Get the Ethereum address for a KMS key
-   * Note: KMS might return different addresses for different messages due to internal implementation
-   * We'll use a standard message for consistency
+   * Verify the Ethereum address for a KMS key
+   * Since KMS now returns Address in CreateKey response, this method is only for verification
+   * @deprecated Use the address directly from CreateKey response instead
    */
-  async getAddressForKey(
-    keyId: string,
-    derivationPath: string = "m/44'/60'/0'/0/0"
-  ): Promise<string> {
+  async verifyAddressForKey(keyId: string, address: string): Promise<string> {
     if (!this.isEnabled) {
       throw new Error("KMS service is not enabled");
     }
 
+    if (!address) {
+      throw new Error(
+        "Address is required. KMS addresses should be obtained from CreateKey response. " +
+          "The old getAddressForKey method without address parameter is no longer supported."
+      );
+    }
+
     try {
-      // Use a standard message for address derivation
-      const standardMessage = "Derive Ethereum Address";
-      const messageBytes = ethers.toUtf8Bytes(standardMessage);
+      // Verify the address by signing a test message
+      const testMessage = "Verify Address";
+      const messageBytes = ethers.toUtf8Bytes(testMessage);
       const messageHash = ethers.hashMessage(messageBytes);
 
-      const signResponse = await this.sign(
-        keyId,
-        messageHash.slice(2), // Remove 0x prefix
-        derivationPath
-      );
+      const signResponse = await this.signHash(address, messageHash);
 
       // Recover address from signature
       const signature = "0x" + signResponse.Signature;
       const sig = ethers.Signature.from(signature);
-
-      // Recover the address
       const recoveredAddress = ethers.recoverAddress(messageHash, sig);
 
-      this.logger.log(`Derived address for KMS key ${keyId}: ${recoveredAddress}`);
+      if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
+        this.logger.warn(
+          `Address verification warning for KMS key ${keyId}: expected ${address}, got ${recoveredAddress}`
+        );
+      }
 
-      // Note: Due to KMS implementation, this address should be stored and reused
-      // rather than re-derived each time
-      return recoveredAddress;
+      return address;
     } catch (error) {
-      this.logger.error(`Failed to get address for KMS key: ${error.message}`);
-      throw new Error(`Failed to get KMS key address: ${error.message}`);
+      this.logger.error(`Failed to verify KMS key address: ${error.message}`);
+      throw error;
     }
+  }
+
+  // Keep the old method signature for backward compatibility but make it clear it needs an address
+  async getAddressForKey(keyId: string, knownAddress?: string): Promise<string> {
+    if (!knownAddress) {
+      throw new Error(
+        "Address parameter is required. KMS addresses must be obtained from CreateKey response. " +
+          "Use the Address field from KMS CreateKey response instead of calling this method."
+      );
+    }
+    return this.verifyAddressForKey(keyId, knownAddress);
   }
 
   /**
    * Create a signer that uses KMS for signing operations
    */
-  createKmsSigner(keyId: string, provider?: ethers.Provider): KmsSigner {
+  createKmsSigner(keyId: string, address: string, provider?: ethers.Provider): KmsSigner {
     if (!this.isEnabled) {
       throw new Error("KMS service is not enabled");
     }
 
-    return new KmsSigner(keyId, this, provider);
+    return new KmsSigner(keyId, address, this, provider);
   }
 
   private isBase64(str: string): boolean {
@@ -200,10 +270,9 @@ export class KmsService {
  * Custom Signer implementation for KMS
  */
 export class KmsSigner extends ethers.AbstractSigner {
-  private address: string | null = null;
-
   constructor(
     private readonly keyId: string,
+    private readonly address: string,
     private readonly kmsService: KmsService,
     provider?: ethers.Provider
   ) {
@@ -211,28 +280,43 @@ export class KmsSigner extends ethers.AbstractSigner {
   }
 
   async getAddress(): Promise<string> {
-    if (!this.address) {
-      this.address = await this.kmsService.getAddressForKey(this.keyId);
-    }
     return this.address;
   }
 
   async signMessage(message: string | Uint8Array): Promise<string> {
     const messageBytes = typeof message === "string" ? ethers.toUtf8Bytes(message) : message;
-
     const messageHash = ethers.hashMessage(messageBytes);
-    const signResponse = await this.kmsService.sign(
-      this.keyId,
-      messageHash.slice(2) // Remove 0x prefix
-    );
 
-    return "0x" + signResponse.Signature;
+    console.log("════════════════════════════════════════════");
+    console.log("📝 KmsSigner.signMessage Called");
+    console.log("════════════════════════════════════════════");
+    console.log(`💰 Address: ${this.address}`);
+    console.log(`📃 Message: ${typeof message === "string" ? message : "[Uint8Array]"}`);
+    console.log(`#️⃣  Hash: ${messageHash}`);
+    console.log("════════════════════════════════════════════");
+
+    const signResponse = await this.kmsService.signHash(this.address, messageHash);
+    const signature = "0x" + signResponse.Signature;
+
+    console.log("✅ Message signed successfully");
+    console.log(`🖊️  Signature: ${signature}`);
+    console.log("════════════════════════════════════════════");
+
+    return signature;
   }
 
   async signTransaction(tx: ethers.TransactionRequest): Promise<string> {
     if (!this.provider) {
       throw new Error("Provider is required for signing transactions");
     }
+
+    console.log("════════════════════════════════════════════");
+    console.log("💸 KmsSigner.signTransaction Called");
+    console.log("════════════════════════════════════════════");
+    console.log(`💰 From: ${this.address}`);
+    console.log(`📍 To: ${tx.to || "Contract Creation"}`);
+    console.log(`💵 Value: ${tx.value || "0"}`);
+    console.log("════════════════════════════════════════════");
 
     // Populate transaction fields
     const populated = await this.populateTransaction(tx);
@@ -241,14 +325,17 @@ export class KmsSigner extends ethers.AbstractSigner {
     const unsignedTx = ethers.Transaction.from(populated);
     const txHash = unsignedTx.hash;
 
-    const signResponse = await this.kmsService.sign(
-      this.keyId,
-      txHash.slice(2) // Remove 0x prefix
-    );
+    console.log(`#️⃣  Transaction Hash: ${txHash}`);
+
+    const signResponse = await this.kmsService.signHash(this.address, txHash);
 
     // Combine transaction with signature
     const sig = ethers.Signature.from("0x" + signResponse.Signature);
     unsignedTx.signature = sig;
+
+    console.log("✅ Transaction signed successfully");
+    console.log(`📦 Serialized TX: ${unsignedTx.serialized.substring(0, 50)}...`);
+    console.log("════════════════════════════════════════════");
 
     return unsignedTx.serialized;
   }
@@ -261,15 +348,11 @@ export class KmsSigner extends ethers.AbstractSigner {
     // Hash the typed data
     const hash = ethers.TypedDataEncoder.hash(domain, types, value);
 
-    const signResponse = await this.kmsService.sign(
-      this.keyId,
-      hash.slice(2) // Remove 0x prefix
-    );
-
+    const signResponse = await this.kmsService.signHash(this.address, hash);
     return "0x" + signResponse.Signature;
   }
 
   connect(provider: ethers.Provider): KmsSigner {
-    return new KmsSigner(this.keyId, this.kmsService, provider);
+    return new KmsSigner(this.keyId, this.address, this.kmsService, provider);
   }
 }

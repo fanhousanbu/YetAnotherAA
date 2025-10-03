@@ -135,6 +135,9 @@ export class TransferService {
       version
     );
 
+    // Log UserOperation before signing
+    this.logUserOperation(userOp, version, "BEFORE_SIGNING");
+
     // Get UserOp hash
     const userOpHash = await this.ethereumService.getUserOpHash(userOp, version);
 
@@ -143,6 +146,9 @@ export class TransferService {
 
     // Pack signature
     userOp.signature = await this.blsService.packSignature(blsData);
+
+    // Log UserOperation after signing
+    this.logUserOperation(userOp, version, "AFTER_SIGNING");
 
     // Create transfer record
     const transferId = uuidv4();
@@ -201,9 +207,13 @@ export class TransferService {
     version: EntryPointVersion = EntryPointVersion.V0_6
   ) {
     try {
+      // Format and log UserOp for bundler
+      const formattedForBundler = this.formatUserOpForBundler(userOp, version);
+      this.logFormattedUserOperation(formattedForBundler, version, "FOR_BUNDLER");
+
       // Submit UserOp to bundler
       const bundlerUserOpHash = await this.ethereumService.sendUserOperation(
-        this.formatUserOpForBundler(userOp, version),
+        formattedForBundler,
         version
       );
 
@@ -564,6 +574,172 @@ export class TransferService {
     }
 
     return standardUserOp;
+  }
+
+  private logUserOperation(
+    userOp: UserOperation | PackedUserOperation,
+    version: EntryPointVersion,
+    phase: string
+  ) {
+    console.log("╔══════════════════════════════════════════════════════════════");
+    console.log(`║ 📦 UserOperation Structure - ${phase}`);
+    console.log(`║ Version: EntryPoint ${version}`);
+    console.log("╠══════════════════════════════════════════════════════════════");
+
+    if (version === EntryPointVersion.V0_6) {
+      const op = userOp as UserOperation;
+      console.log("║ Standard UserOperation (v0.6):");
+      console.log("║");
+      console.log(`║ sender:                ${op.sender}`);
+      console.log(
+        `║ nonce:                 ${typeof op.nonce === "bigint" ? "0x" + op.nonce.toString(16) : op.nonce}`
+      );
+      console.log(
+        `║ initCode:              ${op.initCode === "0x" ? "0x (no deployment)" : op.initCode?.slice(0, 50) + "..."}`
+      );
+      console.log(`║ callData:              ${op.callData?.slice(0, 50)}...`);
+      console.log(
+        `║ callGasLimit:          ${typeof op.callGasLimit === "bigint" ? op.callGasLimit.toString() : op.callGasLimit}`
+      );
+      console.log(
+        `║ verificationGasLimit:  ${typeof op.verificationGasLimit === "bigint" ? op.verificationGasLimit.toString() : op.verificationGasLimit}`
+      );
+      console.log(
+        `║ preVerificationGas:    ${typeof op.preVerificationGas === "bigint" ? op.preVerificationGas.toString() : op.preVerificationGas}`
+      );
+      console.log(
+        `║ maxFeePerGas:          ${typeof op.maxFeePerGas === "bigint" ? op.maxFeePerGas.toString() : op.maxFeePerGas}`
+      );
+      console.log(
+        `║ maxPriorityFeePerGas:  ${typeof op.maxPriorityFeePerGas === "bigint" ? op.maxPriorityFeePerGas.toString() : op.maxPriorityFeePerGas}`
+      );
+      console.log(
+        `║ paymasterAndData:      ${op.paymasterAndData === "0x" ? "0x (no paymaster)" : op.paymasterAndData?.slice(0, 50) + "..."}`
+      );
+      console.log(
+        `║ signature:             ${op.signature === "0x" ? "0x (not signed)" : op.signature?.slice(0, 50) + "..."}`
+      );
+    } else {
+      const packedOp = userOp as PackedUserOperation;
+      console.log("║ PackedUserOperation (v0.7/v0.8):");
+      console.log("║");
+      console.log(`║ sender:                ${packedOp.sender}`);
+      console.log(
+        `║ nonce:                 ${typeof packedOp.nonce === "bigint" ? "0x" + packedOp.nonce.toString(16) : packedOp.nonce}`
+      );
+      console.log(
+        `║ initCode:              ${packedOp.initCode === "0x" ? "0x (no deployment)" : packedOp.initCode?.slice(0, 50) + "..."}`
+      );
+      console.log(`║ callData:              ${packedOp.callData?.slice(0, 50)}...`);
+      console.log(`║ accountGasLimits:      ${packedOp.accountGasLimits}`);
+      console.log(
+        `║ preVerificationGas:    ${typeof packedOp.preVerificationGas === "bigint" ? packedOp.preVerificationGas.toString() : packedOp.preVerificationGas}`
+      );
+      console.log(`║ gasFees:               ${packedOp.gasFees}`);
+      console.log(
+        `║ paymasterAndData:      ${packedOp.paymasterAndData === "0x" ? "0x (no paymaster)" : packedOp.paymasterAndData?.slice(0, 50) + "..."}`
+      );
+      console.log(
+        `║ signature:             ${packedOp.signature === "0x" ? "0x (not signed)" : packedOp.signature?.slice(0, 50) + "..."}`
+      );
+
+      // Decode packed values for better visibility
+      if (packedOp.accountGasLimits && packedOp.accountGasLimits !== "0x") {
+        try {
+          const gasLimits = unpackAccountGasLimits(packedOp.accountGasLimits);
+          console.log("║");
+          console.log("║ Unpacked accountGasLimits:");
+          console.log(`║   - verificationGasLimit: ${gasLimits.verificationGasLimit.toString()}`);
+          console.log(`║   - callGasLimit: ${gasLimits.callGasLimit.toString()}`);
+        } catch (e) {
+          // Ignore unpacking errors
+        }
+      }
+
+      if (packedOp.gasFees && packedOp.gasFees !== "0x") {
+        try {
+          const gasFees = unpackGasFees(packedOp.gasFees);
+          console.log("║");
+          console.log("║ Unpacked gasFees:");
+          console.log(`║   - maxPriorityFeePerGas: ${gasFees.maxPriorityFeePerGas.toString()}`);
+          console.log(`║   - maxFeePerGas: ${gasFees.maxFeePerGas.toString()}`);
+        } catch (e) {
+          // Ignore unpacking errors
+        }
+      }
+    }
+
+    console.log("╚══════════════════════════════════════════════════════════════");
+    console.log("");
+  }
+
+  private logFormattedUserOperation(formattedOp: any, version: EntryPointVersion, phase: string) {
+    console.log("╔══════════════════════════════════════════════════════════════");
+    console.log(`║ 🚀 Formatted UserOperation - ${phase}`);
+    console.log(`║ Version: EntryPoint ${version}`);
+    console.log("╠══════════════════════════════════════════════════════════════");
+
+    if (version === EntryPointVersion.V0_7 || version === EntryPointVersion.V0_8) {
+      console.log("║ Unpacked Format for Bundler (v0.7/v0.8):");
+      console.log("║");
+      console.log(`║ sender:                        ${formattedOp.sender}`);
+      console.log(`║ nonce:                         ${formattedOp.nonce}`);
+
+      if (formattedOp.factory) {
+        console.log(`║ factory:                       ${formattedOp.factory}`);
+        console.log(`║ factoryData:                   ${formattedOp.factoryData?.slice(0, 50)}...`);
+      } else {
+        console.log(`║ factory:                       (not deploying)`);
+        console.log(`║ factoryData:                   (not deploying)`);
+      }
+
+      console.log(`║ callData:                      ${formattedOp.callData?.slice(0, 50)}...`);
+      console.log(`║ callGasLimit:                  ${formattedOp.callGasLimit}`);
+      console.log(`║ verificationGasLimit:          ${formattedOp.verificationGasLimit}`);
+      console.log(`║ preVerificationGas:            ${formattedOp.preVerificationGas}`);
+      console.log(`║ maxFeePerGas:                  ${formattedOp.maxFeePerGas}`);
+      console.log(`║ maxPriorityFeePerGas:          ${formattedOp.maxPriorityFeePerGas}`);
+
+      if (formattedOp.paymaster) {
+        console.log(`║ paymaster:                     ${formattedOp.paymaster}`);
+        console.log(
+          `║ paymasterVerificationGasLimit: ${formattedOp.paymasterVerificationGasLimit}`
+        );
+        console.log(
+          `║ paymasterPostOpGasLimit:       ${formattedOp.paymasterPostOpGasLimit || "N/A"}`
+        );
+        console.log(`║ paymasterData:                 ${formattedOp.paymasterData || "0x"}`);
+      } else {
+        console.log(`║ paymaster:                     (not using paymaster)`);
+      }
+
+      console.log(
+        `║ signature:                     ${formattedOp.signature === "0x" ? "0x (not signed)" : formattedOp.signature?.slice(0, 50) + "..."}`
+      );
+    } else {
+      console.log("║ Standard Format for Bundler (v0.6):");
+      console.log("║");
+      console.log(`║ sender:                ${formattedOp.sender}`);
+      console.log(`║ nonce:                 ${formattedOp.nonce}`);
+      console.log(
+        `║ initCode:              ${formattedOp.initCode === "0x" ? "0x (no deployment)" : formattedOp.initCode?.slice(0, 50) + "..."}`
+      );
+      console.log(`║ callData:              ${formattedOp.callData?.slice(0, 50)}...`);
+      console.log(`║ callGasLimit:          ${formattedOp.callGasLimit}`);
+      console.log(`║ verificationGasLimit:  ${formattedOp.verificationGasLimit}`);
+      console.log(`║ preVerificationGas:    ${formattedOp.preVerificationGas}`);
+      console.log(`║ maxFeePerGas:          ${formattedOp.maxFeePerGas}`);
+      console.log(`║ maxPriorityFeePerGas:  ${formattedOp.maxPriorityFeePerGas}`);
+      console.log(
+        `║ paymasterAndData:      ${formattedOp.paymasterAndData === "0x" ? "0x (no paymaster)" : formattedOp.paymasterAndData?.slice(0, 50) + "..."}`
+      );
+      console.log(
+        `║ signature:             ${formattedOp.signature === "0x" ? "0x (not signed)" : formattedOp.signature?.slice(0, 50) + "..."}`
+      );
+    }
+
+    console.log("╚══════════════════════════════════════════════════════════════");
+    console.log("");
   }
 
   private formatUserOpForBundler(
