@@ -14,6 +14,7 @@ import {
   GossipStats,
   MessageHistory,
 } from "./gossip.interfaces.js";
+import { GossipWhitelistValidator } from "./gossip-whitelist-validator.js";
 
 @Injectable()
 export class GossipService implements OnModuleInit, OnModuleDestroy {
@@ -50,12 +51,19 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
   ) {
     this.port = parseInt(this.configService.get("PORT") || "3000", 10);
 
-    this.bootstrapPeers = this.configService.get("GOSSIP_BOOTSTRAP_PEERS")
+    const rawBootstrapPeers = this.configService.get("GOSSIP_BOOTSTRAP_PEERS")
       ? this.configService
           .get("GOSSIP_BOOTSTRAP_PEERS")
           .split(",")
           .map((p: string) => p.trim())
       : [];
+
+    console.log(`📝 Raw bootstrap peers: ${rawBootstrapPeers.join(", ")}`);
+
+    // Validate bootstrap peers using whitelist mechanism
+    this.bootstrapPeers = GossipWhitelistValidator.validateEndpoints(rawBootstrapPeers);
+
+    console.log(`✅ Validated bootstrap peers: ${this.bootstrapPeers.join(", ")}`);
 
     // Set up known peers file path (will be updated after node initialization)
     this.knownPeersFile = path.join(process.cwd(), "data/gossip-peers-temp.json");
@@ -216,11 +224,17 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Connect to a specific peer
+   *
+   * @param endpoint The WebSocket endpoint to connect to
    */
   private async connectToPeer(endpoint: string): Promise<void> {
     try {
-      console.log(`🔗 Connecting to gossip peer: ${endpoint}`);
-      const ws = new WebSocket(endpoint);
+      // Validate endpoint using whitelist mechanism
+      // Currently allows all nodes, will check on-chain staking in the future
+      const validatedEndpoint = GossipWhitelistValidator.validateEndpoint(endpoint);
+      console.log(`🔗 Connecting to gossip peer: ${validatedEndpoint}`);
+
+      const ws = new WebSocket(validatedEndpoint);
 
       ws.on("open", () => {
         console.log(`✅ Connected to gossip peer: ${endpoint}`);
@@ -245,10 +259,16 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
       });
 
       ws.on("error", (error: Error) => {
-        console.error(`Connection error to ${endpoint}:`, error);
+        console.error(`❌ WebSocket error for ${endpoint}:`, error.message);
+        console.error(`    Error details:`, error);
       });
     } catch (error) {
-      console.error(`Failed to connect to ${endpoint}:`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Failed to connect to ${endpoint}: ${errorMessage}`);
+      if (error instanceof Error && error.stack) {
+        console.error(`    Stack trace:`, error.stack);
+      }
+      throw error; // Re-throw to properly handle in Promise.allSettled
     }
   }
 
@@ -331,11 +351,32 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
     }
 
     const existingPeer = this.peers.get(peerId);
+
+    // Get endpoints from peer data or existing peer
+    let validatedApiEndpoint = peerData.apiEndpoint || existingPeer?.apiEndpoint;
+    let validatedGossipEndpoint = peerData.gossipEndpoint || existingPeer?.gossipEndpoint;
+
+    // Only validate gossip endpoint (WebSocket), not API endpoint (HTTP)
+    try {
+      // API endpoint can be HTTP/HTTPS, no validation needed for protocol
+      // Just store it as-is since it's for API calls, not WebSocket connections
+
+      // Validate gossip endpoint using whitelist mechanism
+      if (validatedGossipEndpoint) {
+        validatedGossipEndpoint =
+          GossipWhitelistValidator.validateEndpoint(validatedGossipEndpoint);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`⚠️ Rejected peer ${peerId} due to invalid gossip endpoint: ${errorMessage}`);
+      return; // Reject peer with invalid endpoints
+    }
+
     const peer: PeerInfo = {
       nodeId: peerId,
       publicKey: peerData.publicKey || existingPeer?.publicKey,
-      apiEndpoint: peerData.apiEndpoint || existingPeer?.apiEndpoint,
-      gossipEndpoint: peerData.gossipEndpoint || existingPeer?.gossipEndpoint,
+      apiEndpoint: validatedApiEndpoint,
+      gossipEndpoint: validatedGossipEndpoint,
       status: "active",
       lastSeen: new Date(),
       region: peerData.region || existingPeer?.region,
@@ -1136,16 +1177,14 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
    */
   private getNodeInfo(): any {
     const nodeState = this.nodeService.getNodeState();
+    const nodeId = this.getNodeId();
 
     return {
-      id: nodeState?.nodeId || process.env.NODE_ID || "unknown-node",
+      nodeId: nodeId, // Changed from 'id' to 'nodeId' to match peer data structure
       publicKey: nodeState?.publicKey,
-      apiEndpoint: nodeState?.nodeId
-        ? this.configService.get("PUBLIC_URL") || `http://localhost:${this.port}`
-        : undefined,
-      gossipEndpoint: nodeState?.nodeId
-        ? this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}/ws`
-        : undefined,
+      apiEndpoint: this.configService.get("PUBLIC_URL") || `http://localhost:${this.port}`,
+      gossipEndpoint:
+        this.configService.get("GOSSIP_PUBLIC_URL") || `ws://localhost:${this.port}/ws`,
       region: "local",
       capabilities: ["bls-signing", "message-aggregation"],
       version: "1.0.0",
@@ -1168,7 +1207,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
   getAllPeersIncludingSelf(): PeerInfo[] {
     const nodeInfo = this.getNodeInfo();
     const selfPeer: PeerInfo = {
-      nodeId: nodeInfo.id,
+      nodeId: nodeInfo.nodeId, // Changed from nodeInfo.id to nodeInfo.nodeId
       publicKey: nodeInfo.publicKey,
       apiEndpoint: nodeInfo.apiEndpoint,
       gossipEndpoint: nodeInfo.gossipEndpoint,
