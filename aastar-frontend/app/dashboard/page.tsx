@@ -129,32 +129,6 @@ export default function DashboardPage() {
     navigator.clipboard.writeText(account.address);
   };
 
-  // Sponsor account with 0.01 ETH
-  const sponsorAccount = async () => {
-    setActionLoading("sponsor");
-    try {
-      await accountAPI.sponsorAccount();
-      toast.success("Account sponsored successfully! 🎉");
-
-      // Reload dashboard data to update sponsored status and balance
-      setTimeout(() => loadDashboardData(), 2000);
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Failed to sponsor account";
-      toast.error(message);
-    } finally {
-      setActionLoading("");
-    }
-  };
-
-  // Check if sponsor button should be shown
-  const shouldShowSponsorButton = () => {
-    if (!account) return false;
-    if (account.sponsored) return false;
-
-    const balance = parseFloat(account.balance || "0");
-    return balance <= 0.01;
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "completed":
