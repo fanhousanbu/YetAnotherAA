@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import CopyButton from "@/components/CopyButton";
 import CreateAccountDialog from "@/components/CreateAccountDialog";
-import { accountAPI, transferAPI, paymasterAPI, tokenAPI } from "@/lib/api";
-import { Account, Transfer, User, TokenBalance, EntryPointVersion } from "@/lib/types";
+import { useDashboard } from "@/contexts/DashboardContext";
+import { User, EntryPointVersion } from "@/lib/types";
 import { getStoredAuth } from "@/lib/auth";
 import toast from "react-hot-toast";
 import {
@@ -22,17 +22,19 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 
-export default function DashboardPage() {
+function DashboardContent() {
+  const {
+    data,
+    loading,
+    loadDashboardData,
+    refreshBalance: contextRefreshBalance,
+  } = useDashboard();
+  const { account, transfers, paymasters, tokenBalances, lastUpdated } = data;
+
   const [user, setUser] = useState<User | null>(null);
-  const [account, setAccount] = useState<Account | null>(null);
-  const [transfers, setTransfers] = useState<Transfer[]>([]);
-  const [paymasters, setPaymasters] = useState<any[]>([]);
-  const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
-  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [refreshingBalance, setRefreshingBalance] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [pullToRefresh, setPullToRefresh] = useState({
     pulling: false,
     distance: 0,
@@ -48,69 +50,11 @@ export default function DashboardPage() {
       setUser(storedUser);
       loadDashboardData();
     }
-  }, []);
+  }, [loadDashboardData]);
 
-  const loadDashboardData = async (showLoadingScreen = true) => {
-    if (showLoadingScreen) {
-      setLoading(true);
-    }
-    try {
-      let accountData = null;
-
-      // Try to get account
-      try {
-        const accountResponse = await accountAPI.getAccount();
-        console.log("Dashboard received account data:", accountResponse);
-        console.log("Account data:", accountResponse.data);
-        console.log("Account address:", accountResponse.data?.address);
-        console.log("Account creatorAddress:", accountResponse.data?.creatorAddress);
-        accountData = accountResponse.data;
-        setAccount(accountData);
-        setLastUpdated(new Date());
-      } catch {
-        // Account doesn't exist yet
-        setAccount(null);
-        setLastUpdated(new Date());
-      }
-
-      // Get transfer history
-      try {
-        const transferResponse = await transferAPI.getHistory(1, 5);
-        setTransfers(transferResponse.data.transfers);
-      } catch {
-        setTransfers([]);
-      }
-
-      // Get available paymasters
-      try {
-        const paymasterResponse = await paymasterAPI.getAvailable();
-        setPaymasters(paymasterResponse.data);
-      } catch {
-        setPaymasters([]);
-      }
-
-      // Get token balances if account exists
-      if (accountData?.address) {
-        try {
-          const tokenResponse = await tokenAPI.getAllTokenBalances(accountData.address);
-          setTokenBalances(tokenResponse.data);
-        } catch {
-          setTokenBalances([]);
-        }
-      }
-    } catch (error: any) {
-      console.error("Failed to load dashboard data:", error);
-    } finally {
-      if (showLoadingScreen) {
-        setLoading(false);
-      }
-    }
-  };
-
-  const handleAccountCreated = (newAccount: Account) => {
-    setAccount(newAccount);
+  const handleAccountCreated = () => {
     // Reload data to get updated balance
-    setTimeout(() => loadDashboardData(), 2000);
+    setTimeout(() => loadDashboardData(true), 2000);
   };
 
   const getVersionBadge = (version?: string) => {
@@ -136,9 +80,7 @@ export default function DashboardPage() {
 
     setRefreshingBalance(true);
     try {
-      const accountResponse = await accountAPI.getAccount();
-      setAccount(accountResponse.data);
-      setLastUpdated(new Date());
+      await contextRefreshBalance();
       toast.success("Balance refreshed!");
     } catch (error) {
       toast.error("Failed to refresh balance");
@@ -171,8 +113,8 @@ export default function DashboardPage() {
       setPullToRefresh({ pulling: false, distance: 80, refreshing: true });
 
       try {
-        // Don't show skeleton screen during pull-to-refresh
-        await loadDashboardData(false);
+        // Force refresh without showing skeleton screen
+        await loadDashboardData(true);
       } finally {
         // After refresh completes, bounce back
         setPullToRefresh({ pulling: false, distance: 0, refreshing: false });
@@ -227,24 +169,27 @@ export default function DashboardPage() {
 
   // Skeleton component
   const Skeleton = () => (
-    <Layout requireAuth={true}>
-      <div className="px-3 py-4 mx-auto max-w-7xl sm:px-4 sm:py-6 lg:px-8">
-        {/* Account Card Skeleton */}
-        <div className="grid grid-cols-1 gap-4 mb-6">
-          <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl h-48"></div>
-        </div>
-        {/* Token Balances Skeleton */}
-        <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl h-32 mb-6"></div>
-        {/* Paymaster Status Skeleton */}
-        <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl h-40 mb-6"></div>
-        {/* Recent Transfers Skeleton */}
-        <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl h-64"></div>
+    <div className="px-3 py-4 mx-auto max-w-7xl sm:px-4 sm:py-6 lg:px-8">
+      {/* Account Card Skeleton */}
+      <div className="grid grid-cols-1 gap-4 mb-6">
+        <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl h-48"></div>
       </div>
-    </Layout>
+      {/* Token Balances Skeleton */}
+      <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl h-32 mb-6"></div>
+      {/* Paymaster Status Skeleton */}
+      <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl h-40 mb-6"></div>
+      {/* Recent Transfers Skeleton */}
+      <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl h-64"></div>
+    </div>
   );
 
-  if (loading) {
-    return <Skeleton />;
+  // Only show skeleton on initial load (when there's no data yet)
+  if (loading && !account) {
+    return (
+      <Layout requireAuth={true}>
+        <Skeleton />
+      </Layout>
+    );
   }
 
   return (
@@ -763,14 +708,18 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Create Account Dialog */}
-      <CreateAccountDialog
-        isOpen={showCreateDialog}
-        onClose={() => setShowCreateDialog(false)}
-        onSuccess={handleAccountCreated}
-      />
+        {/* Create Account Dialog */}
+        <CreateAccountDialog
+          isOpen={showCreateDialog}
+          onClose={() => setShowCreateDialog(false)}
+          onSuccess={handleAccountCreated}
+        />
+      </div>
     </Layout>
   );
+}
+
+export default function DashboardPage() {
+  return <DashboardContent />;
 }

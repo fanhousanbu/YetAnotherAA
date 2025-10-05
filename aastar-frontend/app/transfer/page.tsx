@@ -4,15 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import TokenSelector from "@/components/TokenSelector";
-import {
-  accountAPI,
-  transferAPI,
-  tokenAPI,
-  paymasterAPI,
-  addressBookAPI,
-  authAPI,
-} from "@/lib/api";
-import { Account, GasEstimate, Token, TokenBalance } from "@/lib/types";
+import { useDashboard } from "@/contexts/DashboardContext";
+import { transferAPI, tokenAPI, paymasterAPI, addressBookAPI, authAPI } from "@/lib/api";
+import { GasEstimate, Token, TokenBalance } from "@/lib/types";
 import toast from "react-hot-toast";
 import { startAuthentication } from "@simplewebauthn/browser";
 import {
@@ -21,10 +15,13 @@ import {
   CheckCircleIcon,
   XMarkIcon,
   WalletIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 
 export default function TransferPage() {
-  const [account, setAccount] = useState<Account | null>(null);
+  const { data, refreshBalance: contextRefreshBalance } = useDashboard();
+  const { account } = data;
+
   const [formData, setFormData] = useState({
     to: "",
     amount: "",
@@ -47,26 +44,31 @@ export default function TransferPage() {
   const [transferResult, setTransferResult] = useState<any>(null);
   const [transferStatus, setTransferStatus] = useState<any>(null);
   const [showDeploymentBanner, setShowDeploymentBanner] = useState(false);
+  const [pullToRefresh, setPullToRefresh] = useState({
+    pulling: false,
+    distance: 0,
+    refreshing: false,
+  });
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isPollingRef = useRef(false);
+  const touchStartY = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
     loadPageData();
   }, []);
 
+  // Show deployment banner if account is not deployed
+  useEffect(() => {
+    if (account && !account.deployed) {
+      setShowDeploymentBanner(true);
+    }
+  }, [account]);
+
   const loadPageData = async () => {
     setLoading(prev => ({ ...prev, page: true }));
     try {
-      // Load account
-      const accountResponse = await accountAPI.getAccount();
-      setAccount(accountResponse.data);
-
-      // Show deployment banner if account is not deployed
-      if (!accountResponse.data.deployed) {
-        setShowDeploymentBanner(true);
-      }
-
       // Load saved paymasters
       try {
         const paymasterResponse = await paymasterAPI.getAvailable();
@@ -86,23 +88,7 @@ export default function TransferPage() {
       }
     } catch (error: any) {
       console.error("Transfer page error:", error);
-
-      // Check if it's a 404 (account not found) or similar
-      if (
-        error.response?.status === 404 ||
-        error.response?.data?.message?.includes("Account not found")
-      ) {
-        // Account doesn't exist yet, this is normal
-        setAccount(null);
-        console.log("No account found - user needs to create one first");
-      } else {
-        // Other errors - show error and redirect
-        const message = error.response?.data?.message || "Failed to load account data";
-        console.error("Error message:", message);
-        console.error("Error status:", error.response?.status);
-        toast.error(message);
-        router.push("/dashboard");
-      }
+      toast.error("Failed to load transfer page data");
     } finally {
       setLoading(prev => ({ ...prev, page: false }));
     }
@@ -458,11 +444,51 @@ export default function TransferPage() {
   // Refresh account balance
   const refreshBalance = async () => {
     try {
-      const accountResponse = await accountAPI.getAccount();
-      setAccount(accountResponse.data);
+      await contextRefreshBalance();
+
+      // Reload token balance if a token is selected
+      if (selectedToken && selectedToken.address !== "ETH") {
+        await loadTokenBalance(selectedToken);
+      }
+
       toast.success("Balance updated");
     } catch {
       toast.error("Failed to refresh balance");
+    }
+  };
+
+  // Pull to refresh handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (containerRef.current && containerRef.current.scrollTop === 0 && !pullToRefresh.refreshing) {
+      touchStartY.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (containerRef.current && containerRef.current.scrollTop === 0 && !pullToRefresh.refreshing) {
+      const touchY = e.touches[0].clientY;
+      const distance = touchY - touchStartY.current;
+
+      if (distance > 0 && distance < 150) {
+        setPullToRefresh({ pulling: true, distance, refreshing: false });
+      }
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (pullToRefresh.distance > 80 && !pullToRefresh.refreshing) {
+      // Keep the pull state and show refreshing
+      setPullToRefresh({ pulling: false, distance: 80, refreshing: true });
+
+      try {
+        await refreshBalance();
+      } finally {
+        // After refresh completes, bounce back
+        setPullToRefresh({ pulling: false, distance: 0, refreshing: false });
+      }
+    } else {
+      // Bounce back immediately if threshold not reached
+      setPullToRefresh({ pulling: false, distance: 0, refreshing: false });
     }
   };
 
@@ -550,312 +576,107 @@ export default function TransferPage() {
 
   return (
     <Layout requireAuth={true}>
-      <div className="max-w-2xl px-3 py-4 mx-auto sm:px-4 sm:py-6 lg:px-8">
-        {/* Header - Desktop only */}
-        <div className="hidden md:block mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Send Transfer</h1>
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              Send ETH using ERC-4337 account abstraction - gas fees handled automatically
-            </p>
+      <div
+        ref={containerRef}
+        className="relative overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div
+          className="relative"
+          style={{
+            transform:
+              pullToRefresh.pulling || pullToRefresh.refreshing
+                ? `translateY(${pullToRefresh.distance}px)`
+                : "translateY(0)",
+            transition: pullToRefresh.pulling ? "none" : "transform 0.3s ease",
+          }}
+        >
+          {/* Pull to Refresh Indicator - Mobile only */}
+          <div
+            className="md:hidden absolute left-0 right-0 flex items-center justify-center h-16 -top-16"
+            style={{
+              opacity: pullToRefresh.pulling || pullToRefresh.refreshing ? 1 : 0,
+            }}
+          >
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <ArrowPathIcon
+                className={`w-5 h-5 transition-all ${
+                  pullToRefresh.refreshing
+                    ? "text-blue-600 dark:text-blue-400 animate-spin"
+                    : pullToRefresh.distance > 80
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-gray-500 dark:text-gray-400"
+                }`}
+                style={{
+                  transform: pullToRefresh.refreshing
+                    ? "none"
+                    : pullToRefresh.distance > 80
+                      ? "rotate(360deg)"
+                      : `rotate(${pullToRefresh.distance * 4}deg)`,
+                }}
+              />
+              <span
+                className={
+                  pullToRefresh.refreshing
+                    ? "text-blue-600 dark:text-blue-400"
+                    : pullToRefresh.distance > 80
+                      ? "text-green-600 dark:text-green-400"
+                      : ""
+                }
+              >
+                {pullToRefresh.refreshing
+                  ? "Refreshing..."
+                  : pullToRefresh.distance > 80
+                    ? "Release to refresh"
+                    : "Pull down to refresh"}
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/* Deployment Banner */}
-        {showDeploymentBanner && (
-          <div className="p-4 mb-6 border-l-4 border-slate-900 dark:border-emerald-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <InformationCircleIcon className="w-5 h-5 text-slate-900 dark:text-emerald-400" />
-              </div>
-              <div className="flex-1 ml-3">
-                <p className="text-sm text-slate-700 dark:text-slate-300">
-                  <strong>First Transfer:</strong> Your smart account will be automatically deployed
-                  with your first transfer - no additional gas fees required!
+          <div className="max-w-2xl px-3 py-4 mx-auto sm:px-4 sm:py-6 lg:px-8">
+            {/* Header - Desktop only */}
+            <div className="hidden md:block mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Send Transfer</h1>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Send ETH using ERC-4337 account abstraction - gas fees handled automatically
                 </p>
               </div>
-              <div className="pl-3 ml-auto">
-                <div className="-mx-1.5 -my-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setShowDeploymentBanner(false)}
-                    className="inline-flex bg-slate-50 dark:bg-slate-800/50 rounded-xl p-1.5 text-slate-900 dark:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800/50 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all"
-                  >
-                    <span className="sr-only">Dismiss</span>
-                    <XMarkIcon className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
             </div>
-          </div>
-        )}
 
-        {/* Account Info */}
-        <div className="p-4 mb-6 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <p className="text-sm font-medium text-slate-900 dark:text-slate-200">
-                Account Balance
-              </p>
-              <div className="relative group">
-                <div className="text-lg font-semibold text-slate-900 dark:text-emerald-400">
-                  {formatBalance(account?.balance)} ETH
-                </div>
-                {/* Tooltip */}
-                <div className="absolute left-0 z-10 invisible px-3 py-2 mb-2 text-sm text-white transition-all duration-200 bg-gray-900 dark:bg-gray-800 rounded-lg opacity-0 bottom-full group-hover:opacity-100 group-hover:visible whitespace-nowrap">
-                  <div className="font-mono">{account?.balance || "0"} ETH</div>
-                  <div className="absolute w-0 h-0 border-t-4 border-l-4 border-r-4 top-full left-4 border-l-transparent border-r-transparent border-t-gray-900 dark:border-t-gray-800"></div>
-                </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-slate-700 dark:text-slate-300">Account Address</p>
-              <p className="font-mono text-sm text-slate-900 dark:text-slate-200">
-                {account?.address.slice(0, 10)}...{account?.address.slice(-8)}
-              </p>
-              <div className="flex justify-end mt-2 space-x-2">
-                <button
-                  onClick={refreshBalance}
-                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-slate-900 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-600 rounded-xl hover:bg-slate-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all"
-                >
-                  <svg
-                    className="w-3 h-3 mr-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  Refresh
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Transfer Status */}
-        {transferResult && (
-          <div
-            className={`border rounded-xl p-4 mb-6 ${
-              transferStatus?.status === "completed"
-                ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700"
-                : transferStatus?.status === "failed"
-                  ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
-                  : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
-            }`}
-          >
-            <div className="flex">
-              {transferStatus?.status === "completed" ? (
-                <CheckCircleIcon className="w-5 h-5 text-green-400" />
-              ) : transferStatus?.status === "failed" ? (
-                <InformationCircleIcon className="w-5 h-5 text-red-400" />
-              ) : (
-                <div className="w-5 h-5 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
-              )}
-              <div className="flex-1 ml-3">
-                <h3
-                  className={`text-sm font-medium ${
-                    transferStatus?.status === "completed"
-                      ? "text-green-800 dark:text-green-200"
-                      : transferStatus?.status === "failed"
-                        ? "text-red-800 dark:text-red-200"
-                        : "text-slate-800 dark:text-slate-200"
-                  }`}
-                >
-                  {transferStatus?.statusDescription || "Transfer Submitted"}
-                </h3>
-                <div className="mt-2 space-y-1 text-sm">
-                  <p className="text-gray-700 dark:text-gray-300">
-                    Status:{" "}
-                    <span className="font-medium">
-                      {transferStatus?.status || transferResult.status}
-                    </span>
-                    {transferStatus?.elapsedSeconds && (
-                      <span className="ml-2 text-gray-600 dark:text-gray-400">
-                        ({transferStatus.elapsedSeconds}s elapsed)
-                      </span>
-                    )}
-                  </p>
-                  <p className="font-mono text-xs text-gray-600 dark:text-gray-400">
-                    Transfer ID: {transferResult.transferId}
-                  </p>
-                  {transferStatus?.transactionHash && (
-                    <p className="font-mono text-xs text-gray-700 dark:text-gray-300">
-                      Transaction:
-                      <a
-                        href={transferStatus.explorerUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="ml-1 text-slate-900 dark:text-emerald-400 underline hover:text-slate-700 dark:hover:text-emerald-300 transition-all"
-                      >
-                        {transferStatus.transactionHash.slice(0, 20)}...
-                      </a>
+            {/* Deployment Banner */}
+            {showDeploymentBanner && (
+              <div className="p-4 mb-6 border-l-4 border-slate-900 dark:border-emerald-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <InformationCircleIcon className="w-5 h-5 text-slate-900 dark:text-emerald-400" />
+                  </div>
+                  <div className="flex-1 ml-3">
+                    <p className="text-sm text-slate-700 dark:text-slate-300">
+                      <strong>First Transfer:</strong> Your smart account will be automatically
+                      deployed with your first transfer - no additional gas fees required!
                     </p>
-                  )}
-                  {transferStatus?.bundlerUserOpHash && !transferStatus?.transactionHash && (
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      Bundler processing transaction...
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Transfer Form */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
-          <div className="p-6 space-y-6">
-            {/* Recipient */}
-            <div>
-              <label
-                htmlFor="to"
-                className="block mb-2 text-base font-semibold text-gray-900 dark:text-white"
-              >
-                Recipient Address
-              </label>
-
-              {/* Address Book Selection */}
-              {addressBook.length > 0 && (
-                <div className="mb-3">
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowAddressDropdown(!showAddressDropdown)}
-                      className="flex items-center justify-between w-full px-4 py-3 text-base bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all touch-manipulation active:scale-[0.98]"
-                    >
-                      <span className="text-gray-700 dark:text-gray-300 font-medium">
-                        📖 Choose from address book ({addressBook.length})
-                      </span>
-                      <svg
-                        className={`w-5 h-5 transition-transform ${
-                          showAddressDropdown ? "rotate-180" : ""
-                        }`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                  </div>
+                  <div className="pl-3 ml-auto">
+                    <div className="-mx-1.5 -my-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setShowDeploymentBanner(false)}
+                        className="inline-flex bg-slate-50 dark:bg-slate-800/50 rounded-xl p-1.5 text-slate-900 dark:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800/50 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </button>
-                    {showAddressDropdown && (
-                      <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl shadow-xl max-h-64 overflow-y-auto">
-                        {addressBook.map(entry => (
-                          <button
-                            key={entry.address}
-                            type="button"
-                            onClick={() => {
-                              setFormData(prev => ({
-                                ...prev,
-                                to: entry.address,
-                              }));
-                              setShowAddressDropdown(false);
-                            }}
-                            className="block w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 touch-manipulation active:scale-[0.98]"
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                {entry.name && (
-                                  <div className="font-semibold text-gray-900 dark:text-white truncate text-base">
-                                    {entry.name}
-                                  </div>
-                                )}
-                                <div className="text-sm text-gray-500 dark:text-gray-400 font-mono truncate">
-                                  {entry.address}
-                                </div>
-                                {entry.usageCount > 0 && entry.lastUsed && (
-                                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                    Last used:{" "}
-                                    {new Date(entry.lastUsed).toLocaleDateString("en-US", {
-                                      month: "short",
-                                      day: "numeric",
-                                    })}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                        <span className="sr-only">Dismiss</span>
+                        <XMarkIcon className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              )}
-
-              <div className="relative">
-                <input
-                  type="text"
-                  name="to"
-                  id="to"
-                  value={formData.to}
-                  onChange={handleChange}
-                  placeholder="0x..."
-                  className="block w-full px-4 py-4 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-base placeholder-gray-400 dark:placeholder-gray-500 transition-all font-mono"
-                  autoComplete="off"
-                  autoCapitalize="off"
-                  autoCorrect="off"
-                  spellCheck="false"
-                />
-                {formData.to && (
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, to: "" }))}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 touch-manipulation"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                )}
               </div>
-              {!formData.to && addressBook.length === 0 && (
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  Enter Ethereum address starting with 0x
-                </p>
-              )}
+            )}
 
-              {/* Save to Address Book */}
-              {formData.to && formData.to.match(/^0x[a-fA-F0-9]{40}$/) && (
-                <button
-                  type="button"
-                  onClick={saveToAddressBook}
-                  disabled={loading.transfer}
-                  className="mt-2 inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-600 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                  <svg
-                    className="w-4 h-4 mr-1.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                    />
-                  </svg>
-                  Save to Address Book
-                </button>
-              )}
-            </div>
-
-            {/* Asset Selection */}
-            <div>
+            {/* Asset Selection - Moved to top */}
+            <div className="mb-6">
               <label className="block mb-3 text-base font-semibold text-gray-900 dark:text-white">
                 Select Asset
               </label>
@@ -877,355 +698,612 @@ export default function TransferPage() {
               </p>
             </div>
 
-            {/* Amount */}
-            <div>
-              <div className="flex items-baseline justify-between mb-2">
-                <label
-                  htmlFor="amount"
-                  className="block text-base font-semibold text-gray-900 dark:text-white"
-                >
-                  Amount
-                </label>
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  Available:{" "}
-                  {selectedToken && selectedToken.address !== "ETH"
-                    ? (tokenBalance?.formattedBalance || "0") + " " + selectedToken.symbol
-                    : parseFloat(account?.balance || "0").toFixed(4) + " ETH"}
-                </span>
-              </div>
-
-              <div className="relative">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  name="amount"
-                  id="amount"
-                  value={formData.amount}
-                  onChange={handleChange}
-                  placeholder="0.00"
-                  className="block w-full px-4 py-4 pr-24 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-2xl font-semibold placeholder-gray-300 dark:placeholder-gray-600 transition-all"
-                  autoComplete="off"
-                />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                  <span className="text-lg font-semibold text-gray-600 dark:text-gray-400">
-                    {selectedToken && selectedToken.address !== "ETH"
-                      ? selectedToken.symbol
-                      : "ETH"}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const maxAmount =
-                        selectedToken && selectedToken.address !== "ETH"
-                          ? tokenBalance?.formattedBalance || "0"
-                          : account?.balance || "0";
-                      setFormData(prev => ({ ...prev, amount: maxAmount }));
-                    }}
-                    className="px-2 py-1 text-xs font-semibold text-slate-900 dark:text-emerald-400 bg-slate-100 dark:bg-slate-800 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-all touch-manipulation"
-                  >
-                    MAX
-                  </button>
+            {/* Account Balance - Now linked to selected asset */}
+            <div className="p-4 mb-6 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-200">
+                    Available Balance
+                  </p>
+                  <div className="relative group">
+                    <div className="text-lg font-semibold text-slate-900 dark:text-emerald-400">
+                      {selectedToken && selectedToken.address !== "ETH"
+                        ? `${tokenBalance?.formattedBalance || "0"} ${selectedToken.symbol}`
+                        : `${formatBalance(account?.balance)} ETH`}
+                    </div>
+                    {/* Tooltip */}
+                    <div className="absolute left-0 z-10 invisible px-3 py-2 mb-2 text-sm text-white transition-all duration-200 bg-gray-900 dark:bg-gray-800 rounded-lg opacity-0 bottom-full group-hover:opacity-100 group-hover:visible whitespace-nowrap">
+                      <div className="font-mono">
+                        {selectedToken && selectedToken.address !== "ETH"
+                          ? `${tokenBalance?.balance || "0"} ${selectedToken.symbol}`
+                          : `${account?.balance || "0"} ETH`}
+                      </div>
+                      <div className="absolute w-0 h-0 border-t-4 border-l-4 border-r-4 top-full left-4 border-l-transparent border-r-transparent border-t-gray-900 dark:border-t-gray-800"></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-slate-700 dark:text-slate-300">Account Address</p>
+                  <p className="font-mono text-sm text-slate-900 dark:text-slate-200">
+                    {account?.address.slice(0, 10)}...{account?.address.slice(-8)}
+                  </p>
+                  {/* Refresh button - Desktop only */}
+                  <div className="hidden md:flex justify-end mt-2 space-x-2">
+                    <button
+                      onClick={refreshBalance}
+                      className="inline-flex items-center px-2 py-1 text-xs font-medium text-slate-900 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-600 rounded-xl hover:bg-slate-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all"
+                    >
+                      <svg
+                        className="w-3 h-3 mr-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                      Refresh
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              {selectedToken && selectedToken.address !== "ETH" && selectedToken.decimals === 0 && (
-                <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
-                  ⚠️ This token only accepts whole numbers
-                </p>
-              )}
-              {selectedToken && selectedToken.address !== "ETH" && selectedToken.decimals > 0 && (
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  Up to {selectedToken.decimals} decimal places
-                </p>
-              )}
-              {/* Show insufficient balance warning */}
-              {formData.amount &&
-                (() => {
-                  const inputAmount = parseFloat(formData.amount);
-                  let availableAmount = 0;
-                  let symbol = "";
-
-                  if (!selectedToken || selectedToken.address === "ETH") {
-                    // ETH
-                    availableAmount = parseFloat(account?.balance || "0");
-                    symbol = "ETH";
-                  } else {
-                    // ERC20 Token
-                    availableAmount = parseFloat(tokenBalance?.formattedBalance || "0");
-                    symbol = selectedToken.symbol;
-                  }
-
-                  if (inputAmount > availableAmount) {
-                    return (
-                      <div className="flex items-center mt-1 text-sm text-red-600 dark:text-red-400">
-                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                          <path
-                            fillRule="evenodd"
-                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        Insufficient balance. Available: {availableAmount} {symbol}
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
             </div>
 
-            {/* Paymaster Option */}
-            <div className="p-4 border border-purple-200 dark:border-purple-600 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
-              <div className="flex items-start">
-                <div className="flex items-center h-5">
-                  <input
-                    id="usePaymaster"
-                    name="usePaymaster"
-                    type="checkbox"
-                    checked={formData.usePaymaster}
-                    onChange={handleChange}
-                    className="w-4 h-4 text-purple-600 dark:text-purple-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded focus:ring-purple-500 dark:focus:ring-purple-400"
-                  />
-                </div>
-                <div className="ml-3 flex-1">
-                  <label
-                    htmlFor="usePaymaster"
-                    className="text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Use Paymaster (Sponsored Gas) ✨
-                  </label>
-
-                  {/* Paymaster Address Input - Only show when paymaster is enabled */}
-                  {formData.usePaymaster && (
-                    <div className="mt-3">
-                      <div className="mb-1">
-                        <label
-                          htmlFor="paymasterAddress"
-                          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                        >
-                          Paymaster Contract Address (Optional)
-                        </label>
-                      </div>
-
-                      {/* Saved Paymaster Selection */}
-                      {savedPaymasters.length > 0 && (
-                        <div className="mb-2">
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={() => setShowPaymasterDropdown(!showPaymasterDropdown)}
-                              className="flex items-center justify-between w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 transition-all"
-                            >
-                              <span className="text-gray-600 dark:text-gray-400">
-                                Choose from saved paymasters ({savedPaymasters.length})
-                              </span>
-                              <svg
-                                className={`w-4 h-4 transition-transform ${
-                                  showPaymasterDropdown ? "rotate-180" : ""
-                                }`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M19 9l-7 7-7-7"
-                                />
-                              </svg>
-                            </button>
-                            {showPaymasterDropdown && (
-                              <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                                {savedPaymasters.map(paymaster => (
-                                  <button
-                                    key={paymaster.address}
-                                    type="button"
-                                    onClick={() => {
-                                      setFormData(prev => ({
-                                        ...prev,
-                                        paymasterAddress: paymaster.address,
-                                      }));
-                                      setShowPaymasterDropdown(false);
-                                    }}
-                                    className="block w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700"
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <span className="font-medium">{paymaster.name}</span>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                                        {paymaster.address.slice(0, 8)}...
-                                        {paymaster.address.slice(-6)}
-                                      </span>
-                                    </div>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      <input
-                        type="text"
-                        name="paymasterAddress"
-                        id="paymasterAddress"
-                        value={formData.paymasterAddress}
-                        onChange={handleChange}
-                        placeholder="0x... or select from saved paymasters above"
-                        className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all font-mono"
-                        autoComplete="off"
-                        autoCapitalize="off"
-                        autoCorrect="off"
-                        spellCheck="false"
-                      />
-                      <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        Enter your paymaster contract address to sponsor gas fees. Leave empty for
-                        no paymaster.
-                      </p>
-                      {formData.paymasterAddress && (
-                        <div className="mt-2">
-                          <div className="p-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300">
-                            💡 Using custom paymaster: {formData.paymasterAddress.slice(0, 10)}...
-                            {formData.paymasterAddress.slice(-8)}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Dynamic description based on asset selection */}
-                  {selectedToken && selectedToken.address !== "ETH" ? (
-                    <div className="mt-2">
-                      <p className="inline-block px-2 py-1 text-xs rounded text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30">
-                        ⚠️ ERC20 transfers may not be sponsored by all paymasters
-                      </p>
-                      <p className="mt-1 text-xs text-gray-700 dark:text-gray-300">
-                        Some paymasters don&apos;t support token transfers. Try ETH transfer if this
-                        fails.
-                      </p>
-                    </div>
+            {/* Transfer Status */}
+            {transferResult && (
+              <div
+                className={`border rounded-xl p-4 mb-6 ${
+                  transferStatus?.status === "completed"
+                    ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700"
+                    : transferStatus?.status === "failed"
+                      ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
+                      : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
+                }`}
+              >
+                <div className="flex">
+                  {transferStatus?.status === "completed" ? (
+                    <CheckCircleIcon className="w-5 h-5 text-green-400" />
+                  ) : transferStatus?.status === "failed" ? (
+                    <InformationCircleIcon className="w-5 h-5 text-red-400" />
                   ) : (
-                    <div className="mt-2">
-                      <p className="inline-block px-2 py-1 text-xs text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 rounded">
-                        ✅ ETH transfers work best with paymaster sponsorship
-                      </p>
-                      <p className="mt-1 text-xs text-gray-700 dark:text-gray-300">
-                        {formData.paymasterAddress
-                          ? "Using your custom paymaster for gas sponsorship."
-                          : "No paymaster specified - gas fees will not be sponsored."}
-                      </p>
-                    </div>
+                    <div className="w-5 h-5 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
                   )}
-
-                  {formData.usePaymaster && (
-                    <div className="inline-block px-2 py-1 mt-2 text-xs text-purple-700 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 rounded">
-                      🎉 Attempting gas sponsorship...
+                  <div className="flex-1 ml-3">
+                    <h3
+                      className={`text-sm font-medium ${
+                        transferStatus?.status === "completed"
+                          ? "text-green-800 dark:text-green-200"
+                          : transferStatus?.status === "failed"
+                            ? "text-red-800 dark:text-red-200"
+                            : "text-slate-800 dark:text-slate-200"
+                      }`}
+                    >
+                      {transferStatus?.statusDescription || "Transfer Submitted"}
+                    </h3>
+                    <div className="mt-2 space-y-1 text-sm">
+                      <p className="text-gray-700 dark:text-gray-300">
+                        Status:{" "}
+                        <span className="font-medium">
+                          {transferStatus?.status || transferResult.status}
+                        </span>
+                        {transferStatus?.elapsedSeconds && (
+                          <span className="ml-2 text-gray-600 dark:text-gray-400">
+                            ({transferStatus.elapsedSeconds}s elapsed)
+                          </span>
+                        )}
+                      </p>
+                      <p className="font-mono text-xs text-gray-600 dark:text-gray-400">
+                        Transfer ID: {transferResult.transferId}
+                      </p>
+                      {transferStatus?.transactionHash && (
+                        <p className="font-mono text-xs text-gray-700 dark:text-gray-300">
+                          Transaction:
+                          <a
+                            href={transferStatus.explorerUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-1 text-slate-900 dark:text-emerald-400 underline hover:text-slate-700 dark:hover:text-emerald-300 transition-all"
+                          >
+                            {transferStatus.transactionHash.slice(0, 20)}...
+                          </a>
+                        </p>
+                      )}
+                      {transferStatus?.bundlerUserOpHash && !transferStatus?.transactionHash && (
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          Bundler processing transaction...
+                        </p>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Gas Estimation */}
-            {gasEstimate && (
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-                <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  Gas Estimation
-                </h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600 dark:text-gray-400">Call Gas:</span>
-                    <span className="ml-2 font-mono">
-                      {parseInt(gasEstimate.callGasLimit, 16).toLocaleString()}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600 dark:text-gray-400">Verification Gas:</span>
-                    <span className="ml-2 font-mono">
-                      {parseInt(gasEstimate.verificationGasLimit, 16).toLocaleString()}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600 dark:text-gray-400">Pre-verification:</span>
-                    <span className="ml-2 font-mono">
-                      {parseInt(gasEstimate.preVerificationGas, 16).toLocaleString()}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600 dark:text-gray-400">Max Fee:</span>
-                    <span className="ml-2 font-mono">
-                      {formatGwei(gasEstimate.maxFeePerGas)} Gwei
-                    </span>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                type="button"
-                onClick={estimateGas}
-                disabled={loading.estimate || !formData.to || !formData.amount}
-                className="inline-flex items-center justify-center flex-1 px-4 py-3 sm:py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all touch-manipulation active:scale-95"
-              >
-                {loading.estimate ? (
-                  <div className="w-4 h-4 mr-2 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
-                ) : null}
-                Estimate Gas
-              </button>
+            {/* Transfer Form */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
+              <div className="p-6 space-y-6">
+                {/* Recipient */}
+                <div>
+                  <label
+                    htmlFor="to"
+                    className="block mb-2 text-base font-semibold text-gray-900 dark:text-white"
+                  >
+                    Recipient Address
+                  </label>
 
-              <button
-                type="button"
-                onClick={executeTransfer}
-                disabled={isTransferDisabled()}
-                className={`flex-1 inline-flex justify-center items-center px-4 py-3 sm:py-2 border border-transparent text-sm font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 touch-manipulation active:scale-95 ${
-                  isTransferDisabled()
-                    ? "bg-gray-400 text-gray-100 cursor-not-allowed"
-                    : "bg-slate-900 text-white hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:ring-slate-900 dark:focus:ring-emerald-500"
-                }`}
-              >
-                {loading.transfer ? (
-                  <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
-                ) : (
-                  <ArrowTopRightOnSquareIcon className="w-4 h-4 mr-2" />
+                  {/* Address Book Selection */}
+                  {addressBook.length > 0 && (
+                    <div className="mb-3">
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowAddressDropdown(!showAddressDropdown)}
+                          className="flex items-center justify-between w-full px-4 py-3 text-base bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all touch-manipulation active:scale-[0.98]"
+                        >
+                          <span className="text-gray-700 dark:text-gray-300 font-medium">
+                            📖 Choose from address book ({addressBook.length})
+                          </span>
+                          <svg
+                            className={`w-5 h-5 transition-transform ${
+                              showAddressDropdown ? "rotate-180" : ""
+                            }`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 9l-7 7-7-7"
+                            />
+                          </svg>
+                        </button>
+                        {showAddressDropdown && (
+                          <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl shadow-xl max-h-64 overflow-y-auto">
+                            {addressBook.map(entry => (
+                              <button
+                                key={entry.address}
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    to: entry.address,
+                                  }));
+                                  setShowAddressDropdown(false);
+                                }}
+                                className="block w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 touch-manipulation active:scale-[0.98]"
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    {entry.name && (
+                                      <div className="font-semibold text-gray-900 dark:text-white truncate text-base">
+                                        {entry.name}
+                                      </div>
+                                    )}
+                                    <div className="text-sm text-gray-500 dark:text-gray-400 font-mono truncate">
+                                      {entry.address}
+                                    </div>
+                                    {entry.usageCount > 0 && entry.lastUsed && (
+                                      <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                        Last used:{" "}
+                                        {new Date(entry.lastUsed).toLocaleDateString("en-US", {
+                                          month: "short",
+                                          day: "numeric",
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      name="to"
+                      id="to"
+                      value={formData.to}
+                      onChange={handleChange}
+                      placeholder="0x..."
+                      className="block w-full px-4 py-4 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-base placeholder-gray-400 dark:placeholder-gray-500 transition-all font-mono"
+                      autoComplete="off"
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      spellCheck="false"
+                    />
+                    {formData.to && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, to: "" }))}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 touch-manipulation"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  {!formData.to && addressBook.length === 0 && (
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      Enter Ethereum address starting with 0x
+                    </p>
+                  )}
+                </div>
+
+                {/* Amount */}
+                <div>
+                  <div className="flex items-baseline justify-between mb-2">
+                    <label
+                      htmlFor="amount"
+                      className="block text-base font-semibold text-gray-900 dark:text-white"
+                    >
+                      Amount
+                    </label>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Available:{" "}
+                      {selectedToken && selectedToken.address !== "ETH"
+                        ? (tokenBalance?.formattedBalance || "0") + " " + selectedToken.symbol
+                        : parseFloat(account?.balance || "0").toFixed(4) + " ETH"}
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      name="amount"
+                      id="amount"
+                      value={formData.amount}
+                      onChange={handleChange}
+                      placeholder="0.00"
+                      className="block w-full px-4 py-4 pr-24 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-2xl font-semibold placeholder-gray-300 dark:placeholder-gray-600 transition-all"
+                      autoComplete="off"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                      <span className="text-lg font-semibold text-gray-600 dark:text-gray-400">
+                        {selectedToken && selectedToken.address !== "ETH"
+                          ? selectedToken.symbol
+                          : "ETH"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const maxAmount =
+                            selectedToken && selectedToken.address !== "ETH"
+                              ? tokenBalance?.formattedBalance || "0"
+                              : account?.balance || "0";
+                          setFormData(prev => ({ ...prev, amount: maxAmount }));
+                        }}
+                        className="px-2 py-1 text-xs font-semibold text-slate-900 dark:text-emerald-400 bg-slate-100 dark:bg-slate-800 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-all touch-manipulation"
+                      >
+                        MAX
+                      </button>
+                    </div>
+                  </div>
+
+                  {selectedToken &&
+                    selectedToken.address !== "ETH" &&
+                    selectedToken.decimals === 0 && (
+                      <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+                        ⚠️ This token only accepts whole numbers
+                      </p>
+                    )}
+                  {selectedToken &&
+                    selectedToken.address !== "ETH" &&
+                    selectedToken.decimals > 0 && (
+                      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        Up to {selectedToken.decimals} decimal places
+                      </p>
+                    )}
+                  {/* Show insufficient balance warning */}
+                  {formData.amount &&
+                    (() => {
+                      const inputAmount = parseFloat(formData.amount);
+                      let availableAmount = 0;
+                      let symbol = "";
+
+                      if (!selectedToken || selectedToken.address === "ETH") {
+                        // ETH
+                        availableAmount = parseFloat(account?.balance || "0");
+                        symbol = "ETH";
+                      } else {
+                        // ERC20 Token
+                        availableAmount = parseFloat(tokenBalance?.formattedBalance || "0");
+                        symbol = selectedToken.symbol;
+                      }
+
+                      if (inputAmount > availableAmount) {
+                        return (
+                          <div className="flex items-center mt-1 text-sm text-red-600 dark:text-red-400">
+                            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path
+                                fillRule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            Insufficient balance. Available: {availableAmount} {symbol}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                </div>
+
+                {/* Paymaster Option */}
+                <div className="p-4 border border-purple-200 dark:border-purple-600 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+                  <div className="flex items-start">
+                    <div className="flex items-center h-5">
+                      <input
+                        id="usePaymaster"
+                        name="usePaymaster"
+                        type="checkbox"
+                        checked={formData.usePaymaster}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-purple-600 dark:text-purple-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded focus:ring-purple-500 dark:focus:ring-purple-400"
+                      />
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <label
+                        htmlFor="usePaymaster"
+                        className="text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Use Paymaster (Sponsored Gas) ✨
+                      </label>
+
+                      {/* Paymaster Address Input - Only show when paymaster is enabled */}
+                      {formData.usePaymaster && (
+                        <div className="mt-3">
+                          <div className="mb-1">
+                            <label
+                              htmlFor="paymasterAddress"
+                              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            >
+                              Paymaster Contract Address (Optional)
+                            </label>
+                          </div>
+
+                          {/* Saved Paymaster Selection */}
+                          {savedPaymasters.length > 0 && (
+                            <div className="mb-2">
+                              <div className="relative">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPaymasterDropdown(!showPaymasterDropdown)}
+                                  className="flex items-center justify-between w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 transition-all"
+                                >
+                                  <span className="text-gray-600 dark:text-gray-400">
+                                    Choose from saved paymasters ({savedPaymasters.length})
+                                  </span>
+                                  <svg
+                                    className={`w-4 h-4 transition-transform ${
+                                      showPaymasterDropdown ? "rotate-180" : ""
+                                    }`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M19 9l-7 7-7-7"
+                                    />
+                                  </svg>
+                                </button>
+                                {showPaymasterDropdown && (
+                                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                                    {savedPaymasters.map(paymaster => (
+                                      <button
+                                        key={paymaster.address}
+                                        type="button"
+                                        onClick={() => {
+                                          setFormData(prev => ({
+                                            ...prev,
+                                            paymasterAddress: paymaster.address,
+                                          }));
+                                          setShowPaymasterDropdown(false);
+                                        }}
+                                        className="block w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700"
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span className="font-medium">{paymaster.name}</span>
+                                          <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                                            {paymaster.address.slice(0, 8)}...
+                                            {paymaster.address.slice(-6)}
+                                          </span>
+                                        </div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          <input
+                            type="text"
+                            name="paymasterAddress"
+                            id="paymasterAddress"
+                            value={formData.paymasterAddress}
+                            onChange={handleChange}
+                            placeholder="0x... or select from saved paymasters above"
+                            className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all font-mono"
+                            autoComplete="off"
+                            autoCapitalize="off"
+                            autoCorrect="off"
+                            spellCheck="false"
+                          />
+                          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                            Enter your paymaster contract address to sponsor gas fees. Leave empty
+                            for no paymaster.
+                          </p>
+                          {formData.paymasterAddress && (
+                            <div className="mt-2">
+                              <div className="p-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300">
+                                💡 Using custom paymaster: {formData.paymasterAddress.slice(0, 10)}
+                                ...
+                                {formData.paymasterAddress.slice(-8)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Dynamic description based on asset selection */}
+                      {selectedToken && selectedToken.address !== "ETH" ? (
+                        <div className="mt-2">
+                          <p className="inline-block px-2 py-1 text-xs rounded text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30">
+                            ⚠️ ERC20 transfers may not be sponsored by all paymasters
+                          </p>
+                          <p className="mt-1 text-xs text-gray-700 dark:text-gray-300">
+                            Some paymasters don&apos;t support token transfers. Try ETH transfer if
+                            this fails.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="mt-2">
+                          <p className="inline-block px-2 py-1 text-xs text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 rounded">
+                            ✅ ETH transfers work best with paymaster sponsorship
+                          </p>
+                          <p className="mt-1 text-xs text-gray-700 dark:text-gray-300">
+                            {formData.paymasterAddress
+                              ? "Using your custom paymaster for gas sponsorship."
+                              : "No paymaster specified - gas fees will not be sponsored."}
+                          </p>
+                        </div>
+                      )}
+
+                      {formData.usePaymaster && (
+                        <div className="inline-block px-2 py-1 mt-2 text-xs text-purple-700 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 rounded">
+                          🎉 Attempting gas sponsorship...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gas Estimation */}
+                {gasEstimate && (
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                    <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                      Gas Estimation
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">Call Gas:</span>
+                        <span className="ml-2 font-mono">
+                          {parseInt(gasEstimate.callGasLimit, 16).toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">Verification Gas:</span>
+                        <span className="ml-2 font-mono">
+                          {parseInt(gasEstimate.verificationGasLimit, 16).toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">Pre-verification:</span>
+                        <span className="ml-2 font-mono">
+                          {parseInt(gasEstimate.preVerificationGas, 16).toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">Max Fee:</span>
+                        <span className="ml-2 font-mono">
+                          {formatGwei(gasEstimate.maxFeePerGas)} Gwei
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 )}
-                {(() => {
-                  if (!formData.amount) return "Send Transfer";
-                  const transferAmount = parseFloat(formData.amount);
 
-                  if (!selectedToken || selectedToken.address === "ETH") {
-                    return transferAmount > parseFloat(account?.balance || "0")
-                      ? "Insufficient ETH Balance"
-                      : "Send ETH";
-                  }
+                {/* Actions */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={estimateGas}
+                    disabled={loading.estimate || !formData.to || !formData.amount}
+                    className="inline-flex items-center justify-center flex-1 px-4 py-3 sm:py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all touch-manipulation active:scale-95"
+                  >
+                    {loading.estimate ? (
+                      <div className="w-4 h-4 mr-2 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
+                    ) : null}
+                    Estimate Gas
+                  </button>
 
-                  const availableTokenBalance = parseFloat(tokenBalance?.formattedBalance || "0");
-                  return transferAmount > availableTokenBalance
-                    ? `Insufficient ${selectedToken.symbol} Balance`
-                    : `Send ${selectedToken.symbol}`;
-                })()}
-              </button>
+                  <button
+                    type="button"
+                    onClick={executeTransfer}
+                    disabled={isTransferDisabled()}
+                    className={`flex-1 inline-flex justify-center items-center px-4 py-3 sm:py-2 border border-transparent text-sm font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 touch-manipulation active:scale-95 ${
+                      isTransferDisabled()
+                        ? "bg-gray-400 text-gray-100 cursor-not-allowed"
+                        : "bg-slate-900 text-white hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:ring-slate-900 dark:focus:ring-emerald-500"
+                    }`}
+                  >
+                    {loading.transfer ? (
+                      <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
+                    ) : (
+                      <ArrowTopRightOnSquareIcon className="w-4 h-4 mr-2" />
+                    )}
+                    {(() => {
+                      if (!formData.amount) return "Send Transfer";
+                      const transferAmount = parseFloat(formData.amount);
+
+                      if (!selectedToken || selectedToken.address === "ETH") {
+                        return transferAmount > parseFloat(account?.balance || "0")
+                          ? "Insufficient ETH Balance"
+                          : "Send ETH";
+                      }
+
+                      const availableTokenBalance = parseFloat(
+                        tokenBalance?.formattedBalance || "0"
+                      );
+                      return transferAmount > availableTokenBalance
+                        ? `Insufficient ${selectedToken.symbol} Balance`
+                        : `Send ${selectedToken.symbol}`;
+                    })()}
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Info */}
-        <div className="p-4 mt-6 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-          <div className="flex">
-            <InformationCircleIcon className="w-5 h-5 text-slate-900 dark:text-emerald-400" />
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                How it works
-              </h3>
-              <div className="mt-2 text-sm text-slate-700 dark:text-slate-300">
-                <ul className="space-y-1 list-disc list-inside">
-                  <li>Support for ETH and ERC20 token transfers (PNTs, PIM, and custom tokens)</li>
-                  <li>Gas fees are automatically handled - no need to hold ETH for gas</li>
-                  <li>Enable Paymaster for sponsored transactions (zero gas cost!)</li>
-                  <li>Add custom tokens by entering their contract address</li>
-                  <li>BLS nodes are automatically selected from the gossip network</li>
-                  <li>Uses ERC-4337 UserOperation with BLS aggregate signatures</li>
-                </ul>
+            {/* Info */}
+            <div className="p-4 mt-6 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+              <div className="flex">
+                <InformationCircleIcon className="w-5 h-5 text-slate-900 dark:text-emerald-400" />
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                    How it works
+                  </h3>
+                  <div className="mt-2 text-sm text-slate-700 dark:text-slate-300">
+                    <ul className="space-y-1 list-disc list-inside">
+                      <li>
+                        Support for ETH and ERC20 token transfers (PNTs, PIM, and custom tokens)
+                      </li>
+                      <li>Gas fees are automatically handled - no need to hold ETH for gas</li>
+                      <li>Enable Paymaster for sponsored transactions (zero gas cost!)</li>
+                      <li>Add custom tokens by entering their contract address</li>
+                      <li>BLS nodes are automatically selected from the gossip network</li>
+                      <li>Uses ERC-4337 UserOperation with BLS aggregate signatures</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

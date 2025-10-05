@@ -95,8 +95,8 @@ export default function TransferHistoryPage() {
   return (
     <Layout requireAuth={true}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header */}
-        <div className="mb-8">
+        {/* Header - Desktop only */}
+        <div className="hidden md:block mb-8">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Transfer History</h1>
@@ -124,6 +124,33 @@ export default function TransferHistoryPage() {
                 New Transfer
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Mobile Header and Actions */}
+        <div className="md:hidden mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Transfer History
+          </h1>
+          <div className="flex gap-3">
+            <button
+              onClick={() => loadTransfers(true)}
+              disabled={loading}
+              className="flex-1 inline-flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-xl text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-400 disabled:opacity-50 transition-all touch-manipulation active:scale-95"
+            >
+              {loading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-900 dark:border-emerald-500 mr-2"></div>
+              ) : (
+                <ArrowPathIcon className="h-4 w-4 mr-2" />
+              )}
+              Refresh
+            </button>
+            <button
+              onClick={() => router.push("/transfer")}
+              className="flex-1 inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
+            >
+              New Transfer
+            </button>
           </div>
         </div>
 
