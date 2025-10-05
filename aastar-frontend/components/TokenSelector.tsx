@@ -49,12 +49,16 @@ export default function TokenSelector({
 
   // Create ETH token object
   const ethToken: UserTokenWithBalance = {
+    id: "eth-native",
+    userId: "",
     address: "ETH",
     symbol: "ETH",
     name: "Ethereum",
     decimals: 18,
+    isCustom: false,
     isActive: true,
     sortOrder: -1, // Ensure ETH is always first
+    createdAt: new Date().toISOString(),
     balance: {
       balance: ethBalance,
       formattedBalance: ethBalance,

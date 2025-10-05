@@ -497,11 +497,11 @@ function DashboardContent() {
                       .filter(balance => parseFloat(balance.formattedBalance) > 0)
                       .map(tokenBalance => (
                         <div
-                          key={tokenBalance.token.address}
+                          key={tokenBalance.token?.address}
                           className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-slate-300 dark:hover:border-slate-600 transition-colors bg-slate-50/50 dark:bg-slate-800/30"
                         >
                           <div className="flex items-center">
-                            {tokenBalance.token.logoUrl && (
+                            {tokenBalance.token?.logoUrl && (
                               <img
                                 src={tokenBalance.token.logoUrl}
                                 alt={tokenBalance.token.symbol}
@@ -514,16 +514,16 @@ function DashboardContent() {
                             <div className="flex-1">
                               <div className="flex items-center justify-between">
                                 <span className="font-medium text-gray-900 dark:text-white">
-                                  {tokenBalance.token.symbol}
+                                  {tokenBalance.token?.symbol}
                                 </span>
                                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
                                   {parseFloat(tokenBalance.formattedBalance).toFixed(4)}
                                 </span>
                               </div>
                               <p className="text-xs text-gray-600 dark:text-gray-400">
-                                {tokenBalance.token.name}
+                                {tokenBalance.token?.name}
                               </p>
-                              {tokenBalance.token.isCustom && (
+                              {tokenBalance.token?.isCustom && (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
                                   Custom
                                 </span>

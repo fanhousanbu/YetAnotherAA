@@ -77,9 +77,10 @@ export interface Token {
 }
 
 export interface TokenBalance {
-  token: Token;
+  token?: Token;
   balance: string;
   formattedBalance: string;
+  decimals?: number;
   usdValue?: string;
 }
 
