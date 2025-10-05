@@ -154,34 +154,33 @@ export default function LoginPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-950 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full">
           {!showDeviceRegister ? (
             <>
-              <div>
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-                  Sign in with Passkey
+              {/* Logo/Brand Section */}
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-slate-900 dark:bg-slate-800 mb-4 shadow-lg">
+                  <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Welcome Back
                 </h2>
-                <p className="mt-2 text-center text-sm text-gray-700 dark:text-gray-300">
-                  Or{" "}
-                  <Link
-                    href="/auth/register"
-                    className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
-                  >
-                    create a new account
-                  </Link>
-                </p>
-                <p className="mt-1 text-center text-xs text-gray-600 dark:text-gray-400">
-                  Login requires only your passkey
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                  Sign in with your passkey for secure access
                 </p>
               </div>
 
-              <div className="mt-8 space-y-6">
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-4">
+              {/* Main Card */}
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-6 border border-gray-200 dark:border-gray-700">
+                {/* Info Box */}
+                <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
                       <svg
-                        className="h-5 w-5 text-blue-400 dark:text-blue-300"
+                        className="h-6 w-6 text-slate-700 dark:text-slate-300"
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -192,29 +191,29 @@ export default function LoginPage() {
                         />
                       </svg>
                     </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    <div className="ml-3 flex-1">
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                         Passkey Authentication
                       </h3>
-                      <div className="mt-1 text-sm text-blue-700 dark:text-blue-300">
+                      <div className="mt-1 text-sm text-slate-700 dark:text-slate-300">
                         <p>
-                          Click the button below to authenticate using your device&apos;s passkey
-                          (Face ID, Touch ID, Windows Hello, etc.).
+                          Use Face ID, Touch ID, Windows Hello, or your security key to sign in securely.
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
 
+                {/* Sign In Button */}
                 <div>
                   <button
                     onClick={handlePasskeyLogin}
                     disabled={loading}
-                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   >
                     {loading ? (
                       <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                         Authenticating...
                       </div>
                     ) : (
@@ -232,41 +231,82 @@ export default function LoginPage() {
                   </button>
                 </div>
 
+                {/* Divider */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-4 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                      Need help?
+                    </span>
+                  </div>
+                </div>
+
+                {/* New Device Link */}
                 <div className="text-center">
                   <button
                     onClick={() => setShowDeviceRegister(true)}
-                    className="text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white underline"
+                    className="inline-flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-emerald-400 transition-colors"
                   >
+                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
                     New device? Register passkey for this device
                   </button>
                 </div>
               </div>
+
+              {/* Footer Links */}
+              <div className="mt-6 text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Don&apos;t have an account?{" "}
+                  <Link
+                    href="/auth/register"
+                    className="font-semibold text-slate-900 hover:text-slate-700 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors"
+                  >
+                    Create a new account
+                  </Link>
+                </p>
+              </div>
             </>
           ) : (
             <>
-              <div>
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-                  Register Passkey for This Device
-                </h2>
-                <p className="mt-2 text-center text-sm text-gray-700 dark:text-gray-300">
-                  Enter your email and password to register a passkey for this device
-                </p>
-                <div className="text-center mt-2">
-                  <button
-                    onClick={() => setShowDeviceRegister(false)}
-                    className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline"
-                  >
-                    ← Back to passkey login
-                  </button>
-                </div>
+              {/* Back Button */}
+              <div className="mb-6">
+                <button
+                  onClick={() => setShowDeviceRegister(false)}
+                  className="inline-flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-emerald-400 transition-colors"
+                >
+                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Back to login
+                </button>
               </div>
 
-              <form className="mt-8 space-y-6" onSubmit={handleDevicePasskeyRegister}>
-                <div className="space-y-4">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-orange-600 dark:bg-orange-500 mb-4 shadow-lg">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Register New Device
+                </h2>
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                  Verify your credentials to add this device
+                </p>
+              </div>
+
+              {/* Main Card */}
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+                <form className="space-y-5" onSubmit={handleDevicePasskeyRegister}>
                   <div>
                     <label
                       htmlFor="email"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
                     >
                       Email address
                     </label>
@@ -278,15 +318,15 @@ export default function LoginPage() {
                       required
                       value={deviceFormData.email}
                       onChange={handleDeviceFormChange}
-                      className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-600 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                      placeholder="Enter your email"
+                      className="appearance-none block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 focus:border-transparent transition-all sm:text-sm"
+                      placeholder="your.email@example.com"
                     />
                   </div>
 
                   <div>
                     <label
                       htmlFor="password"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
                     >
                       Password
                     </label>
@@ -298,55 +338,52 @@ export default function LoginPage() {
                       required
                       value={deviceFormData.password}
                       onChange={handleDeviceFormChange}
-                      className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-600 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                      className="appearance-none block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 focus:border-transparent transition-all sm:text-sm"
                       placeholder="Enter your password"
                     />
                   </div>
-                </div>
 
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <svg
-                        className="h-5 w-5 text-yellow-400 dark:text-yellow-300"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                        Device Registration
-                      </h3>
-                      <div className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
-                        <p>
-                          This will register a new passkey specifically for this device. You&apos;ll
-                          need your existing credentials to verify your identity.
-                        </p>
+                  <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-xl p-4">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0">
+                        <svg
+                          className="h-5 w-5 text-orange-700 dark:text-orange-300"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <div className="ml-3 flex-1">
+                        <h3 className="text-sm font-semibold text-orange-900 dark:text-orange-100">
+                          Device Registration
+                        </h3>
+                        <div className="mt-1 text-sm text-orange-800 dark:text-orange-200">
+                          <p>
+                            Verify your identity to register a passkey for this device.
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex justify-center py-3.5 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-600 dark:focus:ring-orange-500 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   >
                     {loading ? (
                       <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                         Registering passkey...
                       </div>
                     ) : (
                       <div className="flex items-center">
-                        <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                           <path
                             fillRule="evenodd"
                             d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -357,8 +394,8 @@ export default function LoginPage() {
                       </div>
                     )}
                   </button>
-                </div>
-              </form>
+                </form>
+              </div>
             </>
           )}
         </div>
