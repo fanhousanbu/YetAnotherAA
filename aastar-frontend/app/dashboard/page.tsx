@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import CopyButton from "@/components/CopyButton";
@@ -19,6 +19,7 @@ import {
   EyeIcon,
   CpuChipIcon,
   InformationCircleIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 
 export default function DashboardPage() {
@@ -32,6 +33,13 @@ export default function DashboardPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [refreshingBalance, setRefreshingBalance] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [pullToRefresh, setPullToRefresh] = useState({
+    pulling: false,
+    distance: 0,
+    refreshing: false,
+  });
+  const touchStartY = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -42,8 +50,10 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const loadDashboardData = async () => {
-    setLoading(true);
+  const loadDashboardData = async (showLoadingScreen = true) => {
+    if (showLoadingScreen) {
+      setLoading(true);
+    }
     try {
       let accountData = null;
 
@@ -91,7 +101,9 @@ export default function DashboardPage() {
     } catch (error: any) {
       console.error("Failed to load dashboard data:", error);
     } finally {
-      setLoading(false);
+      if (showLoadingScreen) {
+        setLoading(false);
+      }
     }
   };
 
@@ -132,6 +144,42 @@ export default function DashboardPage() {
       toast.error("Failed to refresh balance");
     } finally {
       setRefreshingBalance(false);
+    }
+  };
+
+  // Pull to refresh handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (containerRef.current && containerRef.current.scrollTop === 0 && !pullToRefresh.refreshing) {
+      touchStartY.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (containerRef.current && containerRef.current.scrollTop === 0 && !pullToRefresh.refreshing) {
+      const touchY = e.touches[0].clientY;
+      const distance = touchY - touchStartY.current;
+
+      if (distance > 0 && distance < 150) {
+        setPullToRefresh({ pulling: true, distance, refreshing: false });
+      }
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (pullToRefresh.distance > 80 && !pullToRefresh.refreshing) {
+      // Keep the pull state and show refreshing
+      setPullToRefresh({ pulling: false, distance: 80, refreshing: true });
+
+      try {
+        // Don't show skeleton screen during pull-to-refresh
+        await loadDashboardData(false);
+      } finally {
+        // After refresh completes, bounce back
+        setPullToRefresh({ pulling: false, distance: 0, refreshing: false });
+      }
+    } else {
+      // Bounce back immediately if threshold not reached
+      setPullToRefresh({ pulling: false, distance: 0, refreshing: false });
     }
   };
 
@@ -177,454 +225,542 @@ export default function DashboardPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <Layout requireAuth={true}>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="w-32 h-32 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
+  // Skeleton component
+  const Skeleton = () => (
+    <Layout requireAuth={true}>
+      <div className="px-3 py-4 mx-auto max-w-7xl sm:px-4 sm:py-6 lg:px-8">
+        {/* Account Card Skeleton */}
+        <div className="grid grid-cols-1 gap-4 mb-6">
+          <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl h-48"></div>
         </div>
-      </Layout>
-    );
+        {/* Token Balances Skeleton */}
+        <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl h-32 mb-6"></div>
+        {/* Paymaster Status Skeleton */}
+        <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl h-40 mb-6"></div>
+        {/* Recent Transfers Skeleton */}
+        <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-2xl h-64"></div>
+      </div>
+    </Layout>
+  );
+
+  if (loading) {
+    return <Skeleton />;
   }
 
   return (
     <Layout requireAuth={true}>
-      <div className="px-3 py-4 mx-auto max-w-7xl sm:px-4 sm:py-6 lg:px-8">
-        {/* Header - Desktop only */}
-        <div className="hidden md:block mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Welcome back, {user?.username || user?.email}!
-          </h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Manage your ERC-4337 smart account - no need to manage gas fees!
-          </p>
-        </div>
-
-        {/* Account Status */}
-        <div className="grid grid-cols-1 gap-4 mb-6 sm:gap-6 sm:mb-8 lg:grid-cols-3">
-          {/* Account Card */}
-          <div className="col-span-1 lg:col-span-2">
-            <div className="overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
-              <div className="p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <WalletIcon className="w-8 h-8 text-slate-900 dark:text-emerald-400" />
-                  </div>
-                  <div className="flex-1 ml-4">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                        Smart Account
-                      </h3>
-                      {account && getVersionBadge(account.entryPointVersion)}
-                    </div>
-                    {account ? (
-                      <div className="mt-3 space-y-4">
-                        {/* Balance - Prominent Display */}
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 border border-slate-200 dark:border-slate-700">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              Balance
-                            </span>
-                            <button
-                              onClick={refreshBalance}
-                              disabled={refreshingBalance}
-                              className="inline-flex items-center text-xs text-slate-900 dark:text-emerald-400 hover:text-slate-700 dark:hover:text-emerald-300 disabled:opacity-50 transition-all"
-                              title="Refresh balance"
-                            >
-                              <svg
-                                className={`w-4 h-4 ${refreshingBalance ? "animate-spin" : ""}`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                                />
-                              </svg>
-                            </button>
-                          </div>
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-bold text-slate-900 dark:text-emerald-400">
-                              {parseFloat(account.balance || "0").toFixed(4)}
-                            </span>
-                            <span className="text-lg font-semibold text-gray-600 dark:text-gray-400">
-                              ETH
-                            </span>
-                          </div>
-                          {lastUpdated && (
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-500">
-                              {formatLastUpdated()}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Other Info */}
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Account Address:
-                            </span>
-                            <CopyButton text={account.address} className="flex-shrink-0" />
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">Status:</span>
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                account.deployed
-                                  ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
-                              }`}
-                            >
-                              {account.deployed ? "Deployed" : "Not Deployed"}
-                            </span>
-                          </div>
-                          {account.entryPointVersion && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-600 dark:text-gray-400">
-                                <CpuChipIcon className="inline w-3 h-3 mr-1" />
-                                EntryPoint:
-                              </span>
-                              <span className="text-sm font-mono text-gray-800 dark:text-gray-200">
-                                v{account.entryPointVersion}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="mt-4">
-                        {/* Empty State with Benefits */}
-                        <div className="text-center py-6">
-                          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800/50 mb-4">
-                            <WalletIcon className="w-8 h-8 text-slate-600 dark:text-slate-400" />
-                          </div>
-                          <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
-                            No Smart Account Yet
-                          </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            Create your smart account to unlock these benefits:
-                          </p>
-
-                          {/* Benefits List */}
-                          <div className="text-left space-y-2 mb-4">
-                            <div className="flex items-start gap-2">
-                              <CheckCircleIcon className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                              <div className="text-sm text-gray-700 dark:text-gray-300">
-                                <span className="font-medium">Gas-Free Transactions</span>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">No need to hold ETH for gas fees</p>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <CheckCircleIcon className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                              <div className="text-sm text-gray-700 dark:text-gray-300">
-                                <span className="font-medium">Enhanced Security</span>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">Passkey authentication with WebAuthn</p>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <CheckCircleIcon className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                              <div className="text-sm text-gray-700 dark:text-gray-300">
-                                <span className="font-medium">Auto-Deployment</span>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">Account deployed automatically with first transaction</p>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <CheckCircleIcon className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                              <div className="text-sm text-gray-700 dark:text-gray-300">
-                                <span className="font-medium">ERC-4337 Standard</span>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">Full account abstraction support</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row mt-6 gap-3">
-                  {!account ? (
-                    <button
-                      onClick={() => setShowCreateDialog(true)}
-                      className="inline-flex items-center justify-center px-4 py-3 sm:py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all duration-200 transform hover:-translate-y-0.5 touch-manipulation active:scale-95"
-                    >
-                      <PlusIcon className="w-4 h-4 mr-2" />
-                      Create Account
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => router.push("/transfer")}
-                        className="flex-1 inline-flex items-center justify-center px-4 py-3 sm:py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all duration-200 transform hover:-translate-y-0.5 touch-manipulation active:scale-95"
-                      >
-                        <ArrowUpIcon className="w-4 h-4 mr-2" />
-                        Send Transfer
-                      </button>
-                      <button
-                        onClick={showTopUpInfo}
-                        className="flex-1 inline-flex items-center justify-center px-4 py-3 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all touch-manipulation active:scale-95"
-                      >
-                        <PlusIcon className="w-4 h-4 mr-2" />
-                        Top Up
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
+      <div
+        ref={containerRef}
+        className="relative overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div
+          className="relative"
+          style={{
+            transform:
+              pullToRefresh.pulling || pullToRefresh.refreshing
+                ? `translateY(${pullToRefresh.distance}px)`
+                : "translateY(0)",
+            transition: pullToRefresh.pulling ? "none" : "transform 0.3s ease",
+          }}
+        >
+          {/* Pull to Refresh Indicator - Mobile only - At top of content */}
+          <div
+            className="md:hidden absolute left-0 right-0 flex items-center justify-center h-16 -top-16"
+            style={{
+              opacity: pullToRefresh.pulling || pullToRefresh.refreshing ? 1 : 0,
+            }}
+          >
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <ArrowPathIcon
+                className={`w-5 h-5 transition-all ${
+                  pullToRefresh.refreshing
+                    ? "text-blue-600 dark:text-blue-400 animate-spin"
+                    : pullToRefresh.distance > 80
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-gray-500 dark:text-gray-400"
+                }`}
+                style={{
+                  transform: pullToRefresh.refreshing
+                    ? "none"
+                    : pullToRefresh.distance > 80
+                      ? "rotate(360deg)"
+                      : `rotate(${pullToRefresh.distance * 4}deg)`,
+                }}
+              />
+              <span
+                className={
+                  pullToRefresh.refreshing
+                    ? "text-blue-600 dark:text-blue-400"
+                    : pullToRefresh.distance > 80
+                      ? "text-green-600 dark:text-green-400"
+                      : ""
+                }
+              >
+                {pullToRefresh.refreshing
+                  ? "Refreshing..."
+                  : pullToRefresh.distance > 80
+                    ? "Release to refresh"
+                    : "Pull down to refresh"}
+              </span>
             </div>
           </div>
 
-          {/* Quick Actions - Desktop only */}
-          <div className="hidden lg:block col-span-1">
-            <div className="h-full overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
-              <div className="p-6 h-full flex flex-col">
-                <h3 className="mb-4 text-lg font-medium text-gray-900 dark:text-white">
-                  Quick Actions
-                </h3>
-                <div className="flex-1 flex flex-col justify-center space-y-2.5">
-                  <button
-                    onClick={() => router.push("/tokens")}
-                    className="group inline-flex items-center w-full px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all"
-                  >
-                    <WalletIcon className="w-5 h-5 mr-3 text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-emerald-400 transition-colors" />
-                    <span>View Tokens</span>
-                  </button>
-                  <button
-                    onClick={() => router.push("/transfer/history")}
-                    className="group inline-flex items-center w-full px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all"
-                  >
-                    <ClockIcon className="w-5 h-5 mr-3 text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-emerald-400 transition-colors" />
-                    <span>Transaction History</span>
-                  </button>
-                  <button
-                    onClick={() => router.push("/paymaster")}
-                    className="group inline-flex items-center w-full px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all"
-                  >
-                    <CpuChipIcon className="w-5 h-5 mr-3 text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-emerald-400 transition-colors" />
-                    <span>Manage Paymasters</span>
-                  </button>
-                </div>
-              </div>
+          <div className="px-3 py-4 mx-auto max-w-7xl sm:px-4 sm:py-6 lg:px-8">
+            {/* Header - Desktop only */}
+            <div className="hidden md:block mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Welcome back, {user?.username || user?.email}!
+              </h1>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                Manage your ERC-4337 smart account - no need to manage gas fees!
+              </p>
             </div>
-          </div>
-        </div>
 
-        {/* Token Balances */}
-        {account && tokenBalances.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 mb-6">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  Token Balances
-                </h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {tokenBalances
-                  .filter(balance => parseFloat(balance.formattedBalance) > 0)
-                  .map(tokenBalance => (
-                    <div
-                      key={tokenBalance.token.address}
-                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-slate-300 dark:hover:border-slate-600 transition-colors bg-slate-50/50 dark:bg-slate-800/30"
-                    >
-                      <div className="flex items-center">
-                        {tokenBalance.token.logoUrl && (
-                          <img
-                            src={tokenBalance.token.logoUrl}
-                            alt={tokenBalance.token.symbol}
-                            className="w-8 h-8 mr-3 rounded-full"
-                            onError={e => {
-                              (e.target as HTMLImageElement).style.display = "none";
-                            }}
-                          />
+            {/* Account Status */}
+            <div className="grid grid-cols-1 gap-4 mb-6 sm:gap-6 sm:mb-8 lg:grid-cols-3">
+              {/* Account Card */}
+              <div className="col-span-1 lg:col-span-2">
+                <div className="overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
+                  <div className="p-6">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <WalletIcon className="w-8 h-8 text-slate-900 dark:text-emerald-400" />
+                      </div>
+                      <div className="flex-1 ml-4">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                            Smart Account
+                          </h3>
+                          {account && getVersionBadge(account.entryPointVersion)}
+                        </div>
+                        {account ? (
+                          <div className="mt-3 space-y-4">
+                            {/* Balance - Prominent Display */}
+                            <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 border border-slate-200 dark:border-slate-700">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                  Balance
+                                </span>
+                                <button
+                                  onClick={refreshBalance}
+                                  disabled={refreshingBalance}
+                                  className="hidden md:inline-flex items-center text-xs text-slate-900 dark:text-emerald-400 hover:text-slate-700 dark:hover:text-emerald-300 disabled:opacity-50 transition-all"
+                                  title="Refresh balance"
+                                >
+                                  <svg
+                                    className={`w-4 h-4 ${refreshingBalance ? "animate-spin" : ""}`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                    />
+                                  </svg>
+                                </button>
+                              </div>
+                              <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-bold text-slate-900 dark:text-emerald-400">
+                                  {parseFloat(account.balance || "0").toFixed(4)}
+                                </span>
+                                <span className="text-lg font-semibold text-gray-600 dark:text-gray-400">
+                                  ETH
+                                </span>
+                              </div>
+                              {lastUpdated && (
+                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-500">
+                                  {formatLastUpdated()}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Other Info */}
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Account Address:
+                                </span>
+                                <CopyButton text={account.address} className="flex-shrink-0" />
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-600 dark:text-gray-400">
+                                  Status:
+                                </span>
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    account.deployed
+                                      ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
+                                  }`}
+                                >
+                                  {account.deployed ? "Deployed" : "Not Deployed"}
+                                </span>
+                              </div>
+                              {account.entryPointVersion && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                                    <CpuChipIcon className="inline w-3 h-3 mr-1" />
+                                    EntryPoint:
+                                  </span>
+                                  <span className="text-sm font-mono text-gray-800 dark:text-gray-200">
+                                    v{account.entryPointVersion}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-4">
+                            {/* Empty State with Benefits */}
+                            <div className="text-center py-6">
+                              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800/50 mb-4">
+                                <WalletIcon className="w-8 h-8 text-slate-600 dark:text-slate-400" />
+                              </div>
+                              <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+                                No Smart Account Yet
+                              </h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                Create your smart account to unlock these benefits:
+                              </p>
+
+                              {/* Benefits List */}
+                              <div className="text-left space-y-2 mb-4">
+                                <div className="flex items-start gap-2">
+                                  <CheckCircleIcon className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                                    <span className="font-medium">Gas-Free Transactions</span>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                                      No need to hold ETH for gas fees
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <CheckCircleIcon className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                                    <span className="font-medium">Enhanced Security</span>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                                      Passkey authentication with WebAuthn
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <CheckCircleIcon className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                                    <span className="font-medium">Auto-Deployment</span>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                                      Account deployed automatically with first transaction
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <CheckCircleIcon className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                                    <span className="font-medium">ERC-4337 Standard</span>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                                      Full account abstraction support
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         )}
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium text-gray-900 dark:text-white">
-                              {tokenBalance.token.symbol}
-                            </span>
-                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                              {parseFloat(tokenBalance.formattedBalance).toFixed(4)}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            {tokenBalance.token.name}
-                          </p>
-                          {tokenBalance.token.isCustom && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
-                              Custom
-                            </span>
-                          )}
-                        </div>
                       </div>
                     </div>
-                  ))}
-              </div>
-              {tokenBalances.filter(balance => parseFloat(balance.formattedBalance) > 0).length ===
-                0 && (
-                <div className="text-center py-6">
-                  <WalletIcon className="w-12 h-12 mx-auto text-gray-500 dark:text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-                    No token balances
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Your account doesn&apos;t have any ERC20 tokens yet.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
-        {/* Paymaster Status */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 mb-6">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                🎉 Paymaster Status
-              </h3>
+                    <div className="flex flex-col sm:flex-row mt-6 gap-3">
+                      {!account ? (
+                        <button
+                          onClick={() => setShowCreateDialog(true)}
+                          className="inline-flex items-center justify-center px-4 py-3 sm:py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all duration-200 transform hover:-translate-y-0.5 touch-manipulation active:scale-95"
+                        >
+                          <PlusIcon className="w-4 h-4 mr-2" />
+                          Create Account
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => router.push("/transfer")}
+                            className="flex-1 inline-flex items-center justify-center px-4 py-3 sm:py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all duration-200 transform hover:-translate-y-0.5 touch-manipulation active:scale-95"
+                          >
+                            <ArrowUpIcon className="w-4 h-4 mr-2" />
+                            Send Transfer
+                          </button>
+                          <button
+                            onClick={showTopUpInfo}
+                            className="flex-1 inline-flex items-center justify-center px-4 py-3 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all touch-manipulation active:scale-95"
+                          >
+                            <PlusIcon className="w-4 h-4 mr-2" />
+                            Top Up
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Actions - Desktop only */}
+              <div className="hidden lg:block col-span-1">
+                <div className="h-full overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
+                  <div className="p-6 h-full flex flex-col">
+                    <h3 className="mb-4 text-lg font-medium text-gray-900 dark:text-white">
+                      Quick Actions
+                    </h3>
+                    <div className="flex-1 flex flex-col justify-center space-y-2.5">
+                      <button
+                        onClick={() => router.push("/tokens")}
+                        className="group inline-flex items-center w-full px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all"
+                      >
+                        <WalletIcon className="w-5 h-5 mr-3 text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-emerald-400 transition-colors" />
+                        <span>View Tokens</span>
+                      </button>
+                      <button
+                        onClick={() => router.push("/transfer/history")}
+                        className="group inline-flex items-center w-full px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all"
+                      >
+                        <ClockIcon className="w-5 h-5 mr-3 text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-emerald-400 transition-colors" />
+                        <span>Transaction History</span>
+                      </button>
+                      <button
+                        onClick={() => router.push("/paymaster")}
+                        className="group inline-flex items-center w-full px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all"
+                      >
+                        <CpuChipIcon className="w-5 h-5 mr-3 text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-emerald-400 transition-colors" />
+                        <span>Manage Paymasters</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="space-y-3">
-              {paymasters.filter(pm => pm.configured).length > 0 ? (
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    Available gas sponsors for your transactions:
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {paymasters
-                      .filter(pm => pm.configured)
-                      .map(paymaster => (
+
+            {/* Token Balances */}
+            {account && tokenBalances.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 mb-6">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                      Token Balances
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {tokenBalances
+                      .filter(balance => parseFloat(balance.formattedBalance) > 0)
+                      .map(tokenBalance => (
                         <div
-                          key={paymaster.name}
-                          className="p-3 border border-emerald-200 dark:border-emerald-800 rounded-xl bg-emerald-50 dark:bg-emerald-900/20"
+                          key={tokenBalance.token.address}
+                          className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-slate-300 dark:hover:border-slate-600 transition-colors bg-slate-50/50 dark:bg-slate-800/30"
                         >
                           <div className="flex items-center">
-                            <CheckCircleIcon className="w-5 h-5 text-emerald-500 mr-2" />
-                            <div>
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                {paymaster.name === "pimlico-sepolia" ? "Pimlico" : paymaster.name}
+                            {tokenBalance.token.logoUrl && (
+                              <img
+                                src={tokenBalance.token.logoUrl}
+                                alt={tokenBalance.token.symbol}
+                                className="w-8 h-8 mr-3 rounded-full"
+                                onError={e => {
+                                  (e.target as HTMLImageElement).style.display = "none";
+                                }}
+                              />
+                            )}
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                  {tokenBalance.token.symbol}
+                                </span>
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                  {parseFloat(tokenBalance.formattedBalance).toFixed(4)}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                {tokenBalance.token.name}
                               </p>
-                              <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">
-                                {paymaster.address.slice(0, 10)}...{paymaster.address.slice(-8)}
-                              </p>
+                              {tokenBalance.token.isCustom && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+                                  Custom
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
                       ))}
                   </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-3">
-                    ✨ Enable &quot;Use Paymaster&quot; when sending transfers for sponsored gas!
-                  </p>
-                </div>
-              ) : (
-                <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                  <div className="flex items-start">
-                    <ExclamationCircleIcon className="w-5 h-5 text-yellow-400 mr-3 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        No Paymaster configured
-                      </p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 mb-3">
-                        Transactions will use your account balance for gas. Configure a Paymaster to enable sponsored transactions.
-                      </p>
-                      <button
-                        onClick={() => router.push("/paymaster")}
-                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 rounded-lg transition-all shadow-sm hover:shadow-md"
-                      >
-                        <CpuChipIcon className="w-3.5 h-3.5 mr-1.5" />
-                        Configure Paymaster
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Transfers */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Recent Transfers
-              </h3>
-              <button
-                onClick={() => router.push("/transfer/history")}
-                className="text-sm font-medium text-slate-900 dark:text-emerald-400 hover:text-slate-700 dark:hover:text-emerald-300 transition-colors"
-              >
-                View all
-              </button>
-            </div>
-
-            {transfers.length > 0 ? (
-              <div className="space-y-4">
-                {transfers.map(transfer => (
-                  <div
-                    key={transfer.id}
-                    className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-slate-300 dark:hover:border-slate-600 transition-colors bg-slate-50/50 dark:bg-slate-800/30"
-                  >
-                    <div className="flex items-center">
-                      <div className="mr-3">{getStatusIcon(transfer.status)}</div>
-                      <div>
-                        <div className="flex items-center space-x-1">
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            To:
-                          </span>
-                          <CopyButton text={transfer.to} className="text-sm" />
-                        </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {new Date(transfer.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                        -{transfer.amount} {transfer.tokenSymbol || "ETH"}
-                      </p>
-                      <p
-                        className={`text-xs capitalize ${
-                          transfer.status === "completed"
-                            ? "text-green-600"
-                            : transfer.status === "failed"
-                              ? "text-red-600"
-                              : "text-yellow-600"
-                        }`}
-                      >
-                        {transfer.status}
+                  {tokenBalances.filter(balance => parseFloat(balance.formattedBalance) > 0)
+                    .length === 0 && (
+                    <div className="text-center py-6">
+                      <WalletIcon className="w-12 h-12 mx-auto text-gray-500 dark:text-gray-400" />
+                      <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                        No token balances
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                        Your account doesn&apos;t have any ERC20 tokens yet.
                       </p>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-8 text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800/50 mb-4">
-                  <ArrowUpIcon className="w-8 h-8 text-slate-600 dark:text-slate-400" />
+                  )}
                 </div>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
-                  No transfers yet
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 max-w-sm mx-auto">
-                  Send your first transfer to see your transaction history here. Transfers are fast, secure, and can be gas-free with Paymaster!
-                </p>
-                <button
-                  onClick={() => router.push("/transfer")}
-                  disabled={!account?.deployed}
-                  className="inline-flex items-center justify-center px-4 py-3 sm:py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation active:scale-95"
-                >
-                  <ArrowUpIcon className="w-4 h-4 mr-2" />
-                  Send Your First Transfer
-                </button>
-                {!account?.deployed && (
-                  <p className="mt-3 text-xs text-gray-500 dark:text-gray-500">
-                    Create and deploy your account first to send transfers
-                  </p>
-                )}
               </div>
             )}
+
+            {/* Paymaster Status */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 mb-6">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    🎉 Paymaster Status
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {paymasters.filter(pm => pm.configured).length > 0 ? (
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        Available gas sponsors for your transactions:
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {paymasters
+                          .filter(pm => pm.configured)
+                          .map(paymaster => (
+                            <div
+                              key={paymaster.name}
+                              className="p-3 border border-emerald-200 dark:border-emerald-800 rounded-xl bg-emerald-50 dark:bg-emerald-900/20"
+                            >
+                              <div className="flex items-center">
+                                <CheckCircleIcon className="w-5 h-5 text-emerald-500 mr-2" />
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                    {paymaster.name === "pimlico-sepolia"
+                                      ? "Pimlico"
+                                      : paymaster.name}
+                                  </p>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">
+                                    {paymaster.address.slice(0, 10)}...{paymaster.address.slice(-8)}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-3">
+                        ✨ Enable &quot;Use Paymaster&quot; when sending transfers for sponsored
+                        gas!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                      <div className="flex items-start">
+                        <ExclamationCircleIcon className="w-5 h-5 text-yellow-400 mr-3 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                            No Paymaster configured
+                          </p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 mb-3">
+                            Transactions will use your account balance for gas. Configure a
+                            Paymaster to enable sponsored transactions.
+                          </p>
+                          <button
+                            onClick={() => router.push("/paymaster")}
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 rounded-lg transition-all shadow-sm hover:shadow-md"
+                          >
+                            <CpuChipIcon className="w-3.5 h-3.5 mr-1.5" />
+                            Configure Paymaster
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Transfers */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    Recent Transfers
+                  </h3>
+                  <button
+                    onClick={() => router.push("/transfer/history")}
+                    className="text-sm font-medium text-slate-900 dark:text-emerald-400 hover:text-slate-700 dark:hover:text-emerald-300 transition-colors"
+                  >
+                    View all
+                  </button>
+                </div>
+
+                {transfers.length > 0 ? (
+                  <div className="space-y-4">
+                    {transfers.map(transfer => (
+                      <div
+                        key={transfer.id}
+                        className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-slate-300 dark:hover:border-slate-600 transition-colors bg-slate-50/50 dark:bg-slate-800/30"
+                      >
+                        <div className="flex items-center">
+                          <div className="mr-3">{getStatusIcon(transfer.status)}</div>
+                          <div>
+                            <div className="flex items-center space-x-1">
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                To:
+                              </span>
+                              <CopyButton text={transfer.to} className="text-sm" />
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {new Date(transfer.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                            -{transfer.amount} {transfer.tokenSymbol || "ETH"}
+                          </p>
+                          <p
+                            className={`text-xs capitalize ${
+                              transfer.status === "completed"
+                                ? "text-green-600"
+                                : transfer.status === "failed"
+                                  ? "text-red-600"
+                                  : "text-yellow-600"
+                            }`}
+                          >
+                            {transfer.status}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800/50 mb-4">
+                      <ArrowUpIcon className="w-8 h-8 text-slate-600 dark:text-slate-400" />
+                    </div>
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+                      No transfers yet
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 max-w-sm mx-auto">
+                      Send your first transfer to see your transaction history here. Transfers are
+                      fast, secure, and can be gas-free with Paymaster!
+                    </p>
+                    <button
+                      onClick={() => router.push("/transfer")}
+                      disabled={!account?.deployed}
+                      className="inline-flex items-center justify-center px-4 py-3 sm:py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation active:scale-95"
+                    >
+                      <ArrowUpIcon className="w-4 h-4 mr-2" />
+                      Send Your First Transfer
+                    </button>
+                    {!account?.deployed && (
+                      <p className="mt-3 text-xs text-gray-500 dark:text-gray-500">
+                        Create and deploy your account first to send transfers
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -128,8 +128,18 @@ export default function RegisterPage() {
           {/* Logo/Brand Section */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-slate-900 dark:bg-slate-800 mb-4 shadow-lg">
-              <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              <svg
+                className="w-8 h-8 text-emerald-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                />
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -203,21 +213,33 @@ export default function RegisterPage() {
                 {formData.password && (
                   <div className="mt-2">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-gray-600 dark:text-gray-400">Password strength:</span>
-                      <span className={`text-xs font-semibold ${
-                        passwordStrength.strength === 1 ? "text-red-600 dark:text-red-500" :
-                        passwordStrength.strength === 2 ? "text-orange-600 dark:text-orange-500" :
-                        passwordStrength.strength === 3 ? "text-sky-600 dark:text-sky-500" :
-                        "text-emerald-600 dark:text-emerald-500"
-                      }`}>{passwordStrength.label}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">
+                        Password strength:
+                      </span>
+                      <span
+                        className={`text-xs font-semibold ${
+                          passwordStrength.strength === 1
+                            ? "text-red-600 dark:text-red-500"
+                            : passwordStrength.strength === 2
+                              ? "text-orange-600 dark:text-orange-500"
+                              : passwordStrength.strength === 3
+                                ? "text-sky-600 dark:text-sky-500"
+                                : "text-emerald-600 dark:text-emerald-500"
+                        }`}
+                      >
+                        {passwordStrength.label}
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                       <div
                         className={`h-1.5 rounded-full transition-all duration-300 ${
-                          passwordStrength.strength === 1 ? "bg-red-500" :
-                          passwordStrength.strength === 2 ? "bg-orange-500" :
-                          passwordStrength.strength === 3 ? "bg-sky-500" :
-                          "bg-emerald-500"
+                          passwordStrength.strength === 1
+                            ? "bg-red-500"
+                            : passwordStrength.strength === 2
+                              ? "bg-orange-500"
+                              : passwordStrength.strength === 3
+                                ? "bg-sky-500"
+                                : "bg-emerald-500"
                         }`}
                         style={{ width: `${(passwordStrength.strength / 4) * 100}%` }}
                       ></div>
@@ -247,8 +269,16 @@ export default function RegisterPage() {
                   />
                   {formData.confirmPassword && formData.password === formData.confirmPassword && (
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                      <svg className="h-5 w-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      <svg
+                        className="h-5 w-5 text-emerald-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                     </div>
                   )}
@@ -269,7 +299,8 @@ export default function RegisterPage() {
                     </h3>
                     <div className="mt-1 text-sm text-slate-700 dark:text-slate-300">
                       <p>
-                        After submitting, you&apos;ll set up a passkey using your device&apos;s authenticator (Face ID, Touch ID, etc.).
+                        After submitting, you&apos;ll set up a passkey using your device&apos;s
+                        authenticator (Face ID, Touch ID, etc.).
                       </p>
                     </div>
                   </div>

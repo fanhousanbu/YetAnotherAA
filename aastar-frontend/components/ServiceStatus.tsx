@@ -37,7 +37,11 @@ interface ServiceStatusProps {
   embedded?: boolean;
 }
 
-export default function ServiceStatus({ isOpen, onClose, embedded = false }: ServiceStatusProps = {}) {
+export default function ServiceStatus({
+  isOpen,
+  onClose,
+  embedded = false,
+}: ServiceStatusProps = {}) {
   const [isVisible, setIsVisible] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [backendStatus, setBackendStatus] = useState<"online" | "offline" | "checking">("checking");

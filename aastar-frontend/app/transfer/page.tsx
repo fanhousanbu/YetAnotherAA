@@ -225,7 +225,7 @@ export default function TransferPage() {
     // Check if amount exceeds available balance
     const transferAmount = parseFloat(formData.amount);
 
-    if (!selectedToken) {
+    if (!selectedToken || selectedToken.address === "ETH") {
       // ETH transfer validation
       const availableBalance = parseFloat(account?.balance || "0");
       if (transferAmount > availableBalance) {
@@ -235,10 +235,12 @@ export default function TransferPage() {
         return;
       }
     } else {
-      // Token transfer validation - for now just check if token is selected
-      // Token balance validation will be implemented with the TokenSelector
-      if (!selectedToken) {
-        toast.error("Please select a token to transfer");
+      // Token transfer validation
+      const availableBalance = parseFloat(tokenBalance?.formattedBalance || "0");
+      if (transferAmount > availableBalance) {
+        toast.error(
+          `Insufficient balance: Trying to send ${transferAmount} ${selectedToken.symbol} but only ${availableBalance} ${selectedToken.symbol} available`
+        );
         return;
       }
     }
@@ -275,7 +277,7 @@ export default function TransferPage() {
           formData.usePaymaster && formData.paymasterAddress
             ? formData.paymasterAddress
             : undefined,
-        tokenAddress: selectedToken?.address, // undefined = ETH transfer
+        tokenAddress: selectedToken?.address === "ETH" ? undefined : selectedToken?.address, // undefined = ETH transfer
         passkeyCredential: passkeyCredential, // Add passkey credential
       };
 
@@ -290,7 +292,7 @@ export default function TransferPage() {
       // Start polling for status
       startStatusPolling(response.data.transferId);
 
-      // Clear form
+      // Clear form - keep selectedToken as null (defaults to ETH in selector)
       setFormData({
         to: "",
         amount: "",
@@ -443,13 +445,14 @@ export default function TransferPage() {
     if (transferAmount <= 0) return true;
 
     // For ETH transfers, check ETH balance
-    if (!selectedToken) {
+    if (!selectedToken || selectedToken.address === "ETH") {
       const availableBalance = parseFloat(account?.balance || "0");
       return transferAmount > availableBalance;
     }
 
-    // For token transfers, we'll rely on the TokenSelector balance display for now
-    return false;
+    // For token transfers, check token balance
+    const availableBalance = parseFloat(tokenBalance?.formattedBalance || "0");
+    return transferAmount > availableBalance;
   };
 
   // Refresh account balance
@@ -463,41 +466,32 @@ export default function TransferPage() {
     }
   };
 
-  // Save paymaster address to system
-  const savePaymasterAddress = async () => {
-    if (!formData.paymasterAddress) {
-      toast.error("No paymaster address to save");
+  // Save address to address book
+  const saveToAddressBook = async () => {
+    if (!formData.to) {
+      toast.error("No address to save");
       return;
     }
 
     // Validate address format
-    if (!formData.paymasterAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
-      toast.error("Invalid paymaster address format");
+    if (!formData.to.match(/^0x[a-fA-F0-9]{40}$/)) {
+      toast.error("Invalid address format");
       return;
     }
 
+    // Prompt user for a name
+    const name = prompt("Enter a name for this address (optional):");
+
     try {
-      // Generate a name for the paymaster
-      const shortAddress = `${formData.paymasterAddress.slice(0, 6)}...${formData.paymasterAddress.slice(-4)}`;
-      const paymasterName = `custom-${shortAddress}`;
+      await addressBookAPI.setAddressName(formData.to, name || "");
 
-      await paymasterAPI.addCustom({
-        name: paymasterName,
-        address: formData.paymasterAddress,
-        type: "custom",
-      });
+      // Refresh address book
+      const addressBookResponse = await addressBookAPI.getAddressBook();
+      setAddressBook(addressBookResponse.data);
 
-      // Refresh saved paymasters list
-      try {
-        const paymasterResponse = await paymasterAPI.getAvailable();
-        setSavedPaymasters(paymasterResponse.data);
-      } catch (error) {
-        console.error("Failed to refresh paymaster list:", error);
-      }
-
-      toast.success("Paymaster saved successfully! 🎉");
+      toast.success("Address saved to address book! 📖");
     } catch (error: any) {
-      const message = error.response?.data?.message || "Failed to save paymaster";
+      const message = error.response?.data?.message || "Failed to save address";
       toast.error(message);
     }
   };
@@ -769,7 +763,7 @@ export default function TransferPage() {
                             }}
                             className="block w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 touch-manipulation active:scale-[0.98]"
                           >
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between gap-3">
                               <div className="flex-1 min-w-0">
                                 {entry.name && (
                                   <div className="font-semibold text-gray-900 dark:text-white truncate text-base">
@@ -779,9 +773,15 @@ export default function TransferPage() {
                                 <div className="text-sm text-gray-500 dark:text-gray-400 font-mono truncate">
                                   {entry.address}
                                 </div>
-                              </div>
-                              <div className="ml-3 text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                                {entry.usageCount}×
+                                {entry.usageCount > 0 && entry.lastUsed && (
+                                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                    Last used:{" "}
+                                    {new Date(entry.lastUsed).toLocaleDateString("en-US", {
+                                      month: "short",
+                                      day: "numeric",
+                                    })}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </button>
@@ -813,7 +813,11 @@ export default function TransferPage() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 touch-manipulation"
                   >
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </button>
                 )}
@@ -823,75 +827,49 @@ export default function TransferPage() {
                   Enter Ethereum address starting with 0x
                 </p>
               )}
+
+              {/* Save to Address Book */}
+              {formData.to && formData.to.match(/^0x[a-fA-F0-9]{40}$/) && (
+                <button
+                  type="button"
+                  onClick={saveToAddressBook}
+                  disabled={loading.transfer}
+                  className="mt-2 inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-600 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  <svg
+                    className="w-4 h-4 mr-1.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                    />
+                  </svg>
+                  Save to Address Book
+                </button>
+              )}
             </div>
 
             {/* Asset Selection */}
             <div>
-              <label className="block mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="block mb-3 text-base font-semibold text-gray-900 dark:text-white">
                 Select Asset
               </label>
 
-              {/* Current Selection Display */}
-              <div className="p-3 mb-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="flex items-center justify-center w-8 h-8 mr-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
-                      <span className="text-sm font-bold text-white">
-                        {selectedToken ? selectedToken.symbol.charAt(0) : "Ξ"}
-                      </span>
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {selectedToken ? selectedToken.symbol : "ETH"}
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {selectedToken ? selectedToken.name : "Ethereum"}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      {selectedToken
-                        ? tokenBalance
-                          ? `${tokenBalance.formattedBalance} ${selectedToken.symbol}`
-                          : "0"
-                        : `${formatBalance(account?.balance)} ETH`}
-                    </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
-                      Available Balance
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Token Selector for ERC20 */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    Switch to ERC20 Token:
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedToken(null)}
-                    className={`px-3 py-1 text-xs rounded-full border transition-all ${
-                      !selectedToken
-                        ? "bg-slate-100 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-emerald-400"
-                        : "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
-                    }`}
-                  >
-                    Use ETH
-                  </button>
-                </div>
-
-                <TokenSelector
-                  selectedToken={selectedToken}
-                  onTokenChange={setSelectedToken}
-                  accountAddress={account?.address}
-                  showBalances={false}
-                  showSearch={true}
-                  showOnlyWithBalance={false}
-                />
-              </div>
+              <TokenSelector
+                selectedToken={selectedToken}
+                onTokenChange={setSelectedToken}
+                accountAddress={account?.address}
+                ethBalance={formatBalance(account?.balance)}
+                includeEth={true}
+                showBalances={true}
+                showSearch={true}
+                showOnlyWithBalance={false}
+              />
 
               <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
                 💡 Tip: ETH transfers work best with Paymaster sponsorship. ERC20 transfers may not
@@ -909,10 +887,10 @@ export default function TransferPage() {
                   Amount
                 </label>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  Available: {selectedToken
+                  Available:{" "}
+                  {selectedToken && selectedToken.address !== "ETH"
                     ? (tokenBalance?.formattedBalance || "0") + " " + selectedToken.symbol
-                    : (parseFloat(account?.balance || "0").toFixed(4)) + " ETH"
-                  }
+                    : parseFloat(account?.balance || "0").toFixed(4) + " ETH"}
                 </span>
               </div>
 
@@ -930,14 +908,17 @@ export default function TransferPage() {
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
                   <span className="text-lg font-semibold text-gray-600 dark:text-gray-400">
-                    {selectedToken ? selectedToken.symbol : "ETH"}
+                    {selectedToken && selectedToken.address !== "ETH"
+                      ? selectedToken.symbol
+                      : "ETH"}
                   </span>
                   <button
                     type="button"
                     onClick={() => {
-                      const maxAmount = selectedToken
-                        ? (tokenBalance?.formattedBalance || "0")
-                        : (account?.balance || "0");
+                      const maxAmount =
+                        selectedToken && selectedToken.address !== "ETH"
+                          ? tokenBalance?.formattedBalance || "0"
+                          : account?.balance || "0";
                       setFormData(prev => ({ ...prev, amount: maxAmount }));
                     }}
                     className="px-2 py-1 text-xs font-semibold text-slate-900 dark:text-emerald-400 bg-slate-100 dark:bg-slate-800 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-all touch-manipulation"
@@ -947,12 +928,12 @@ export default function TransferPage() {
                 </div>
               </div>
 
-              {selectedToken && selectedToken.decimals === 0 && (
+              {selectedToken && selectedToken.address !== "ETH" && selectedToken.decimals === 0 && (
                 <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
                   ⚠️ This token only accepts whole numbers
                 </p>
               )}
-              {selectedToken && selectedToken.decimals > 0 && (
+              {selectedToken && selectedToken.address !== "ETH" && selectedToken.decimals > 0 && (
                 <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                   Up to {selectedToken.decimals} decimal places
                 </p>
@@ -964,7 +945,7 @@ export default function TransferPage() {
                   let availableAmount = 0;
                   let symbol = "";
 
-                  if (!selectedToken) {
+                  if (!selectedToken || selectedToken.address === "ETH") {
                     // ETH
                     availableAmount = parseFloat(account?.balance || "0");
                     symbol = "ETH";
@@ -1090,7 +1071,7 @@ export default function TransferPage() {
                         value={formData.paymasterAddress}
                         onChange={handleChange}
                         placeholder="0x... or select from saved paymasters above"
-                        className="block w-full text-base sm:text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl shadow-sm focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 placeholder-gray-500 dark:placeholder-gray-400 transition-all"
+                        className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all font-mono"
                         autoComplete="off"
                         autoCapitalize="off"
                         autoCorrect="off"
@@ -1101,39 +1082,18 @@ export default function TransferPage() {
                         no paymaster.
                       </p>
                       {formData.paymasterAddress && (
-                        <div className="mt-2 space-y-2">
+                        <div className="mt-2">
                           <div className="p-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300">
                             💡 Using custom paymaster: {formData.paymasterAddress.slice(0, 10)}...
                             {formData.paymasterAddress.slice(-8)}
                           </div>
-                          <button
-                            type="button"
-                            onClick={savePaymasterAddress}
-                            disabled={loading.transfer}
-                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-600 rounded-xl hover:bg-green-200 dark:hover:bg-green-900/50 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                          >
-                            <svg
-                              className="w-3 h-3 mr-1"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"
-                              />
-                            </svg>
-                            Save to My Paymaster List
-                          </button>
                         </div>
                       )}
                     </div>
                   )}
 
                   {/* Dynamic description based on asset selection */}
-                  {selectedToken ? (
+                  {selectedToken && selectedToken.address !== "ETH" ? (
                     <div className="mt-2">
                       <p className="inline-block px-2 py-1 text-xs rounded text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30">
                         ⚠️ ERC20 transfers may not be sponsored by all paymasters
@@ -1236,10 +1196,13 @@ export default function TransferPage() {
                   if (!selectedToken || selectedToken.address === "ETH") {
                     return transferAmount > parseFloat(account?.balance || "0")
                       ? "Insufficient ETH Balance"
-                      : "Send Transfer";
+                      : "Send ETH";
                   }
 
-                  return `Send ${selectedToken.symbol}`;
+                  const availableTokenBalance = parseFloat(tokenBalance?.formattedBalance || "0");
+                  return transferAmount > availableTokenBalance
+                    ? `Insufficient ${selectedToken.symbol} Balance`
+                    : `Send ${selectedToken.symbol}`;
                 })()}
               </button>
             </div>
@@ -1251,7 +1214,9 @@ export default function TransferPage() {
           <div className="flex">
             <InformationCircleIcon className="w-5 h-5 text-slate-900 dark:text-emerald-400" />
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">How it works</h3>
+              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                How it works
+              </h3>
               <div className="mt-2 text-sm text-slate-700 dark:text-slate-300">
                 <ul className="space-y-1 list-disc list-inside">
                   <li>Support for ETH and ERC20 token transfers (PNTs, PIM, and custom tokens)</li>

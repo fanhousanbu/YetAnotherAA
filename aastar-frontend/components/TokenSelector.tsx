@@ -22,6 +22,8 @@ interface TokenSelectorProps {
   className?: string;
   showSearch?: boolean;
   showOnlyWithBalance?: boolean;
+  ethBalance?: string; // ETH balance from account
+  includeEth?: boolean; // Whether to include ETH in the selector
 }
 
 export default function TokenSelector({
@@ -32,6 +34,8 @@ export default function TokenSelector({
   className = "",
   showSearch = false,
   showOnlyWithBalance = false,
+  ethBalance = "0",
+  includeEth = true,
 }: TokenSelectorProps) {
   const [userTokens, setUserTokens] = useState<UserTokenWithBalance[]>([]);
   const [filteredTokens, setFilteredTokens] = useState<UserTokenWithBalance[]>([]);
@@ -43,7 +47,20 @@ export default function TokenSelector({
   const [validatingToken, setValidatingToken] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // No ETH token in ERC20 selector
+  // Create ETH token object
+  const ethToken: UserTokenWithBalance = {
+    address: "ETH",
+    symbol: "ETH",
+    name: "Ethereum",
+    decimals: 18,
+    isActive: true,
+    sortOrder: -1, // Ensure ETH is always first
+    balance: {
+      balance: ethBalance,
+      formattedBalance: ethBalance,
+      decimals: 18,
+    },
+  };
 
   useEffect(() => {
     loadTokens();
@@ -51,7 +68,7 @@ export default function TokenSelector({
 
   useEffect(() => {
     applyFilters();
-  }, [userTokens, searchQuery, showOnlyWithBalance]);
+  }, [userTokens, searchQuery, showOnlyWithBalance, ethBalance, includeEth]);
 
   const loadTokens = async () => {
     setLoading(true);
@@ -160,7 +177,9 @@ export default function TokenSelector({
   };
 
   const applyFilters = () => {
-    let filtered = [...userTokens];
+    // Start with user tokens, and prepend ETH if includeEth is true
+    let allTokens = includeEth ? [ethToken, ...userTokens] : [...userTokens];
+    let filtered = allTokens;
 
     // Search filter
     if (searchQuery.trim()) {
@@ -183,7 +202,7 @@ export default function TokenSelector({
 
     // Sort: by sortOrder first, tokens with balance, then alphabetically
     filtered.sort((a, b) => {
-      // First by sort order
+      // First by sort order (ETH will always be -1, so it stays on top)
       if (a.sortOrder !== b.sortOrder) {
         return a.sortOrder - b.sortOrder;
       }
@@ -242,7 +261,7 @@ export default function TokenSelector({
                   </>
                 ) : (
                   <span className="block text-gray-500 dark:text-gray-400">
-                    Select an ERC20 token (optional)
+                    {includeEth ? "Select asset" : "Select an ERC20 token (optional)"}
                   </span>
                 )}
               </div>
@@ -285,7 +304,8 @@ export default function TokenSelector({
                     )}
 
                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {filteredTokens.length} of {userTokens.length} tokens
+                      {filteredTokens.length} of{" "}
+                      {includeEth ? userTokens.length + 1 : userTokens.length} tokens
                     </div>
                   </div>
                 )}

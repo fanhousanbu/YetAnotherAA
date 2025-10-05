@@ -164,16 +164,6 @@ export default function TokensPage() {
     setFilteredTokens(filtered);
   };
 
-  if (loading) {
-    return (
-      <Layout requireAuth={true}>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="w-32 h-32 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
-        </div>
-      </Layout>
-    );
-  }
-
   return (
     <Layout requireAuth={true}>
       <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
@@ -447,7 +437,7 @@ export default function TokensPage() {
                       </div>
                     ) : (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Token Contract Address
                         </label>
                         <input
@@ -459,9 +449,9 @@ export default function TokensPage() {
                           autoCapitalize="off"
                           autoCorrect="off"
                           spellCheck="false"
-                          className="block w-full mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl shadow-sm focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-base sm:text-sm transition-all"
+                          className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all font-mono"
                         />
-                        <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                        <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
                           Enter the contract address of an ERC20 token. Token information will be
                           automatically fetched.
                         </p>

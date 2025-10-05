@@ -17,6 +17,7 @@ import {
   CreditCardIcon,
   Cog6ToothIcon,
   ChevronRightIcon,
+  BookOpenIcon,
 } from "@heroicons/react/24/outline";
 
 interface LayoutProps {
@@ -73,7 +74,8 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
   }
 
   const getBottomNavButtonClass = (path: string, isActive: boolean) => {
-    const baseClass = "flex flex-col items-center justify-center flex-1 py-2 px-1 transition-all duration-200 touch-manipulation active:scale-95";
+    const baseClass =
+      "flex flex-col items-center justify-center flex-1 py-2 px-1 transition-all duration-200 touch-manipulation active:scale-95";
     if (isActive) {
       return `${baseClass} text-slate-900 dark:text-emerald-400`;
     }
@@ -116,6 +118,12 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                   className={getNavButtonClass("/paymaster", pathname === "/paymaster")}
                 >
                   Paymasters
+                </button>
+                <button
+                  onClick={() => router.push("/address-book")}
+                  className={getNavButtonClass("/address-book", pathname === "/address-book")}
+                >
+                  Address Book
                 </button>
                 {/* Theme Toggle Button */}
                 <button
@@ -197,7 +205,10 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
             {/* Settings Menu */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={getBottomNavButtonClass("", mobileMenuOpen)}
+              className={getBottomNavButtonClass(
+                "/address-book",
+                pathname === "/address-book" || mobileMenuOpen
+              )}
             >
               <Cog6ToothIcon className="h-6 w-6 mb-1" />
               <span className="text-xs font-medium">Settings</span>
@@ -208,19 +219,37 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
 
       {/* Mobile User Menu Overlay */}
       {mobileMenuOpen && user && (
-        <div className="md:hidden fixed inset-0 z-40 bg-black bg-opacity-50" onClick={() => {
-          setMobileMenuOpen(false);
-          setShowServiceStatus(false);
-        }}>
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black bg-opacity-50"
+          onClick={() => {
+            setMobileMenuOpen(false);
+            setShowServiceStatus(false);
+          }}
+        >
           <div
             className="fixed bottom-16 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-xl max-h-[70vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             <div className="p-4 space-y-2">
               {/* User Info */}
               <div className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 bg-slate-50 dark:bg-gray-900/50 rounded-lg">
                 <div className="font-medium truncate">{user.username || user.email}</div>
               </div>
+
+              {/* Address Book */}
+              <button
+                onClick={() => {
+                  router.push("/address-book");
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center justify-between w-full px-4 py-3 text-left text-base font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-slate-50 dark:hover:bg-gray-600 rounded-lg transition-all touch-manipulation active:scale-95"
+              >
+                <div className="flex items-center gap-3">
+                  <BookOpenIcon className="w-5 h-5" />
+                  <span>Address Book</span>
+                </div>
+                <ChevronRightIcon className="w-5 h-5" />
+              </button>
 
               {/* Theme Toggle */}
               <button
@@ -249,7 +278,9 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                   <Cog6ToothIcon className="w-5 h-5" />
                   <span>Service Status</span>
                 </div>
-                <ChevronRightIcon className={`w-5 h-5 transition-transform ${showServiceStatus ? 'rotate-90' : ''}`} />
+                <ChevronRightIcon
+                  className={`w-5 h-5 transition-transform ${showServiceStatus ? "rotate-90" : ""}`}
+                />
               </button>
 
               {/* Embedded Service Status - shown when toggle is active */}

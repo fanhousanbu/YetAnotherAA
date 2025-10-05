@@ -27,14 +27,33 @@ export default function TokenIcon({
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Reset error state when token changes
     setImageError(false);
     setImageLoaded(false);
-  }, [token.address]);
+
+    // Set a timeout to fallback if image takes too long to load (2 seconds)
+    if (token.logoUrl) {
+      timeoutRef.current = setTimeout(() => {
+        if (!imageLoaded) {
+          setImageError(true);
+        }
+      }, 2000);
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [token.address, imageLoaded, token.logoUrl]);
 
   const handleImageLoad = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
     setImageLoaded(true);
     setImageError(false);
   };
@@ -50,7 +69,7 @@ export default function TokenIcon({
 
   return (
     <div
-      className={`flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex-shrink-0 ${sizeClass} ${className}`}
+      className={`relative flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex-shrink-0 ${sizeClass} ${className}`}
       title={`${token.symbol} (${token.name})`}
     >
       {/* Image */}

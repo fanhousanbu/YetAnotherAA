@@ -161,13 +161,21 @@ export default function LoginPage() {
               {/* Logo/Brand Section */}
               <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-slate-900 dark:bg-slate-800 mb-4 shadow-lg">
-                  <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  <svg
+                    className="w-8 h-8 text-emerald-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                    />
                   </svg>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Welcome Back
-                </h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome Back</h2>
                 <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                   Sign in with your passkey for secure access
                 </p>
@@ -197,7 +205,8 @@ export default function LoginPage() {
                       </h3>
                       <div className="mt-1 text-sm text-slate-700 dark:text-slate-300">
                         <p>
-                          Use Face ID, Touch ID, Windows Hello, or your security key to sign in securely.
+                          Use Face ID, Touch ID, Windows Hello, or your security key to sign in
+                          securely.
                         </p>
                       </div>
                     </div>
@@ -249,8 +258,18 @@ export default function LoginPage() {
                     onClick={() => setShowDeviceRegister(true)}
                     className="inline-flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-emerald-400 transition-colors"
                   >
-                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    <svg
+                      className="w-4 h-4 mr-1.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
                     </svg>
                     New device? Register passkey for this device
                   </button>
@@ -278,8 +297,18 @@ export default function LoginPage() {
                   onClick={() => setShowDeviceRegister(false)}
                   className="inline-flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-emerald-400 transition-colors"
                 >
-                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  <svg
+                    className="w-4 h-4 mr-1.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                    />
                   </svg>
                   Back to login
                 </button>
@@ -288,8 +317,18 @@ export default function LoginPage() {
               {/* Header */}
               <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-orange-600 dark:bg-orange-500 mb-4 shadow-lg">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  <svg
+                    className="w-8 h-8 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    />
                   </svg>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -363,9 +402,7 @@ export default function LoginPage() {
                           Device Registration
                         </h3>
                         <div className="mt-1 text-sm text-orange-800 dark:text-orange-200">
-                          <p>
-                            Verify your identity to register a passkey for this device.
-                          </p>
+                          <p>Verify your identity to register a passkey for this device.</p>
                         </div>
                       </div>
                     </div>

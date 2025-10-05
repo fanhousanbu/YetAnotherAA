@@ -143,7 +143,7 @@ export default function PaymasterPage() {
             </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Name
                 </label>
                 <input
@@ -152,11 +152,11 @@ export default function PaymasterPage() {
                   onChange={e => setNewPaymaster(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="My Paymaster"
                   autoComplete="off"
-                  className="block w-full mt-1 border-gray-300 rounded-xl shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-base sm:text-sm transition-all"
+                  className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Contract Address
                 </label>
                 <input
@@ -168,11 +168,11 @@ export default function PaymasterPage() {
                   autoCapitalize="off"
                   autoCorrect="off"
                   spellCheck="false"
-                  className="block w-full mt-1 border-gray-300 rounded-xl shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-base sm:text-sm transition-all"
+                  className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all font-mono"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Type
                 </label>
                 <select
@@ -183,7 +183,7 @@ export default function PaymasterPage() {
                       type: e.target.value as any,
                     }))
                   }
-                  className="block w-full mt-1 border-gray-300 rounded-xl shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-base sm:text-sm transition-all"
+                  className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm transition-all"
                 >
                   <option value="custom">Custom</option>
                   <option value="pimlico">Pimlico</option>
@@ -192,7 +192,7 @@ export default function PaymasterPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   API Key (Optional)
                 </label>
                 <input
@@ -201,12 +201,12 @@ export default function PaymasterPage() {
                   onChange={e => setNewPaymaster(prev => ({ ...prev, apiKey: e.target.value }))}
                   placeholder="For API-based paymasters"
                   autoComplete="off"
-                  className="block w-full mt-1 border-gray-300 rounded-xl shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-base sm:text-sm transition-all"
+                  className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                 />
               </div>
               {newPaymaster.type !== "custom" && (
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Endpoint (Optional)
                   </label>
                   <input
@@ -215,7 +215,7 @@ export default function PaymasterPage() {
                     onChange={e => setNewPaymaster(prev => ({ ...prev, endpoint: e.target.value }))}
                     placeholder="API endpoint URL"
                     autoComplete="off"
-                    className="block w-full mt-1 border-gray-300 rounded-xl shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-base sm:text-sm transition-all"
+                    className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                   />
                 </div>
               )}
