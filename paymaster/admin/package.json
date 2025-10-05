@@ -2,6 +2,7 @@
   "name": "admin",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "dependencies": {
     "@svgr/webpack": "^8.1.0",
     "@testing-library/dom": "^10.4.1",
@@ -22,7 +23,9 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
-    "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix"
+    "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
+    "test": "echo \"⚠️  No tests yet - skipping\"",
+    "test:ci": "echo \"⚠️  No tests yet - skipping\""
   },
   "eslintConfig": {
     "extends": [
@@ -43,8 +46,14 @@
     ]
   },
   "devDependencies": {
+    "@eslint/js": "^9.37.0",
     "@types/node": "^24.5.2",
+    "@typescript-eslint/eslint-plugin": "^8.45.0",
+    "@typescript-eslint/parser": "^8.45.0",
     "@vitejs/plugin-react": "^5.0.4",
+    "eslint": "^9.37.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^6.1.1",
     "vite": "^7.1.7"
   }
 }

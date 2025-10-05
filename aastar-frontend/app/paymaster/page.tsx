@@ -80,7 +80,9 @@ export default function PaymasterPage() {
       setShowAddForm(false);
       await loadPaymasters();
     } catch (error) {
-      const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to add paymaster";
+      const message =
+        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
+        "Failed to add paymaster";
       toast.error(message);
     } finally {
       setActionLoading("");
@@ -98,7 +100,9 @@ export default function PaymasterPage() {
       toast.success("Paymaster removed successfully!");
       await loadPaymasters();
     } catch (error) {
-      const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to remove paymaster";
+      const message =
+        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
+        "Failed to remove paymaster";
       toast.error(message);
     } finally {
       setActionLoading("");

@@ -61,7 +61,9 @@ export default function AddressBookPage() {
       setNewName("");
       toast.success("Address added successfully! 📖");
     } catch (error) {
-      const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to add address";
+      const message =
+        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
+        "Failed to add address";
       toast.error(message);
     }
   };
@@ -74,7 +76,9 @@ export default function AddressBookPage() {
       setEditingName("");
       toast.success("Name updated successfully!");
     } catch (error) {
-      const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to update name";
+      const message =
+        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
+        "Failed to update name";
       toast.error(message);
     }
   };
@@ -89,7 +93,9 @@ export default function AddressBookPage() {
       await loadAddressBook();
       toast.success("Address deleted successfully!");
     } catch (error) {
-      const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to delete address";
+      const message =
+        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
+        "Failed to delete address";
       toast.error(message);
     }
   };
