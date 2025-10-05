@@ -176,9 +176,9 @@ export default function TokensPage() {
 
   return (
     <Layout requireAuth={true}>
-      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
+      <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
+        {/* Header - Desktop only */}
+        <div className="hidden md:block mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Tokens</h1>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Manage your personal ERC20 token list
@@ -197,7 +197,11 @@ export default function TokensPage() {
               placeholder="Search tokens by name, symbol, or address..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 transition-all"
+              autoComplete="off"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck="false"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-base sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 transition-all"
             />
           </div>
 
@@ -206,7 +210,7 @@ export default function TokensPage() {
             {/* Add Token Button */}
             <button
               onClick={openAddTokenModal}
-              className="inline-flex items-center px-3 py-2 border border-transparent rounded-xl text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500"
+              className="inline-flex items-center px-3 py-3 sm:py-2 border border-transparent rounded-xl text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
             >
               <PlusIcon className="h-4 w-4 mr-2" />
               Add Token
@@ -224,7 +228,7 @@ export default function TokensPage() {
           {filteredTokens.map(token => (
             <div
               key={token.id}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-2xl transition-all"
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 hover:shadow-2xl transition-all"
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
@@ -235,7 +239,7 @@ export default function TokensPage() {
                   {/* Token Info */}
                   <div>
                     <div className="flex items-center space-x-2">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                         {token.symbol}
                       </h3>
                       {token.isCustom && (
@@ -252,7 +256,7 @@ export default function TokensPage() {
                 <div className="flex items-center space-x-1">
                   <button
                     onClick={() => removeToken(token.id, token.symbol)}
-                    className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                    className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded touch-manipulation active:scale-95"
                     title="Remove token"
                   >
                     <TrashIcon className="h-4 w-4" />
@@ -284,7 +288,7 @@ export default function TokensPage() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            <h3 className="text-lg sm:text-xl font-medium text-gray-900 dark:text-white mb-2">
               No tokens found
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
@@ -295,7 +299,7 @@ export default function TokensPage() {
             {!searchQuery && (
               <button
                 onClick={openAddTokenModal}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500"
+                className="inline-flex items-center px-4 py-3 sm:py-2 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
               >
                 <PlusIcon className="h-4 w-4 mr-2" />
                 Add Token
@@ -335,10 +339,10 @@ export default function TokensPage() {
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
               >
-                <Dialog.Panel className="w-full max-w-2xl p-6 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-2xl">
+                <Dialog.Panel className="w-full max-w-2xl p-6 sm:p-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-2xl">
                   <Dialog.Title
                     as="h3"
-                    className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100"
+                    className="text-lg sm:text-xl font-medium leading-6 text-gray-900 dark:text-gray-100"
                   >
                     Add Tokens
                   </Dialog.Title>
@@ -348,7 +352,7 @@ export default function TokensPage() {
                     <div className="flex space-x-1 rounded-xl bg-gray-100 dark:bg-gray-700 p-1">
                       <button
                         onClick={() => setModalMode("preset")}
-                        className={`w-full rounded-xl py-2.5 text-sm font-medium leading-5 transition-all ${
+                        className={`w-full rounded-xl py-2.5 text-sm font-medium leading-5 transition-all touch-manipulation active:scale-95 ${
                           modalMode === "preset"
                             ? "bg-white dark:bg-gray-600 text-slate-900 dark:text-emerald-400 shadow"
                             : "text-gray-700 dark:text-gray-300 hover:bg-white/[0.12] hover:text-slate-900 dark:hover:text-emerald-400"
@@ -358,7 +362,7 @@ export default function TokensPage() {
                       </button>
                       <button
                         onClick={() => setModalMode("custom")}
-                        className={`w-full rounded-xl py-2.5 text-sm font-medium leading-5 transition-all ${
+                        className={`w-full rounded-xl py-2.5 text-sm font-medium leading-5 transition-all touch-manipulation active:scale-95 ${
                           modalMode === "custom"
                             ? "bg-white dark:bg-gray-600 text-slate-900 dark:text-emerald-400 shadow"
                             : "text-gray-700 dark:text-gray-300 hover:bg-white/[0.12] hover:text-slate-900 dark:hover:text-emerald-400"
@@ -451,7 +455,11 @@ export default function TokensPage() {
                           value={customTokenAddress}
                           onChange={e => setCustomTokenAddress(e.target.value)}
                           placeholder="0x..."
-                          className="block w-full mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl shadow-sm focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 sm:text-sm transition-all"
+                          autoComplete="off"
+                          autoCapitalize="off"
+                          autoCorrect="off"
+                          spellCheck="false"
+                          className="block w-full mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl shadow-sm focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-base sm:text-sm transition-all"
                         />
                         <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
                           Enter the contract address of an ERC20 token. Token information will be
@@ -461,12 +469,12 @@ export default function TokensPage() {
                     )}
                   </div>
 
-                  <div className="flex justify-end mt-6 space-x-3">
+                  <div className="flex flex-col sm:flex-row justify-end mt-6 gap-3">
                     <button
                       type="button"
                       onClick={() => setShowTokenModal(false)}
                       disabled={validatingToken}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-slate-900 dark:focus:ring-emerald-400 disabled:opacity-50 transition-all"
+                      className="px-4 py-3 sm:py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-slate-900 dark:focus:ring-emerald-400 disabled:opacity-50 transition-all touch-manipulation active:scale-95"
                     >
                       Cancel
                     </button>
@@ -478,7 +486,7 @@ export default function TokensPage() {
                         (modalMode === "custom" && !customTokenAddress) ||
                         (modalMode === "preset" && selectedPresetTokens.size === 0)
                       }
-                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-slate-900 dark:focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="inline-flex items-center px-4 py-3 sm:py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-slate-900 dark:focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95"
                     >
                       {validatingToken ? (
                         <>

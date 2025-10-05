@@ -189,9 +189,9 @@ export default function DashboardPage() {
 
   return (
     <Layout requireAuth={true}>
-      <div className="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
+      <div className="px-3 py-4 mx-auto max-w-7xl sm:px-4 sm:py-6 lg:px-8">
+        {/* Header - Desktop only */}
+        <div className="hidden md:block mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Welcome back, {user?.username || user?.email}!
           </h1>
@@ -201,7 +201,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Account Status */}
-        <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 mb-6 sm:gap-6 sm:mb-8 lg:grid-cols-3">
           {/* Account Card */}
           <div className="col-span-1 lg:col-span-2">
             <div className="overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
@@ -345,11 +345,11 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="flex mt-6 space-x-3">
+                <div className="flex flex-col sm:flex-row mt-6 gap-3">
                   {!account ? (
                     <button
                       onClick={() => setShowCreateDialog(true)}
-                      className="inline-flex items-center px-4 py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all duration-200 transform hover:-translate-y-0.5"
+                      className="inline-flex items-center justify-center px-4 py-3 sm:py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all duration-200 transform hover:-translate-y-0.5 touch-manipulation active:scale-95"
                     >
                       <PlusIcon className="w-4 h-4 mr-2" />
                       Create Account
@@ -358,14 +358,14 @@ export default function DashboardPage() {
                     <>
                       <button
                         onClick={() => router.push("/transfer")}
-                        className="inline-flex items-center px-4 py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all duration-200 transform hover:-translate-y-0.5"
+                        className="flex-1 inline-flex items-center justify-center px-4 py-3 sm:py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all duration-200 transform hover:-translate-y-0.5 touch-manipulation active:scale-95"
                       >
                         <ArrowUpIcon className="w-4 h-4 mr-2" />
                         Send Transfer
                       </button>
                       <button
                         onClick={showTopUpInfo}
-                        className="inline-flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all"
+                        className="flex-1 inline-flex items-center justify-center px-4 py-3 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all touch-manipulation active:scale-95"
                       >
                         <PlusIcon className="w-4 h-4 mr-2" />
                         Top Up
@@ -377,8 +377,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="col-span-1">
+          {/* Quick Actions - Desktop only */}
+          <div className="hidden lg:block col-span-1">
             <div className="h-full overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
               <div className="p-6 h-full flex flex-col">
                 <h3 className="mb-4 text-lg font-medium text-gray-900 dark:text-white">
@@ -613,7 +613,7 @@ export default function DashboardPage() {
                 <button
                   onClick={() => router.push("/transfer")}
                   disabled={!account?.deployed}
-                  className="inline-flex items-center px-4 py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  className="inline-flex items-center justify-center px-4 py-3 sm:py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation active:scale-95"
                 >
                   <ArrowUpIcon className="w-4 h-4 mr-2" />
                   Send Your First Transfer

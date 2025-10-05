@@ -516,9 +516,9 @@ export default function TransferPage() {
   if (!account) {
     return (
       <Layout requireAuth={true}>
-        <div className="max-w-2xl px-4 py-6 mx-auto sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="mb-8">
+        <div className="max-w-2xl px-3 py-4 mx-auto sm:px-4 sm:py-6 lg:px-8">
+          {/* Header - Desktop only */}
+          <div className="hidden md:block mb-8">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Send Transfer</h1>
               <p className="text-sm text-gray-700 dark:text-gray-300">
@@ -529,20 +529,20 @@ export default function TransferPage() {
 
           {/* Account Creation Required */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
-            <div className="p-8 text-center">
+            <div className="p-6 sm:p-8 text-center">
               <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-slate-100 dark:bg-slate-800/50 rounded-full">
                 <WalletIcon className="w-8 h-8 text-slate-900 dark:text-emerald-400" />
               </div>
-              <h2 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
+              <h2 className="mb-2 text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                 Create Your Smart Account First
               </h2>
-              <p className="mb-6 text-gray-600 dark:text-gray-400">
+              <p className="mb-6 text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 You need to create a smart account before you can send transfers. Your account will
                 be deployed automatically with your first transaction.
               </p>
               <button
                 onClick={() => router.push("/dashboard")}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500"
+                className="inline-flex items-center px-4 py-3 sm:py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
               >
                 <WalletIcon className="w-4 h-4 mr-2" />
                 Go to Dashboard to Create Account
@@ -556,9 +556,9 @@ export default function TransferPage() {
 
   return (
     <Layout requireAuth={true}>
-      <div className="max-w-2xl px-4 py-6 mx-auto sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
+      <div className="max-w-2xl px-3 py-4 mx-auto sm:px-4 sm:py-6 lg:px-8">
+        {/* Header - Desktop only */}
+        <div className="hidden md:block mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Send Transfer</h1>
             <p className="text-sm text-gray-700 dark:text-gray-300">
@@ -721,25 +721,25 @@ export default function TransferPage() {
             <div>
               <label
                 htmlFor="to"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="block mb-2 text-base font-semibold text-gray-900 dark:text-white"
               >
                 Recipient Address
               </label>
 
               {/* Address Book Selection */}
               {addressBook.length > 0 && (
-                <div className="mb-2">
+                <div className="mb-3">
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => setShowAddressDropdown(!showAddressDropdown)}
-                      className="flex items-center justify-between w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all"
+                      className="flex items-center justify-between w-full px-4 py-3 text-base bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all touch-manipulation active:scale-[0.98]"
                     >
-                      <span className="text-gray-600 dark:text-gray-400">
-                        Choose from address book ({addressBook.length})
+                      <span className="text-gray-700 dark:text-gray-300 font-medium">
+                        📖 Choose from address book ({addressBook.length})
                       </span>
                       <svg
-                        className={`w-4 h-4 transition-transform ${
+                        className={`w-5 h-5 transition-transform ${
                           showAddressDropdown ? "rotate-180" : ""
                         }`}
                         fill="none"
@@ -755,7 +755,7 @@ export default function TransferPage() {
                       </svg>
                     </button>
                     {showAddressDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                      <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl shadow-xl max-h-64 overflow-y-auto">
                         {addressBook.map(entry => (
                           <button
                             key={entry.address}
@@ -767,21 +767,21 @@ export default function TransferPage() {
                               }));
                               setShowAddressDropdown(false);
                             }}
-                            className="block w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700"
+                            className="block w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 touch-manipulation active:scale-[0.98]"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex-1 min-w-0">
                                 {entry.name && (
-                                  <div className="font-medium text-gray-900 dark:text-white truncate">
+                                  <div className="font-semibold text-gray-900 dark:text-white truncate text-base">
                                     {entry.name}
                                   </div>
                                 )}
-                                <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                                <div className="text-sm text-gray-500 dark:text-gray-400 font-mono truncate">
                                   {entry.address}
                                 </div>
                               </div>
-                              <div className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                                Used {entry.usageCount}x
+                              <div className="ml-3 text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                                {entry.usageCount}×
                               </div>
                             </div>
                           </button>
@@ -792,15 +792,37 @@ export default function TransferPage() {
                 </div>
               )}
 
-              <input
-                type="text"
-                name="to"
-                id="to"
-                value={formData.to}
-                onChange={handleChange}
-                placeholder="0x... or select from address book above"
-                className="block w-full mt-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl shadow-sm focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 sm:text-sm placeholder-gray-500 dark:placeholder-gray-400 transition-all"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  name="to"
+                  id="to"
+                  value={formData.to}
+                  onChange={handleChange}
+                  placeholder="0x..."
+                  className="block w-full px-4 py-4 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-base placeholder-gray-400 dark:placeholder-gray-500 transition-all font-mono"
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck="false"
+                />
+                {formData.to && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, to: "" }))}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 touch-manipulation"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              {!formData.to && addressBook.length === 0 && (
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  Enter Ethereum address starting with 0x
+                </p>
+              )}
             </div>
 
             {/* Asset Selection */}
@@ -879,30 +901,60 @@ export default function TransferPage() {
 
             {/* Amount */}
             <div>
-              <label
-                htmlFor="amount"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Amount {selectedToken ? `(${selectedToken.symbol})` : "(ETH)"}
-                {selectedToken && selectedToken.decimals === 0 && (
-                  <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">
-                    (whole numbers only)
+              <div className="flex items-baseline justify-between mb-2">
+                <label
+                  htmlFor="amount"
+                  className="block text-base font-semibold text-gray-900 dark:text-white"
+                >
+                  Amount
+                </label>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Available: {selectedToken
+                    ? (tokenBalance?.formattedBalance || "0") + " " + selectedToken.symbol
+                    : (parseFloat(account?.balance || "0").toFixed(4)) + " ETH"
+                  }
+                </span>
+              </div>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  name="amount"
+                  id="amount"
+                  value={formData.amount}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="block w-full px-4 py-4 pr-24 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-2xl font-semibold placeholder-gray-300 dark:placeholder-gray-600 transition-all"
+                  autoComplete="off"
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                  <span className="text-lg font-semibold text-gray-600 dark:text-gray-400">
+                    {selectedToken ? selectedToken.symbol : "ETH"}
                   </span>
-                )}
-              </label>
-              <input
-                type="text"
-                name="amount"
-                id="amount"
-                value={formData.amount}
-                onChange={handleChange}
-                placeholder={selectedToken ? (selectedToken.decimals === 0 ? "100" : "1") : "0.001"}
-                className="block w-full mt-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl shadow-sm focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 sm:text-sm placeholder-gray-500 dark:placeholder-gray-400 transition-all"
-              />
-              {/* Show decimal places info for tokens with decimals */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const maxAmount = selectedToken
+                        ? (tokenBalance?.formattedBalance || "0")
+                        : (account?.balance || "0");
+                      setFormData(prev => ({ ...prev, amount: maxAmount }));
+                    }}
+                    className="px-2 py-1 text-xs font-semibold text-slate-900 dark:text-emerald-400 bg-slate-100 dark:bg-slate-800 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-all touch-manipulation"
+                  >
+                    MAX
+                  </button>
+                </div>
+              </div>
+
+              {selectedToken && selectedToken.decimals === 0 && (
+                <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+                  ⚠️ This token only accepts whole numbers
+                </p>
+              )}
               {selectedToken && selectedToken.decimals > 0 && (
-                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                  Maximum {selectedToken.decimals} decimal places allowed
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  Up to {selectedToken.decimals} decimal places
                 </p>
               )}
               {/* Show insufficient balance warning */}
@@ -1038,7 +1090,11 @@ export default function TransferPage() {
                         value={formData.paymasterAddress}
                         onChange={handleChange}
                         placeholder="0x... or select from saved paymasters above"
-                        className="block w-full text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl shadow-sm focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 placeholder-gray-500 dark:placeholder-gray-400 transition-all"
+                        className="block w-full text-base sm:text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl shadow-sm focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 placeholder-gray-500 dark:placeholder-gray-400 transition-all"
+                        autoComplete="off"
+                        autoCapitalize="off"
+                        autoCorrect="off"
+                        spellCheck="false"
                       />
                       <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
                         Enter your paymaster contract address to sponsor gas fees. Leave empty for
@@ -1145,12 +1201,12 @@ export default function TransferPage() {
             )}
 
             {/* Actions */}
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 type="button"
                 onClick={estimateGas}
                 disabled={loading.estimate || !formData.to || !formData.amount}
-                className="inline-flex items-center justify-center flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="inline-flex items-center justify-center flex-1 px-4 py-3 sm:py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all touch-manipulation active:scale-95"
               >
                 {loading.estimate ? (
                   <div className="w-4 h-4 mr-2 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
@@ -1162,7 +1218,7 @@ export default function TransferPage() {
                 type="button"
                 onClick={executeTransfer}
                 disabled={isTransferDisabled()}
-                className={`flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                className={`flex-1 inline-flex justify-center items-center px-4 py-3 sm:py-2 border border-transparent text-sm font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 touch-manipulation active:scale-95 ${
                   isTransferDisabled()
                     ? "bg-gray-400 text-gray-100 cursor-not-allowed"
                     : "bg-slate-900 text-white hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:ring-slate-900 dark:focus:ring-emerald-500"

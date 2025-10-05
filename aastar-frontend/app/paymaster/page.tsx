@@ -113,10 +113,10 @@ export default function PaymasterPage() {
 
   return (
     <Layout requireAuth={true}>
-      <div className="max-w-4xl px-4 py-6 mx-auto sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+      <div className="max-w-4xl px-3 py-4 sm:px-4 sm:py-6 mx-auto lg:px-8">
+        {/* Header - Desktop only */}
+        <div className="hidden md:block mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                 Paymaster Management
@@ -127,7 +127,7 @@ export default function PaymasterPage() {
             </div>
             <button
               onClick={() => setShowAddForm(!showAddForm)}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500"
+              className="inline-flex items-center px-4 py-3 sm:py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
             >
               <PlusIcon className="w-4 h-4 mr-2" />
               Add Paymaster
@@ -137,8 +137,8 @@ export default function PaymasterPage() {
 
         {/* Add Paymaster Form */}
         {showAddForm && (
-          <div className="p-6 mb-6 bg-white border border-gray-200 rounded-2xl shadow-xl dark:bg-gray-800 dark:border-gray-700">
-            <h2 className="mb-4 text-lg font-medium text-gray-900 dark:text-white">
+          <div className="p-6 sm:p-8 mb-6 bg-white border border-gray-200 rounded-2xl shadow-xl dark:bg-gray-800 dark:border-gray-700">
+            <h2 className="mb-4 text-lg sm:text-xl font-medium text-gray-900 dark:text-white">
               Add New Paymaster
             </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -151,7 +151,8 @@ export default function PaymasterPage() {
                   value={newPaymaster.name}
                   onChange={e => setNewPaymaster(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="My Paymaster"
-                  className="block w-full mt-1 border-gray-300 rounded-xl shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 sm:text-sm transition-all"
+                  autoComplete="off"
+                  className="block w-full mt-1 border-gray-300 rounded-xl shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-base sm:text-sm transition-all"
                 />
               </div>
               <div>
@@ -163,7 +164,11 @@ export default function PaymasterPage() {
                   value={newPaymaster.address}
                   onChange={e => setNewPaymaster(prev => ({ ...prev, address: e.target.value }))}
                   placeholder="0x..."
-                  className="block w-full mt-1 border-gray-300 rounded-xl shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 sm:text-sm transition-all"
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck="false"
+                  className="block w-full mt-1 border-gray-300 rounded-xl shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-base sm:text-sm transition-all"
                 />
               </div>
               <div>
@@ -178,7 +183,7 @@ export default function PaymasterPage() {
                       type: e.target.value as any,
                     }))
                   }
-                  className="block w-full mt-1 border-gray-300 rounded-xl shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 sm:text-sm transition-all"
+                  className="block w-full mt-1 border-gray-300 rounded-xl shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-base sm:text-sm transition-all"
                 >
                   <option value="custom">Custom</option>
                   <option value="pimlico">Pimlico</option>
@@ -195,7 +200,8 @@ export default function PaymasterPage() {
                   value={newPaymaster.apiKey}
                   onChange={e => setNewPaymaster(prev => ({ ...prev, apiKey: e.target.value }))}
                   placeholder="For API-based paymasters"
-                  className="block w-full mt-1 border-gray-300 rounded-xl shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 sm:text-sm transition-all"
+                  autoComplete="off"
+                  className="block w-full mt-1 border-gray-300 rounded-xl shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-base sm:text-sm transition-all"
                 />
               </div>
               {newPaymaster.type !== "custom" && (
@@ -208,22 +214,23 @@ export default function PaymasterPage() {
                     value={newPaymaster.endpoint}
                     onChange={e => setNewPaymaster(prev => ({ ...prev, endpoint: e.target.value }))}
                     placeholder="API endpoint URL"
-                    className="block w-full mt-1 border-gray-300 rounded-xl shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 sm:text-sm transition-all"
+                    autoComplete="off"
+                    className="block w-full mt-1 border-gray-300 rounded-xl shadow-sm dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-base sm:text-sm transition-all"
                   />
                 </div>
               )}
             </div>
-            <div className="flex justify-end mt-4 space-x-3">
+            <div className="flex flex-col sm:flex-row justify-end mt-4 gap-3">
               <button
                 onClick={() => setShowAddForm(false)}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all"
+                className="inline-flex items-center px-4 py-3 sm:py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all touch-manipulation active:scale-95"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddPaymaster}
                 disabled={actionLoading === "add"}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 disabled:opacity-50"
+                className="inline-flex items-center px-4 py-3 sm:py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 disabled:opacity-50 touch-manipulation active:scale-95"
               >
                 {actionLoading === "add" ? (
                   <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
@@ -238,15 +245,15 @@ export default function PaymasterPage() {
 
         {/* Paymasters List */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800">
-          <div className="p-6">
-            <h2 className="mb-4 text-lg font-medium text-gray-900 dark:text-white">
+          <div className="p-6 sm:p-8">
+            <h2 className="mb-4 text-lg sm:text-xl font-medium text-gray-900 dark:text-white">
               Saved Paymasters ({paymasters.length})
             </h2>
 
             {paymasters.length === 0 ? (
               <div className="py-12 text-center">
                 <ExclamationCircleIcon className="w-12 h-12 mx-auto text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                <h3 className="mt-2 text-lg sm:text-xl font-medium text-gray-900 dark:text-white">
                   No paymasters saved
                 </h3>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -255,7 +262,7 @@ export default function PaymasterPage() {
                 <div className="mt-6">
                   <button
                     onClick={() => setShowAddForm(true)}
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500"
+                    className="inline-flex items-center px-4 py-3 sm:py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
                   >
                     <PlusIcon className="w-4 h-4 mr-2" />
                     Add Paymaster
@@ -300,7 +307,7 @@ export default function PaymasterPage() {
                     <button
                       onClick={() => handleRemovePaymaster(paymaster.name)}
                       disabled={actionLoading === `remove-${paymaster.name}`}
-                      className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-xl shadow-sm dark:bg-gray-800 dark:border-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 transition-all"
+                      className="inline-flex items-center px-3 py-3 sm:py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-xl shadow-sm dark:bg-gray-800 dark:border-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 transition-all touch-manipulation active:scale-95"
                     >
                       {actionLoading === `remove-${paymaster.name}` ? (
                         <div className="w-4 h-4 border-b-2 border-red-600 rounded-full animate-spin"></div>
