@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { paymasterAPI } from "@/lib/api";
 import toast from "react-hot-toast";
@@ -12,8 +11,14 @@ import {
   ExclamationCircleIcon,
 } from "@heroicons/react/24/outline";
 
+interface Paymaster {
+  name: string;
+  address: string;
+  configured: boolean;
+}
+
 export default function PaymasterPage() {
-  const [paymasters, setPaymasters] = useState<any[]>([]);
+  const [paymasters, setPaymasters] = useState<Paymaster[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string>("");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -24,7 +29,6 @@ export default function PaymasterPage() {
     apiKey: "",
     endpoint: "",
   });
-  const router = useRouter();
 
   useEffect(() => {
     loadPaymasters();
@@ -75,8 +79,8 @@ export default function PaymasterPage() {
       });
       setShowAddForm(false);
       await loadPaymasters();
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Failed to add paymaster";
+    } catch (error) {
+      const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to add paymaster";
       toast.error(message);
     } finally {
       setActionLoading("");
@@ -93,8 +97,8 @@ export default function PaymasterPage() {
       await paymasterAPI.remove(name);
       toast.success("Paymaster removed successfully!");
       await loadPaymasters();
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Failed to remove paymaster";
+    } catch (error) {
+      const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to remove paymaster";
       toast.error(message);
     } finally {
       setActionLoading("");
@@ -180,7 +184,7 @@ export default function PaymasterPage() {
                   onChange={e =>
                     setNewPaymaster(prev => ({
                       ...prev,
-                      type: e.target.value as any,
+                      type: e.target.value as "pimlico" | "stackup" | "alchemy" | "custom",
                     }))
                   }
                   className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm transition-all"

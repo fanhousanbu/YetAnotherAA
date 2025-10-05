@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { addressBookAPI } from "@/lib/api";
 import toast from "react-hot-toast";
@@ -24,7 +23,6 @@ export default function AddressBookPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newAddress, setNewAddress] = useState("");
   const [newName, setNewName] = useState("");
-  const router = useRouter();
 
   useEffect(() => {
     loadAddressBook();
@@ -35,7 +33,7 @@ export default function AddressBookPage() {
     try {
       const response = await addressBookAPI.getAddressBook();
       setAddressBook(response.data);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Failed to load address book:", error);
       toast.error("Failed to load address book");
     } finally {
@@ -62,8 +60,8 @@ export default function AddressBookPage() {
       setNewAddress("");
       setNewName("");
       toast.success("Address added successfully! 📖");
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Failed to add address";
+    } catch (error) {
+      const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to add address";
       toast.error(message);
     }
   };
@@ -75,8 +73,8 @@ export default function AddressBookPage() {
       setEditingAddress(null);
       setEditingName("");
       toast.success("Name updated successfully!");
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Failed to update name";
+    } catch (error) {
+      const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to update name";
       toast.error(message);
     }
   };
@@ -90,8 +88,8 @@ export default function AddressBookPage() {
       await addressBookAPI.removeAddress(address);
       await loadAddressBook();
       toast.success("Address deleted successfully!");
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Failed to delete address";
+    } catch (error) {
+      const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to delete address";
       toast.error(message);
     }
   };

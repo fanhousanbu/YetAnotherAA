@@ -7,8 +7,6 @@ import { User } from "@/lib/types";
 import { useTheme } from "@/lib/theme";
 import ServiceStatus from "@/components/ServiceStatus";
 import {
-  Bars3Icon,
-  XMarkIcon,
   SunIcon,
   MoonIcon,
   HomeIcon,

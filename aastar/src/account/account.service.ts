@@ -62,7 +62,7 @@ export class AccountService {
 
     // Check if account is already deployed on-chain (this may be slow for RPC calls)
     let deployed = false;
-    let deploymentTxHash = null;
+    const deploymentTxHash = null;
 
     try {
       const provider = this.ethereumService.getProvider();

@@ -7,7 +7,6 @@ import {
   ChevronDownIcon,
   XMarkIcon,
   ArrowPathIcon,
-  Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 
 interface ServiceHealth {
@@ -39,8 +38,8 @@ interface ServiceStatusProps {
 
 export default function ServiceStatus({
   isOpen,
-  onClose,
-  embedded = false,
+  onClose: _onClose,
+  embedded: _embedded = false,
 }: ServiceStatusProps = {}) {
   const [isVisible, setIsVisible] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);

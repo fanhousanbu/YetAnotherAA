@@ -9,8 +9,8 @@ import {
   ArrowPathIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
-import { Token, TokenBalance, UserToken, UserTokenWithBalance } from "@/lib/types";
-import { tokenAPI, userTokenAPI } from "@/lib/api";
+import { Token, UserTokenWithBalance } from "@/lib/types";
+import { userTokenAPI } from "@/lib/api";
 import TokenIcon from "@/components/TokenIcon";
 import toast from "react-hot-toast";
 
@@ -156,7 +156,7 @@ export default function TokenSelector({
     }
   };
 
-  const formatBalance = (balance?: string, decimals?: number) => {
+  const _formatBalance = (balance?: string, decimals?: number) => {
     if (!balance || !decimals) return "0";
     try {
       const num = parseFloat(balance);
@@ -178,7 +178,7 @@ export default function TokenSelector({
 
   const applyFilters = () => {
     // Start with user tokens, and prepend ETH if includeEth is true
-    let allTokens = includeEth ? [ethToken, ...userTokens] : [...userTokens];
+    const allTokens = includeEth ? [ethToken, ...userTokens] : [...userTokens];
     let filtered = allTokens;
 
     // Search filter

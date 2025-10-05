@@ -6,7 +6,7 @@ import Layout from "@/components/Layout";
 import CopyButton from "@/components/CopyButton";
 import CreateAccountDialog from "@/components/CreateAccountDialog";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { User, EntryPointVersion } from "@/lib/types";
+import { User } from "@/lib/types";
 import { getStoredAuth } from "@/lib/auth";
 import toast from "react-hot-toast";
 import {
@@ -16,9 +16,7 @@ import {
   ClockIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
-  EyeIcon,
   CpuChipIcon,
-  InformationCircleIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 
@@ -32,7 +30,6 @@ function DashboardContent() {
   const { account, transfers, paymasters, tokenBalances, lastUpdated } = data;
 
   const [user, setUser] = useState<User | null>(null);
-  const [actionLoading, setActionLoading] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [refreshingBalance, setRefreshingBalance] = useState(false);
   const [pullToRefresh, setPullToRefresh] = useState({
@@ -82,7 +79,7 @@ function DashboardContent() {
     try {
       await contextRefreshBalance();
       toast.success("Balance refreshed!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to refresh balance");
     } finally {
       setRefreshingBalance(false);

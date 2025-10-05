@@ -30,7 +30,7 @@ export default function TransferPage() {
   });
   const [selectedToken, setSelectedToken] = useState<Token | null>(null); // null means ETH
   const [tokenBalance, setTokenBalance] = useState<TokenBalance | null>(null);
-  const [loadingTokenBalance, setLoadingTokenBalance] = useState(false);
+  const [_loadingTokenBalance, setLoadingTokenBalance] = useState(false);
   const [gasEstimate, setGasEstimate] = useState<GasEstimate | null>(null);
   const [savedPaymasters, setSavedPaymasters] = useState<any[]>([]);
   const [showPaymasterDropdown, setShowPaymasterDropdown] = useState(false);
@@ -493,7 +493,7 @@ export default function TransferPage() {
   };
 
   // Save address to address book
-  const saveToAddressBook = async () => {
+  const _saveToAddressBook = async () => {
     if (!formData.to) {
       toast.error("No address to save");
       return;

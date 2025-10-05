@@ -353,7 +353,7 @@ export class GossipService implements OnModuleInit, OnModuleDestroy {
     const existingPeer = this.peers.get(peerId);
 
     // Get endpoints from peer data or existing peer
-    let validatedApiEndpoint = peerData.apiEndpoint || existingPeer?.apiEndpoint;
+    const validatedApiEndpoint = peerData.apiEndpoint || existingPeer?.apiEndpoint;
     let validatedGossipEndpoint = peerData.gossipEndpoint || existingPeer?.gossipEndpoint;
 
     // Only validate gossip endpoint (WebSocket), not API endpoint (HTTP)
