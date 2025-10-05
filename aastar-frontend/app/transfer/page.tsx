@@ -506,7 +506,7 @@ export default function TransferPage() {
     return (
       <Layout requireAuth={true}>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="w-32 h-32 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+          <div className="w-32 h-32 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
         </div>
       </Layout>
     );
@@ -528,10 +528,10 @@ export default function TransferPage() {
           </div>
 
           {/* Account Creation Required */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
             <div className="p-8 text-center">
-              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                <WalletIcon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-slate-100 dark:bg-slate-800/50 rounded-full">
+                <WalletIcon className="w-8 h-8 text-slate-900 dark:text-emerald-400" />
               </div>
               <h2 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
                 Create Your Smart Account First
@@ -542,7 +542,7 @@ export default function TransferPage() {
               </p>
               <button
                 onClick={() => router.push("/dashboard")}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500"
               >
                 <WalletIcon className="w-4 h-4 mr-2" />
                 Go to Dashboard to Create Account
@@ -569,13 +569,13 @@ export default function TransferPage() {
 
         {/* Deployment Banner */}
         {showDeploymentBanner && (
-          <div className="p-4 mb-6 border-l-4 border-blue-400 bg-blue-50 dark:bg-blue-900/20">
+          <div className="p-4 mb-6 border-l-4 border-slate-900 dark:border-emerald-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
             <div className="flex">
               <div className="flex-shrink-0">
-                <InformationCircleIcon className="w-5 h-5 text-blue-400" />
+                <InformationCircleIcon className="w-5 h-5 text-slate-900 dark:text-emerald-400" />
               </div>
               <div className="flex-1 ml-3">
-                <p className="text-sm text-blue-700 dark:text-blue-300">
+                <p className="text-sm text-slate-700 dark:text-slate-300">
                   <strong>First Transfer:</strong> Your smart account will be automatically deployed
                   with your first transfer - no additional gas fees required!
                 </p>
@@ -585,7 +585,7 @@ export default function TransferPage() {
                   <button
                     type="button"
                     onClick={() => setShowDeploymentBanner(false)}
-                    className="inline-flex bg-blue-50 dark:bg-blue-900/20 rounded-md p-1.5 text-blue-500 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-50 dark:focus:ring-offset-blue-900/20 focus:ring-blue-600 dark:focus:ring-blue-400"
+                    className="inline-flex bg-slate-50 dark:bg-slate-800/50 rounded-xl p-1.5 text-slate-900 dark:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800/50 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all"
                   >
                     <span className="sr-only">Dismiss</span>
                     <XMarkIcon className="w-5 h-5" />
@@ -597,14 +597,14 @@ export default function TransferPage() {
         )}
 
         {/* Account Info */}
-        <div className="p-4 mb-6 border border-blue-200 dark:border-gray-700 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+        <div className="p-4 mb-6 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
+              <p className="text-sm font-medium text-slate-900 dark:text-slate-200">
                 Account Balance
               </p>
               <div className="relative group">
-                <div className="text-lg font-semibold text-blue-900 dark:text-blue-200">
+                <div className="text-lg font-semibold text-slate-900 dark:text-emerald-400">
                   {formatBalance(account?.balance)} ETH
                 </div>
                 {/* Tooltip */}
@@ -615,14 +615,14 @@ export default function TransferPage() {
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm text-blue-700 dark:text-blue-300">Account Address</p>
-              <p className="font-mono text-sm text-blue-900 dark:text-blue-200">
+              <p className="text-sm text-slate-700 dark:text-slate-300">Account Address</p>
+              <p className="font-mono text-sm text-slate-900 dark:text-slate-200">
                 {account?.address.slice(0, 10)}...{account?.address.slice(-8)}
               </p>
               <div className="flex justify-end mt-2 space-x-2">
                 <button
                   onClick={refreshBalance}
-                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-800 border border-blue-200 dark:border-gray-600 rounded-md hover:bg-blue-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-slate-900 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-600 rounded-xl hover:bg-slate-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all"
                 >
                   <svg
                     className="w-3 h-3 mr-1"
@@ -647,12 +647,12 @@ export default function TransferPage() {
         {/* Transfer Status */}
         {transferResult && (
           <div
-            className={`border rounded-lg p-4 mb-6 ${
+            className={`border rounded-xl p-4 mb-6 ${
               transferStatus?.status === "completed"
                 ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700"
                 : transferStatus?.status === "failed"
                   ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
-                  : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
+                  : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
             }`}
           >
             <div className="flex">
@@ -661,7 +661,7 @@ export default function TransferPage() {
               ) : transferStatus?.status === "failed" ? (
                 <InformationCircleIcon className="w-5 h-5 text-red-400" />
               ) : (
-                <div className="w-5 h-5 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+                <div className="w-5 h-5 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
               )}
               <div className="flex-1 ml-3">
                 <h3
@@ -670,7 +670,7 @@ export default function TransferPage() {
                       ? "text-green-800 dark:text-green-200"
                       : transferStatus?.status === "failed"
                         ? "text-red-800 dark:text-red-200"
-                        : "text-blue-800 dark:text-blue-200"
+                        : "text-slate-800 dark:text-slate-200"
                   }`}
                 >
                   {transferStatus?.statusDescription || "Transfer Submitted"}
@@ -697,7 +697,7 @@ export default function TransferPage() {
                         href={transferStatus.explorerUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="ml-1 text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300"
+                        className="ml-1 text-slate-900 dark:text-emerald-400 underline hover:text-slate-700 dark:hover:text-emerald-300 transition-all"
                       >
                         {transferStatus.transactionHash.slice(0, 20)}...
                       </a>
@@ -715,7 +715,7 @@ export default function TransferPage() {
         )}
 
         {/* Transfer Form */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
           <div className="p-6 space-y-6">
             {/* Recipient */}
             <div>
@@ -733,7 +733,7 @@ export default function TransferPage() {
                     <button
                       type="button"
                       onClick={() => setShowAddressDropdown(!showAddressDropdown)}
-                      className="flex items-center justify-between w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                      className="flex items-center justify-between w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all"
                     >
                       <span className="text-gray-600 dark:text-gray-400">
                         Choose from address book ({addressBook.length})
@@ -755,7 +755,7 @@ export default function TransferPage() {
                       </svg>
                     </button>
                     {showAddressDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-lg max-h-48 overflow-y-auto">
                         {addressBook.map(entry => (
                           <button
                             key={entry.address}
@@ -799,7 +799,7 @@ export default function TransferPage() {
                 value={formData.to}
                 onChange={handleChange}
                 placeholder="0x... or select from address book above"
-                className="block w-full mt-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow-sm focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm placeholder-gray-500 dark:placeholder-gray-400"
+                className="block w-full mt-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl shadow-sm focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 sm:text-sm placeholder-gray-500 dark:placeholder-gray-400 transition-all"
               />
             </div>
 
@@ -810,7 +810,7 @@ export default function TransferPage() {
               </label>
 
               {/* Current Selection Display */}
-              <div className="p-3 mb-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900">
+              <div className="p-3 mb-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <div className="flex items-center justify-center w-8 h-8 mr-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
@@ -851,9 +851,9 @@ export default function TransferPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedToken(null)}
-                    className={`px-3 py-1 text-xs rounded-full border ${
+                    className={`px-3 py-1 text-xs rounded-full border transition-all ${
                       !selectedToken
-                        ? "bg-blue-100 dark:bg-blue-900/40 border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300"
+                        ? "bg-slate-100 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-emerald-400"
                         : "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
                     }`}
                   >
@@ -897,7 +897,7 @@ export default function TransferPage() {
                 value={formData.amount}
                 onChange={handleChange}
                 placeholder={selectedToken ? (selectedToken.decimals === 0 ? "100" : "1") : "0.001"}
-                className="block w-full mt-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow-sm focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm placeholder-gray-500 dark:placeholder-gray-400"
+                className="block w-full mt-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl shadow-sm focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 sm:text-sm placeholder-gray-500 dark:placeholder-gray-400 transition-all"
               />
               {/* Show decimal places info for tokens with decimals */}
               {selectedToken && selectedToken.decimals > 0 && (
@@ -941,7 +941,7 @@ export default function TransferPage() {
             </div>
 
             {/* Paymaster Option */}
-            <div className="p-4 border border-purple-200 dark:border-purple-600 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+            <div className="p-4 border border-purple-200 dark:border-purple-600 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
               <div className="flex items-start">
                 <div className="flex items-center h-5">
                   <input
@@ -980,7 +980,7 @@ export default function TransferPage() {
                             <button
                               type="button"
                               onClick={() => setShowPaymasterDropdown(!showPaymasterDropdown)}
-                              className="flex items-center justify-between w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
+                              className="flex items-center justify-between w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 transition-all"
                             >
                               <span className="text-gray-600 dark:text-gray-400">
                                 Choose from saved paymasters ({savedPaymasters.length})
@@ -1002,7 +1002,7 @@ export default function TransferPage() {
                               </svg>
                             </button>
                             {showPaymasterDropdown && (
-                              <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                              <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-lg max-h-48 overflow-y-auto">
                                 {savedPaymasters.map(paymaster => (
                                   <button
                                     key={paymaster.address}
@@ -1038,7 +1038,7 @@ export default function TransferPage() {
                         value={formData.paymasterAddress}
                         onChange={handleChange}
                         placeholder="0x... or select from saved paymasters above"
-                        className="block w-full text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-md shadow-sm focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 placeholder-gray-500 dark:placeholder-gray-400"
+                        className="block w-full text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl shadow-sm focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 placeholder-gray-500 dark:placeholder-gray-400 transition-all"
                       />
                       <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
                         Enter your paymaster contract address to sponsor gas fees. Leave empty for
@@ -1046,7 +1046,7 @@ export default function TransferPage() {
                       </p>
                       {formData.paymasterAddress && (
                         <div className="mt-2 space-y-2">
-                          <div className="p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded text-xs text-blue-700 dark:text-blue-300">
+                          <div className="p-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300">
                             💡 Using custom paymaster: {formData.paymasterAddress.slice(0, 10)}...
                             {formData.paymasterAddress.slice(-8)}
                           </div>
@@ -1054,7 +1054,7 @@ export default function TransferPage() {
                             type="button"
                             onClick={savePaymasterAddress}
                             disabled={loading.transfer}
-                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-600 rounded hover:bg-green-200 dark:hover:bg-green-900/50 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-600 rounded-xl hover:bg-green-200 dark:hover:bg-green-900/50 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                           >
                             <svg
                               className="w-3 h-3 mr-1"
@@ -1111,7 +1111,7 @@ export default function TransferPage() {
 
             {/* Gas Estimation */}
             {gasEstimate && (
-              <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-900">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
                 <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-white">
                   Gas Estimation
                 </h3>
@@ -1150,10 +1150,10 @@ export default function TransferPage() {
                 type="button"
                 onClick={estimateGas}
                 disabled={loading.estimate || !formData.to || !formData.amount}
-                className="inline-flex items-center justify-center flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {loading.estimate ? (
-                  <div className="w-4 h-4 mr-2 border-b-2 border-gray-600 rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 mr-2 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
                 ) : null}
                 Estimate Gas
               </button>
@@ -1162,10 +1162,10 @@ export default function TransferPage() {
                 type="button"
                 onClick={executeTransfer}
                 disabled={isTransferDisabled()}
-                className={`flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                className={`flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                   isTransferDisabled()
                     ? "bg-gray-400 text-gray-100 cursor-not-allowed"
-                    : "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-slate-900 text-white hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:ring-slate-900 dark:focus:ring-emerald-500"
                 }`}
               >
                 {loading.transfer ? (
@@ -1191,12 +1191,12 @@ export default function TransferPage() {
         </div>
 
         {/* Info */}
-        <div className="p-4 mt-6 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+        <div className="p-4 mt-6 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
           <div className="flex">
-            <InformationCircleIcon className="w-5 h-5 text-blue-400" />
+            <InformationCircleIcon className="w-5 h-5 text-slate-900 dark:text-emerald-400" />
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">How it works</h3>
-              <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
+              <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">How it works</h3>
+              <div className="mt-2 text-sm text-slate-700 dark:text-slate-300">
                 <ul className="space-y-1 list-disc list-inside">
                   <li>Support for ETH and ERC20 token transfers (PNTs, PIM, and custom tokens)</li>
                   <li>Gas fees are automatically handled - no need to hold ETH for gas</li>

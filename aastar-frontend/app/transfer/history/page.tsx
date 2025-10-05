@@ -86,7 +86,7 @@ export default function TransferHistoryPage() {
     return (
       <Layout requireAuth={true}>
         <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 dark:border-blue-400"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-slate-900 dark:border-emerald-500"></div>
         </div>
       </Layout>
     );
@@ -108,10 +108,10 @@ export default function TransferHistoryPage() {
               <button
                 onClick={() => loadTransfers(true)}
                 disabled={loading}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 disabled:opacity-50"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-xl text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-400 dark:focus:ring-offset-gray-800 disabled:opacity-50 transition-all"
               >
                 {loading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 dark:border-gray-400 mr-2"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-900 dark:border-emerald-500 mr-2"></div>
                 ) : (
                   <ArrowPathIcon className="h-4 w-4 mr-2" />
                 )}
@@ -119,7 +119,7 @@ export default function TransferHistoryPage() {
               </button>
               <button
                 onClick={() => router.push("/transfer")}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500"
               >
                 New Transfer
               </button>
@@ -128,7 +128,7 @@ export default function TransferHistoryPage() {
         </div>
 
         {/* Transfer List */}
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           {transfers.length > 0 ? (
             <>
               <div className="overflow-x-auto">
@@ -211,14 +211,14 @@ export default function TransferHistoryPage() {
                     <button
                       onClick={() => handlePageChange(pagination.page - 1)}
                       disabled={pagination.page <= 1}
-                      className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-xl text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       Previous
                     </button>
                     <button
                       onClick={() => handlePageChange(pagination.page + 1)}
                       disabled={pagination.page >= pagination.totalPages}
-                      className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-xl text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       Next
                     </button>
@@ -238,11 +238,11 @@ export default function TransferHistoryPage() {
                       </p>
                     </div>
                     <div>
-                      <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                      <nav className="relative z-0 inline-flex rounded-xl shadow-sm -space-x-px">
                         <button
                           onClick={() => handlePageChange(pagination.page - 1)}
                           disabled={pagination.page <= 1}
-                          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="relative inline-flex items-center px-2 py-2 rounded-l-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                           Previous
                         </button>
@@ -254,9 +254,9 @@ export default function TransferHistoryPage() {
                             <button
                               key={pageNum}
                               onClick={() => handlePageChange(pageNum)}
-                              className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-all ${
                                 pagination.page === pageNum
-                                  ? "z-10 bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-300"
+                                  ? "z-10 bg-slate-50 dark:bg-slate-800/50 border-slate-500 dark:border-slate-400 text-slate-900 dark:text-emerald-400"
                                   : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
                               }`}
                             >
@@ -268,7 +268,7 @@ export default function TransferHistoryPage() {
                         <button
                           onClick={() => handlePageChange(pagination.page + 1)}
                           disabled={pagination.page >= pagination.totalPages}
-                          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="relative inline-flex items-center px-2 py-2 rounded-r-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                           Next
                         </button>
@@ -290,7 +290,7 @@ export default function TransferHistoryPage() {
               <div className="mt-6">
                 <button
                   onClick={() => router.push("/transfer")}
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-lg hover:shadow-xl transition-all duration-200 text-sm font-medium rounded-xl text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500"
                 >
                   Send Transfer
                 </button>

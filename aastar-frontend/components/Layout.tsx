@@ -46,33 +46,33 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
   const getNavButtonClass = (path: string, isActive: boolean) => {
     const baseClass = "px-3 py-2 text-sm font-medium transition-all duration-200 relative";
     if (isActive) {
-      return `${baseClass} text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400`;
+      return `${baseClass} text-slate-900 dark:text-emerald-400 border-b-2 border-slate-900 dark:border-emerald-400`;
     }
-    return `${baseClass} text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-b-2 hover:border-gray-300 dark:hover:border-gray-600`;
+    return `${baseClass} text-gray-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-emerald-400 hover:border-b-2 hover:border-gray-300 dark:hover:border-gray-600`;
   };
 
   const getMobileNavButtonClass = (path: string, isActive: boolean) => {
     const baseClass =
       "block px-3 py-2 text-base font-medium w-full text-left transition-all duration-200";
     if (isActive) {
-      return `${baseClass} text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/10 border-l-4 border-blue-600 dark:border-blue-400 font-semibold`;
+      return `${baseClass} text-slate-900 dark:text-emerald-400 bg-slate-50 dark:bg-emerald-900/10 border-l-4 border-slate-900 dark:border-emerald-400 font-semibold`;
     }
-    return `${baseClass} text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700/50`;
+    return `${baseClass} text-gray-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-emerald-400 hover:bg-gray-50 dark:hover:bg-gray-700/50`;
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-950">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-slate-900 dark:border-emerald-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-950">
       {/* Navigation */}
       {user && (
-        <nav className="bg-white dark:bg-gray-800 shadow-sm">
+        <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center">
@@ -107,7 +107,7 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                 {/* Theme Toggle Button */}
                 <button
                   onClick={toggleTheme}
-                  className="p-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-md"
+                  className="p-2 text-gray-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-emerald-400 rounded-md transition-colors"
                   title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
                 >
                   {theme === "light" ? (
@@ -122,7 +122,7 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                   </span>
                   <button
                     onClick={handleLogout}
-                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm font-medium"
+                    className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow-md"
                   >
                     Logout
                   </button>
@@ -191,7 +191,7 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                 {/* Mobile Theme Toggle */}
                 <button
                   onClick={toggleTheme}
-                  className="flex items-center px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 w-full text-left"
+                  className="flex items-center px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-emerald-400 w-full text-left transition-colors"
                 >
                   {theme === "light" ? (
                     <MoonIcon className="h-5 w-5 mr-2" />
@@ -202,7 +202,7 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="block w-full text-left px-3 py-2 text-base font-medium text-red-600 hover:text-red-700"
+                  className="block w-full text-left px-3 py-2 text-base font-medium text-slate-900 dark:text-slate-300 hover:text-slate-700 dark:hover:text-slate-400 transition-colors"
                 >
                   Logout
                 </button>

@@ -147,7 +147,7 @@ export default function DashboardPage() {
     return (
       <Layout requireAuth={true}>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="w-32 h-32 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+          <div className="w-32 h-32 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
         </div>
       </Layout>
     );
@@ -170,11 +170,11 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-3">
           {/* Account Card */}
           <div className="col-span-1 lg:col-span-2">
-            <div className="overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+            <div className="overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
               <div className="p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <WalletIcon className="w-8 h-8 text-blue-500" />
+                    <WalletIcon className="w-8 h-8 text-slate-900 dark:text-emerald-400" />
                   </div>
                   <div className="flex-1 ml-4">
                     <div className="flex items-center gap-2">
@@ -236,7 +236,7 @@ export default function DashboardPage() {
                   {!account ? (
                     <button
                       onClick={() => setShowCreateDialog(true)}
-                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="inline-flex items-center px-4 py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all duration-200 transform hover:-translate-y-0.5"
                     >
                       <PlusIcon className="w-4 h-4 mr-2" />
                       Create Account
@@ -245,14 +245,14 @@ export default function DashboardPage() {
                     <>
                       <button
                         onClick={() => router.push("/transfer")}
-                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="inline-flex items-center px-4 py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all duration-200 transform hover:-translate-y-0.5"
                       >
                         <ArrowUpIcon className="w-4 h-4 mr-2" />
                         Send Transfer
                       </button>
                       <button
                         onClick={showTopUpInfo}
-                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="inline-flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all"
                       >
                         <PlusIcon className="w-4 h-4 mr-2" />
                         Top Up
@@ -266,7 +266,7 @@ export default function DashboardPage() {
 
           {/* Quick Actions */}
           <div className="col-span-1">
-            <div className="overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+            <div className="overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
               <div className="p-6">
                 <h3 className="mb-4 text-lg font-medium text-gray-900 dark:text-white">
                   Quick Actions
@@ -275,14 +275,14 @@ export default function DashboardPage() {
                   <button
                     onClick={() => router.push("/transfer")}
                     disabled={!account?.deployed}
-                    className="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-blue-600 bg-blue-100 border border-transparent rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center justify-center w-full px-4 py-2.5 text-sm font-semibold text-slate-900 dark:text-emerald-400 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   >
                     <ArrowUpIcon className="w-4 h-4 mr-2" />
                     Send Transfer
                   </button>
                   <button
                     onClick={() => loadDashboardData()}
-                    className="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="inline-flex items-center justify-center w-full px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all"
                   >
                     <EyeIcon className="w-4 h-4 mr-2" />
                     Refresh Data
@@ -295,7 +295,7 @@ export default function DashboardPage() {
 
         {/* Token Balances */}
         {account && tokenBalances.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 mb-6">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -308,7 +308,7 @@ export default function DashboardPage() {
                   .map(tokenBalance => (
                     <div
                       key={tokenBalance.token.address}
-                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-slate-300 dark:hover:border-slate-600 transition-colors bg-slate-50/50 dark:bg-slate-800/30"
                     >
                       <div className="flex items-center">
                         {tokenBalance.token.logoUrl && (
@@ -360,7 +360,7 @@ export default function DashboardPage() {
         )}
 
         {/* Paymaster Status */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 mb-6">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -379,10 +379,10 @@ export default function DashboardPage() {
                       .map(paymaster => (
                         <div
                           key={paymaster.name}
-                          className="p-3 border border-green-200 dark:border-green-800 rounded-lg bg-green-50 dark:bg-green-900/20"
+                          className="p-3 border border-emerald-200 dark:border-emerald-800 rounded-xl bg-emerald-50 dark:bg-emerald-900/20"
                         >
                           <div className="flex items-center">
-                            <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2" />
+                            <CheckCircleIcon className="w-5 h-5 text-emerald-500 mr-2" />
                             <div>
                               <p className="text-sm font-medium text-gray-900 dark:text-white">
                                 {paymaster.name === "pimlico-sepolia" ? "Pimlico" : paymaster.name}
@@ -400,14 +400,14 @@ export default function DashboardPage() {
                   </p>
                 </div>
               ) : (
-                <div className="p-4 border border-yellow-200 dark:border-yellow-800 rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
+                <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50">
                   <div className="flex">
                     <ExclamationCircleIcon className="w-5 h-5 text-yellow-400 mr-2" />
                     <div>
-                      <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      <p className="text-sm text-slate-700 dark:text-slate-300">
                         No Paymaster configured. Transactions will use your account balance for gas.
                       </p>
-                      <p className="text-xs text-yellow-600 dark:text-yellow-300 mt-1">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                         Configure a Paymaster API key in the backend to enable gas sponsorship.
                       </p>
                     </div>
@@ -419,7 +419,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Transfers */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -427,7 +427,7 @@ export default function DashboardPage() {
               </h3>
               <button
                 onClick={() => router.push("/transfer/history")}
-                className="text-sm text-blue-600 hover:text-blue-500"
+                className="text-sm font-medium text-slate-900 dark:text-emerald-400 hover:text-slate-700 dark:hover:text-emerald-300 transition-colors"
               >
                 View all
               </button>
@@ -438,7 +438,7 @@ export default function DashboardPage() {
                 {transfers.map(transfer => (
                   <div
                     key={transfer.id}
-                    className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+                    className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-slate-300 dark:hover:border-slate-600 transition-colors bg-slate-50/50 dark:bg-slate-800/30"
                   >
                     <div className="flex items-center">
                       <div className="mr-3">{getStatusIcon(transfer.status)}</div>

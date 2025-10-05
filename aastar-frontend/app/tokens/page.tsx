@@ -168,7 +168,7 @@ export default function TokensPage() {
     return (
       <Layout requireAuth={true}>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="w-32 h-32 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+          <div className="w-32 h-32 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
         </div>
       </Layout>
     );
@@ -197,7 +197,7 @@ export default function TokensPage() {
               placeholder="Search tokens by name, symbol, or address..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 transition-all"
             />
           </div>
 
@@ -206,7 +206,7 @@ export default function TokensPage() {
             {/* Add Token Button */}
             <button
               onClick={openAddTokenModal}
-              className="inline-flex items-center px-3 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="inline-flex items-center px-3 py-2 border border-transparent rounded-xl text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500"
             >
               <PlusIcon className="h-4 w-4 mr-2" />
               Add Token
@@ -224,7 +224,7 @@ export default function TokensPage() {
           {filteredTokens.map(token => (
             <div
               key={token.id}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow"
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-2xl transition-all"
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
@@ -295,7 +295,7 @@ export default function TokensPage() {
             {!searchQuery && (
               <button
                 onClick={openAddTokenModal}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500"
               >
                 <PlusIcon className="h-4 w-4 mr-2" />
                 Add Token
@@ -348,20 +348,20 @@ export default function TokensPage() {
                     <div className="flex space-x-1 rounded-xl bg-gray-100 dark:bg-gray-700 p-1">
                       <button
                         onClick={() => setModalMode("preset")}
-                        className={`w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition-all ${
+                        className={`w-full rounded-xl py-2.5 text-sm font-medium leading-5 transition-all ${
                           modalMode === "preset"
-                            ? "bg-white dark:bg-gray-600 text-blue-700 dark:text-blue-300 shadow"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-white/[0.12] hover:text-blue-600"
+                            ? "bg-white dark:bg-gray-600 text-slate-900 dark:text-emerald-400 shadow"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-white/[0.12] hover:text-slate-900 dark:hover:text-emerald-400"
                         }`}
                       >
                         Preset Tokens
                       </button>
                       <button
                         onClick={() => setModalMode("custom")}
-                        className={`w-full rounded-lg py-2.5 text-sm font-medium leading-5 transition-all ${
+                        className={`w-full rounded-xl py-2.5 text-sm font-medium leading-5 transition-all ${
                           modalMode === "custom"
-                            ? "bg-white dark:bg-gray-600 text-blue-700 dark:text-blue-300 shadow"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-white/[0.12] hover:text-blue-600"
+                            ? "bg-white dark:bg-gray-600 text-slate-900 dark:text-emerald-400 shadow"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-white/[0.12] hover:text-slate-900 dark:hover:text-emerald-400"
                         }`}
                       >
                         Custom Token
@@ -379,7 +379,7 @@ export default function TokensPage() {
 
                         {loadingPresetTokens ? (
                           <div className="flex items-center justify-center py-8">
-                            <div className="w-8 h-8 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+                            <div className="w-8 h-8 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
                           </div>
                         ) : (
                           <div className="max-h-96 overflow-y-auto space-y-2">
@@ -395,7 +395,7 @@ export default function TokensPage() {
                               .map(token => (
                                 <div
                                   key={token.address}
-                                  className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                  className="flex items-center space-x-3 p-3 rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                                 >
                                   <input
                                     type="checkbox"
@@ -409,7 +409,7 @@ export default function TokensPage() {
                                       }
                                       setSelectedPresetTokens(newSelected);
                                     }}
-                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    className="rounded border-gray-300 text-slate-900 dark:text-emerald-500 focus:ring-slate-900 dark:focus:ring-emerald-400"
                                   />
                                   <TokenIcon token={token} size="md" />
                                   <div className="flex-1">
@@ -451,7 +451,7 @@ export default function TokensPage() {
                           value={customTokenAddress}
                           onChange={e => setCustomTokenAddress(e.target.value)}
                           placeholder="0x..."
-                          className="block w-full mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-md shadow-sm focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm"
+                          className="block w-full mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl shadow-sm focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 sm:text-sm transition-all"
                         />
                         <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
                           Enter the contract address of an ERC20 token. Token information will be
@@ -466,7 +466,7 @@ export default function TokensPage() {
                       type="button"
                       onClick={() => setShowTokenModal(false)}
                       disabled={validatingToken}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50"
+                      className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-slate-900 dark:focus:ring-emerald-400 disabled:opacity-50 transition-all"
                     >
                       Cancel
                     </button>
@@ -478,11 +478,11 @@ export default function TokensPage() {
                         (modalMode === "custom" && !customTokenAddress) ||
                         (modalMode === "preset" && selectedPresetTokens.size === 0)
                       }
-                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-slate-900 dark:focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {validatingToken ? (
                         <>
-                          <div className="w-4 h-4 mr-2 border-b-2 border-white dark:border-white rounded-full animate-spin"></div>
+                          <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
                           {modalMode === "preset" ? "Adding..." : "Validating..."}
                         </>
                       ) : (
