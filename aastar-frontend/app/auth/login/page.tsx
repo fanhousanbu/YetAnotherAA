@@ -109,16 +109,18 @@ export default function LoginPage() {
       // 第三步：完成注册
       toast.dismiss(loadingToast);
       loadingToast = toast.loading("Completing passkey setup...");
-      await authAPI.completeDevicePasskeyRegistration({
+      const completeResponse = await authAPI.completeDevicePasskeyRegistration({
         email: deviceFormData.email,
         password: deviceFormData.password,
         credential,
       });
 
+      const { access_token, user } = completeResponse.data;
+
       toast.dismiss(loadingToast);
-      toast.success("Passkey registered for this device! You can now login with passkey.");
-      setShowDeviceRegister(false);
-      setDeviceFormData({ email: "", password: "" });
+      setStoredAuth(access_token, user);
+      toast.success("Passkey registered and logged in successfully!");
+      router.push("/dashboard");
     } catch (error: any) {
       console.error("Device passkey registration error:", error);
       let message = "Device passkey registration failed";

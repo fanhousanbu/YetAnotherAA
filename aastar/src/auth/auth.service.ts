@@ -537,8 +537,11 @@ export class AuthService {
       // 清除challenge
       this.challengeStore.delete(`device_${registerDto.email}`);
 
+      const { password: _password, ...result } = user;
       return {
         message: "Device passkey registered successfully",
+        user: result,
+        access_token: this.generateToken(user),
       };
     } catch {
       this.challengeStore.delete(`device_${registerDto.email}`);
