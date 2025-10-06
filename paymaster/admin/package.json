@@ -13,7 +13,7 @@
     "@types/react": "^19.1.15",
     "@types/react-dom": "^19.1.9",
     "ethers": "^6.15.0",
-    "react": "^19.1.1",
+    "react": "^19.2.0",
     "react-dom": "^19.1.1",
     "typescript": "^5.9.2",
     "web-vitals": "^5.1.0"
