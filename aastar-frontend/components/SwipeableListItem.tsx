@@ -23,12 +23,13 @@ export default function SwipeableListItem({
   enabled = true,
 }: SwipeableListItemProps) {
   const [startX, setStartX] = useState(0);
+  const [startY, setStartY] = useState(0);
   const [currentX, setCurrentX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const itemRef = useRef<HTMLDivElement>(null);
-  const deleteThreshold = 80; // Pixels to swipe to trigger delete
-  const maxSwipe = 100; // Maximum swipe distance
+  const deleteThreshold = 100; // Pixels to swipe to trigger delete (full button width)
+  const maxSwipe = 120; // Maximum swipe distance (allow a bit more than threshold)
 
   // Check if mobile
   const [isMobile, setIsMobile] = useState(false);
@@ -42,9 +43,35 @@ export default function SwipeableListItem({
   // Only enable swipe on mobile
   const isSwipeEnabled = enabled && isMobile;
 
+  // Add passive:false event listener to enable preventDefault
+  useEffect(() => {
+    const element = itemRef.current;
+    if (!element || !isSwipeEnabled || !isDragging) return;
+
+    const handleTouchMoveNative = (e: TouchEvent) => {
+      const x = e.touches[0].clientX;
+      const y = e.touches[0].clientY;
+      const diffX = Math.abs(startX - x);
+      const diffY = Math.abs(startY - y);
+
+      // If horizontal movement is greater than vertical, prevent page scroll
+      // This prevents page from moving during any horizontal swipe interaction
+      if (diffX > diffY && diffX > 5) {
+        e.preventDefault();
+      }
+    };
+
+    element.addEventListener('touchmove', handleTouchMoveNative, { passive: false });
+
+    return () => {
+      element.removeEventListener('touchmove', handleTouchMoveNative);
+    };
+  }, [isSwipeEnabled, isDragging, startX, startY]);
+
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!isSwipeEnabled) return;
     setStartX(e.touches[0].clientX);
+    setStartY(e.touches[0].clientY);
     setIsDragging(true);
   };
 
@@ -52,12 +79,13 @@ export default function SwipeableListItem({
     if (!isDragging || !isSwipeEnabled) return;
 
     const x = e.touches[0].clientX;
-    const diff = startX - x;
+    const diffX = startX - x;
 
-    // Only allow left swipe (positive diff)
-    if (diff > 0) {
-      setCurrentX(Math.min(diff, maxSwipe));
+    // Only allow left swipe (positive diffX)
+    if (diffX > 0) {
+      setCurrentX(Math.min(diffX, maxSwipe));
     } else {
+      // Right swipe or no movement - reset to 0
       setCurrentX(0);
     }
   };
@@ -109,7 +137,7 @@ export default function SwipeableListItem({
   return (
     <div className={`relative overflow-hidden ${className}`}>
       {/* Delete background that shows when swiping */}
-      {isSwipeEnabled && (
+      {isSwipeEnabled && currentX > 0 && (
         <div className="absolute inset-0 bg-red-500 dark:bg-red-600 flex items-center justify-end pr-4">
           <div className="flex items-center gap-2 text-white">
             <TrashIcon className="w-5 h-5" />

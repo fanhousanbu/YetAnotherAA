@@ -176,6 +176,15 @@ export default function TokensPage() {
           </p>
         </div>
 
+        {/* Mobile Add Button - Fixed position */}
+        <button
+          onClick={openAddTokenModal}
+          className="md:hidden fixed bottom-24 right-6 z-50 inline-flex items-center justify-center w-14 h-14 text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-full shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
+          aria-label="Add Token"
+        >
+          <PlusIcon className="w-6 h-6" />
+        </button>
+
         {/* Search and Filters */}
         <div className="mb-6 space-y-4">
           {/* Search Bar */}
@@ -198,10 +207,10 @@ export default function TokensPage() {
 
           {/* Filter Controls */}
           <div className="flex flex-wrap gap-4 items-center">
-            {/* Add Token Button */}
+            {/* Add Token Button - Desktop only */}
             <button
               onClick={openAddTokenModal}
-              className="inline-flex items-center px-3 py-3 sm:py-2 border border-transparent rounded-xl text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
+              className="hidden md:inline-flex items-center px-3 py-3 sm:py-2 border border-transparent rounded-xl text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
             >
               <PlusIcon className="h-4 w-4 mr-2" />
               Add Token
@@ -221,9 +230,9 @@ export default function TokensPage() {
               key={token.id}
               onDelete={() => removeToken(token.id, token.symbol)}
               deleteText="Remove"
-              className="md:bg-white md:dark:bg-gray-800 md:rounded-2xl md:shadow-xl md:border md:border-gray-200 md:dark:border-gray-700 md:hover:shadow-2xl md:transition-all"
+              className="rounded-xl md:bg-white md:dark:bg-gray-800 md:rounded-2xl md:shadow-xl md:border md:border-gray-200 md:dark:border-gray-700 md:hover:shadow-2xl md:transition-all"
             >
-              <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-none shadow-lg md:shadow-none border border-gray-200 dark:border-gray-700 md:border-0 p-4 md:p-6 lg:p-8">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg md:shadow-none border border-gray-200 dark:border-gray-700 md:border-0 p-4 md:p-6 lg:p-8">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-3">
@@ -309,30 +318,49 @@ export default function TokensPage() {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-25 dark:bg-opacity-50" />
+            <div className="hidden md:block fixed inset-0 bg-black dark:bg-black bg-opacity-25 dark:bg-opacity-50" />
           </Transition.Child>
 
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex items-center justify-center min-h-full p-4 text-center">
+          <div className="fixed inset-0 overflow-y-auto flex items-stretch md:items-center justify-center">
+            <div className="w-full h-full md:h-auto md:w-auto md:flex-shrink-0 md:p-4">
               <Transition.Child
                 as={Fragment}
                 enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
+                enterFrom="opacity-0 md:scale-95"
+                enterTo="opacity-100 md:scale-100"
                 leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
+                leaveFrom="opacity-100 md:scale-100"
+                leaveTo="opacity-0 md:scale-95"
               >
-                <Dialog.Panel className="w-full max-w-2xl p-6 sm:p-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-2xl">
+                <Dialog.Panel className="h-full md:h-auto w-full max-w-full md:max-w-2xl p-0 md:p-6 md:sm:p-8 overflow-y-auto md:overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 md:shadow-xl md:rounded-2xl">
+                  {/* Mobile Header */}
+                  <div className="md:hidden sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center z-10">
+                    <button
+                      onClick={() => !validatingToken && setShowTokenModal(false)}
+                      className="mr-3 p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <Dialog.Title
+                      as="h3"
+                      className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100"
+                    >
+                      Add Tokens
+                    </Dialog.Title>
+                  </div>
+
+                  {/* Desktop Title */}
                   <Dialog.Title
                     as="h3"
-                    className="text-lg sm:text-xl font-medium leading-6 text-gray-900 dark:text-gray-100"
+                    className="hidden md:block text-lg sm:text-xl font-medium leading-6 text-gray-900 dark:text-gray-100"
                   >
                     Add Tokens
                   </Dialog.Title>
 
                   {/* Mode Tabs */}
-                  <div className="mt-4">
+                  <div className="mt-4 px-4 md:px-0">
                     <div className="flex space-x-1 rounded-xl bg-gray-100 dark:bg-gray-700 p-1">
                       <button
                         onClick={() => setModalMode("preset")}
@@ -358,7 +386,7 @@ export default function TokensPage() {
                   </div>
 
                   {/* Modal Content */}
-                  <div className="mt-6">
+                  <div className="mt-6 px-4 md:px-0">
                     {modalMode === "preset" ? (
                       <div>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -453,12 +481,12 @@ export default function TokensPage() {
                     )}
                   </div>
 
-                  <div className="flex flex-col sm:flex-row justify-end mt-6 gap-3">
+                  <div className="flex flex-col sm:flex-row justify-end mt-6 gap-3 px-4 md:px-0 pb-4 md:pb-0">
                     <button
                       type="button"
                       onClick={() => setShowTokenModal(false)}
                       disabled={validatingToken}
-                      className="px-4 py-3 sm:py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-slate-900 dark:focus:ring-emerald-400 disabled:opacity-50 transition-all touch-manipulation active:scale-95"
+                      className="hidden md:inline-flex px-4 py-3 sm:py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-slate-900 dark:focus:ring-emerald-400 disabled:opacity-50 transition-all touch-manipulation active:scale-95"
                     >
                       Cancel
                     </button>
@@ -470,7 +498,7 @@ export default function TokensPage() {
                         (modalMode === "custom" && !customTokenAddress) ||
                         (modalMode === "preset" && selectedPresetTokens.size === 0)
                       }
-                      className="inline-flex items-center px-4 py-3 sm:py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-slate-900 dark:focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95"
+                      className="inline-flex items-center justify-center w-full md:w-auto px-4 py-3 sm:py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-slate-900 dark:focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95"
                     >
                       {validatingToken ? (
                         <>

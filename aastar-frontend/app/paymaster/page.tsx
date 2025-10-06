@@ -144,12 +144,41 @@ export default function PaymasterPage() {
           </div>
         </div>
 
+        {/* Mobile Add Button - Fixed position */}
+        {!showAddForm && (
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="md:hidden fixed bottom-24 right-6 z-50 inline-flex items-center justify-center w-14 h-14 text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-full shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
+            aria-label="Add Paymaster"
+          >
+            <PlusIcon className="w-6 h-6" />
+          </button>
+        )}
+
         {/* Add Paymaster Form */}
         {showAddForm && (
-          <div className="p-6 sm:p-8 mb-6 bg-white border border-gray-200 rounded-2xl shadow-xl dark:bg-gray-800 dark:border-gray-700">
-            <h2 className="mb-4 text-lg sm:text-xl font-medium text-gray-900 dark:text-white">
+          <div className="md:p-6 md:sm:p-8 md:mb-6 bg-white md:border md:border-gray-200 md:rounded-2xl md:shadow-xl dark:bg-gray-800 md:dark:border-gray-700 fixed md:relative inset-0 md:inset-auto z-40 md:z-auto overflow-y-auto md:overflow-visible">
+            {/* Mobile Header */}
+            <div className="md:hidden sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center z-10">
+              <button
+                onClick={() => setShowAddForm(false)}
+                className="mr-3 p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+                Add New Paymaster
+              </h2>
+            </div>
+
+            {/* Desktop Header */}
+            <h2 className="hidden md:block mb-4 text-lg sm:text-xl font-medium text-gray-900 dark:text-white">
               Add New Paymaster
             </h2>
+
+            <div className="p-4 md:p-0">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -232,14 +261,14 @@ export default function PaymasterPage() {
             <div className="flex flex-col sm:flex-row justify-end mt-4 gap-3">
               <button
                 onClick={() => setShowAddForm(false)}
-                className="inline-flex items-center px-4 py-3 sm:py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all touch-manipulation active:scale-95"
+                className="hidden md:inline-flex items-center px-4 py-3 sm:py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all touch-manipulation active:scale-95"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddPaymaster}
                 disabled={actionLoading === "add"}
-                className="inline-flex items-center px-4 py-3 sm:py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 disabled:opacity-50 touch-manipulation active:scale-95"
+                className="inline-flex items-center justify-center w-full md:w-auto px-4 py-3 sm:py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 disabled:opacity-50 touch-manipulation active:scale-95"
               >
                 {actionLoading === "add" ? (
                   <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
@@ -248,6 +277,7 @@ export default function PaymasterPage() {
                 )}
                 Add Paymaster
               </button>
+            </div>
             </div>
           </div>
         )}
