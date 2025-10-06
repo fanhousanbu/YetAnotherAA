@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import TokenSelector from "@/components/TokenSelector";
+import TransferSkeleton from "@/components/TransferSkeleton";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { transferAPI, tokenAPI, paymasterAPI, addressBookAPI, authAPI } from "@/lib/api";
 import { GasEstimate, Token, TokenBalance } from "@/lib/types";
@@ -525,9 +526,7 @@ export default function TransferPage() {
   if (loading.page) {
     return (
       <Layout requireAuth={true}>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="w-32 h-32 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
-        </div>
+        <TransferSkeleton />
       </Layout>
     );
   }
