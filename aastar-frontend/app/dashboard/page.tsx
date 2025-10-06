@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import CopyButton from "@/components/CopyButton";
 import CreateAccountDialog from "@/components/CreateAccountDialog";
+import ReceiveModal from "@/components/ReceiveModal";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { User } from "@/lib/types";
 import { getStoredAuth } from "@/lib/auth";
@@ -18,6 +19,8 @@ import {
   ExclamationCircleIcon,
   CpuChipIcon,
   ArrowPathIcon,
+  ArrowDownIcon,
+  QrCodeIcon,
 } from "@heroicons/react/24/outline";
 
 function DashboardContent() {
@@ -31,6 +34,7 @@ function DashboardContent() {
 
   const [user, setUser] = useState<User | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [refreshingBalance, setRefreshingBalance] = useState(false);
   const [pullToRefresh, setPullToRefresh] = useState({
     pulling: false,
@@ -122,19 +126,20 @@ function DashboardContent() {
     }
   };
 
-  const showTopUpInfo = () => {
+  const handleReceive = () => {
     if (!account?.address) {
       toast.error("No account address found");
       return;
     }
 
-    toast.success(
-      `Send ETH directly to your Smart Account: ${account.address.slice(0, 10)}...${account.address.slice(-8)}\nAddress copied to clipboard!`,
-      { duration: 6000 }
-    );
-
-    // Copy address to clipboard
-    navigator.clipboard.writeText(account.address);
+    // Check if mobile view
+    if (window.innerWidth < 768) {
+      // Navigate to receive page on mobile
+      router.push("/receive");
+    } else {
+      // Show modal on desktop
+      setShowReceiveModal(true);
+    }
   };
 
   const formatLastUpdated = () => {
@@ -435,11 +440,11 @@ function DashboardContent() {
                             Send Transfer
                           </button>
                           <button
-                            onClick={showTopUpInfo}
+                            onClick={handleReceive}
                             className="flex-1 inline-flex items-center justify-center px-4 py-3 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all touch-manipulation active:scale-95"
                           >
-                            <PlusIcon className="w-4 h-4 mr-2" />
-                            Top Up
+                            <QrCodeIcon className="w-4 h-4 mr-2" />
+                            Receive
                           </button>
                         </>
                       )}
@@ -712,6 +717,15 @@ function DashboardContent() {
           onClose={() => setShowCreateDialog(false)}
           onSuccess={handleAccountCreated}
         />
+
+        {/* Receive Modal */}
+        {account && (
+          <ReceiveModal
+            isOpen={showReceiveModal}
+            onClose={() => setShowReceiveModal(false)}
+            address={account.address}
+          />
+        )}
       </div>
     </Layout>
   );

@@ -9,6 +9,8 @@ interface CopyButtonProps {
   displayText?: string;
   className?: string;
   showFullText?: boolean;
+  showToast?: boolean;
+  buttonStyle?: "default" | "custom";
 }
 
 export default function CopyButton({
@@ -16,19 +18,21 @@ export default function CopyButton({
   displayText,
   className = "",
   showFullText = false,
+  showToast = true,
+  buttonStyle = "default",
 }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = async () => {
     if (!text) {
-      toast.error("No text to copy");
+      if (showToast) toast.error("No text to copy");
       return;
     }
 
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      toast.success("Address copied to clipboard!");
+      if (showToast) toast.success("Address copied to clipboard!");
 
       // Reset icon after 2 seconds
       setTimeout(() => {
@@ -43,12 +47,12 @@ export default function CopyButton({
       try {
         document.execCommand("copy");
         setCopied(true);
-        toast.success("Address copied to clipboard!");
+        if (showToast) toast.success("Address copied to clipboard!");
         setTimeout(() => {
           setCopied(false);
         }, 2000);
       } catch (_fallbackErr) {
-        toast.error("Failed to copy address");
+        if (showToast) toast.error("Failed to copy address");
       }
       document.body.removeChild(textArea);
     }
@@ -59,6 +63,26 @@ export default function CopyButton({
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
+  // If custom button style, render as a button only
+  if (buttonStyle === "custom") {
+    return (
+      <button onClick={copyToClipboard} className={className} title="Copy address to clipboard">
+        {copied ? (
+          <>
+            <CheckIcon className="h-4 w-4 text-white inline mr-2" />
+            Copied!
+          </>
+        ) : (
+          <>
+            <DocumentDuplicateIcon className="h-4 w-4 inline mr-2" />
+            Copy Address
+          </>
+        )}
+      </button>
+    );
+  }
+
+  // Default style with text and icon
   return (
     <div className={`inline-flex items-center space-x-2 ${className}`}>
       <span className="text-sm font-mono text-gray-800 dark:text-gray-200" title={text || ""}>

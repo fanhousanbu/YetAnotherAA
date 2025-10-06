@@ -10,19 +10,24 @@ and this project adheres to
 
 ### 🔒 Security
 
-- Fixed code scanning alert no. 9: Use of externally-controlled format string in `gossip.service.ts`
-- Fixed code scanning alert no. 40: Use of externally-controlled format string in error logging
+- Fixed code scanning alert no. 9: Use of externally-controlled format string in
+  `gossip.service.ts`
+- Fixed code scanning alert no. 40: Use of externally-controlled format string
+  in error logging
 
 ### 🎨 Improvements
 
 - Code formatting cleanup
 - Updated README.md with corrected architecture diagram alignment
-- Updated transaction proof example to latest successful transfer (`0x39f8dbf5...30139f985`)
+- Updated transaction proof example to latest successful transfer
+  (`0x39f8dbf5...30139f985`)
 
 ### 🔧 Technical Changes
 
-- Modified `signer/src/modules/gossip/gossip.service.ts` to use safer string formatting patterns
-- Replaced template literals in error messages with parameterized format strings to prevent potential injection vulnerabilities
+- Modified `signer/src/modules/gossip/gossip.service.ts` to use safer string
+  formatting patterns
+- Replaced template literals in error messages with parameterized format strings
+  to prevent potential injection vulnerabilities
 
 ## [0.2.0] - 2025-10-03
 
