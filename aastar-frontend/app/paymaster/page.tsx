@@ -165,7 +165,12 @@ export default function PaymasterPage() {
                 className="mr-3 p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
                 </svg>
               </button>
               <h2 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -179,105 +184,107 @@ export default function PaymasterPage() {
             </h2>
 
             <div className="p-4 md:p-0">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={newPaymaster.name}
-                  onChange={e => setNewPaymaster(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="My Paymaster"
-                  autoComplete="off"
-                  className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Contract Address
-                </label>
-                <input
-                  type="text"
-                  value={newPaymaster.address}
-                  onChange={e => setNewPaymaster(prev => ({ ...prev, address: e.target.value }))}
-                  placeholder="0x..."
-                  autoComplete="off"
-                  autoCapitalize="off"
-                  autoCorrect="off"
-                  spellCheck="false"
-                  className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all font-mono"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Type
-                </label>
-                <select
-                  value={newPaymaster.type}
-                  onChange={e =>
-                    setNewPaymaster(prev => ({
-                      ...prev,
-                      type: e.target.value as "pimlico" | "stackup" | "alchemy" | "custom",
-                    }))
-                  }
-                  className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm transition-all"
-                >
-                  <option value="custom">Custom</option>
-                  <option value="pimlico">Pimlico</option>
-                  <option value="stackup">StackUp</option>
-                  <option value="alchemy">Alchemy</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  API Key (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={newPaymaster.apiKey}
-                  onChange={e => setNewPaymaster(prev => ({ ...prev, apiKey: e.target.value }))}
-                  placeholder="For API-based paymasters"
-                  autoComplete="off"
-                  className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all"
-                />
-              </div>
-              {newPaymaster.type !== "custom" && (
-                <div className="md:col-span-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Endpoint (Optional)
+                    Name
                   </label>
                   <input
                     type="text"
-                    value={newPaymaster.endpoint}
-                    onChange={e => setNewPaymaster(prev => ({ ...prev, endpoint: e.target.value }))}
-                    placeholder="API endpoint URL"
+                    value={newPaymaster.name}
+                    onChange={e => setNewPaymaster(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="My Paymaster"
                     autoComplete="off"
                     className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                   />
                 </div>
-              )}
-            </div>
-            <div className="flex flex-col sm:flex-row justify-end mt-4 gap-3">
-              <button
-                onClick={() => setShowAddForm(false)}
-                className="hidden md:inline-flex items-center px-4 py-3 sm:py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all touch-manipulation active:scale-95"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddPaymaster}
-                disabled={actionLoading === "add"}
-                className="inline-flex items-center justify-center w-full md:w-auto px-4 py-3 sm:py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 disabled:opacity-50 touch-manipulation active:scale-95"
-              >
-                {actionLoading === "add" ? (
-                  <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
-                ) : (
-                  <PlusIcon className="w-4 h-4 mr-2" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Contract Address
+                  </label>
+                  <input
+                    type="text"
+                    value={newPaymaster.address}
+                    onChange={e => setNewPaymaster(prev => ({ ...prev, address: e.target.value }))}
+                    placeholder="0x..."
+                    autoComplete="off"
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Type
+                  </label>
+                  <select
+                    value={newPaymaster.type}
+                    onChange={e =>
+                      setNewPaymaster(prev => ({
+                        ...prev,
+                        type: e.target.value as "pimlico" | "stackup" | "alchemy" | "custom",
+                      }))
+                    }
+                    className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm transition-all"
+                  >
+                    <option value="custom">Custom</option>
+                    <option value="pimlico">Pimlico</option>
+                    <option value="stackup">StackUp</option>
+                    <option value="alchemy">Alchemy</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    API Key (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newPaymaster.apiKey}
+                    onChange={e => setNewPaymaster(prev => ({ ...prev, apiKey: e.target.value }))}
+                    placeholder="For API-based paymasters"
+                    autoComplete="off"
+                    className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                  />
+                </div>
+                {newPaymaster.type !== "custom" && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Endpoint (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={newPaymaster.endpoint}
+                      onChange={e =>
+                        setNewPaymaster(prev => ({ ...prev, endpoint: e.target.value }))
+                      }
+                      placeholder="API endpoint URL"
+                      autoComplete="off"
+                      className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                    />
+                  </div>
                 )}
-                Add Paymaster
-              </button>
-            </div>
+              </div>
+              <div className="flex flex-col sm:flex-row justify-end mt-4 gap-3">
+                <button
+                  onClick={() => setShowAddForm(false)}
+                  className="hidden md:inline-flex items-center px-4 py-3 sm:py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all touch-manipulation active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddPaymaster}
+                  disabled={actionLoading === "add"}
+                  className="inline-flex items-center justify-center w-full md:w-auto px-4 py-3 sm:py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 disabled:opacity-50 touch-manipulation active:scale-95"
+                >
+                  {actionLoading === "add" ? (
+                    <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
+                  ) : (
+                    <PlusIcon className="w-4 h-4 mr-2" />
+                  )}
+                  Add Paymaster
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -331,7 +338,7 @@ export default function PaymasterPage() {
                             <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                               {paymaster.name}
                             </h3>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">
+                            <p className="text-xs text-gray-600 dark:text-gray-400 font-mono break-all">
                               {paymaster.address}
                             </p>
                           </div>

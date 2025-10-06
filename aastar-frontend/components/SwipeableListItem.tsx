@@ -61,10 +61,10 @@ export default function SwipeableListItem({
       }
     };
 
-    element.addEventListener('touchmove', handleTouchMoveNative, { passive: false });
+    element.addEventListener("touchmove", handleTouchMoveNative, { passive: false });
 
     return () => {
-      element.removeEventListener('touchmove', handleTouchMoveNative);
+      element.removeEventListener("touchmove", handleTouchMoveNative);
     };
   }, [isSwipeEnabled, isDragging, startX, startY]);
 

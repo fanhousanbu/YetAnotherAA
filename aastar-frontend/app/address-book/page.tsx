@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { addressBookAPI } from "@/lib/api";
 import SwipeableListItem from "@/components/SwipeableListItem";
@@ -17,6 +18,7 @@ interface AddressBookEntry {
 }
 
 export default function AddressBookPage() {
+  const router = useRouter();
   const [addressBook, setAddressBook] = useState<AddressBookEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingAddress, setEditingAddress] = useState<string | null>(null);
@@ -118,13 +120,36 @@ export default function AddressBookPage() {
 
   return (
     <Layout requireAuth={true}>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pb-24 pt-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
+      <div className="min-h-screen bg-slate-100 dark:bg-slate-950 pb-24 px-4 sm:px-6 lg:px-8">
+        {/* Mobile Header with Back Button */}
+        <div className="md:hidden sticky top-0 bg-slate-100 dark:bg-slate-950 z-30 -mx-4 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="p-2 -ml-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white touch-manipulation active:scale-95"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+            <div className="flex items-center gap-2 flex-1">
+              <BookOpenIcon className="w-6 h-6 text-slate-900 dark:text-emerald-400 flex-shrink-0" />
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">Address Book</h1>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto pt-4 md:pt-8">
+          {/* Header - Desktop only */}
+          <div className="hidden md:block mb-8">
             <div className="flex items-center justify-between gap-4 mb-4">
               <div className="flex items-center min-w-0 flex-1">
-                <BookOpenIcon className="w-10 h-10 text-blue-600 dark:text-blue-400 mr-3 flex-shrink-0" />
+                <BookOpenIcon className="w-10 h-10 text-slate-900 dark:text-emerald-400 mr-3 flex-shrink-0" />
                 <div className="min-w-0">
                   <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                     Address Book
@@ -136,22 +161,54 @@ export default function AddressBookPage() {
               </div>
               <button
                 onClick={() => setShowAddForm(!showAddForm)}
-                className="inline-flex items-center px-3 sm:px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all whitespace-nowrap flex-shrink-0"
+                className="inline-flex items-center px-4 py-3 sm:py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
               >
-                <PlusIcon className="w-5 h-5 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Add Address</span>
-                <span className="inline sm:hidden">Add</span>
+                <PlusIcon className="w-4 h-4 mr-2" />
+                Add Address
               </button>
             </div>
           </div>
 
+          {/* Mobile Add Button - Fixed position */}
+          {!showAddForm && (
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="md:hidden fixed bottom-24 right-6 z-50 inline-flex items-center justify-center w-14 h-14 text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-full shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
+              aria-label="Add Address"
+            >
+              <PlusIcon className="w-6 h-6" />
+            </button>
+          )}
+
           {/* Add Address Form */}
           {showAddForm && (
-            <div className="mb-6 p-6 bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-600 rounded-2xl shadow-lg">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <div className="md:p-6 md:mb-6 bg-white md:border-2 md:border-slate-200 md:rounded-2xl md:shadow-lg dark:bg-gray-800 md:dark:border-slate-700 fixed md:relative inset-0 md:inset-auto z-40 md:z-auto overflow-y-auto md:overflow-visible">
+              {/* Mobile Header */}
+              <div className="md:hidden sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center z-10">
+                <button
+                  onClick={() => setShowAddForm(false)}
+                  className="mr-3 p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                </button>
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+                  Add New Address
+                </h2>
+              </div>
+
+              {/* Desktop Header */}
+              <h3 className="hidden md:block text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Add New Address
               </h3>
-              <div className="space-y-4">
+
+              <div className="p-4 md:p-0 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Address
@@ -161,7 +218,7 @@ export default function AddressBookPage() {
                     value={newAddress}
                     onChange={e => setNewAddress(e.target.value)}
                     placeholder="0x..."
-                    className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all font-mono"
+                    className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all font-mono"
                   />
                 </div>
                 <div>
@@ -173,13 +230,13 @@ export default function AddressBookPage() {
                     value={newName}
                     onChange={e => setNewName(e.target.value)}
                     placeholder="e.g., Alice's Wallet"
-                    className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                    className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all"
                   />
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 md:mt-4">
                   <button
                     onClick={handleAddAddress}
-                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    className="flex-1 px-4 py-3 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all touch-manipulation active:scale-95 shadow-lg hover:shadow-xl"
                   >
                     Add Address
                   </button>
@@ -189,7 +246,7 @@ export default function AddressBookPage() {
                       setNewAddress("");
                       setNewName("");
                     }}
-                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all"
+                    className="flex-1 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all touch-manipulation active:scale-95"
                   >
                     Cancel
                   </button>
@@ -199,124 +256,132 @@ export default function AddressBookPage() {
           )}
 
           {/* Address List */}
-          {addressBook.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
-              <BookOpenIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                No saved addresses
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-6">
-                Add addresses to quickly access them during transfers
-              </p>
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-              >
-                <PlusIcon className="w-5 h-5 mr-2" />
-                Add Your First Address
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {addressBook.map(entry => (
-                <SwipeableListItem
-                  key={entry.address}
-                  onDelete={() => handleDeleteAddress(entry.address)}
-                  deleteText="Delete"
-                  className="rounded-2xl"
-                  enabled={editingAddress !== entry.address}
-                >
-                  <div className="p-6 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg hover:shadow-xl transition-all">
-                    {editingAddress === entry.address ? (
-                      // Edit mode
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Name
-                          </label>
-                          <input
-                            type="text"
-                            value={editingName}
-                            onChange={e => setEditingName(e.target.value)}
-                            placeholder="Enter name"
-                            className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all"
-                          />
-                        </div>
-                        <div className="flex gap-3">
-                          <button
-                            onClick={() => handleUpdateName(entry.address)}
-                            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 dark:bg-green-500 rounded-xl hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditingAddress(null);
-                              setEditingName("");
-                            }}
-                            className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      // View mode
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          {entry.name && (
-                            <div className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                              {entry.name}
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800">
+            <div className="p-6">
+              <h2 className="mb-4 text-lg sm:text-xl font-medium text-gray-900 dark:text-white">
+                Saved Addresses ({addressBook.length})
+              </h2>
+
+              {addressBook.length === 0 ? (
+                <div className="text-center py-8">
+                  <BookOpenIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-base font-medium text-gray-900 dark:text-white mb-2">
+                    No saved addresses
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                    Add addresses to quickly access them during transfers
+                  </p>
+                  <button
+                    onClick={() => setShowAddForm(true)}
+                    className="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all touch-manipulation active:scale-95 shadow-lg hover:shadow-xl"
+                  >
+                    <PlusIcon className="w-5 h-5 mr-2" />
+                    Add Your First Address
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {addressBook.map(entry => (
+                    <SwipeableListItem
+                      key={entry.address}
+                      onDelete={() => handleDeleteAddress(entry.address)}
+                      deleteText="Delete"
+                      className="rounded-2xl"
+                      enabled={editingAddress !== entry.address}
+                    >
+                      <div className="p-6 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg hover:shadow-xl transition-all">
+                        {editingAddress === entry.address ? (
+                          // Edit mode
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Name
+                              </label>
+                              <input
+                                type="text"
+                                value={editingName}
+                                onChange={e => setEditingName(e.target.value)}
+                                placeholder="Enter name"
+                                className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                              />
                             </div>
-                          )}
-                          <div className="text-sm font-mono text-gray-600 dark:text-gray-400 break-all">
-                            {entry.address}
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => handleUpdateName(entry.address)}
+                                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 transition-all touch-manipulation active:scale-95"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingAddress(null);
+                                  setEditingName("");
+                                }}
+                                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all touch-manipulation active:scale-95"
+                              >
+                                Cancel
+                              </button>
+                            </div>
                           </div>
-                          <div className="mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                            {entry.usageCount > 0 ? (
-                              <>
-                                <span>Used {entry.usageCount} times</span>
-                                {entry.firstUsed && (
-                                  <span>
-                                    First used{" "}
-                                    {new Date(entry.firstUsed).toLocaleDateString("en-US", {
-                                      month: "short",
-                                      day: "numeric",
-                                      year: "numeric",
-                                    })}
-                                  </span>
+                        ) : (
+                          // View mode
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              {entry.name && (
+                                <div className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                                  {entry.name}
+                                </div>
+                              )}
+                              <div className="text-sm font-mono text-gray-600 dark:text-gray-400 break-all">
+                                {entry.address}
+                              </div>
+                              <div className="mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                                {entry.usageCount > 0 ? (
+                                  <>
+                                    <span>Used {entry.usageCount} times</span>
+                                    {entry.firstUsed && (
+                                      <span>
+                                        First used{" "}
+                                        {new Date(entry.firstUsed).toLocaleDateString("en-US", {
+                                          month: "short",
+                                          day: "numeric",
+                                          year: "numeric",
+                                        })}
+                                      </span>
+                                    )}
+                                  </>
+                                ) : (
+                                  entry.firstUsed && (
+                                    <span>
+                                      Added{" "}
+                                      {new Date(entry.firstUsed).toLocaleDateString("en-US", {
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric",
+                                      })}
+                                    </span>
+                                  )
                                 )}
-                              </>
-                            ) : (
-                              entry.firstUsed && (
-                                <span>
-                                  Added{" "}
-                                  {new Date(entry.firstUsed).toLocaleDateString("en-US", {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  })}
-                                </span>
-                              )
-                            )}
+                              </div>
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              <button
+                                onClick={() => startEdit(entry)}
+                                className="p-2 text-slate-900 dark:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-800/30 rounded-lg transition-all md:block"
+                                title="Edit name"
+                              >
+                                <PencilIcon className="w-5 h-5" />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex gap-2 ml-4">
-                          <button
-                            onClick={() => startEdit(entry)}
-                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all md:block"
-                            title="Edit name"
-                          >
-                            <PencilIcon className="w-5 h-5" />
-                          </button>
-                        </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </SwipeableListItem>
-              ))}
+                    </SwipeableListItem>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </Layout>
