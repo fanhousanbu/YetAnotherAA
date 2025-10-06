@@ -5,6 +5,7 @@ import Layout from "@/components/Layout";
 import { userTokenAPI, tokenAPI } from "@/lib/api";
 import { UserToken, Token } from "@/lib/types";
 import TokenIcon from "@/components/TokenIcon";
+import SwipeableListItem from "@/components/SwipeableListItem";
 import toast from "react-hot-toast";
 import { MagnifyingGlassIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Dialog, Transition } from "@headlessui/react";
@@ -213,55 +214,48 @@ export default function TokensPage() {
           </div>
         </div>
 
-        {/* Token Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Token List - Mobile responsive */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {filteredTokens.map(token => (
-            <div
+            <SwipeableListItem
               key={token.id}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 hover:shadow-2xl transition-all"
+              onDelete={() => removeToken(token.id, token.symbol)}
+              deleteText="Remove"
+              className="md:bg-white md:dark:bg-gray-800 md:rounded-2xl md:shadow-xl md:border md:border-gray-200 md:dark:border-gray-700 md:hover:shadow-2xl md:transition-all"
             >
-              {/* Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  {/* Token Icon */}
-                  <TokenIcon token={token} size="xl" />
+              <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-none shadow-lg md:shadow-none border border-gray-200 dark:border-gray-700 md:border-0 p-4 md:p-6 lg:p-8">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    {/* Token Icon */}
+                    <TokenIcon token={token} size="xl" />
 
-                  {/* Token Info */}
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                        {token.symbol}
-                      </h3>
-                      {token.isCustom && (
-                        <span className="px-2 py-1 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded">
-                          Custom
-                        </span>
-                      )}
+                    {/* Token Info */}
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          {token.symbol}
+                        </h3>
+                        {token.isCustom && (
+                          <span className="px-2 py-1 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded">
+                            Custom
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{token.name}</p>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{token.name}</p>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center space-x-1">
-                  <button
-                    onClick={() => removeToken(token.id, token.symbol)}
-                    className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded touch-manipulation active:scale-95"
-                    title="Remove token"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
+                {/* Footer */}
+                <div className="flex items-center justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+                  {/* Address */}
+                  <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                    {token.address.slice(0, 6)}...{token.address.slice(-4)}
+                  </div>
                 </div>
               </div>
-
-              {/* Footer */}
-              <div className="flex items-center justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
-                {/* Address */}
-                <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                  {token.address.slice(0, 6)}...{token.address.slice(-4)}
-                </div>
-              </div>
-            </div>
+            </SwipeableListItem>
           ))}
         </div>
 

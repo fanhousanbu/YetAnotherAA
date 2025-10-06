@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { addressBookAPI } from "@/lib/api";
+import SwipeableListItem from "@/components/SwipeableListItem";
 import toast from "react-hot-toast";
 import { TrashIcon, PencilIcon, PlusIcon, BookOpenIcon } from "@heroicons/react/24/outline";
 
@@ -218,103 +219,101 @@ export default function AddressBookPage() {
           ) : (
             <div className="space-y-4">
               {addressBook.map(entry => (
-                <div
+                <SwipeableListItem
                   key={entry.address}
-                  className="p-6 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg hover:shadow-xl transition-all"
+                  onDelete={() => handleDeleteAddress(entry.address)}
+                  deleteText="Delete"
+                  className="rounded-2xl"
+                  enabled={editingAddress !== entry.address}
                 >
-                  {editingAddress === entry.address ? (
-                    // Edit mode
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Name
-                        </label>
-                        <input
-                          type="text"
-                          value={editingName}
-                          onChange={e => setEditingName(e.target.value)}
-                          placeholder="Enter name"
-                          className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all"
-                        />
-                      </div>
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => handleUpdateName(entry.address)}
-                          className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 dark:bg-green-500 rounded-xl hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingAddress(null);
-                            setEditingName("");
-                          }}
-                          className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    // View mode
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        {entry.name && (
-                          <div className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                            {entry.name}
-                          </div>
-                        )}
-                        <div className="text-sm font-mono text-gray-600 dark:text-gray-400 break-all">
-                          {entry.address}
+                  <div className="p-6 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg hover:shadow-xl transition-all">
+                    {editingAddress === entry.address ? (
+                      // Edit mode
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Name
+                          </label>
+                          <input
+                            type="text"
+                            value={editingName}
+                            onChange={e => setEditingName(e.target.value)}
+                            placeholder="Enter name"
+                            className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+                          />
                         </div>
-                        <div className="mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                          {entry.usageCount > 0 ? (
-                            <>
-                              <span>Used {entry.usageCount} times</span>
-                              {entry.firstUsed && (
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => handleUpdateName(entry.address)}
+                            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 dark:bg-green-500 rounded-xl hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingAddress(null);
+                              setEditingName("");
+                            }}
+                            className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      // View mode
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          {entry.name && (
+                            <div className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                              {entry.name}
+                            </div>
+                          )}
+                          <div className="text-sm font-mono text-gray-600 dark:text-gray-400 break-all">
+                            {entry.address}
+                          </div>
+                          <div className="mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                            {entry.usageCount > 0 ? (
+                              <>
+                                <span>Used {entry.usageCount} times</span>
+                                {entry.firstUsed && (
+                                  <span>
+                                    First used{" "}
+                                    {new Date(entry.firstUsed).toLocaleDateString("en-US", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              entry.firstUsed && (
                                 <span>
-                                  First used{" "}
+                                  Added{" "}
                                   {new Date(entry.firstUsed).toLocaleDateString("en-US", {
                                     month: "short",
                                     day: "numeric",
                                     year: "numeric",
                                   })}
                                 </span>
-                              )}
-                            </>
-                          ) : (
-                            entry.firstUsed && (
-                              <span>
-                                Added{" "}
-                                {new Date(entry.firstUsed).toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })}
-                              </span>
-                            )
-                          )}
+                              )
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <button
+                            onClick={() => startEdit(entry)}
+                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all md:block"
+                            title="Edit name"
+                          >
+                            <PencilIcon className="w-5 h-5" />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex gap-2 ml-4">
-                        <button
-                          onClick={() => startEdit(entry)}
-                          className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all"
-                          title="Edit name"
-                        >
-                          <PencilIcon className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteAddress(entry.address)}
-                          className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all"
-                          title="Delete address"
-                        >
-                          <TrashIcon className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                </SwipeableListItem>
               ))}
             </div>
           )}

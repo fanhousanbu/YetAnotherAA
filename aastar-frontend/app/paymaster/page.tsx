@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { paymasterAPI } from "@/lib/api";
+import SwipeableListItem from "@/components/SwipeableListItem";
 import toast from "react-hot-toast";
 import {
   TrashIcon,
@@ -280,50 +281,45 @@ export default function PaymasterPage() {
             ) : (
               <div className="space-y-4">
                 {paymasters.map(paymaster => (
-                  <div
+                  <SwipeableListItem
                     key={paymaster.address}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-xl dark:border-gray-700"
+                    onDelete={() => handleRemovePaymaster(paymaster.name)}
+                    onDeleteStart={() => setActionLoading(`remove-${paymaster.name}`)}
+                    onDeleteEnd={() => setActionLoading("")}
+                    deleteText="Remove"
+                    className="rounded-xl"
                   >
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        {paymaster.configured ? (
-                          <CheckCircleIcon className="w-5 h-5 mr-2 text-green-500" />
-                        ) : (
-                          <ExclamationCircleIcon className="w-5 h-5 mr-2 text-yellow-500" />
-                        )}
-                        <div>
-                          <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                            {paymaster.name}
-                          </h3>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">
-                            {paymaster.address}
-                          </p>
+                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl dark:border-gray-700 bg-white dark:bg-gray-800">
+                      <div className="flex-1">
+                        <div className="flex items-center">
+                          {paymaster.configured ? (
+                            <CheckCircleIcon className="w-5 h-5 mr-2 text-green-500" />
+                          ) : (
+                            <ExclamationCircleIcon className="w-5 h-5 mr-2 text-yellow-500" />
+                          )}
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                              {paymaster.name}
+                            </h3>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">
+                              {paymaster.address}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          {paymaster.configured ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                              API Configured
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                              Address Only
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <div className="mt-2">
-                        {paymaster.configured ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                            API Configured
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
-                            Address Only
-                          </span>
-                        )}
-                      </div>
                     </div>
-                    <button
-                      onClick={() => handleRemovePaymaster(paymaster.name)}
-                      disabled={actionLoading === `remove-${paymaster.name}`}
-                      className="inline-flex items-center px-3 py-3 sm:py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-xl shadow-sm dark:bg-gray-800 dark:border-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 transition-all touch-manipulation active:scale-95"
-                    >
-                      {actionLoading === `remove-${paymaster.name}` ? (
-                        <div className="w-4 h-4 border-b-2 border-red-600 rounded-full animate-spin"></div>
-                      ) : (
-                        <TrashIcon className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
+                  </SwipeableListItem>
                 ))}
               </div>
             )}
