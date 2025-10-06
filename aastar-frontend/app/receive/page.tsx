@@ -23,7 +23,9 @@ export default function ReceivePage() {
       // If not mobile, redirect to dashboard
       if (!mobile) {
         router.push("/dashboard");
-        toast.info("Please use the Receive button on desktop");
+        toast("Please use the Receive button on desktop", {
+          icon: "ℹ️",
+        });
       }
     };
 
