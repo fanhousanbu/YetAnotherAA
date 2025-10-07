@@ -75,9 +75,9 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
     const baseClass =
       "flex flex-col items-center justify-center flex-1 py-2 px-1 transition-all duration-200 touch-manipulation active:scale-95";
     if (isActive) {
-      return `${baseClass} text-slate-900 dark:text-emerald-400`;
+      return `${baseClass} text-slate-900 dark:text-emerald-400 font-semibold`;
     }
-    return `${baseClass} text-gray-600 dark:text-gray-400`;
+    return `${baseClass} text-gray-400 dark:text-gray-500`;
   };
 
   return (
@@ -230,8 +230,10 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
           >
             <div className="p-4 space-y-2">
               {/* User Info */}
-              <div className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 bg-slate-50 dark:bg-gray-900/50 rounded-lg">
-                <div className="font-medium truncate">{user.username || user.email}</div>
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                <div className="text-base font-semibold text-gray-900 dark:text-white truncate">
+                  {user.username || user.email}
+                </div>
               </div>
 
               {/* Address Book */}
