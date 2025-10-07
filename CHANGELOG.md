@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-10-07
+
+### ✨ New Features
+
+- **NFT Support**: Added comprehensive NFT management functionality
+  - Support for ERC-721 and ERC-1155 standards
+  - NFT collection view with metadata display
+  - Automatic NFT metadata fetching from IPFS
+  - NFT ownership verification
+
+- **Data Management Tools**: Implemented persistent data export/import
+  functionality
+  - Export all user data as compressed archive (.tar.gz)
+  - Import data with backup and rollback protection
+  - Password-protected operations for security
+  - Automatic backup before import
+
+### 🎨 UI Improvements
+
+- Enhanced user interface with better visual design
+- Improved responsive layout for mobile devices
+- Optimized NFT display cards with collection grouping
+- Better error handling and user feedback
+
+### 🔧 Technical Improvements
+
+- Unified HTTP client usage (axios) across backend services
+- Fixed TypeScript type errors in API calls
+- Improved code consistency and maintainability
+
 ## [0.3.0] - 2025-10-06
 
 ### 📱 Mobile Optimization
