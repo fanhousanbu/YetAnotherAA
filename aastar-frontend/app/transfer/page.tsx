@@ -15,6 +15,7 @@ import {
   CheckCircleIcon,
   WalletIcon,
   ArrowPathIcon,
+  InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 
 export default function TransferPage() {

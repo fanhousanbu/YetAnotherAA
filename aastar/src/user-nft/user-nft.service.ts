@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { UserNFT, NFTStandard } from "../entities/user-nft.entity";
 import * as fs from "fs";
 import * as path from "path";
+import axios from "axios";
 
 export interface CreateUserNFTDto {
   contractAddress: string;
@@ -321,12 +322,11 @@ export class UserNFTService {
       const resolvedURI = this.resolveIPFSUrl(tokenURI);
 
       // Fetch metadata JSON
-      const response = await fetch(resolvedURI);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch metadata: ${response.statusText}`);
-      }
+      const response = await axios.get(resolvedURI, {
+        timeout: 10000, // 10 second timeout
+      });
 
-      return await response.json();
+      return response.data;
     } catch (error) {
       console.error("Error fetching NFT metadata:", error);
       return {};

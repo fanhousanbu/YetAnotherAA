@@ -137,10 +137,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
             // Get balance for each user token
             const balancePromises = userTokens.map(async (userToken: any) => {
               try {
-                const balanceResponse = await tokenAPI.getTokenBalance(
-                  userToken.address,
-                  accountData.address
-                );
+                const balanceResponse = await tokenAPI.getTokenBalance(userToken.address);
                 return balanceResponse.data;
               } catch (error) {
                 console.error(`Failed to get balance for ${userToken.symbol}:`, error);
@@ -193,10 +190,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           // Get balance for each user token
           const balancePromises = userTokens.map(async (userToken: any) => {
             try {
-              const balanceResponse = await tokenAPI.getTokenBalance(
-                userToken.address,
-                accountResponse.data.address
-              );
+              const balanceResponse = await tokenAPI.getTokenBalance(userToken.address);
               return balanceResponse.data;
             } catch (error) {
               console.error(`Failed to get balance for ${userToken.symbol}:`, error);
