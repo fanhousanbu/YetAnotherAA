@@ -12,9 +12,7 @@ import toast from "react-hot-toast";
 import { startAuthentication } from "@simplewebauthn/browser";
 import {
   ArrowTopRightOnSquareIcon,
-  InformationCircleIcon,
   CheckCircleIcon,
-  XMarkIcon,
   WalletIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
@@ -44,7 +42,6 @@ export default function TransferPage() {
   });
   const [transferResult, setTransferResult] = useState<any>(null);
   const [transferStatus, setTransferStatus] = useState<any>(null);
-  const [showDeploymentBanner, setShowDeploymentBanner] = useState(false);
   const [pullToRefresh, setPullToRefresh] = useState({
     pulling: false,
     distance: 0,
@@ -59,13 +56,6 @@ export default function TransferPage() {
   useEffect(() => {
     loadPageData();
   }, []);
-
-  // Show deployment banner if account is not deployed
-  useEffect(() => {
-    if (account && !account.deployed) {
-      setShowDeploymentBanner(true);
-    }
-  }, [account]);
 
   const loadPageData = async () => {
     setLoading(prev => ({ ...prev, page: true }));
@@ -587,35 +577,6 @@ export default function TransferPage() {
                 </p>
               </div>
             </div>
-
-            {/* Deployment Banner */}
-            {showDeploymentBanner && (
-              <div className="p-4 mb-6 border-l-4 border-slate-900 dark:border-emerald-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <InformationCircleIcon className="w-5 h-5 text-slate-900 dark:text-emerald-400" />
-                  </div>
-                  <div className="flex-1 ml-3">
-                    <p className="text-sm text-slate-700 dark:text-slate-300">
-                      <strong>First Transfer:</strong> Your smart account will be automatically
-                      deployed with your first transfer - no additional gas fees required!
-                    </p>
-                  </div>
-                  <div className="pl-3 ml-auto">
-                    <div className="-mx-1.5 -my-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setShowDeploymentBanner(false)}
-                        className="inline-flex bg-slate-50 dark:bg-slate-800/50 rounded-xl p-1.5 text-slate-900 dark:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800/50 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all"
-                      >
-                        <span className="sr-only">Dismiss</span>
-                        <XMarkIcon className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Asset Selection - Moved to top */}
             <div className="mb-6">
@@ -1221,30 +1182,6 @@ export default function TransferPage() {
                         : `Send ${selectedToken.symbol}`;
                     })()}
                   </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Info */}
-            <div className="p-4 mt-6 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-              <div className="flex">
-                <InformationCircleIcon className="w-5 h-5 text-slate-900 dark:text-emerald-400" />
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                    How it works
-                  </h3>
-                  <div className="mt-2 text-sm text-slate-700 dark:text-slate-300">
-                    <ul className="space-y-1 list-disc list-inside">
-                      <li>
-                        Support for ETH and ERC20 token transfers (PNTs, PIM, and custom tokens)
-                      </li>
-                      <li>Gas fees are automatically handled - no need to hold ETH for gas</li>
-                      <li>Enable Paymaster for sponsored transactions (zero gas cost!)</li>
-                      <li>Add custom tokens by entering their contract address</li>
-                      <li>BLS nodes are automatically selected from the gossip network</li>
-                      <li>Uses ERC-4337 UserOperation with BLS aggregate signatures</li>
-                    </ul>
-                  </div>
                 </div>
               </div>
             </div>

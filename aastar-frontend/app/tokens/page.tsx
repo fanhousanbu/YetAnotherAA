@@ -1,17 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { userTokenAPI, tokenAPI } from "@/lib/api";
 import { UserToken, Token } from "@/lib/types";
 import TokenIcon from "@/components/TokenIcon";
 import SwipeableListItem from "@/components/SwipeableListItem";
 import toast from "react-hot-toast";
-import { MagnifyingGlassIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, PlusIcon, TrashIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 
 export default function TokensPage() {
+  const router = useRouter();
   const [userTokens, setUserTokens] = useState<UserToken[]>([]);
   const [filteredTokens, setFilteredTokens] = useState<UserToken[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,365 +169,391 @@ export default function TokensPage() {
 
   return (
     <Layout requireAuth={true}>
-      <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
-        {/* Header - Desktop only */}
-        <div className="hidden md:block mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Tokens</h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Manage your personal ERC20 token list
-          </p>
-        </div>
-
-        {/* Mobile Add Button - Fixed position */}
-        <button
-          onClick={openAddTokenModal}
-          className="md:hidden fixed bottom-24 right-6 z-50 inline-flex items-center justify-center w-14 h-14 text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-full shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
-          aria-label="Add Token"
-        >
-          <PlusIcon className="w-6 h-6" />
-        </button>
-
-        {/* Search and Filters */}
-        <div className="mb-6 space-y-4">
-          {/* Search Bar */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search tokens by name, symbol, or address..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              autoComplete="off"
-              autoCapitalize="off"
-              autoCorrect="off"
-              spellCheck="false"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-base sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 transition-all"
-            />
-          </div>
-
-          {/* Filter Controls */}
-          <div className="flex flex-wrap gap-4 items-center">
-            {/* Add Token Button - Desktop only */}
+      <div className="min-h-screen bg-slate-100 dark:bg-slate-950">
+        {/* Mobile Header with Back Button */}
+        <div className="md:hidden sticky top-0 bg-slate-100 dark:bg-slate-950 z-30 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3">
             <button
-              onClick={openAddTokenModal}
-              className="hidden md:inline-flex items-center px-3 py-3 sm:py-2 border border-transparent rounded-xl text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
+              onClick={() => router.push("/dashboard")}
+              className="p-2 -ml-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white touch-manipulation active:scale-95"
             >
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Add Token
-            </button>
-
-            {/* Results Count */}
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              {filteredTokens.length} of {userTokens.length} tokens
-            </span>
-          </div>
-        </div>
-
-        {/* Token List - Mobile responsive */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {filteredTokens.map(token => (
-            <SwipeableListItem
-              key={token.id}
-              onDelete={() => removeToken(token.id, token.symbol)}
-              deleteText="Remove"
-              className="rounded-xl md:bg-white md:dark:bg-gray-800 md:rounded-2xl md:shadow-xl md:border md:border-gray-200 md:dark:border-gray-700 md:hover:shadow-2xl md:transition-all"
-            >
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg md:shadow-none border border-gray-200 dark:border-gray-700 md:border-0 p-4 md:p-6 lg:p-8">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    {/* Token Icon */}
-                    <TokenIcon token={token} size="xl" />
-
-                    {/* Token Info */}
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {token.symbol}
-                        </h3>
-                        {token.isCustom && (
-                          <span className="px-2 py-1 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded">
-                            Custom
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{token.name}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
-                  {/* Address */}
-                  <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                    {token.address.slice(0, 6)}...{token.address.slice(-4)}
-                  </div>
-                </div>
-              </div>
-            </SwipeableListItem>
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {filteredTokens.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <div className="w-24 h-24 mx-auto mb-4 text-gray-400 dark:text-gray-500">
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={1}
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
                 />
               </svg>
+            </button>
+            <div className="flex items-center gap-2 flex-1">
+              <WalletIcon className="w-6 h-6 text-slate-900 dark:text-emerald-400 flex-shrink-0" />
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">My Tokens</h1>
             </div>
-            <h3 className="text-lg sm:text-xl font-medium text-gray-900 dark:text-white mb-2">
-              No tokens found
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {searchQuery
-                ? "Try adjusting your search query."
-                : "Add tokens from our preset list or add custom tokens to get started."}
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
+          {/* Header - Desktop only */}
+          <div className="hidden md:block mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Tokens</h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Manage your personal ERC20 token list
             </p>
-            {!searchQuery && (
+          </div>
+
+          {/* Mobile Add Button - Fixed position */}
+          <button
+            onClick={openAddTokenModal}
+            className="md:hidden fixed bottom-24 right-6 z-50 inline-flex items-center justify-center w-14 h-14 text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-full shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
+            aria-label="Add Token"
+          >
+            <PlusIcon className="w-6 h-6" />
+          </button>
+
+          {/* Search and Filters */}
+          <div className="mb-6 space-y-4">
+            {/* Search Bar */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search tokens by name, symbol, or address..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck="false"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-base sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-emerald-400 focus:border-slate-900 dark:focus:border-emerald-400 transition-all"
+              />
+            </div>
+
+            {/* Filter Controls */}
+            <div className="flex flex-wrap gap-4 items-center">
+              {/* Add Token Button - Desktop only */}
               <button
                 onClick={openAddTokenModal}
-                className="inline-flex items-center px-4 py-3 sm:py-2 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
+                className="hidden md:inline-flex items-center px-3 py-3 sm:py-2 border border-transparent rounded-xl text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
               >
                 <PlusIcon className="h-4 w-4 mr-2" />
                 Add Token
               </button>
-            )}
+
+              {/* Results Count */}
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {filteredTokens.length} of {userTokens.length} tokens
+              </span>
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* Add Token Modal */}
-      <Transition appear show={showTokenModal} as={Fragment}>
-        <Dialog
-          as="div"
-          className="relative z-50"
-          onClose={() => !validatingToken && setShowTokenModal(false)}
-        >
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="hidden md:block fixed inset-0 bg-black dark:bg-black bg-opacity-25 dark:bg-opacity-50" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 overflow-y-auto flex items-stretch md:items-center justify-center">
-            <div className="w-full h-full md:h-auto md:w-auto md:flex-shrink-0 md:p-4">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 md:scale-95"
-                enterTo="opacity-100 md:scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 md:scale-100"
-                leaveTo="opacity-0 md:scale-95"
+          {/* Token List - Mobile responsive */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            {filteredTokens.map(token => (
+              <SwipeableListItem
+                key={token.id}
+                onDelete={() => removeToken(token.id, token.symbol)}
+                deleteText="Remove"
+                className="rounded-xl md:bg-white md:dark:bg-gray-800 md:rounded-2xl md:shadow-xl md:border md:border-gray-200 md:dark:border-gray-700 md:hover:shadow-2xl md:transition-all"
               >
-                <Dialog.Panel className="h-full md:h-auto w-full max-w-full md:max-w-2xl p-0 md:p-6 md:sm:p-8 overflow-y-auto md:overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 md:shadow-xl md:rounded-2xl">
-                  {/* Mobile Header */}
-                  <div className="md:hidden sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center z-10">
-                    <button
-                      onClick={() => !validatingToken && setShowTokenModal(false)}
-                      className="mr-3 p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                    >
-                      <svg
-                        className="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 19l-7-7 7-7"
-                        />
-                      </svg>
-                    </button>
-                    <Dialog.Title
-                      as="h3"
-                      className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100"
-                    >
-                      Add Tokens
-                    </Dialog.Title>
-                  </div>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg md:shadow-none border border-gray-200 dark:border-gray-700 md:border-0 p-4 md:p-6 lg:p-8">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      {/* Token Icon */}
+                      <TokenIcon token={token} size="xl" />
 
-                  {/* Desktop Title */}
-                  <Dialog.Title
-                    as="h3"
-                    className="hidden md:block text-lg sm:text-xl font-medium leading-6 text-gray-900 dark:text-gray-100"
-                  >
-                    Add Tokens
-                  </Dialog.Title>
-
-                  {/* Mode Tabs */}
-                  <div className="mt-4 px-4 md:px-0">
-                    <div className="flex space-x-1 rounded-xl bg-gray-100 dark:bg-gray-700 p-1">
-                      <button
-                        onClick={() => setModalMode("preset")}
-                        className={`w-full rounded-xl py-2.5 text-sm font-medium leading-5 transition-all touch-manipulation active:scale-95 ${
-                          modalMode === "preset"
-                            ? "bg-white dark:bg-gray-600 text-slate-900 dark:text-emerald-400 shadow"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-white/[0.12] hover:text-slate-900 dark:hover:text-emerald-400"
-                        }`}
-                      >
-                        Preset Tokens
-                      </button>
-                      <button
-                        onClick={() => setModalMode("custom")}
-                        className={`w-full rounded-xl py-2.5 text-sm font-medium leading-5 transition-all touch-manipulation active:scale-95 ${
-                          modalMode === "custom"
-                            ? "bg-white dark:bg-gray-600 text-slate-900 dark:text-emerald-400 shadow"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-white/[0.12] hover:text-slate-900 dark:hover:text-emerald-400"
-                        }`}
-                      >
-                        Custom Token
-                      </button>
+                      {/* Token Info */}
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {token.symbol}
+                          </h3>
+                          {token.isCustom && (
+                            <span className="px-2 py-1 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded">
+                              Custom
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{token.name}</p>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Modal Content */}
-                  <div className="mt-6 px-4 md:px-0">
-                    {modalMode === "preset" ? (
-                      <div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                          Select tokens from our preset list to add to your wallet.
-                        </p>
+                  {/* Footer */}
+                  <div className="flex items-center justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+                    {/* Address */}
+                    <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                      {token.address.slice(0, 6)}...{token.address.slice(-4)}
+                    </div>
+                  </div>
+                </div>
+              </SwipeableListItem>
+            ))}
+          </div>
 
-                        {loadingPresetTokens ? (
-                          <div className="flex items-center justify-center py-8">
-                            <div className="w-8 h-8 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
-                          </div>
-                        ) : (
-                          <div className="max-h-96 overflow-y-auto space-y-2">
-                            {presetTokens
-                              .filter(
+          {/* Empty State */}
+          {filteredTokens.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <div className="w-24 h-24 mx-auto mb-4 text-gray-400 dark:text-gray-500">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1}
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg sm:text-xl font-medium text-gray-900 dark:text-white mb-2">
+                No tokens found
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                {searchQuery
+                  ? "Try adjusting your search query."
+                  : "Add tokens from our preset list or add custom tokens to get started."}
+              </p>
+              {!searchQuery && (
+                <button
+                  onClick={openAddTokenModal}
+                  className="inline-flex items-center px-4 py-3 sm:py-2 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 dark:focus:ring-emerald-500 touch-manipulation active:scale-95"
+                >
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Add Token
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Add Token Modal */}
+        <Transition appear show={showTokenModal} as={Fragment}>
+          <Dialog
+            as="div"
+            className="relative z-50"
+            onClose={() => !validatingToken && setShowTokenModal(false)}
+          >
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <div className="hidden md:block fixed inset-0 bg-black dark:bg-black bg-opacity-25 dark:bg-opacity-50" />
+            </Transition.Child>
+
+            <div className="fixed inset-0 overflow-y-auto flex items-stretch md:items-center justify-center">
+              <div className="w-full h-full md:h-auto md:w-auto md:flex-shrink-0 md:p-4">
+                <Transition.Child
+                  as={Fragment}
+                  enter="ease-out duration-300"
+                  enterFrom="opacity-0 md:scale-95"
+                  enterTo="opacity-100 md:scale-100"
+                  leave="ease-in duration-200"
+                  leaveFrom="opacity-100 md:scale-100"
+                  leaveTo="opacity-0 md:scale-95"
+                >
+                  <Dialog.Panel className="h-full md:h-auto w-full max-w-full md:max-w-2xl p-0 md:p-6 md:sm:p-8 overflow-y-auto md:overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 md:shadow-xl md:rounded-2xl">
+                    {/* Mobile Header */}
+                    <div className="md:hidden sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center z-10">
+                      <button
+                        onClick={() => !validatingToken && setShowTokenModal(false)}
+                        className="mr-3 p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      >
+                        <svg
+                          className="w-6 h-6"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 19l-7-7 7-7"
+                          />
+                        </svg>
+                      </button>
+                      <Dialog.Title
+                        as="h3"
+                        className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100"
+                      >
+                        Add Tokens
+                      </Dialog.Title>
+                    </div>
+
+                    {/* Desktop Title */}
+                    <Dialog.Title
+                      as="h3"
+                      className="hidden md:block text-lg sm:text-xl font-medium leading-6 text-gray-900 dark:text-gray-100"
+                    >
+                      Add Tokens
+                    </Dialog.Title>
+
+                    {/* Mode Tabs */}
+                    <div className="mt-4 px-4 md:px-0">
+                      <div className="flex space-x-1 rounded-xl bg-gray-100 dark:bg-gray-700 p-1">
+                        <button
+                          onClick={() => setModalMode("preset")}
+                          className={`w-full rounded-xl py-2.5 text-sm font-medium leading-5 transition-all touch-manipulation active:scale-95 ${
+                            modalMode === "preset"
+                              ? "bg-white dark:bg-gray-600 text-slate-900 dark:text-emerald-400 shadow"
+                              : "text-gray-700 dark:text-gray-300 hover:bg-white/[0.12] hover:text-slate-900 dark:hover:text-emerald-400"
+                          }`}
+                        >
+                          Preset Tokens
+                        </button>
+                        <button
+                          onClick={() => setModalMode("custom")}
+                          className={`w-full rounded-xl py-2.5 text-sm font-medium leading-5 transition-all touch-manipulation active:scale-95 ${
+                            modalMode === "custom"
+                              ? "bg-white dark:bg-gray-600 text-slate-900 dark:text-emerald-400 shadow"
+                              : "text-gray-700 dark:text-gray-300 hover:bg-white/[0.12] hover:text-slate-900 dark:hover:text-emerald-400"
+                          }`}
+                        >
+                          Custom Token
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Modal Content */}
+                    <div className="mt-6 px-4 md:px-0">
+                      {modalMode === "preset" ? (
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                            Select tokens from our preset list to add to your wallet.
+                          </p>
+
+                          {loadingPresetTokens ? (
+                            <div className="flex items-center justify-center py-8">
+                              <div className="w-8 h-8 border-b-2 border-slate-900 dark:border-emerald-500 rounded-full animate-spin"></div>
+                            </div>
+                          ) : (
+                            <div className="max-h-96 overflow-y-auto space-y-2">
+                              {presetTokens
+                                .filter(
+                                  token =>
+                                    !userTokens.some(
+                                      userToken =>
+                                        userToken.address.toLowerCase() ===
+                                        token.address.toLowerCase()
+                                    )
+                                )
+                                .map(token => (
+                                  <div
+                                    key={token.address}
+                                    className="flex items-center space-x-3 p-3 rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedPresetTokens.has(token.address)}
+                                      onChange={e => {
+                                        const newSelected = new Set(selectedPresetTokens);
+                                        if (e.target.checked) {
+                                          newSelected.add(token.address);
+                                        } else {
+                                          newSelected.delete(token.address);
+                                        }
+                                        setSelectedPresetTokens(newSelected);
+                                      }}
+                                      className="rounded border-gray-300 text-slate-900 dark:text-emerald-500 focus:ring-slate-900 dark:focus:ring-emerald-400"
+                                    />
+                                    <TokenIcon token={token} size="md" />
+                                    <div className="flex-1">
+                                      <div className="font-medium text-gray-900 dark:text-white">
+                                        {token.symbol}
+                                      </div>
+                                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                                        {token.name}
+                                      </div>
+                                    </div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                      {token.address.slice(0, 6)}...{token.address.slice(-4)}
+                                    </div>
+                                  </div>
+                                ))}
+                              {presetTokens.filter(
                                 token =>
                                   !userTokens.some(
                                     userToken =>
                                       userToken.address.toLowerCase() ===
                                       token.address.toLowerCase()
                                   )
-                              )
-                              .map(token => (
-                                <div
-                                  key={token.address}
-                                  className="flex items-center space-x-3 p-3 rounded-xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedPresetTokens.has(token.address)}
-                                    onChange={e => {
-                                      const newSelected = new Set(selectedPresetTokens);
-                                      if (e.target.checked) {
-                                        newSelected.add(token.address);
-                                      } else {
-                                        newSelected.delete(token.address);
-                                      }
-                                      setSelectedPresetTokens(newSelected);
-                                    }}
-                                    className="rounded border-gray-300 text-slate-900 dark:text-emerald-500 focus:ring-slate-900 dark:focus:ring-emerald-400"
-                                  />
-                                  <TokenIcon token={token} size="md" />
-                                  <div className="flex-1">
-                                    <div className="font-medium text-gray-900 dark:text-white">
-                                      {token.symbol}
-                                    </div>
-                                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                                      {token.name}
-                                    </div>
-                                  </div>
-                                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                                    {token.address.slice(0, 6)}...{token.address.slice(-4)}
-                                  </div>
+                              ).length === 0 && (
+                                <div className="text-center py-8">
+                                  <p className="text-gray-500 dark:text-gray-400">
+                                    All preset tokens have already been added to your list.
+                                  </p>
                                 </div>
-                              ))}
-                            {presetTokens.filter(
-                              token =>
-                                !userTokens.some(
-                                  userToken =>
-                                    userToken.address.toLowerCase() === token.address.toLowerCase()
-                                )
-                            ).length === 0 && (
-                              <div className="text-center py-8">
-                                <p className="text-gray-500 dark:text-gray-400">
-                                  All preset tokens have already been added to your list.
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Token Contract Address
-                        </label>
-                        <input
-                          type="text"
-                          value={customTokenAddress}
-                          onChange={e => setCustomTokenAddress(e.target.value)}
-                          placeholder="0x..."
-                          autoComplete="off"
-                          autoCapitalize="off"
-                          autoCorrect="off"
-                          spellCheck="false"
-                          className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all font-mono"
-                        />
-                        <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-                          Enter the contract address of an ERC20 token. Token information will be
-                          automatically fetched.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row justify-end mt-6 gap-3 px-4 md:px-0 pb-4 md:pb-0">
-                    <button
-                      type="button"
-                      onClick={() => setShowTokenModal(false)}
-                      disabled={validatingToken}
-                      className="hidden md:inline-flex px-4 py-3 sm:py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-slate-900 dark:focus:ring-emerald-400 disabled:opacity-50 transition-all touch-manipulation active:scale-95"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={addTokens}
-                      disabled={
-                        validatingToken ||
-                        (modalMode === "custom" && !customTokenAddress) ||
-                        (modalMode === "preset" && selectedPresetTokens.size === 0)
-                      }
-                      className="inline-flex items-center justify-center w-full md:w-auto px-4 py-3 sm:py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-slate-900 dark:focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95"
-                    >
-                      {validatingToken ? (
-                        <>
-                          <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
-                          {modalMode === "preset" ? "Adding..." : "Validating..."}
-                        </>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       ) : (
-                        `Add ${modalMode === "preset" ? `${selectedPresetTokens.size} Token(s)` : "Token"}`
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Token Contract Address
+                          </label>
+                          <input
+                            type="text"
+                            value={customTokenAddress}
+                            onChange={e => setCustomTokenAddress(e.target.value)}
+                            placeholder="0x..."
+                            autoComplete="off"
+                            autoCapitalize="off"
+                            autoCorrect="off"
+                            spellCheck="false"
+                            className="block w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm placeholder-gray-400 dark:placeholder-gray-500 transition-all font-mono"
+                          />
+                          <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                            Enter the contract address of an ERC20 token. Token information will be
+                            automatically fetched.
+                          </p>
+                        </div>
                       )}
-                    </button>
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row justify-end mt-6 gap-3 px-4 md:px-0 pb-4 md:pb-0">
+                      <button
+                        type="button"
+                        onClick={() => setShowTokenModal(false)}
+                        disabled={validatingToken}
+                        className="hidden md:inline-flex px-4 py-3 sm:py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-slate-900 dark:focus:ring-emerald-400 disabled:opacity-50 transition-all touch-manipulation active:scale-95"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={addTokens}
+                        disabled={
+                          validatingToken ||
+                          (modalMode === "custom" && !customTokenAddress) ||
+                          (modalMode === "preset" && selectedPresetTokens.size === 0)
+                        }
+                        className="inline-flex items-center justify-center w-full md:w-auto px-4 py-3 sm:py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 border border-transparent rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-slate-900 dark:focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95"
+                      >
+                        {validatingToken ? (
+                          <>
+                            <div className="w-4 h-4 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
+                            {modalMode === "preset" ? "Adding..." : "Validating..."}
+                          </>
+                        ) : (
+                          `Add ${modalMode === "preset" ? `${selectedPresetTokens.size} Token(s)` : "Token"}`
+                        )}
+                      </button>
+                    </div>
+                  </Dialog.Panel>
+                </Transition.Child>
+              </div>
             </div>
-          </div>
-        </Dialog>
-      </Transition>
+          </Dialog>
+        </Transition>
+      </div>
     </Layout>
   );
 }

@@ -39,7 +39,7 @@ export class TokenService {
   // Pre-configured tokens for Sepolia testnet
   private readonly PRESET_TOKENS: Token[] = [
     {
-      address: "0x3e7B771d4541eC85c8137e950598Ac97553a337a",
+      address: "0xD14E87d8D8B69016Fcc08728c33799bD3F66F180",
       symbol: "PNTs",
       name: "Points Token",
       decimals: 18,

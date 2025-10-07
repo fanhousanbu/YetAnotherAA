@@ -15,6 +15,7 @@ import {
   CreditCardIcon,
   Cog6ToothIcon,
   ChevronRightIcon,
+  ChevronDownIcon,
   BookOpenIcon,
 } from "@heroicons/react/24/outline";
 
@@ -27,6 +28,7 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [desktopSettingsOpen, setDesktopSettingsOpen] = useState(false);
   const [showServiceStatus, setShowServiceStatus] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
@@ -106,29 +108,77 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                   Transfer
                 </button>
                 <button
-                  onClick={() => router.push("/tokens")}
-                  className={getNavButtonClass("/tokens", pathname === "/tokens")}
-                >
-                  Tokens
-                </button>
-                <button
-                  onClick={() => router.push("/nfts")}
-                  className={getNavButtonClass("/nfts", pathname === "/nfts")}
-                >
-                  NFTs
-                </button>
-                <button
                   onClick={() => router.push("/paymaster")}
                   className={getNavButtonClass("/paymaster", pathname === "/paymaster")}
                 >
                   Paymasters
                 </button>
-                <button
-                  onClick={() => router.push("/address-book")}
-                  className={getNavButtonClass("/address-book", pathname === "/address-book")}
-                >
-                  Address Book
-                </button>
+                {/* Settings Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setDesktopSettingsOpen(!desktopSettingsOpen)}
+                    className={`${getNavButtonClass("/settings", pathname === "/tokens" || pathname === "/nfts" || pathname === "/address-book")} inline-flex items-center gap-1`}
+                  >
+                    Settings
+                    <ChevronDownIcon
+                      className={`w-4 h-4 transition-transform ${desktopSettingsOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  {desktopSettingsOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setDesktopSettingsOpen(false)}
+                      />
+                      <div className="absolute right-0 mt-2 w-56 rounded-xl shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 z-20">
+                        <div className="py-2">
+                          <button
+                            onClick={() => {
+                              router.push("/tokens");
+                              setDesktopSettingsOpen(false);
+                            }}
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            <WalletIcon className="w-5 h-5 mr-3" />
+                            Tokens
+                          </button>
+                          <button
+                            onClick={() => {
+                              router.push("/nfts");
+                              setDesktopSettingsOpen(false);
+                            }}
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            <svg
+                              className="w-5 h-5 mr-3"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                            NFTs
+                          </button>
+                          <button
+                            onClick={() => {
+                              router.push("/address-book");
+                              setDesktopSettingsOpen(false);
+                            }}
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            <BookOpenIcon className="w-5 h-5 mr-3" />
+                            Address Book
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
                 {/* Theme Toggle Button */}
                 <button
                   onClick={toggleTheme}
@@ -188,15 +238,6 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
               <span className="text-xs font-medium">Transfer</span>
             </button>
 
-            {/* Tokens */}
-            <button
-              onClick={() => router.push("/tokens")}
-              className={getBottomNavButtonClass("/tokens", pathname === "/tokens")}
-            >
-              <WalletIcon className="h-6 w-6 mb-1" />
-              <span className="text-xs font-medium">Tokens</span>
-            </button>
-
             {/* Paymaster */}
             <button
               onClick={() => router.push("/paymaster")}
@@ -241,6 +282,21 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                   {user.username || user.email}
                 </div>
               </div>
+
+              {/* Tokens */}
+              <button
+                onClick={() => {
+                  router.push("/tokens");
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center justify-between w-full px-4 py-3 text-left text-base font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-slate-50 dark:hover:bg-gray-600 rounded-lg transition-all touch-manipulation active:scale-95"
+              >
+                <div className="flex items-center gap-3">
+                  <WalletIcon className="w-5 h-5" />
+                  <span>Tokens</span>
+                </div>
+                <ChevronRightIcon className="w-5 h-5" />
+              </button>
 
               {/* NFTs */}
               <button

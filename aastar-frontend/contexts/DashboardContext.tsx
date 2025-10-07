@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
 import { Account, Transfer, TokenBalance } from "@/lib/types";
-import { accountAPI, transferAPI, paymasterAPI, tokenAPI } from "@/lib/api";
+import { accountAPI, transferAPI, paymasterAPI, tokenAPI, userTokenAPI } from "@/lib/api";
 import { getStoredAuth } from "@/lib/auth";
 
 interface DashboardData {
@@ -126,13 +126,32 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           paymastersData = [];
         }
 
-        // Get token balances if account exists
+        // Get token balances for user's added tokens
         let tokenBalancesData: TokenBalance[] = [];
         if (accountData?.address) {
           try {
-            const tokenResponse = await tokenAPI.getAllTokenBalances(accountData.address);
-            tokenBalancesData = tokenResponse.data;
-          } catch {
+            // Get user's added tokens
+            const userTokensResponse = await userTokenAPI.getUserTokens({});
+            const userTokens = userTokensResponse.data;
+
+            // Get balance for each user token
+            const balancePromises = userTokens.map(async (userToken: any) => {
+              try {
+                const balanceResponse = await tokenAPI.getTokenBalance(
+                  userToken.address,
+                  accountData.address
+                );
+                return balanceResponse.data;
+              } catch (error) {
+                console.error(`Failed to get balance for ${userToken.symbol}:`, error);
+                return null;
+              }
+            });
+
+            const balances = await Promise.all(balancePromises);
+            tokenBalancesData = balances.filter(b => b !== null);
+          } catch (error) {
+            console.error("Failed to load user token balances:", error);
             tokenBalancesData = [];
           }
         }
@@ -163,13 +182,32 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     try {
       const accountResponse = await accountAPI.getAccount();
 
-      // Get updated token balances
+      // Get updated token balances for user's added tokens
       let tokenBalancesData: TokenBalance[] = [];
       if (accountResponse.data?.address) {
         try {
-          const tokenResponse = await tokenAPI.getAllTokenBalances(accountResponse.data.address);
-          tokenBalancesData = tokenResponse.data;
-        } catch {
+          // Get user's added tokens
+          const userTokensResponse = await userTokenAPI.getUserTokens({});
+          const userTokens = userTokensResponse.data;
+
+          // Get balance for each user token
+          const balancePromises = userTokens.map(async (userToken: any) => {
+            try {
+              const balanceResponse = await tokenAPI.getTokenBalance(
+                userToken.address,
+                accountResponse.data.address
+              );
+              return balanceResponse.data;
+            } catch (error) {
+              console.error(`Failed to get balance for ${userToken.symbol}:`, error);
+              return null;
+            }
+          });
+
+          const balances = await Promise.all(balancePromises);
+          tokenBalancesData = balances.filter(b => b !== null);
+        } catch (error) {
+          console.error("Failed to refresh user token balances:", error);
           tokenBalancesData = data.tokenBalances;
         }
       }
