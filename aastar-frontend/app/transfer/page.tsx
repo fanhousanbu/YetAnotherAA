@@ -575,65 +575,8 @@ export default function TransferPage() {
 
   return (
     <Layout requireAuth={true}>
-      <div
-        ref={containerRef}
-        className="relative overflow-hidden"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div
-          className="relative"
-          style={{
-            transform:
-              pullToRefresh.pulling || pullToRefresh.refreshing
-                ? `translateY(${pullToRefresh.distance}px)`
-                : "translateY(0)",
-            transition: pullToRefresh.pulling ? "none" : "transform 0.3s ease",
-          }}
-        >
-          {/* Pull to Refresh Indicator - Mobile only */}
-          <div
-            className="md:hidden absolute left-0 right-0 flex items-center justify-center h-16 -top-16"
-            style={{
-              opacity: pullToRefresh.pulling || pullToRefresh.refreshing ? 1 : 0,
-            }}
-          >
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-              <ArrowPathIcon
-                className={`w-5 h-5 transition-all ${
-                  pullToRefresh.refreshing
-                    ? "text-blue-600 dark:text-blue-400 animate-spin"
-                    : pullToRefresh.distance > 80
-                      ? "text-green-600 dark:text-green-400"
-                      : "text-gray-500 dark:text-gray-400"
-                }`}
-                style={{
-                  transform: pullToRefresh.refreshing
-                    ? "none"
-                    : pullToRefresh.distance > 80
-                      ? "rotate(360deg)"
-                      : `rotate(${pullToRefresh.distance * 4}deg)`,
-                }}
-              />
-              <span
-                className={
-                  pullToRefresh.refreshing
-                    ? "text-blue-600 dark:text-blue-400"
-                    : pullToRefresh.distance > 80
-                      ? "text-green-600 dark:text-green-400"
-                      : ""
-                }
-              >
-                {pullToRefresh.refreshing
-                  ? "Refreshing..."
-                  : pullToRefresh.distance > 80
-                    ? "Release to refresh"
-                    : "Pull down to refresh"}
-              </span>
-            </div>
-          </div>
-
+      <div ref={containerRef} className="relative overflow-hidden">
+        <div className="relative">
           <div className="max-w-2xl px-3 py-4 mx-auto sm:px-4 sm:py-6 lg:px-8">
             {/* Header - Desktop only */}
             <div className="hidden md:block mb-8">
