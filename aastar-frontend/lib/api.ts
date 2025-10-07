@@ -216,4 +216,49 @@ export const addressBookAPI = {
   searchAddresses: (query: string) => api.get("/address-book/search", { params: { q: query } }),
 };
 
+// User NFT API
+export const userNFTAPI = {
+  getUserNFTs: (params?: { activeOnly?: boolean }) => api.get("/user-nfts", { params }),
+
+  getNFTStats: () => api.get("/user-nfts/stats"),
+
+  getNFTsByCollection: (contractAddress: string) =>
+    api.get(`/user-nfts/collection/${contractAddress}`),
+
+  addUserNFT: (data: {
+    contractAddress: string;
+    tokenId: string;
+    standard?: string;
+    name?: string;
+    description?: string;
+    imageUrl?: string;
+    collectionName?: string;
+    amount?: number;
+  }) => api.post("/user-nfts", data),
+
+  updateUserNFT: (
+    nftId: string,
+    data: {
+      isActive?: boolean;
+      name?: string;
+      description?: string;
+      imageUrl?: string;
+    }
+  ) => api.put(`/user-nfts/${nftId}`, data),
+
+  removeUserNFT: (nftId: string) => api.delete(`/user-nfts/${nftId}`),
+
+  deleteUserNFT: (nftId: string) => api.delete(`/user-nfts/${nftId}/permanent`),
+
+  searchUserNFTs: (params: {
+    query?: string;
+    contractAddress?: string;
+    standard?: string;
+    activeOnly?: boolean;
+  }) => api.get("/user-nfts/search", { params }),
+
+  verifyNFTOwnership: (data: { contractAddress: string; tokenId: string; standard: string }) =>
+    api.post("/user-nfts/verify-ownership", data),
+};
+
 export default api;

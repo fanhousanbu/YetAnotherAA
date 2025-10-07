@@ -3,6 +3,7 @@ import { Account } from "./account.entity";
 import { Transfer } from "./transfer.entity";
 import { Passkey } from "./passkey.entity";
 import { UserToken } from "./user-token.entity";
+import { UserNFT } from "./user-nft.entity";
 
 @Entity("users")
 export class User {
@@ -47,4 +48,7 @@ export class User {
 
   @OneToMany(() => UserToken, userToken => userToken.user)
   userTokens: UserToken[];
+
+  @OneToMany(() => UserNFT, userNFT => userNFT.user)
+  userNFTs: UserNFT[];
 }

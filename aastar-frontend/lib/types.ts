@@ -120,3 +120,49 @@ export interface UserToken {
 export interface UserTokenWithBalance extends UserToken {
   balance?: TokenBalance;
 }
+
+// NFT types
+export enum NFTStandard {
+  ERC721 = "ERC721",
+  ERC1155 = "ERC1155",
+}
+
+export interface NFTMetadata {
+  name?: string;
+  description?: string;
+  image?: string;
+  external_url?: string;
+  attributes?: Array<{ trait_type: string; value: any }>;
+  [key: string]: any;
+}
+
+export interface UserNFT {
+  id: string;
+  userId: string;
+  contractAddress: string;
+  tokenId: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  collectionName?: string;
+  standard: NFTStandard;
+  amount?: number;
+  chainId?: number;
+  isActive: boolean;
+  metadata?: NFTMetadata;
+  createdAt: string;
+}
+
+export interface NFTStats {
+  total: number;
+  erc721: number;
+  erc1155: number;
+  collections: number;
+}
+
+export interface NFTFilters {
+  query?: string;
+  contractAddress?: string;
+  standard?: NFTStandard;
+  activeOnly?: boolean;
+}

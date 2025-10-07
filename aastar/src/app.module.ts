@@ -11,6 +11,7 @@ import { AppConfigModule } from "./config/config.module";
 import { PaymasterModule } from "./paymaster/paymaster.module";
 import { TokenModule } from "./token/token.module";
 import { UserTokenModule } from "./user-token/user-token.module";
+import { UserNFTModule } from "./user-nft/user-nft.module";
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { UserTokenModule } from "./user-token/user-token.module";
     PaymasterModule,
     TokenModule,
     UserTokenModule,
+    UserNFTModule,
   ],
   controllers: [AppController],
   providers: [AppService],
