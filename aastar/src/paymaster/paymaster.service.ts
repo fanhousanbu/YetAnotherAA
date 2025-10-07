@@ -83,7 +83,9 @@ export class PaymasterService {
     return paymasters.map(config => ({
       name: config.name,
       address: config.address,
-      configured: !!config.apiKey,
+      // A paymaster is configured if it has a valid address
+      // API key is optional for custom paymasters
+      configured: !!config.address && config.address !== "0x",
     }));
   }
 
