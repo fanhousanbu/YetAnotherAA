@@ -36,9 +36,9 @@ export const WalletConnect: React.FC<WalletConnectProps> = ({ onConnect, onDisco
       const provider = new ethers.BrowserProvider(window.ethereum);
       const accounts = await provider.listAccounts();
       if (accounts.length > 0) {
-        setAccount(accounts[0].address);
+        setAccount(accounts[0]);
         setIsConnected(true);
-        onConnect(accounts[0].address);
+        onConnect(accounts[0]);
 
         const network = await provider.getNetwork();
         setChainId(Number(network.chainId));
