@@ -20,6 +20,9 @@ export const setStoredAuth = (token: string, user: User) => {
 export const clearStoredAuth = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
+  // Clear cached dashboard data
+  sessionStorage.removeItem("dashboardData");
+  sessionStorage.removeItem("dashboardDataLoaded");
 };
 
 export const isAuthenticated = (): boolean => {
