@@ -31,8 +31,8 @@ export const usePaymaster = (
     setError(null);
 
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
 
       const paymasterContract = new ethers.Contract(paymasterAddress, PAYMASTER_ABI, signer);
       const entryPointAddress = ENTRY_POINT_ADDRESSES[entryPointVersion];
@@ -40,21 +40,21 @@ export const usePaymaster = (
 
       const [owner, deposit, balance, depositInfoData] = await Promise.all([
         paymasterContract.owner().catch(() => "Unknown"),
-        paymasterContract.getDeposit().catch(() => ethers.BigNumber.from(0)),
+        paymasterContract.getDeposit().catch(() => 0n),
         provider.getBalance(paymasterAddress),
         entryPointContract.getDepositInfo(paymasterAddress).catch(() => ({
-          deposit: ethers.BigNumber.from(0),
+          deposit: 0n,
           staked: false,
-          stake: ethers.BigNumber.from(0),
-          unstakeDelaySec: ethers.BigNumber.from(0),
-          withdrawTime: ethers.BigNumber.from(0),
+          stake: 0n,
+          unstakeDelaySec: 0n,
+          withdrawTime: 0n,
         })),
       ]);
 
       setConfig({
         address: paymasterAddress,
         owner,
-        deposit: ethers.utils.formatEther(deposit),
+        deposit: ethers.formatEther(deposit),
         withdrawStake: "0",
       });
 
@@ -62,13 +62,13 @@ export const usePaymaster = (
         totalOperations: 0,
         totalGasSponsored: "0",
         activeUsers: 0,
-        remainingBalance: ethers.utils.formatEther(balance),
+        remainingBalance: ethers.formatEther(balance),
       });
 
       setDepositInfo({
-        deposit: ethers.utils.formatEther(depositInfoData.deposit),
+        deposit: ethers.formatEther(depositInfoData.deposit),
         staked: depositInfoData.staked,
-        stake: ethers.utils.formatEther(depositInfoData.stake),
+        stake: ethers.formatEther(depositInfoData.stake),
         unstakeDelaySec: depositInfoData.unstakeDelaySec.toString(),
         withdrawTime: depositInfoData.withdrawTime.toString(),
       });
@@ -87,12 +87,12 @@ export const usePaymaster = (
 
     try {
       setLoading(true);
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
       const paymasterContract = new ethers.Contract(paymasterAddress, PAYMASTER_ABI, signer);
 
       const tx = await paymasterContract.deposit({
-        value: ethers.utils.parseEther(amount),
+        value: ethers.parseEther(amount),
       });
       await tx.wait();
       await loadPaymasterData();
@@ -111,11 +111,11 @@ export const usePaymaster = (
 
     try {
       setLoading(true);
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
       const paymasterContract = new ethers.Contract(paymasterAddress, PAYMASTER_ABI, signer);
 
-      const tx = await paymasterContract.withdrawTo(address, ethers.utils.parseEther(amount));
+      const tx = await paymasterContract.withdrawTo(address, ethers.parseEther(amount));
       await tx.wait();
       await loadPaymasterData();
     } catch (err) {
@@ -133,12 +133,12 @@ export const usePaymaster = (
 
     try {
       setLoading(true);
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
       const paymasterContract = new ethers.Contract(paymasterAddress, PAYMASTER_ABI, signer);
 
       const tx = await paymasterContract.addStake(unstakeDelay, {
-        value: ethers.utils.parseEther(amount),
+        value: ethers.parseEther(amount),
       });
       await tx.wait();
       await loadPaymasterData();
@@ -157,8 +157,8 @@ export const usePaymaster = (
 
     try {
       setLoading(true);
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
       const paymasterContract = new ethers.Contract(paymasterAddress, PAYMASTER_ABI, signer);
 
       const tx = await paymasterContract.unlockStake();
@@ -179,8 +179,8 @@ export const usePaymaster = (
 
     try {
       setLoading(true);
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
       const paymasterContract = new ethers.Contract(paymasterAddress, PAYMASTER_ABI, signer);
 
       const tx = await paymasterContract.withdrawStake(address);

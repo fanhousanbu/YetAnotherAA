@@ -33,15 +33,15 @@ export const WalletConnect: React.FC<WalletConnectProps> = ({ onConnect, onDisco
     }
 
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = new ethers.BrowserProvider(window.ethereum);
       const accounts = await provider.listAccounts();
       if (accounts.length > 0) {
-        setAccount(accounts[0]);
+        setAccount(accounts[0].address);
         setIsConnected(true);
-        onConnect(accounts[0]);
+        onConnect(accounts[0].address);
 
         const network = await provider.getNetwork();
-        setChainId(network.chainId);
+        setChainId(Number(network.chainId));
       }
     } catch (error) {
       console.error("Error checking connection:", error);
@@ -56,14 +56,14 @@ export const WalletConnect: React.FC<WalletConnectProps> = ({ onConnect, onDisco
 
     setLoading(true);
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = new ethers.BrowserProvider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
-      const signer = provider.getSigner();
+      const signer = await provider.getSigner();
       const address = await signer.getAddress();
       const network = await provider.getNetwork();
 
       setAccount(address);
-      setChainId(network.chainId);
+      setChainId(Number(network.chainId));
       setIsConnected(true);
       setHasUserDisconnected(false); // Reset disconnect flag on successful connect
 
