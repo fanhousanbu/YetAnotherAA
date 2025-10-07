@@ -1,8 +1,9 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
 import { Account, Transfer, TokenBalance } from "@/lib/types";
 import { accountAPI, transferAPI, paymasterAPI, tokenAPI } from "@/lib/api";
+import { getStoredAuth } from "@/lib/auth";
 
 interface DashboardData {
   account: Account | null;
@@ -21,31 +22,33 @@ interface DashboardContextType {
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
-export function DashboardProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<DashboardData>(() => {
-    if (typeof window !== "undefined") {
-      const cached = sessionStorage.getItem("dashboardData");
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          // Convert lastUpdated string back to Date
-          if (parsed.lastUpdated) {
-            parsed.lastUpdated = new Date(parsed.lastUpdated);
-          }
-          return parsed;
-        } catch {
-          // If parsing fails, return default
+const getInitialData = (): DashboardData => {
+  if (typeof window !== "undefined") {
+    const cached = sessionStorage.getItem("dashboardData");
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        // Convert lastUpdated string back to Date
+        if (parsed.lastUpdated) {
+          parsed.lastUpdated = new Date(parsed.lastUpdated);
         }
+        return parsed;
+      } catch {
+        // If parsing fails, return default
       }
     }
-    return {
-      account: null,
-      transfers: [],
-      paymasters: [],
-      tokenBalances: [],
-      lastUpdated: null,
-    };
-  });
+  }
+  return {
+    account: null,
+    transfers: [],
+    paymasters: [],
+    tokenBalances: [],
+    lastUpdated: null,
+  };
+};
+
+export function DashboardProvider({ children }: { children: ReactNode }) {
+  const [data, setData] = useState<DashboardData>(getInitialData);
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(() => {
     if (typeof window !== "undefined") {
@@ -53,6 +56,38 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
     return false;
   });
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      const { user } = getStoredAuth();
+      return user?.id || null;
+    }
+    return null;
+  });
+
+  // Monitor user changes and reset data when user changes
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const checkUserChange = () => {
+      const { user } = getStoredAuth();
+      const newUserId = user?.id || null;
+
+      // If user changed (including logout), reset all data
+      if (newUserId !== currentUserId) {
+        setCurrentUserId(newUserId);
+        setData(getInitialData());
+        setHasLoaded(false);
+      }
+    };
+
+    // Check immediately
+    checkUserChange();
+
+    // Set up interval to check for user changes
+    const interval = setInterval(checkUserChange, 500);
+
+    return () => clearInterval(interval);
+  }, [currentUserId]);
 
   const loadDashboardData = useCallback(
     async (force = false) => {
