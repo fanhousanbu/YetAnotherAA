@@ -12,9 +12,12 @@ and this project adheres to
 
 #### Major Changes
 
-- **Signer Service Extraction**: The BLS signature service (formerly `@signer` workspace) has been extracted from the monorepo into an independent project
-  - New repository: [YetAnotherAA-Validator](https://github.com/fanhousanbu/YetAnotherAA-Validator)
-  - Renamed from `signer` to `validator` to better reflect its dual role (signer service + validator contracts)
+- **Signer Service Extraction**: The BLS signature service (formerly `@signer`
+  workspace) has been extracted from the monorepo into an independent project
+  - New repository:
+    [YetAnotherAA-Validator](https://github.com/fanhousanbu/YetAnotherAA-Validator)
+  - Renamed from `signer` to `validator` to better reflect its dual role (signer
+    service + validator contracts)
   - Integrated as a git submodule at `validator/` directory
 
 - **Workspace Simplification**: Monorepo now contains only two workspaces
@@ -24,15 +27,20 @@ and this project adheres to
 
 #### Benefits
 
-- **Clearer Separation of Concerns**: Validator/signer logic is now maintained independently
-- **Reusability**: The validator service can be used by other projects without including the full stack
-- **Simplified Monorepo**: Main repository focuses on the application layer (backend + frontend)
-- **Version Control**: Validator updates can be managed through git submodule versioning
+- **Clearer Separation of Concerns**: Validator/signer logic is now maintained
+  independently
+- **Reusability**: The validator service can be used by other projects without
+  including the full stack
+- **Simplified Monorepo**: Main repository focuses on the application layer
+  (backend + frontend)
+- **Version Control**: Validator updates can be managed through git submodule
+  versioning
 
 #### Migration Notes
 
 - All validator-related code now resides in the `validator/` submodule
-- VS Code launch configurations updated to reference `validator/` instead of `signer/`
+- VS Code launch configurations updated to reference `validator/` instead of
+  `signer/`
 - The validator submodule includes both:
   - BLS signature aggregation service (NestJS)
   - Smart contracts for signature verification (Solidity/Foundry)
@@ -41,7 +49,8 @@ and this project adheres to
 
 - Updated `.vscode/launch.json` configurations:
   - Renamed `Signer:Node1/2/3` to `Validator:Node1/2/3`
-  - Updated `cwd` paths from `${workspaceFolder}/signer` to `${workspaceFolder}/validator`
+  - Updated `cwd` paths from `${workspaceFolder}/signer` to
+    `${workspaceFolder}/validator`
   - Updated compound configurations (`Signers Only` → `Validators Only`, etc.)
 
 - Updated `package.json`:
@@ -49,15 +58,18 @@ and this project adheres to
   - Monorepo now manages only `aastar` and `aastar-frontend`
 
 - Git submodule configuration:
-  - Added `validator` submodule pointing to `https://github.com/fanhousanbu/YetAnotherAA-Validator.git`
+  - Added `validator` submodule pointing to
+    `https://github.com/fanhousanbu/YetAnotherAA-Validator.git`
   - Submodule currently tracks commit `a6ef99f` (master branch)
 
 ### 📚 Related Projects
 
 This restructuring creates a cleaner ecosystem:
 
-1. **[YetAnotherAA](https://github.com/fanhousanbu/YetAnotherAA)** (this repo) - Application layer with backend API and frontend
-2. **[YetAnotherAA-Validator](https://github.com/fanhousanbu/YetAnotherAA-Validator)** - BLS signature infrastructure and smart contracts
+1. **[YetAnotherAA](https://github.com/fanhousanbu/YetAnotherAA)** (this repo) -
+   Application layer with backend API and frontend
+2. **[YetAnotherAA-Validator](https://github.com/fanhousanbu/YetAnotherAA-Validator)** -
+   BLS signature infrastructure and smart contracts
 
 ## [0.3.1] - 2025-10-07
 
