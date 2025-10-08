@@ -1,6 +1,6 @@
 {
   "name": "yetanotheraa",
-  "version": "0.0.4",
+  "version": "0.4.0",
   "description": "WebAuthn/Passkey + BLS Aggregate Signature + ERC-4337 Account Abstraction - Biometric Authentication for Ethereum",
   "private": true,
   "workspaces": [
