@@ -56,9 +56,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [aastar, aastar-frontend, signer]
+        project: [aastar, aastar-frontend, validator]
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Use Node.js 20
         uses: actions/setup-node@v5
@@ -97,10 +99,12 @@ jobs:
             build-command: npm run build
           - project: aastar-frontend
             build-command: npm run build
-          - project: signer
+          - project: validator
             build-command: npm run build
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Use Node.js 20
         uses: actions/setup-node@v5
@@ -122,9 +126,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [aastar, signer]
+        project: [aastar, validator]
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Use Node.js 20
         uses: actions/setup-node@v5
@@ -176,9 +182,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [aastar, aastar-frontend, signer]
+        project: [aastar, aastar-frontend, validator]
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Use Node.js 20
         uses: actions/setup-node@v5
