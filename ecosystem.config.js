@@ -1,8 +1,8 @@
 module.exports = {
   apps: [
     {
-      name: "signer-node1",
-      cwd: "./signer",
+      name: "validator-node1",
+      cwd: "./validator",
       script: "node",
       args: "dist/main.js",
       env: {

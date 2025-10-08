@@ -8,7 +8,7 @@ RUN npm install -g pm2 && apk add --no-cache git
 
 # Copy package files
 COPY package*.json ./
-COPY signer/package*.json ./signer/
+COPY validator/package*.json ./validator/
 COPY aastar/package*.json ./aastar/
 COPY aastar-frontend/package*.json ./aastar-frontend/
 
@@ -21,12 +21,12 @@ COPY . .
 # Build all applications
 ENV NEXT_PUBLIC_API_URL=/api/v1
 ENV BACKEND_API_URL=http://localhost:3000
-RUN npm run build -w signer && \
+RUN cd validator && npm run build && cd .. && \
     npm run build -w aastar && \
     npm run build -w aastar-frontend
 
 # Copy configuration files
-COPY signer/node_dev_001.json ./signer/
+COPY validator/node_dev_001.json ./validator/ 2>/dev/null || true
 COPY ecosystem.config.js ./
 
 # Expose port for frontend
