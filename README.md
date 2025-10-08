@@ -204,9 +204,8 @@ YetAnotherAA/
 ├── signer/                 # BLS signing service (NestJS)
 │   ├── gossip/                 # P2P node discovery
 │   └── signature/              # BLS signature generation
-├── aastar-frontend/        # Frontend (Next.js)
-│   └── app/                    # Biometric authentication UI
-└── paymaster/              # Paymaster contracts & admin
+└── aastar-frontend/        # Frontend (Next.js)
+    └── app/                    # Biometric authentication UI
 ```
 
 ## 🎓 What You'll Learn

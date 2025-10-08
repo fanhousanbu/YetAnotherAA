@@ -78,6 +78,29 @@ export class DataToolsService {
     }
   }
 
+  /**
+   * Copy directory recursively (cross-device compatible)
+   * Use copy instead of rename to avoid EXDEV errors on cloud platforms
+   */
+  private copyDirSync(src: string, dest: string): void {
+    if (!fs.existsSync(dest)) {
+      fs.mkdirSync(dest, { recursive: true });
+    }
+
+    const entries = fs.readdirSync(src, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const srcPath = path.join(src, entry.name);
+      const destPath = path.join(dest, entry.name);
+
+      if (entry.isDirectory()) {
+        this.copyDirSync(srcPath, destPath);
+      } else {
+        fs.copyFileSync(srcPath, destPath);
+      }
+    }
+  }
+
   async importData(password: string, base64Data: string): Promise<void> {
     this.verifyPassword(password);
 
@@ -108,13 +131,18 @@ export class DataToolsService {
           .on("error", reject);
       });
 
-      // Backup existing data
-      const backupDir = path.join(process.cwd(), `data-backup-${timestamp}`);
+      // Backup existing data (use copy instead of rename for cross-device compatibility)
+      const backupDir = path.join(tempDir, `data-backup-${timestamp}`);
       if (fs.existsSync(this.dataDir)) {
-        fs.renameSync(this.dataDir, backupDir);
+        this.copyDirSync(this.dataDir, backupDir);
       }
 
       try {
+        // Remove old data directory after backup
+        if (fs.existsSync(this.dataDir)) {
+          fs.rmSync(this.dataDir, { recursive: true, force: true });
+        }
+
         // Extract tar archive
         await tar.extract({
           file: tarPath,
@@ -136,7 +164,8 @@ export class DataToolsService {
           if (fs.existsSync(this.dataDir)) {
             fs.rmSync(this.dataDir, { recursive: true, force: true });
           }
-          fs.renameSync(backupDir, this.dataDir);
+          this.copyDirSync(backupDir, this.dataDir);
+          fs.rmSync(backupDir, { recursive: true, force: true });
         }
         throw error;
       }

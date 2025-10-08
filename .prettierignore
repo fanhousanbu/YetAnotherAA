@@ -20,10 +20,8 @@ typechain-types
 
 # Git submodules
 validator/lib/
-paymaster/lib/
-paymaster/contracts/lib/
 
-# Foundry/Hardhat outputs
+# Foundry outputs
 validator/broadcast/
 validator/cache/
 validator/out/

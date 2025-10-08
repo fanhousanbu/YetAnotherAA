@@ -11,7 +11,6 @@ COPY package*.json ./
 COPY signer/package*.json ./signer/
 COPY aastar/package*.json ./aastar/
 COPY aastar-frontend/package*.json ./aastar-frontend/
-COPY paymaster/admin/package*.json ./paymaster/admin/
 
 # Install dependencies with force flag to bypass platform-specific issues
 RUN npm ci --include=dev --force
@@ -22,7 +21,6 @@ COPY . .
 # Build all applications
 ENV NEXT_PUBLIC_API_URL=/api/v1
 ENV BACKEND_API_URL=http://localhost:3000
-# Build each workspace individually, skipping paymaster/admin for now
 RUN npm run build -w signer && \
     npm run build -w aastar && \
     npm run build -w aastar-frontend
