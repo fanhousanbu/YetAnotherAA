@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { JwtModule } from "@nestjs/jwt";
+import { JwtModule, JwtModuleOptions } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { AuthService } from "./auth.service";
@@ -14,7 +14,7 @@ import { KmsModule } from "../kms/kms.module";
     KmsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => {
+      useFactory: async (configService: ConfigService): Promise<JwtModuleOptions> => {
         const jwtSecret = configService.get<string>("JWT_SECRET");
         if (!jwtSecret) {
           throw new Error("JWT_SECRET environment variable is required");
@@ -23,7 +23,7 @@ import { KmsModule } from "../kms/kms.module";
         return {
           secret: jwtSecret,
           signOptions: {
-            expiresIn: configService.get<string>("JWT_EXPIRES_IN", "7d"),
+            expiresIn: configService.get<string>("JWT_EXPIRES_IN", "7d") as any,
           },
         };
       },
