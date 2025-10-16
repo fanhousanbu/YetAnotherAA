@@ -6,6 +6,66 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-10-16
+
+### 🏗️ Architecture Evolution: Remote BLS Service
+
+#### Major Changes
+
+- **Removed Validator Submodule**: The validator submodule has been removed from
+  the monorepo
+  - BLS signing service now operates as an independent remote service
+  - Default endpoint: https://yetanotheraa-validator.onrender.com
+  - Configured via `BLS_SEED_NODES` environment variable
+
+- **Simplified Deployment**:
+  - Docker deployment now only includes backend and frontend services
+  - Validator/signer infrastructure maintained separately
+  - Reduced complexity for application deployment
+
+#### Benefits
+
+- **Microservices Architecture**: Clear separation between application layer and
+  signing infrastructure
+- **Easier Deployment**: Application can be deployed without managing BLS nodes
+- **Scalability**: BLS signing service can scale independently
+- **Flexibility**: Easy to switch between different BLS service providers
+
+#### Configuration Changes
+
+- **Removed from Dockerfile**:
+  - Validator package installation
+  - Validator build steps
+
+- **Removed from ecosystem.config.js**:
+  - `validator-node1` PM2 application
+
+- **Updated .vscode/launch.json**:
+  - Removed all `Validator:Node1/2/3` configurations
+  - Simplified compound launch configurations
+  - Backend now points to remote BLS service by default
+
+#### Migration Notes
+
+- Update `BLS_SEED_NODES` to point to your BLS service endpoint
+- No local BLS node setup required for development
+- For custom BLS infrastructure, see
+  [YetAnotherAA-Validator](https://github.com/fanhousanbu/YetAnotherAA-Validator)
+
+### 📚 Documentation Updates
+
+- Updated README.md to reflect remote BLS service architecture
+- Updated CONTRIBUTING.md with new project structure
+- Clarified smart contract deployment is separate from application deployment
+- Updated GitHub Actions CI workflow to remove validator jobs
+
+### 🐛 Bug Fixes
+
+- **JWT Module**: Fixed TypeScript compilation error in auth module after
+  `@nestjs/jwt` package upgrade
+  - Added explicit `JwtModuleOptions` return type to useFactory
+  - Added type assertion for `expiresIn` to handle stricter type requirements
+
 ## [0.4.0] - 2025-10-08
 
 ### 🏗️ Architecture Restructuring
