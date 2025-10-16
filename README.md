@@ -50,14 +50,15 @@ git clone https://github.com/fanhousanbu/YetAnotherAA.git
 cd YetAnotherAA && npm install
 
 # Start all services (VS Code launch configuration recommended)
-npm run start:dev -w signer        # BLS Signer (port 3001)
 npm run start:dev -w aastar        # Backend API (port 3000)
 npm run dev -w aastar-frontend     # Frontend (port 8080)
 
 # Visit http://localhost:8080 and start using!
+# Note: BLS signing service uses remote endpoint (https://yetanotheraa-validator.onrender.com)
 ```
 
-> **💡 Tip**: Use VS Code's "Run and Debug" panel to launch all services with one click (`.vscode/launch.json` configured)
+> **💡 Tip**: Use VS Code's "Run and Debug" panel to launch all services with
+> one click (`.vscode/launch.json` configured)
 
 ## ✨ Core Innovations
 
@@ -121,15 +122,15 @@ npm run dev -w aastar-frontend     # Frontend (port 8080)
 │              Backend API (NestJS)                           │
 │   • WebAuthn Authentication  • KMS Integration              │
 │   • Account Management       • Transfer Orchestration       │
-└────────┬──────────────────────────────────┬─────────────────┘
-         │                                  │
-┌────────▼──────────┐              ┌────────▼─────────────────┐
-│ BLS Signer Service│              │   KMS Service            │
-│ • Gossip Network  │              │ • Key Generation         │
-│ • Signature Agg   │              │ • Secure Signing         │
-└────────┬──────────┘              └──────────────────────────┘
-         │
-┌────────▼────────────────────────────────────────────────────┐
+└────────┬───────────────────────┬──────────────────┬─────────┘
+         │                       │                  │
+┌────────▼──────────┐  ┌─────────▼─────────┐  ┌───▼──────────┐
+│   KMS Service     │  │ Remote BLS Signer │  │   Bundler    │
+│ • Key Generation  │  │ • Gossip Network  │  │  (Pimlico)   │
+│ • Secure Signing  │  │ • Signature Agg   │  │              │
+└───────────────────┘  └─────────┬─────────┘  └───┬──────────┘
+                                 │                │
+┌────────────────────────────────▼────────────────▼───────────┐
 │               Ethereum (ERC-4337)                           │
 │  EntryPoint → Factory → AAStarAccount → Validator (BLS)     │
 └─────────────────────────────────────────────────────────────┘
@@ -213,20 +214,20 @@ function _calculateRequiredGas(uint256 nodeCount) internal pure returns (uint256
 
 ```
 YetAnotherAA/
-├── validator/              # Solidity contracts (Foundry)
-│   ├── AAStarValidator.sol     # BLS signature validator
-│   ├── AAStarAccountV6.sol     # ERC-4337 account implementation
-│   └── AAStarAccountFactory*.sol  # Account factories (v6/v7/v8)
 ├── aastar/                 # Backend API (NestJS)
 │   ├── auth/                   # WebAuthn authentication
 │   ├── kms/                    # KMS integration
 │   └── transfer/               # ERC-4337 transaction service
-├── signer/                 # BLS signing service (NestJS)
-│   ├── gossip/                 # P2P node discovery
-│   └── signature/              # BLS signature generation
 └── aastar-frontend/        # Frontend (Next.js)
     └── app/                    # Biometric authentication UI
 ```
+
+**Note**: Smart contracts (Solidity) and BLS signing service are maintained in
+separate repositories:
+
+- Validator contracts:
+  [YetAnotherAA-Validator](https://github.com/fanhousanbu/YetAnotherAA-Validator)
+- BLS Signer: Remote service at https://yetanotheraa-validator.onrender.com
 
 ## 🎓 What You'll Learn
 
@@ -249,6 +250,7 @@ This project demonstrates:
 docker run -p 80:80 \
   -e KMS_ENABLED=true \
   -e KMS_ENDPOINT=https://kms.your-domain.com \
+  -e BLS_SEED_NODES=https://yetanotheraa-validator.onrender.com \
   -e DATABASE_TYPE=postgres \
   -e DATABASE_HOST=your-db-host \
   -e DATABASE_PORT=5432 \
@@ -258,11 +260,15 @@ docker run -p 80:80 \
   -e ENTRY_POINT_V7_ADDRESS=0x0000000071727De22E5E9d8BAf0edAc6f37da032 \
   -e AASTAR_ACCOUNT_FACTORY_V7_ADDRESS=0xYourFactoryAddress \
   -e VALIDATOR_CONTRACT_V7_ADDRESS=0xYourValidatorAddress \
+  -e BUNDLER_RPC_URL=https://api.pimlico.io/v2/11155111/rpc?apikey=YOUR_API_KEY \
   yaaa:latest
 
 # Or use docker-compose (recommended)
 docker-compose up -d
 ```
+
+> **Note**: The BLS signing service is hosted separately. Use `BLS_SEED_NODES`
+> to configure the endpoint.
 
 ### Reference Deployment (Sepolia Testnet)
 
@@ -274,13 +280,19 @@ For testing purposes only:
 - **EntryPoint v0.6**: `0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789`
 - **EntryPoint v0.7**: `0x0000000071727De22E5E9d8BAf0edAc6f37da032`
 
-> **⚠️ Production**: Deploy your own contracts. Private keys only needed for contract deployment - runtime wallets are KMS-managed.
+> **⚠️ Production**: Deploy your own contracts. Private keys only needed for
+> contract deployment - runtime wallets are KMS-managed.
 
 ### Smart Contract Deployment
 
+Smart contracts are maintained in a separate repository. See
+[YetAnotherAA-Validator](https://github.com/fanhousanbu/YetAnotherAA-Validator)
+for deployment instructions.
+
 ```bash
-# Navigate to validator directory
-cd validator
+# Clone validator repository
+git clone https://github.com/fanhousanbu/YetAnotherAA-Validator.git
+cd YetAnotherAA-Validator
 
 # Compile contracts
 forge build
@@ -327,9 +339,20 @@ FROM node:20.19.0-alpine
 RUN npm install -g pm2 && apk add --no-cache git
 COPY . .
 RUN npm ci --include=dev --force
-RUN npm run build
+RUN npm run build -w aastar && npm run build -w aastar-frontend
 CMD ["pm2-runtime", "start", "ecosystem.config.js"]
 ```
+
+**Services managed by PM2:**
+
+- `aastar-backend` - Backend API (port 3000)
+- `aastar-frontend` - Next.js frontend (port 80)
+
+**External dependencies:**
+
+- BLS Signer: https://yetanotheraa-validator.onrender.com
+- KMS Service: Configured via `KMS_ENDPOINT`
+- Bundler: Configured via `BUNDLER_RPC_URL`
 
 ### View Container Logs
 

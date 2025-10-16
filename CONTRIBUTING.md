@@ -25,13 +25,14 @@ npm install
 
 # Set up development environment
 cp aastar/.env.example aastar/.env
-cp signer/.env.example signer/.env
 cp aastar-frontend/.env.example aastar-frontend/.env.local
 
 # Start development servers
 npm run start:dev -w aastar        # Backend API
-npm run start:dev -w signer        # BLS Signer
 npm run dev -w aastar-frontend     # Frontend
+
+# Note: BLS signing service uses remote endpoint
+# Configure via BLS_SEED_NODES environment variable
 ```
 
 ## 🔐 Testing WebAuthn/Passkey Features
@@ -96,11 +97,10 @@ npm run test
 
 # Run specific workspace tests
 npm test -w aastar
-npm test -w signer
 npm test -w aastar-frontend
 
-# Run smart contract tests
-cd validator && forge test
+# Smart contracts and BLS signer are in separate repository
+# See: https://github.com/fanhousanbu/YetAnotherAA-Validator
 ```
 
 ## 🔒 Security Guidelines
@@ -202,21 +202,21 @@ npm run lint:fix    # Auto-fix issues
 /aastar             # Backend API (NestJS)
   /src/auth/        # WebAuthn authentication
   /src/transfer/    # Transaction handling
-  /src/bls/         # BLS integration
+  /src/kms/         # KMS integration
 
 /aastar-frontend    # Frontend (Next.js)
   /app/auth/        # Authentication pages
   /app/transfer/    # Transaction interface
   /lib/             # Utilities and API client
-
-/signer             # BLS Signer Service
-  /src/modules/bls/ # BLS cryptography
-  /src/modules/gossip/ # P2P networking
-
-/validator          # Smart Contracts (Foundry)
-  /src/             # Solidity contracts
-  /test/            # Contract tests
 ```
+
+**External Services:**
+
+- **BLS Signer & Smart Contracts**: Maintained in
+  [YetAnotherAA-Validator](https://github.com/fanhousanbu/YetAnotherAA-Validator)
+  - BLS signature aggregation service (NestJS)
+  - Solidity contracts (Foundry)
+  - Gossip network for node coordination
 
 ### API Guidelines
 

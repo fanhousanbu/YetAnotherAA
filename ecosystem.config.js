@@ -1,21 +1,6 @@
 module.exports = {
   apps: [
     {
-      name: "validator-node1",
-      cwd: "./validator",
-      script: "node",
-      args: "dist/main.js",
-      env: {
-        NODE_STATE_FILE: "./node_dev_001.json",
-        PORT: "3001",
-        GOSSIP_PUBLIC_URL: process.env.GOSSIP_PUBLIC_URL || "ws://localhost:3001/ws",
-        GOSSIP_BOOTSTRAP_PEERS: process.env.GOSSIP_BOOTSTRAP_PEERS || "",
-        VALIDATOR_CONTRACT_ADDRESS:
-          process.env.VALIDATOR_CONTRACT_ADDRESS || "0xD9756c11686B59F7DDf39E6360230316710485af",
-        ETH_RPC_URL: process.env.ETH_RPC_URL,
-      },
-    },
-    {
       name: "aastar-backend",
       cwd: "./aastar",
       script: "node",
@@ -30,7 +15,7 @@ module.exports = {
         ETH_RPC_URL: process.env.ETH_RPC_URL,
         ETH_PRIVATE_KEY: process.env.ETH_PRIVATE_KEY,
         BUNDLER_RPC_URL: process.env.BUNDLER_RPC_URL,
-        BLS_SEED_NODES: process.env.BLS_SEED_NODES || "http://localhost:3001",
+        BLS_SEED_NODES: process.env.BLS_SEED_NODES || "https://yetanotheraa-validator.onrender.com",
         ENTRY_POINT_ADDRESS:
           process.env.ENTRY_POINT_ADDRESS || "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
         AASTAR_ACCOUNT_FACTORY_ADDRESS:

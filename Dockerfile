@@ -8,13 +8,11 @@ RUN npm install -g pm2 && apk add --no-cache git
 
 # Copy package files
 COPY package*.json ./
-COPY validator/package*.json ./validator/
 COPY aastar/package*.json ./aastar/
 COPY aastar-frontend/package*.json ./aastar-frontend/
 
 # Install dependencies with force flag to bypass platform-specific issues
-RUN npm ci --include=dev --force && \
-    cd validator && npm ci --include=dev --force && cd ..
+RUN npm ci --include=dev --force
 
 # Copy source code
 COPY . .
@@ -22,8 +20,7 @@ COPY . .
 # Build all applications
 ENV NEXT_PUBLIC_API_URL=/api/v1
 ENV BACKEND_API_URL=http://localhost:3000
-RUN cd validator && npm run build && cd .. && \
-    npm run build -w aastar && \
+RUN npm run build -w aastar && \
     npm run build -w aastar-frontend
 
 # The configuration files are already copied with 'COPY . .' above
