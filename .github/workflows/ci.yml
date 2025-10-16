@@ -56,11 +56,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [aastar, aastar-frontend, validator]
+        project: [aastar, aastar-frontend]
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
 
       - name: Use Node.js 20
         uses: actions/setup-node@v5
@@ -68,11 +66,6 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm ci --force
-
-      - name: Install validator dependencies
-        if: matrix.project == 'validator'
-        working-directory: ./validator
         run: npm ci --force
 
       - name: Check formatting
@@ -104,12 +97,8 @@ jobs:
             build-command: npm run build
           - project: aastar-frontend
             build-command: npm run build
-          - project: validator
-            build-command: npm run build
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
 
       - name: Use Node.js 20
         uses: actions/setup-node@v5
@@ -117,11 +106,6 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm ci --force
-
-      - name: Install validator dependencies
-        if: matrix.project == 'validator'
-        working-directory: ./validator
         run: npm ci --force
 
       - name: Build project
@@ -136,11 +120,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [aastar, validator]
+        project: [aastar]
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
 
       - name: Use Node.js 20
         uses: actions/setup-node@v5
@@ -148,11 +130,6 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm ci --force
-
-      - name: Install validator dependencies
-        if: matrix.project == 'validator'
-        working-directory: ./validator
         run: npm ci --force
 
       - name: Run tests
@@ -162,46 +139,15 @@ jobs:
           CI: true
           NODE_ENV: test
 
-  # Job 5: Solidity contracts
-  contracts:
-    name: Smart Contracts
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./validator
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          submodules: recursive
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
-
-      - name: Build contracts
-        run: forge build
-
-      - name: Run tests
-        run: forge test -vvv
-
-      - name: Check contract sizes
-        run: forge build --sizes
-
-      - name: Run coverage
-        run: forge coverage
-
-  # Job 6: Type checking
+  # Job 5: Type checking
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [aastar, aastar-frontend, validator]
+        project: [aastar, aastar-frontend]
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
 
       - name: Use Node.js 20
         uses: actions/setup-node@v5
@@ -209,11 +155,6 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm ci --force
-
-      - name: Install validator dependencies
-        if: matrix.project == 'validator'
-        working-directory: ./validator
         run: npm ci --force
 
       - name: Run TypeScript compiler
@@ -225,7 +166,7 @@ jobs:
             npx tsc --noEmit
           fi
 
-  # Job 7: CodeQL Analysis
+  # Job 6: CodeQL Analysis
   codeql:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
@@ -251,11 +192,11 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
 
-  # Job 8: Summary job for branch protection
+  # Job 7: Summary job for branch protection
   ci-success:
     name: CI Success
     runs-on: ubuntu-latest
-    needs: [security, quality, build, test, contracts, typecheck, codeql]
+    needs: [security, quality, build, test, typecheck, codeql]
     if: always()
     steps:
       - name: Check all jobs status
@@ -264,7 +205,6 @@ jobs:
                 "${{ needs.quality.result }}" == "success" &&
                 "${{ needs.build.result }}" == "success" &&
                 "${{ needs.test.result }}" == "success" &&
-                "${{ needs.contracts.result }}" == "success" &&
                 "${{ needs.typecheck.result }}" == "success" &&
                 "${{ needs.codeql.result }}" == "success" ]]; then
             echo "All CI checks passed!"
