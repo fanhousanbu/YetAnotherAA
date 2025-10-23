@@ -48,63 +48,26 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-    let walletAddress: string;
-    let encryptedPrivateKey: string | undefined;
-    let mnemonic: string | undefined;
-    let kmsKeyId: string | undefined;
-    let useKms = false;
-
-    if (this.kmsService.isKmsEnabled()) {
-      // Use KMS to create wallet
-      useKms = true;
-      const description = `wallet-${registerDto.email}-${Date.now()}`;
-
-      console.log("════════════════════════════════════════════");
-      console.log("🚀 Starting KMS Wallet Creation");
-      console.log("════════════════════════════════════════════");
-      console.log(`👤 User Email: ${registerDto.email}`);
-      console.log(`📝 Description: ${description}`);
-      console.log("════════════════════════════════════════════");
-
-      const kmsResponse = await this.kmsService.createKey(description);
-
-      kmsKeyId = kmsResponse.KeyMetadata.KeyId;
-      // Use the address from KMS CreateKey response
-      walletAddress = kmsResponse.KeyMetadata.Address || kmsResponse.Address;
-
-      if (!walletAddress) {
-        throw new Error("KMS CreateKey response did not include an address");
-      }
-
-      console.log("════════════════════════════════════════════");
-      console.log("✅ KMS Wallet Created Successfully");
-      console.log("════════════════════════════════════════════");
-      console.log(`🔑 KMS Key ID: ${kmsKeyId}`);
-      console.log(`💰 Wallet Address: ${walletAddress}`);
-      console.log("════════════════════════════════════════════");
-    } else {
-      // Generate HDWallet locally (existing logic)
-      const userWallet = ethers.Wallet.createRandom();
-      const encryptionKey = this.configService.get<string>("userEncryptionKey");
-      encryptedPrivateKey = CryptoUtil.encrypt(userWallet.privateKey, encryptionKey);
-      walletAddress = userWallet.address;
-      mnemonic = userWallet.mnemonic?.phrase;
-
-      console.log("User Registration Debug (Local):");
-      console.log("- Generated Wallet Address:", walletAddress);
-      console.log("- Mnemonic:", mnemonic);
-    }
+    // Wallet creation is now deferred until account creation
+    // This reduces registration overhead and KMS costs
+    console.log("════════════════════════════════════════════");
+    console.log("📝 User Registration (No Wallet Creation)");
+    console.log("════════════════════════════════════════════");
+    console.log(`👤 User Email: ${registerDto.email}`);
+    console.log(`⏳ Wallet will be created when first account is created`);
+    console.log("════════════════════════════════════════════");
 
     const user = {
       id: uuidv4(),
       email: registerDto.email,
       username: registerDto.username || registerDto.email.split("@")[0],
       password: hashedPassword,
-      walletAddress,
-      encryptedPrivateKey,
-      mnemonic, // In production, this should also be encrypted
-      kmsKeyId,
-      useKms,
+      // Wallet fields will be populated when account is created
+      walletAddress: undefined,
+      encryptedPrivateKey: undefined,
+      mnemonic: undefined,
+      kmsKeyId: undefined,
+      useKms: false,
       createdAt: new Date().toISOString(),
     };
 
@@ -159,6 +122,13 @@ export class AuthService {
       throw new Error(`User not found for userId: ${userId}`);
     }
 
+    // Check if user has a wallet - if not, caller should use ensureUserWallet first
+    if (!user.walletAddress) {
+      throw new Error(
+        `User wallet not initialized for userId: ${userId}. Call ensureUserWallet() first.`
+      );
+    }
+
     if (user.useKms && user.kmsKeyId) {
       // Return KMS signer with stored address
       console.log("════════════════════════════════════════════");
@@ -209,6 +179,107 @@ export class AuthService {
       // Always throw an error to prevent security issues
       throw new Error(`Failed to decrypt user wallet: ${error.message}`);
     }
+  }
+
+  /**
+   * Ensure user has a wallet (EOA), create one if not exists
+   * This method is called when creating the first account
+   * @param userId - User ID
+   * @returns Wallet (KmsSigner or ethers.Wallet)
+   */
+  async ensureUserWallet(userId: string): Promise<ethers.Wallet | any> {
+    const user = await this.databaseService.findUserById(userId);
+
+    if (!user) {
+      throw new Error(`User not found for userId: ${userId}`);
+    }
+
+    // If user already has a wallet, return it
+    if (user.walletAddress) {
+      console.log("════════════════════════════════════════════");
+      console.log("✅ User already has wallet");
+      console.log("════════════════════════════════════════════");
+      console.log(`💰 Wallet Address: ${user.walletAddress}`);
+      console.log("════════════════════════════════════════════");
+
+      // Return existing wallet
+      if (user.useKms && user.kmsKeyId) {
+        return this.kmsService.createKmsSigner(user.kmsKeyId, user.walletAddress);
+      } else if (user.encryptedPrivateKey) {
+        const encryptionKey = this.configService.get<string>("userEncryptionKey");
+        const privateKey = CryptoUtil.decrypt(user.encryptedPrivateKey, encryptionKey);
+        return new ethers.Wallet(privateKey);
+      }
+    }
+
+    // Create wallet on demand
+    let walletAddress: string;
+    let encryptedPrivateKey: string | undefined;
+    let mnemonic: string | undefined;
+    let kmsKeyId: string | undefined;
+    let useKms = false;
+    let wallet: ethers.Wallet | any;
+
+    if (this.kmsService.isKmsEnabled()) {
+      // Use KMS to create wallet
+      useKms = true;
+      const description = `wallet-${user.email}-${Date.now()}`;
+
+      console.log("════════════════════════════════════════════");
+      console.log("🚀 Creating KMS Wallet On Demand");
+      console.log("════════════════════════════════════════════");
+      console.log(`👤 User Email: ${user.email}`);
+      console.log(`📝 Description: ${description}`);
+      console.log("════════════════════════════════════════════");
+
+      const kmsResponse = await this.kmsService.createKey(description);
+
+      kmsKeyId = kmsResponse.KeyMetadata.KeyId;
+      walletAddress = kmsResponse.KeyMetadata.Address || kmsResponse.Address;
+
+      if (!walletAddress) {
+        throw new Error("KMS CreateKey response did not include an address");
+      }
+
+      console.log("════════════════════════════════════════════");
+      console.log("✅ KMS Wallet Created Successfully");
+      console.log("════════════════════════════════════════════");
+      console.log(`🔑 KMS Key ID: ${kmsKeyId}`);
+      console.log(`💰 Wallet Address: ${walletAddress}`);
+      console.log("════════════════════════════════════════════");
+
+      // Create KMS signer to return
+      wallet = this.kmsService.createKmsSigner(kmsKeyId, walletAddress);
+    } else {
+      // Generate wallet locally
+      wallet = ethers.Wallet.createRandom();
+      const encryptionKey = this.configService.get<string>("userEncryptionKey");
+      encryptedPrivateKey = CryptoUtil.encrypt(wallet.privateKey, encryptionKey);
+      walletAddress = wallet.address;
+      mnemonic = wallet.mnemonic?.phrase;
+
+      console.log("════════════════════════════════════════════");
+      console.log("🚀 Creating Local Wallet On Demand");
+      console.log("════════════════════════════════════════════");
+      console.log(`💰 Wallet Address: ${walletAddress}`);
+      console.log(`📝 Mnemonic: ${mnemonic}`);
+      console.log("════════════════════════════════════════════");
+    }
+
+    // Update user entity directly (don't create new object)
+    user.walletAddress = walletAddress;
+    user.encryptedPrivateKey = encryptedPrivateKey;
+    user.mnemonic = mnemonic;
+    user.kmsKeyId = kmsKeyId;
+    user.useKms = useKms;
+
+    await this.databaseService.saveUser(user);
+
+    console.log("════════════════════════════════════════════");
+    console.log("✅ User wallet created and saved");
+    console.log("════════════════════════════════════════════");
+
+    return wallet;
   }
 
   private generateToken(user: any) {
@@ -283,52 +354,25 @@ export class AuthService {
       // 创建用户（包含密码和钱包）
       const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-      let walletAddress: string;
-      let encryptedPrivateKey: string | undefined;
-      let mnemonic: string | undefined;
-      let kmsKeyId: string | undefined;
-      let useKms = false;
-
-      if (this.kmsService.isKmsEnabled()) {
-        // Use KMS to create wallet
-        useKms = true;
-        const description = `wallet-${registerDto.email}-${Date.now()}`;
-        const kmsResponse = await this.kmsService.createKey(description);
-
-        kmsKeyId = kmsResponse.KeyMetadata.KeyId;
-        // Use the address from KMS CreateKey response
-        walletAddress = kmsResponse.KeyMetadata.Address || kmsResponse.Address;
-
-        if (!walletAddress) {
-          throw new Error("KMS CreateKey response did not include an address");
-        }
-
-        console.log("Passkey User Registration Debug (KMS):");
-        console.log("- KMS Key ID:", kmsKeyId);
-        console.log("- Wallet Address:", walletAddress);
-      } else {
-        // Generate HDWallet locally (existing logic)
-        const userWallet = ethers.Wallet.createRandom();
-        const encryptionKey = this.configService.get<string>("userEncryptionKey");
-        encryptedPrivateKey = CryptoUtil.encrypt(userWallet.privateKey, encryptionKey);
-        walletAddress = userWallet.address;
-        mnemonic = userWallet.mnemonic?.phrase;
-
-        console.log("Passkey User Registration Debug (Local):");
-        console.log("- Generated Wallet Address:", walletAddress);
-        console.log("- Mnemonic:", mnemonic);
-      }
+      // Wallet creation is now deferred until account creation
+      console.log("════════════════════════════════════════════");
+      console.log("📝 Passkey User Registration (No Wallet Creation)");
+      console.log("════════════════════════════════════════════");
+      console.log(`👤 User Email: ${registerDto.email}`);
+      console.log(`⏳ Wallet will be created when first account is created`);
+      console.log("════════════════════════════════════════════");
 
       const user = {
         id: uuidv4(),
         email: registerDto.email,
         username: registerDto.username || registerDto.email.split("@")[0],
         password: hashedPassword,
-        walletAddress,
-        encryptedPrivateKey,
-        mnemonic, // In production, this should also be encrypted
-        kmsKeyId,
-        useKms,
+        // Wallet fields will be populated when account is created
+        walletAddress: undefined,
+        encryptedPrivateKey: undefined,
+        mnemonic: undefined,
+        kmsKeyId: undefined,
+        useKms: false,
         createdAt: new Date().toISOString(),
       };
 

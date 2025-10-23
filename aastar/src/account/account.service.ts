@@ -36,8 +36,9 @@ export class AccountService {
       this.ethereumService.getValidatorContract(version).target ||
       this.ethereumService.getValidatorContract(version).address;
 
-    // Get user's wallet address - now used as both creator and signer
-    const userWallet = await this.authService.getUserWallet(userId);
+    // Ensure user has a wallet (create on demand if not exists) and get it
+    // This returns the wallet directly, avoiding a second database query
+    const userWallet = await this.authService.ensureUserWallet(userId);
     const salt = createAccountDto.salt || Math.floor(Math.random() * 1000000);
 
     // Get the predicted account address using user wallet as both creator and signer
