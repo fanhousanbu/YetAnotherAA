@@ -19,8 +19,8 @@ export class User {
   @Column()
   password: string;
 
-  @Column()
-  walletAddress: string;
+  @Column({ nullable: true })
+  walletAddress?: string;
 
   @Column({ nullable: true })
   encryptedPrivateKey?: string;
