@@ -5,12 +5,7 @@ import Layout from "@/components/Layout";
 import { paymasterAPI } from "@/lib/api";
 import SwipeableListItem from "@/components/SwipeableListItem";
 import toast from "react-hot-toast";
-import {
-  TrashIcon,
-  PlusIcon,
-  CheckCircleIcon,
-  ExclamationCircleIcon,
-} from "@heroicons/react/24/outline";
+import { PlusIcon, CheckCircleIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline";
 
 interface Paymaster {
   name: string;

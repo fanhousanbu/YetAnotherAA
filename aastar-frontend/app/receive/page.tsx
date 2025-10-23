@@ -12,7 +12,7 @@ export default function ReceivePage() {
   const router = useRouter();
   const { data } = useDashboard();
   const { account } = data;
-  const [isMobile, setIsMobile] = useState(false);
+  const [, setIsMobile] = useState(false);
 
   useEffect(() => {
     // Check if it's mobile view

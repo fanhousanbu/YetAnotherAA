@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, ".."),
   // Fix for monorepo setup with Next.js 16+
   // Point to monorepo root where node_modules/next is located
-  // @ts-ignore - turbopack is not yet in official types
+  // @ts-expect-error - turbopack is not yet in official types
   turbopack: {
     root: path.join(__dirname, ".."),
   },
