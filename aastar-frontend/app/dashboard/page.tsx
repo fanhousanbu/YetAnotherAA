@@ -19,7 +19,6 @@ import {
   ExclamationCircleIcon,
   CpuChipIcon,
   ArrowPathIcon,
-  _ArrowDownIcon,
   QrCodeIcon,
 } from "@heroicons/react/24/outline";
 
