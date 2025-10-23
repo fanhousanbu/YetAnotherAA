@@ -14,7 +14,6 @@ import {
   ArrowTopRightOnSquareIcon,
   CheckCircleIcon,
   WalletIcon,
-  ArrowPathIcon,
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 
@@ -450,13 +449,13 @@ export default function TransferPage() {
   };
 
   // Pull to refresh handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
+  const _handleTouchStart = (e: React.TouchEvent) => {
     if (containerRef.current && containerRef.current.scrollTop === 0 && !pullToRefresh.refreshing) {
       touchStartY.current = e.touches[0].clientY;
     }
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
+  const _handleTouchMove = (e: React.TouchEvent) => {
     if (containerRef.current && containerRef.current.scrollTop === 0 && !pullToRefresh.refreshing) {
       const touchY = e.touches[0].clientY;
       const distance = touchY - touchStartY.current;
@@ -467,7 +466,7 @@ export default function TransferPage() {
     }
   };
 
-  const handleTouchEnd = async () => {
+  const _handleTouchEnd = async () => {
     if (pullToRefresh.distance > 80 && !pullToRefresh.refreshing) {
       // Keep the pull state and show refreshing
       setPullToRefresh({ pulling: false, distance: 80, refreshing: true });

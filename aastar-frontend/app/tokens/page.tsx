@@ -8,7 +8,7 @@ import { UserToken, Token } from "@/lib/types";
 import TokenIcon from "@/components/TokenIcon";
 import SwipeableListItem from "@/components/SwipeableListItem";
 import toast from "react-hot-toast";
-import { MagnifyingGlassIcon, PlusIcon, TrashIcon, WalletIcon } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, PlusIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 

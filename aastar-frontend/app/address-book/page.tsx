@@ -6,7 +6,7 @@ import Layout from "@/components/Layout";
 import { addressBookAPI } from "@/lib/api";
 import SwipeableListItem from "@/components/SwipeableListItem";
 import toast from "react-hot-toast";
-import { TrashIcon, PencilIcon, PlusIcon, BookOpenIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, PlusIcon, BookOpenIcon } from "@heroicons/react/24/outline";
 
 interface AddressBookEntry {
   address: string;
