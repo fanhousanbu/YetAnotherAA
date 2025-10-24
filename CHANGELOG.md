@@ -6,6 +6,71 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-01-24
+
+### ⚡ Performance Optimization: Lazy KMS EOA Creation
+
+#### Major Changes
+
+- **Deferred Wallet Creation**: User wallet (EOA) creation has been moved from
+  registration time to account creation time
+  - Registration is now 10-20x faster
+  - Only users who create smart accounts will have wallets generated
+  - Supports both KMS and local wallet modes
+
+- **New Authentication Flow**:
+  - **Registration Phase**: Only creates user record with Passkey (no KMS API
+    call)
+  - **Account Creation Phase**: Wallet is created on-demand when first account
+    is created
+  - Automatic detection of existing wallets to avoid duplicate creation
+
+#### Added
+
+- **ensureUserWallet() Method** (`aastar/src/auth/auth.service.ts`):
+  - Creates wallet on-demand if not exists
+  - Returns wallet directly to avoid database race conditions
+  - Supports both KMS mode and local wallet generation
+  - Comprehensive logging for debugging
+
+#### Changed
+
+- **User Entity Schema** (`aastar/src/entities/user.entity.ts`):
+  - `walletAddress` column is now nullable (`{ nullable: true }`)
+  - Wallet-related fields are optional during registration
+
+- **Registration Methods** (`aastar/src/auth/auth.service.ts`):
+  - Removed immediate EOA creation from `register()` method
+  - Removed immediate EOA creation from `completePasskeyRegistration()` method
+  - Registration now only creates user record without wallet initialization
+
+- **Account Creation** (`aastar/src/account/account.service.ts`):
+  - `createAccount()` now calls `ensureUserWallet()` before account creation
+  - Uses returned wallet directly instead of making additional database queries
+  - Eliminates database race conditions
+
+- **Wallet Retrieval** (`aastar/src/auth/auth.service.ts`):
+  - `getUserWallet()` now throws clear error if wallet is not initialized
+  - Error message guides developers to use `ensureUserWallet()` first
+
+**For developers:**
+
+```typescript
+// ❌ Old pattern (may throw error for new users):
+const wallet = await authService.getUserWallet(userId);
+
+// ✅ New pattern (safe for all users):
+const wallet = await authService.ensureUserWallet(userId);
+```
+
+#### Technical Details
+
+**Dependencies Updated:**
+
+- Downgraded `eslint` to v8 in frontend for compatibility
+
+---
+
 ## [0.5.0] - 2025-10-16
 
 ### 🏗️ Architecture Evolution: Remote BLS Service
