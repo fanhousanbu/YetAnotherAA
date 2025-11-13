@@ -10,7 +10,7 @@
 | 组件 | 状态 | 地址/端口 |
 |------|------|----------|
 | **智能合约** | ✅ 已部署 | Sepolia 测试网 |
-| **Backend API** | ✅ 运行中 | http://localhost:3005 |
+| **Backend API** | ✅ 运行中 | http://localhost:3001 |
 | **Frontend Web** | ✅ 运行中 | http://localhost:8080 |
 | **Paymaster** | ✅ 已充值 | 0.1 ETH |
 
@@ -33,9 +33,9 @@
 
 ## 服务运行信息
 
-### Backend API (端口 3005)
+### Backend API (端口 3001)
 
-**健康检查**: http://localhost:3005/health
+**健康检查**: http://localhost:3001/health
 ```json
 {
   "status": "ok",
@@ -43,7 +43,7 @@
 }
 ```
 
-**测试端点**: http://localhost:3005/api/test
+**测试端点**: http://localhost:3001/api/test
 ```json
 {
   "relayerAddress": "0xE3D28Aa77c95d5C098170698e5ba68824BFC008d",
@@ -86,7 +86,7 @@ CHAIN_ID=11155111
 DELEGATION_FACTORY_ADDRESS=0xDcBDCcE3f4A1B59e7dA5fa1Cd6FD9E1C9f9b88C2
 PAYMASTER_ADDRESS=0xf5023C131A8aD2506972B29D5F84310D5e754767
 RELAYER_PRIVATE_KEY=0x015cc1577bb8dcc6635eff3e35bbc57c6d927fa31874b82a89fb3a42492f44b0
-PORT=3005
+PORT=3001
 NODE_ENV=development
 ```
 
@@ -97,7 +97,7 @@ VITE_CHAIN_ID=11155111
 VITE_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/Bx4QRW1-vnwJUePSAAD7N
 VITE_FACTORY_ADDRESS=0xDcBDCcE3f4A1B59e7dA5fa1Cd6FD9E1C9f9b88C2
 VITE_PAYMASTER_ADDRESS=0xf5023C131A8aD2506972B29D5F84310D5e754767
-VITE_BACKEND_URL=http://localhost:3005
+VITE_BACKEND_URL=http://localhost:3001
 ```
 
 ---
@@ -107,7 +107,7 @@ VITE_BACKEND_URL=http://localhost:3005
 ### 1. 验证服务状态
 ```bash
 # 检查 backend
-curl http://localhost:3005/health
+curl http://localhost:3001/health
 
 # 检查 frontend
 curl -I http://localhost:8080
@@ -122,12 +122,12 @@ curl -I http://localhost:8080
 ### 3. API 测试
 ```bash
 # 检查用户委托状态
-curl -X POST http://localhost:3005/api/eip7702/status \
+curl -X POST http://localhost:3001/api/eip7702/status \
   -H "Content-Type: application/json" \
   -d '{"userAddress":"0xE3D28Aa77c95d5C098170698e5ba68824BFC008d"}'
 
 # 启用委托
-curl -X POST http://localhost:3005/api/eip7702/enable \
+curl -X POST http://localhost:3001/api/eip7702/enable \
   -H "Content-Type: application/json" \
   -d '{"userAddress":"0xE3D28Aa77c95d5C098170698e5ba68824BFC008d","dailyLimit":"100000000000000000"}'
 ```
@@ -147,10 +147,11 @@ pkill -f "vite.*frontend"
 
 ### 启动服务
 ```bash
-# 启动 backend
-cd backend && PORT=3005 npm start > ../logs/backend.log 2>&1 &
+# 使用启动脚本（推荐）
+./start.sh
 
-# 启动 frontend
+# 或手动启动
+cd backend && PORT=3001 npm start > ../logs/backend.log 2>&1 &
 cd frontend && npm run dev > ../logs/frontend.log 2>&1 &
 ```
 

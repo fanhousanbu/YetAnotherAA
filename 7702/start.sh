@@ -1,66 +1,87 @@
 #!/bin/bash
 
-# 7702 应用启动脚本
-# 支持 Vite 前端和 Express 后端
+# EIP-7702 System Startup Script
+# 启动 Backend 和 Frontend 服务
 
 set -e
 
-echo "🚀 启动 EIP-7702 应用程序..."
+echo "🚀 Starting EIP-7702 System..."
+echo ""
 
-# 清理可能冲突的端口
-echo "🧹 清理端口冲突..."
-PORTS=(3000 3001 3002 8008 8009 8080 8081 8082 8083)
-for port in "${PORTS[@]}"; do
-    if lsof -ti:$port >/dev/null 2>&1; then
-        echo "  🔴 终止端口 $port 的进程..."
-        lsof -ti:$port | xargs kill -9 2>/dev/null || true
-        sleep 1
-    else
-        echo "  🟢 端口 $port 可用"
+# Step 1: Kill existing processes on ports 3001-3006
+echo "📋 Step 1: Cleaning up ports 3001-3006..."
+for port in 3001 3002 3003 3004 3005 3006; do
+    PID=$(lsof -ti:$port 2>/dev/null || echo "")
+    if [ ! -z "$PID" ]; then
+        echo "  Killing process on port $port (PID: $PID)"
+        kill -9 $PID 2>/dev/null || true
+        sleep 0.5
     fi
 done
+echo "✅ Ports cleaned"
+echo ""
 
-# 检查 Node.js 版本
-echo "🔍 检查环境..."
-node --version
-pnpm --version
+# Step 2: Create logs directory
+echo "📋 Step 2: Creating logs directory..."
+mkdir -p logs
+echo "✅ Logs directory ready"
+echo ""
 
-# 确保环境文件存在
-if [ ! -f backend/.env ]; then
-    echo "❌ 错误：backend/.env 文件不存在！"
-    echo "请创建 backend/.env 文件并配置正确的环境变量"
-    exit 1
-fi
-
-echo "✅ 环境配置文件已存在"
-
-# 启动后端服务
-echo "🔧 启动后端服务..."
+# Step 3: Start Backend on port 3001
+echo "📋 Step 3: Starting Backend API on port 3001..."
 cd backend
-pnpm start &
+PORT=3001 npm start > ../logs/backend.log 2>&1 &
 BACKEND_PID=$!
+echo "  Backend PID: $BACKEND_PID"
 cd ..
 
-# 等待后端启动
-echo "⏳ 等待后端服务启动..."
+# Wait for backend to start
 sleep 3
 
-# 启动前端开发服务器
-echo "🎨 启动前端开发服务器..."
+# Check if backend is running
+if curl -s http://localhost:3001/health > /dev/null; then
+    echo "✅ Backend API is running on http://localhost:3001"
+else
+    echo "❌ Backend failed to start. Check logs/backend.log"
+    exit 1
+fi
+echo ""
+
+# Step 4: Start Frontend on port 8080
+echo "📋 Step 4: Starting Frontend on port 8080..."
 cd frontend
-pnpm run dev &
+npm run dev > ../logs/frontend.log 2>&1 &
 FRONTEND_PID=$!
+echo "  Frontend PID: $FRONTEND_PID"
 cd ..
 
-echo "✅ 应用程序启动完成！"
-echo "🌐 前端地址: http://localhost:8080"
-echo "🔗 后端地址: http://localhost:3001"
-echo "📊 测试接口: http://localhost:3001/api/test"
+# Wait for frontend to start
+sleep 3
+
+# Check if frontend is running
+if curl -s http://localhost:8080 > /dev/null; then
+    echo "✅ Frontend is running on http://localhost:8080"
+else
+    echo "❌ Frontend failed to start. Check logs/frontend.log"
+    exit 1
+fi
 echo ""
-echo "按 Ctrl+C 停止服务"
 
-# 等待中断信号
-trap "echo '🛑 正在停止服务...'; kill $BACKEND_PID $FRONTEND_PID; exit" INT
-
-# 保持脚本运行
-wait
+echo "🎉 All services started successfully!"
+echo ""
+echo "📊 Service Status:"
+echo "  Backend API:  http://localhost:3001"
+echo "  Frontend Web: http://localhost:8080"
+echo ""
+echo "📋 Quick Links:"
+echo "  Health Check: http://localhost:3001/health"
+echo "  API Test:     http://localhost:3001/api/test"
+echo "  Test Page:    http://localhost:8080/test.html"
+echo ""
+echo "📝 View Logs:"
+echo "  Backend:  tail -f logs/backend.log"
+echo "  Frontend: tail -f logs/frontend.log"
+echo ""
+echo "🛑 Stop Services:"
+echo "  ./stop.sh"
+echo ""
