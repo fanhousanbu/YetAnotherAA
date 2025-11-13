@@ -131,9 +131,17 @@ lib/**
 # Foundry test artifacts
 test-cache/
 
+# Additional git tracking exclusions
+.git/
+.github/
+
 # Rust
 target/
 Cargo.lock
+
+# Additional development files
+*.orig
+*.rej
 
 # Mac
 .DS_Store
