@@ -16,11 +16,11 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         min-height: 100vh;
-        padding: 15px;
+        padding: 20px;
       }
 
       .container {
-        max-width: 1400px;
+        max-width: 1200px;
         margin: 0 auto;
         background: white;
         border-radius: 16px;
@@ -31,131 +31,99 @@
       .header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        padding: 15px 20px;
+        padding: 20px 30px;
         display: flex;
         justify-content: space-between;
         align-items: center;
       }
 
       .header h1 {
-        font-size: 22px;
+        font-size: 24px;
         font-weight: 600;
       }
 
       .header .network {
-        font-size: 13px;
+        font-size: 14px;
         background: rgba(255, 255, 255, 0.2);
-        padding: 6px 12px;
-        border-radius: 15px;
+        padding: 8px 16px;
+        border-radius: 20px;
       }
 
       .main {
-        padding: 20px;
-      }
-
-      /* Top row - 2 columns */
-      .top-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 15px;
-        margin-bottom: 15px;
-      }
-
-      /* Middle row - Account + Enable Delegation */
-      .mid-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-        margin-bottom: 15px;
-      }
-
-      /* Bottom row - Status */
-      .bottom-row {
-        margin-bottom: 15px;
+        gap: 20px;
+        padding: 30px;
       }
 
       .card {
         background: #f8f9fa;
-        border-radius: 10px;
-        padding: 15px;
+        border-radius: 12px;
+        padding: 20px;
         border: 1px solid #e0e0e0;
       }
 
       .card h2 {
-        font-size: 16px;
-        margin-bottom: 12px;
+        font-size: 18px;
+        margin-bottom: 15px;
         color: #333;
-      }
-
-      .contract-addresses {
-        font-size: 11px;
-        display: grid;
-        grid-template-columns: 100px 1fr;
-        gap: 8px;
+        display: flex;
         align-items: center;
-      }
-
-      .addr {
-        background: white;
-        padding: 6px;
-        border-radius: 4px;
-        font-family: "Courier New", monospace;
-        word-break: break-all;
-        font-size: 10px;
+        gap: 8px;
       }
 
       .balance-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-        margin-top: 10px;
+        gap: 15px;
+        margin-top: 15px;
       }
 
       .balance-item {
         background: white;
-        padding: 12px;
+        padding: 15px;
         border-radius: 8px;
         text-align: center;
         border: 2px solid #e0e0e0;
       }
 
       .balance-item .label {
-        font-size: 11px;
+        font-size: 12px;
         color: #666;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
       }
 
       .balance-item .value {
-        font-size: 18px;
+        font-size: 20px;
         font-weight: 600;
         color: #667eea;
       }
 
       .address-display {
         background: white;
-        padding: 10px;
-        border-radius: 6px;
+        padding: 12px;
+        border-radius: 8px;
         font-family: "Courier New", monospace;
-        font-size: 11px;
+        font-size: 14px;
         word-break: break-all;
-        margin-top: 8px;
+        margin-top: 10px;
       }
 
       button {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border: none;
-        padding: 10px 20px;
-        border-radius: 6px;
+        padding: 12px 24px;
+        border-radius: 8px;
         cursor: pointer;
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 600;
-        transition: transform 0.2s;
+        transition: transform 0.2s, box-shadow 0.2s;
         width: 100%;
-        margin-top: 8px;
+        margin-top: 10px;
       }
 
-      button:hover:not(:disabled) {
+      button:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
       }
@@ -167,10 +135,10 @@
       }
 
       .status {
-        padding: 10px;
-        border-radius: 6px;
-        margin-top: 10px;
-        font-size: 12px;
+        padding: 12px;
+        border-radius: 8px;
+        margin-top: 15px;
+        font-size: 14px;
       }
 
       .status.success {
@@ -193,8 +161,8 @@
 
       .loading {
         display: inline-block;
-        width: 12px;
-        height: 12px;
+        width: 14px;
+        height: 14px;
         border: 2px solid rgba(255, 255, 255, 0.3);
         border-radius: 50%;
         border-top-color: currentColor;
@@ -211,12 +179,12 @@
         display: inline-block;
         background: #28a745;
         color: white;
-        padding: 8px 15px;
-        border-radius: 6px;
+        padding: 10px 20px;
+        border-radius: 8px;
         text-decoration: none;
-        font-size: 12px;
+        font-size: 14px;
         font-weight: 600;
-        margin-top: 8px;
+        margin-top: 10px;
       }
 
       .faucet-link:hover {
@@ -224,27 +192,40 @@
       }
 
       .input-group {
-        margin-top: 10px;
+        margin-top: 15px;
       }
 
       .input-group label {
         display: block;
-        font-size: 12px;
+        font-size: 14px;
         color: #666;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
       }
 
       .input-group input {
         width: 100%;
-        padding: 10px;
+        padding: 12px;
         border: 2px solid #e0e0e0;
-        border-radius: 6px;
-        font-size: 13px;
+        border-radius: 8px;
+        font-size: 14px;
       }
 
-      @media (max-width: 968px) {
-        .top-row,
-        .mid-row {
+      .contract-addresses {
+        font-size: 12px;
+        margin-top: 10px;
+      }
+
+      .contract-addresses .addr {
+        background: white;
+        padding: 8px;
+        border-radius: 6px;
+        margin: 5px 0;
+        font-family: "Courier New", monospace;
+        word-break: break-all;
+      }
+
+      @media (max-width: 768px) {
+        .main {
           grid-template-columns: 1fr;
         }
         .balance-grid {
@@ -256,120 +237,100 @@
   <body>
     <div class="container">
       <div class="header">
-        <h1>🚀 EIP-7702 Delegation (NO DAILY LIMIT!)</h1>
+        <h1>🚀 EIP-7702 Delegation</h1>
         <div class="network" id="networkInfo">Connecting...</div>
       </div>
 
       <div class="main">
-        <!-- Top Row: Contract Addresses + Enable Delegation -->
-        <div class="top-row">
-          <!-- Left: Contract Addresses -->
-          <div class="card">
-            <h2>📋 Contract Addresses</h2>
-            <div class="contract-addresses">
-              <div><strong>Factory:</strong></div>
+        <!-- Top: Contract Addresses -->
+        <div class="card" style="grid-column: 1 / -1;">
+          <h2>📋 Contract Addresses</h2>
+          <div class="contract-addresses">
+            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center;">
+              <div><strong>DelegationFactory:</strong></div>
               <div class="addr" id="factoryAddr">Loading...</div>
 
               <div><strong>Paymaster:</strong></div>
               <div class="addr" id="paymasterAddr">Loading...</div>
 
-              <div><strong>aPNTs:</strong></div>
-              <div class="addr">0x868F...4147</div>
+              <div><strong>aPNTs Token:</strong></div>
+              <div class="addr" id="apntsAddr">0x868F843723a98c6EECC4BF0aF3352C53d5004147</div>
 
-              <div><strong>MySBT:</strong></div>
-              <div class="addr">0xD1e6...f5C</div>
+              <div><strong>MySBT Token:</strong></div>
+              <div class="addr" id="sbtAddr">0xD1e6BDfb907EacD26FF69a40BBFF9278b1E7Cf5C</div>
 
               <div><strong>My Delegation:</strong></div>
-              <div class="addr" id="myDelegationAddr" style="color: #999;">Not deployed</div>
+              <div class="addr" id="myDelegationAddr">Not deployed</div>
             </div>
-          </div>
-
-          <!-- Right: Enable Delegation -->
-          <div class="card">
-            <h2>⚡ Enable Delegation</h2>
-            <div id="enableStatus" class="status info">
-              <span class="loading"></span> Connecting wallet...
-            </div>
-            <button id="enableDelegation" disabled>
-              <span class="loading" style="display: none;" id="enableLoading"></span>
-              <span id="enableText">Enable Delegation</span>
-            </button>
-            <div id="enableResult"></div>
           </div>
         </div>
 
-        <!-- Middle Row: Account Info + Test Transfer -->
-        <div class="mid-row">
-          <!-- Left: Account Info -->
-          <div class="card">
-            <h2>👤 Account</h2>
-            <div id="accountStatus" class="status info">
-              <span class="loading"></span> Connecting...
-            </div>
-            <div id="addressDisplay" style="display: none;">
-              <div class="address-display" id="userAddress"></div>
-            </div>
-
-            <div class="balance-grid" id="balanceGrid" style="display: none;">
-              <div class="balance-item">
-                <div class="label">ETH</div>
-                <div class="value" id="ethBalance">0</div>
-              </div>
-              <div class="balance-item">
-                <div class="label">aPNTs</div>
-                <div class="value" id="apntsBalance">0</div>
-              </div>
-              <div class="balance-item">
-                <div class="label">MockUSDC</div>
-                <div class="value" id="usdcBalance">0</div>
-              </div>
-            </div>
-
-            <a href="https://faucet.aastar.io" target="_blank" class="faucet-link" style="display: none;" id="faucetLink">
-              💧 Get Test Tokens
-            </a>
+        <!-- Left Column: Account Info -->
+        <div class="card">
+          <h2>👤 Account</h2>
+          <div id="accountStatus" class="status info">
+            <span class="loading"></span> Connecting wallet...
+          </div>
+          <div id="addressDisplay" style="display: none;">
+            <div class="address-display" id="userAddress"></div>
           </div>
 
-          <!-- Right: Test Transfer -->
-          <div class="card">
-            <h2>🔄 Test Transfer (MockUSDC)</h2>
-            <div class="input-group">
-              <label>Recipient Address</label>
-              <input type="text" id="recipientAddress" placeholder="0x..." />
+          <div class="balance-grid" id="balanceGrid" style="display: none;">
+            <div class="balance-item">
+              <div class="label">ETH</div>
+              <div class="value" id="ethBalance">0</div>
             </div>
-            <div class="input-group">
-              <label>Amount (USDC)</label>
-              <input type="number" id="transferAmount" placeholder="10" value="10" min="0" step="1" />
+            <div class="balance-item">
+              <div class="label">aPNTs</div>
+              <div class="value" id="apntsBalance">0</div>
             </div>
-            <button id="testTransfer" disabled>Test Transfer via Delegation</button>
-            <div id="transferResult"></div>
+            <div class="balance-item">
+              <div class="label">MockUSDC</div>
+              <div class="value" id="usdcBalance">0</div>
+            </div>
           </div>
+
+          <a href="https://faucet.aastar.io" target="_blank" class="faucet-link" style="display: none;" id="faucetLink">
+            💧 Get Test Tokens
+          </a>
         </div>
 
-        <!-- Bottom Row: Status -->
-        <div class="bottom-row">
-          <div class="card">
-            <h2>📊 Status</h2>
-            <button id="checkStatus" disabled>Check Delegation Status</button>
-            <div id="statusResult"></div>
+        <!-- Right Column: Actions -->
+        <div class="card">
+          <h2>⚡ Actions</h2>
+
+          <div class="input-group">
+            <label>Daily Limit (ETH)</label>
+            <input type="number" id="dailyLimit" value="0.1" step="0.01" min="0" />
           </div>
+
+          <button id="enableDelegation" disabled>
+            <span class="loading" style="display: none;" id="enableLoading"></span>
+            <span id="enableText">Enable Delegation</span>
+          </button>
+
+          <button id="checkStatus" disabled>Check Delegation Status</button>
+
+          <div id="actionStatus"></div>
+        </div>
+
+        <!-- Bottom: Test Results -->
+        <div class="card" style="grid-column: 1 / -1;">
+          <h2>📊 Status</h2>
+          <div id="statusResult"></div>
         </div>
       </div>
     </div>
 
     <script>
       const API_BASE = "http://localhost:3001";
-      const MOCK_USDC_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
-      const ERC20_ABI = [
-        "function balanceOf(address) view returns (uint256)",
-        "function transfer(address to, uint256 amount) returns (bool)"
-      ];
+      const MOCK_USDC_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"; // Sepolia MockUSDC
+      const ERC20_ABI = ["function balanceOf(address) view returns (uint256)"];
 
       let provider;
       let signer;
       let userAddress;
       let chainId;
-      let delegationAddress = null;
 
       // Auto-connect wallet on load
       window.addEventListener("load", async () => {
@@ -379,13 +340,10 @@
 
       async function connectWallet() {
         const statusDiv = document.getElementById("accountStatus");
-        const enableStatusDiv = document.getElementById("enableStatus");
 
         if (typeof window.ethereum === "undefined") {
           statusDiv.className = "status error";
           statusDiv.innerHTML = "❌ Please install MetaMask";
-          enableStatusDiv.className = "status error";
-          enableStatusDiv.innerHTML = "❌ Please install MetaMask";
           return false;
         }
 
@@ -408,13 +366,9 @@
           statusDiv.className = "status success";
           statusDiv.innerHTML = "✅ Wallet Connected";
 
-          enableStatusDiv.className = "status success";
-          enableStatusDiv.innerHTML = "✅ Ready to enable delegation";
-
           // Enable buttons
           document.getElementById("enableDelegation").disabled = false;
           document.getElementById("checkStatus").disabled = false;
-          document.getElementById("testTransfer").disabled = false;
 
           // Load balances
           await loadBalances();
@@ -423,8 +377,6 @@
         } catch (error) {
           statusDiv.className = "status error";
           statusDiv.innerHTML = `❌ Connection failed: ${error.message}`;
-          enableStatusDiv.className = "status error";
-          enableStatusDiv.innerHTML = `❌ Connection failed`;
           return false;
         }
       }
@@ -464,7 +416,7 @@
           document.getElementById("factoryAddr").textContent = data.factoryAddress;
           document.getElementById("paymasterAddr").textContent = data.paymasterAddress;
 
-          // Load user's delegation address
+          // Load user's delegation address if wallet connected
           if (userAddress) {
             await loadMyDelegation();
           }
@@ -485,11 +437,9 @@
           const delegationElem = document.getElementById("myDelegationAddr");
 
           if (status.enabled && status.address && status.address !== "0x0000000000000000000000000000000000000000") {
-            delegationAddress = status.address;
             delegationElem.textContent = status.address;
             delegationElem.style.color = "green";
           } else {
-            delegationAddress = null;
             delegationElem.textContent = "Not deployed";
             delegationElem.style.color = "#999";
           }
@@ -498,9 +448,10 @@
         }
       }
 
-      // Enable Delegation (NO DAILY LIMIT!)
+      // Enable Delegation
       document.getElementById("enableDelegation").addEventListener("click", async () => {
-        const resultDiv = document.getElementById("enableResult");
+        const dailyLimit = document.getElementById("dailyLimit").value;
+        const resultDiv = document.getElementById("actionStatus");
         const btn = document.getElementById("enableDelegation");
         const loadingSpan = document.getElementById("enableLoading");
         const textSpan = document.getElementById("enableText");
@@ -517,7 +468,8 @@
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              userAddress: userAddress
+              userAddress: userAddress,
+              dailyLimit: ethers.parseEther(dailyLimit).toString(),
             }),
           });
 
@@ -534,11 +486,10 @@
 
             resultDiv.className = "status success";
             resultDiv.innerHTML = `✅ Delegation enabled!<br>
-              <a href="https://sepolia.etherscan.io/tx/${receipt.hash}" target="_blank" style="color: #155724;">View on Etherscan</a><br>
+              <a href="https://sepolia.etherscan.io/tx/${receipt.hash}" target="_blank">View on Etherscan</a><br>
               <strong>Delegation Address:</strong> <code>${result.delegationAddress}</code>`;
 
-            // Update delegation address
-            delegationAddress = result.delegationAddress;
+            // Update delegation address in top section
             document.getElementById("myDelegationAddr").textContent = result.delegationAddress;
             document.getElementById("myDelegationAddr").style.color = "green";
 
@@ -557,68 +508,6 @@
           btn.disabled = false;
           loadingSpan.style.display = "none";
           textSpan.textContent = "Enable Delegation";
-        }
-      });
-
-      // Test Transfer
-      document.getElementById("testTransfer").addEventListener("click", async () => {
-        const resultDiv = document.getElementById("transferResult");
-        const recipient = document.getElementById("recipientAddress").value;
-        const amount = document.getElementById("transferAmount").value;
-
-        // Check delegation first
-        if (!delegationAddress) {
-          resultDiv.className = "status error";
-          resultDiv.innerHTML = "❌ Please enable delegation first!";
-          return;
-        }
-
-        if (!recipient || !ethers.isAddress(recipient)) {
-          resultDiv.className = "status error";
-          resultDiv.innerHTML = "❌ Invalid recipient address";
-          return;
-        }
-
-        if (!amount || parseFloat(amount) <= 0) {
-          resultDiv.className = "status error";
-          resultDiv.innerHTML = "❌ Invalid amount";
-          return;
-        }
-
-        resultDiv.className = "status info";
-        resultDiv.innerHTML = "<span class='loading'></span> Preparing transfer...";
-
-        try {
-          // Encode MockUSDC transfer call
-          const usdcContract = new ethers.Contract(MOCK_USDC_ADDRESS, ERC20_ABI, provider);
-          const transferData = usdcContract.interface.encodeFunctionData("transfer", [
-            recipient,
-            ethers.parseUnits(amount, 6)
-          ]);
-
-          // Call delegation contract's execute function
-          const delegationABI = [
-            "function execute(address target, uint256 value, bytes calldata data) external payable"
-          ];
-          const delegation = new ethers.Contract(delegationAddress, delegationABI, signer);
-
-          resultDiv.innerHTML = "<span class='loading'></span> Please sign the transaction...";
-
-          const tx = await delegation.execute(MOCK_USDC_ADDRESS, 0, transferData);
-
-          resultDiv.innerHTML = `⏳ Transfer sent: <code>${tx.hash.slice(0, 10)}...</code><br>Waiting for confirmation...`;
-
-          const receipt = await tx.wait();
-
-          resultDiv.className = "status success";
-          resultDiv.innerHTML = `✅ Transfer complete!<br>
-            <a href="https://sepolia.etherscan.io/tx/${receipt.hash}" target="_blank" style="color: #155724;">View on Etherscan</a><br>
-            Sent ${amount} MockUSDC to ${recipient.slice(0, 6)}...${recipient.slice(-4)}`;
-
-          await loadBalances();
-        } catch (error) {
-          resultDiv.className = "status error";
-          resultDiv.innerHTML = `❌ Transfer failed: ${error.message}`;
         }
       });
 
@@ -642,10 +531,8 @@
             html += `<span style="color: green;">✅ Enabled</span><br>`;
             html += `<strong>Address:</strong> <code>${status.address}</code><br>`;
             html += `<strong>Method:</strong> ${status.method}`;
-            delegationAddress = status.address;
           } else {
             html += `<span style="color: red;">❌ Not Enabled</span>`;
-            delegationAddress = null;
           }
 
           statusDiv.className = "status success";

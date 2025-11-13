@@ -10,9 +10,9 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// DelegationFactory ABI (只需要 deployDelegation 函数)
+// DelegationFactory ABI (NO DAILY LIMIT!)
 const FACTORY_ABI = [
-  "function deployDelegation(address owner, uint256 dailyLimit) external returns (address delegation)",
+  "function deployDelegation(address owner) external returns (address delegation)",
   "function predictDelegationAddress(address owner) external view returns (address)",
   "function getDelegation(address owner) external view returns (address)"
 ];
@@ -158,15 +158,9 @@ app.post("/api/eip7702/enable", async (req, res) => {
 
     let result;
     if (method === "relayer") {
-      result = await enableWithRelayer(
-        userAddress,
-        dailyLimit || ethers.parseEther("0.1").toString()
-      );
+      result = await enableWithRelayer(userAddress);
     } else {
-      result = await enableWithPaymaster(
-        userAddress,
-        dailyLimit || ethers.parseEther("0.1").toString()
-      );
+      result = await enableWithPaymaster(userAddress);
     }
 
     res.json(result);
@@ -202,19 +196,18 @@ async function chooseOptimalApproach(userAddress) {
   }
 }
 
-// Relayer 方案
-async function enableWithRelayer(userAddress, dailyLimit) {
+// Relayer 方案 (NO DAILY LIMIT!)
+async function enableWithRelayer(userAddress) {
   try {
     console.log("Using Relayer approach");
-    console.log(`User: ${userAddress}, Daily Limit: ${dailyLimit}`);
+    console.log(`User: ${userAddress}`);
 
     // 创建 Interface 用于编码函数调用
     const factoryInterface = new ethers.Interface(FACTORY_ABI);
 
-    // 编码 deployDelegation 函数调用
+    // 编码 deployDelegation 函数调用 (NO DAILY LIMIT!)
     const calldata = factoryInterface.encodeFunctionData("deployDelegation", [
-      userAddress,
-      dailyLimit
+      userAddress
     ]);
 
     console.log(`Generated calldata: ${calldata}`);
@@ -250,8 +243,8 @@ async function enableWithRelayer(userAddress, dailyLimit) {
   }
 }
 
-// Paymaster 方案（简化版本）
-async function enableWithPaymaster(userAddress, dailyLimit) {
+// Paymaster 方案（简化版本）(NO DAILY LIMIT!)
+async function enableWithPaymaster(userAddress) {
   try {
     console.log("Using Paymaster approach");
 

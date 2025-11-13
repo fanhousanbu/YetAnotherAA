@@ -17,7 +17,6 @@ contract MinimalDelegationContract {
     error Unauthorized();
     error SBTRequired();
     error InsufficientBalance();
-    error DailyLimitExceeded();
     error InvalidPaymaster();
     error InvalidTarget();
 
@@ -30,7 +29,6 @@ contract MinimalDelegationContract {
         bytes32 indexed dataHash,
         address indexed paymaster
     );
-    event DailyLimitUpdated(uint256 newLimit);
     event PaymasterUpdated(address newPaymaster);
 
     /*//////////////////////////////////////////////////////////////
@@ -56,9 +54,6 @@ contract MinimalDelegationContract {
                             MUTABLE STORAGE
     //////////////////////////////////////////////////////////////*/
     address public paymaster;
-    uint256 public dailyLimit;
-    mapping(address => uint256) public dailySpent;
-    mapping(address => uint256) public lastSpentDay;
     mapping(bytes32 => bool) public usedNonces;
 
     /*//////////////////////////////////////////////////////////////
@@ -81,8 +76,7 @@ contract MinimalDelegationContract {
         address _owner,
         address _paymaster,
         address _sbtContract,
-        address _xPNTsContract,
-        uint256 _dailyLimit
+        address _xPNTsContract
     ) {
         if (_owner == address(0) || _paymaster == address(0)) revert InvalidTarget();
 
@@ -90,7 +84,6 @@ contract MinimalDelegationContract {
         paymaster = _paymaster;
         SBT_CONTRACT = _sbtContract;
         XPNTS_CONTRACT = _xPNTsContract;
-        dailyLimit = _dailyLimit;
         CREATION_BLOCK = block.number;
     }
 
@@ -120,9 +113,6 @@ contract MinimalDelegationContract {
         if (SBT_CONTRACT != address(0)) {
             if (IERC721(SBT_CONTRACT).balanceOf(OWNER) == 0) revert SBTRequired();
         }
-
-        // Update daily spent
-        _updateDailySpent(value);
 
         // Execute call
         (bool success, ) = target.call{value: value}(data);
@@ -216,17 +206,6 @@ contract MinimalDelegationContract {
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * @notice Update daily limit
-     * @dev Only callable by owner
-     * @param _newLimit New daily limit in wei
-     */
-    function updateDailyLimit(uint256 _newLimit) external {
-        require(msg.sender == OWNER, "Only owner");
-        dailyLimit = _newLimit;
-        emit DailyLimitUpdated(_newLimit);
-    }
-
-    /**
      * @notice Update paymaster address
      * @dev Only callable by owner
      * @param _newPaymaster New paymaster address
@@ -248,42 +227,6 @@ contract MinimalDelegationContract {
      */
     function getCurrentDay() external view returns (uint256) {
         return block.timestamp / DAY_IN_SECONDS;
-    }
-
-    /**
-     * @notice Get remaining daily limit
-     * @return Remaining daily allowance
-     */
-    function getRemainingDailyLimit() external view returns (uint256) {
-        uint256 currentDay = block.timestamp / DAY_IN_SECONDS;
-        if (currentDay > lastSpentDay[OWNER]) {
-            return dailyLimit;
-        }
-        return dailyLimit > dailySpent[OWNER] ? dailyLimit - dailySpent[OWNER] : 0;
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                           INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /**
-     * @notice Update daily spent tracking
-     * @param amount Amount to add to daily spent
-     */
-    function _updateDailySpent(uint256 amount) internal {
-        uint256 currentDay = block.timestamp / DAY_IN_SECONDS;
-
-        // Reset if new day
-        if (currentDay > lastSpentDay[OWNER]) {
-            dailySpent[OWNER] = amount;
-            lastSpentDay[OWNER] = currentDay;
-        } else {
-            // Check daily limit
-            if (dailySpent[OWNER] + amount > dailyLimit) {
-                revert DailyLimitExceeded();
-            }
-            dailySpent[OWNER] += amount;
-        }
     }
 
     /*//////////////////////////////////////////////////////////////

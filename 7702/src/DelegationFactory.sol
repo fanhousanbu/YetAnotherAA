@@ -15,6 +15,7 @@ contract DelegationFactory {
     error ZeroAddress();
     error DeploymentFailed();
     error AlreadyDeployed();
+    error Unauthorized();
 
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
@@ -22,8 +23,12 @@ contract DelegationFactory {
     event DelegationDeployed(
         address indexed owner,
         address indexed delegation,
-        address indexed paymaster,
-        uint256 dailyLimit
+        address indexed paymaster
+    );
+
+    event DefaultPaymasterUpdated(
+        address indexed oldPaymaster,
+        address indexed newPaymaster
     );
 
     /*//////////////////////////////////////////////////////////////
@@ -35,13 +40,14 @@ contract DelegationFactory {
     /*//////////////////////////////////////////////////////////////
                             IMMUTABLE STORAGE
     //////////////////////////////////////////////////////////////*/
-    address public immutable DEFAULT_PAYMASTER;
+    address public immutable OWNER;
     address public immutable SBT_CONTRACT;
     address public immutable XPNTS_CONTRACT;
 
     /*//////////////////////////////////////////////////////////////
                             MUTABLE STORAGE
     //////////////////////////////////////////////////////////////*/
+    address public DEFAULT_PAYMASTER;
     mapping(address => address) public userDelegations;
     mapping(address => bool) public isDelegation;
     address[] public allDelegations;
@@ -55,9 +61,18 @@ contract DelegationFactory {
         address _xPNTsContract
     ) {
         if (_defaultPaymaster == address(0)) revert ZeroAddress();
+        OWNER = msg.sender;
         DEFAULT_PAYMASTER = _defaultPaymaster;
         SBT_CONTRACT = _sbtContract;
         XPNTS_CONTRACT = _xPNTsContract;
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                              MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+    modifier onlyOwner() {
+        if (msg.sender != OWNER) revert Unauthorized();
+        _;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -68,12 +83,10 @@ contract DelegationFactory {
      * @notice Deploy delegation contract for an EOA
      * @dev Uses CREATE2 for deterministic address
      * @param owner EOA address to create delegation for
-     * @param dailyLimit Daily gas spending limit (in wei)
      * @return delegation Address of deployed delegation contract
      */
     function deployDelegation(
-        address owner,
-        uint256 dailyLimit
+        address owner
     ) external returns (address delegation) {
         if (owner == address(0)) revert ZeroAddress();
         if (userDelegations[owner] != address(0)) revert AlreadyDeployed();
@@ -87,7 +100,7 @@ contract DelegationFactory {
         // Encode constructor arguments
         bytes memory initCode = abi.encodePacked(
             bytecode,
-            abi.encode(owner, DEFAULT_PAYMASTER, SBT_CONTRACT, XPNTS_CONTRACT, dailyLimit)
+            abi.encode(owner, DEFAULT_PAYMASTER, SBT_CONTRACT, XPNTS_CONTRACT)
         );
 
         // Deploy using CREATE2
@@ -102,20 +115,18 @@ contract DelegationFactory {
         isDelegation[delegation] = true;
         allDelegations.push(delegation);
 
-        emit DelegationDeployed(owner, delegation, DEFAULT_PAYMASTER, dailyLimit);
+        emit DelegationDeployed(owner, delegation, DEFAULT_PAYMASTER);
     }
 
     /**
      * @notice Deploy delegation contract with custom paymaster
      * @param owner EOA address
      * @param paymaster Custom paymaster address
-     * @param dailyLimit Daily gas spending limit
      * @return delegation Address of deployed delegation contract
      */
     function deployDelegationWithPaymaster(
         address owner,
-        address paymaster,
-        uint256 dailyLimit
+        address paymaster
     ) external returns (address delegation) {
         if (owner == address(0) || paymaster == address(0)) revert ZeroAddress();
         if (userDelegations[owner] != address(0)) revert AlreadyDeployed();
@@ -125,7 +136,7 @@ contract DelegationFactory {
 
         bytes memory initCode = abi.encodePacked(
             bytecode,
-            abi.encode(owner, paymaster, SBT_CONTRACT, XPNTS_CONTRACT, dailyLimit)
+            abi.encode(owner, paymaster, SBT_CONTRACT, XPNTS_CONTRACT)
         );
 
         assembly {
@@ -138,7 +149,7 @@ contract DelegationFactory {
         isDelegation[delegation] = true;
         allDelegations.push(delegation);
 
-        emit DelegationDeployed(owner, delegation, paymaster, dailyLimit);
+        emit DelegationDeployed(owner, delegation, paymaster);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -231,18 +242,15 @@ contract DelegationFactory {
      * @notice Deploy multiple delegation contracts
      * @dev Gas-intensive, use with care
      * @param owners Array of EOA addresses
-     * @param dailyLimits Array of daily limits
      * @return delegations Array of deployed delegation addresses
      */
     function batchDeployDelegations(
-        address[] calldata owners,
-        uint256[] calldata dailyLimits
+        address[] calldata owners
     ) external returns (address[] memory delegations) {
-        require(owners.length == dailyLimits.length, "Array length mismatch");
         delegations = new address[](owners.length);
 
         for (uint256 i = 0; i < owners.length; i++) {
-            delegations[i] = this.deployDelegation(owners[i], dailyLimits[i]);
+            delegations[i] = this.deployDelegation(owners[i]);
         }
     }
 
@@ -255,11 +263,11 @@ contract DelegationFactory {
      * @dev Only callable by factory owner
      * @param newPaymaster New paymaster address
      */
-    function updateDefaultPaymaster(address newPaymaster) external {
-        // In production, add owner modifier
+    function updateDefaultPaymaster(address newPaymaster) external onlyOwner {
         if (newPaymaster == address(0)) revert ZeroAddress();
-        // DEFAULT_PAYMASTER = newPaymaster; // Cannot update immutable
-        // Instead, deploy new factory for new paymaster
+        address oldPaymaster = DEFAULT_PAYMASTER;
+        DEFAULT_PAYMASTER = newPaymaster;
+        emit DefaultPaymasterUpdated(oldPaymaster, newPaymaster);
     }
 
     /*//////////////////////////////////////////////////////////////
