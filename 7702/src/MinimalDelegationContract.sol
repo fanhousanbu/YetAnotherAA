@@ -39,6 +39,11 @@ contract MinimalDelegationContract {
     uint256 private constant DAY_IN_SECONDS = 86400;
     bytes4 private constant EIP1271_MAGIC_VALUE = 0x1626ba7e;
 
+    // Gas payment configuration
+    uint256 public constant MIN_APNTS_BALANCE = 10 ether;  // Minimum 10 aPNTs required
+    uint256 public constant ETH_PRICE_USD = 3500;          // $3500 per ETH
+    uint256 public constant APNTS_PRICE_USD = 21;          // $0.021 per aPNTs (21/1000)
+
     /*//////////////////////////////////////////////////////////////
                             IMMUTABLE STORAGE
     //////////////////////////////////////////////////////////////*/
@@ -150,20 +155,32 @@ contract MinimalDelegationContract {
             }
         }
 
-        // Check xPNTs balance for gas payment
+        // Check aPNTs balance for gas payment
         if (XPNTS_CONTRACT != address(0) && missingAccountFunds > 0) {
             uint256 balance = IERC20(XPNTS_CONTRACT).balanceOf(OWNER);
-            if (balance < missingAccountFunds) {
-                return 2; // Invalid: Insufficient xPNTs
+
+            // Check minimum balance requirement (>10 aPNTs)
+            if (balance < MIN_APNTS_BALANCE) {
+                return 2; // Invalid: Balance < 10 aPNTs
             }
 
-            // Approve paymaster to spend xPNTs (if needed)
-            IERC20(XPNTS_CONTRACT).approve(paymaster, missingAccountFunds);
+            // Calculate required aPNTs based on gas cost
+            // Formula: (ETH cost * ETH price in USD) / aPNTs price in USD
+            // = (missingAccountFunds * 3500) / 0.021
+            // = (missingAccountFunds * 3500 * 1000) / 21
+            uint256 apntsNeeded = (missingAccountFunds * ETH_PRICE_USD * 1000) / APNTS_PRICE_USD;
+
+            if (balance < apntsNeeded) {
+                return 3; // Invalid: Insufficient aPNTs for gas
+            }
+
+            // Approve paymaster to spend aPNTs
+            IERC20(XPNTS_CONTRACT).approve(paymaster, apntsNeeded);
         }
 
         // Check nonce to prevent replay
         if (userOp.nonce != block.chainid) {
-            return 3; // Invalid: Wrong nonce
+            return 4; // Invalid: Wrong nonce
         }
 
         return 0; // Valid
@@ -171,18 +188,24 @@ contract MinimalDelegationContract {
 
     /**
      * @notice Post-operation hook called after execution
-     * @dev Called by paymaster to deduct xPNTs for gas
-     * @param actualGasCost Actual gas cost incurred
+     * @dev Called by paymaster to deduct aPNTs for gas
+     * @param actualGasCost Actual gas cost incurred (in ETH wei)
      */
     function postOp(
         uint256 actualGasCost
     ) external onlyPaymaster {
         if (XPNTS_CONTRACT != address(0) && actualGasCost > 0) {
-            // Transfer xPNTs to paymaster
+            // Calculate aPNTs amount to deduct
+            // Formula: (ETH cost * ETH price in USD) / aPNTs price in USD
+            // = (actualGasCost * 3500) / 0.021
+            // = (actualGasCost * 3500 * 1000) / 21
+            uint256 apntsAmount = (actualGasCost * ETH_PRICE_USD * 1000) / APNTS_PRICE_USD;
+
+            // Transfer aPNTs to paymaster
             bool success = IERC20(XPNTS_CONTRACT).transferFrom(
                 OWNER,
                 paymaster,
-                actualGasCost
+                apntsAmount
             );
             if (!success) revert InsufficientBalance();
         }

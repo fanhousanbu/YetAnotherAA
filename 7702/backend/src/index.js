@@ -1,7 +1,8 @@
 const express = require("express");
 const { ethers } = require("ethers");
 const cors = require("cors");
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -30,83 +31,31 @@ const rpcUrl = SEPOLIA_RPC_URL;
 const provider = new ethers.JsonRpcProvider(rpcUrl);
 const relayerWallet = new ethers.Wallet(RELAYER_PRIVATE_KEY, provider);
 
-// 模拟合约调用 - 避免网络连接问题
-const mockDelegationContracts = new Map();
+// Real contract ABIs
+const FACTORY_CONTRACT_ABI = [
+  "function deployDelegation(address owner, uint256 dailyLimit) external returns (address delegation)",
+  "function predictDelegationAddress(address owner) external view returns (address)",
+  "function getDelegation(address owner) external view returns (address)"
+];
 
-// 模拟 DelegationFactory 功能
-class MockDelegationFactory {
-  constructor() {
-    this.deployments = new Map();
-  }
+const PAYMASTER_ABI = [
+  "function owner() external view returns (address)",
+  "function xPNTsToken() external view returns (address)",
+  "function sponsorshipCap() external view returns (uint256)"
+];
 
-  async getDelegation(owner) {
-    // 模拟返回0x0地址表示没有部署
-    return "0x0000000000000000000000000000000000000000";
-  }
+// Real contract instances
+const factoryContract = new ethers.Contract(
+  DELEGATION_FACTORY_ADDRESS,
+  FACTORY_CONTRACT_ABI,
+  provider
+);
 
-  async predictDelegationAddress(owner) {
-    // 模拟CREATE2地址计算
-    const hash = ethers.solidityPackedKeccak256(["address", "uint256"], [owner, Date.now()]);
-    return "0x" + hash.slice(26);
-  }
-
-  async deployDelegation(owner, dailyLimit) {
-    const delegationAddress = await this.predictDelegationAddress(owner);
-    this.deployments.set(owner.toLowerCase(), {
-      address: delegationAddress,
-      dailyLimit: dailyLimit,
-      deployed: true,
-    });
-    return delegationAddress;
-  }
-
-  populateTransaction(owner, dailyLimit) {
-    return {
-      to: DELEGATION_FACTORY_ADDRESS,
-      data: "0xmock",
-      gasLimit: "500000",
-    };
-  }
-
-  // 添加connect方法
-  connect(wallet) {
-    return this;
-  }
-}
-
-// 模拟 Paymaster 功能
-class MockPaymaster {
-  constructor() {
-    this.sponsoredUsers = new Set();
-  }
-
-  async getBalance() {
-    return ethers.parseEther("1.0");
-  }
-
-  async isUserSponsored(user) {
-    return this.sponsoredUsers.has(user.toLowerCase());
-  }
-
-  async validateAndSponsor(user, userOpHash, maxCost, signature) {
-    if (this.sponsoredUsers.has(user.toLowerCase())) {
-      throw new Error("用户已被赞助，无法重复赞助");
-    }
-    this.sponsoredUsers.add(user.toLowerCase());
-    return maxCost;
-  }
-
-  // 添加connect方法
-  connect(wallet) {
-    return this;
-  }
-}
-
-const mockFactory = new MockDelegationFactory();
-const mockPaymaster = new MockPaymaster();
-
-const factoryContract = mockFactory;
-const paymasterContract = mockPaymaster;
+const paymasterContract = new ethers.Contract(
+  SPONSOR_PAYMASTER_ADDRESS,
+  PAYMASTER_ABI,
+  provider
+);
 
 // 中间件：日志记录
 app.use((req, res, next) => {
