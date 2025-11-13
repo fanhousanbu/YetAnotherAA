@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EIP-7702 Delegation System</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .nav {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 30px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 5px;
+      }
+      .nav a {
+        padding: 10px 20px;
+        background: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: background 0.3s;
+      }
+      .nav a:hover {
+        background: #0056b3;
+      }
+      .status {
+        padding: 15px;
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .api-info {
+        background: #e9ecef;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 20px;
+      }
+      .code {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: monospace;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🚀 EIP-7702 Delegation System</h1>
+
+      <div class="status">
+        <h2>📊 System Status</h2>
+        <p>
+          <strong>Backend API:</strong>
+          <a href="http://localhost:3001/health" target="_blank">http://localhost:3001/health</a>
+        </p>
+        <p>
+          <strong>Test Interface:</strong>
+          <a href="http://localhost:3001/api/test" target="_blank"
+            >http://localhost:3001/api/test</a
+          >
+        </p>
+        <p>
+          <strong>Simple Test:</strong>
+          <a href="simple-test.html" target="_blank">simple-test.html</a>
+        </p>
+        <strong>Full Test:</strong> <a href="test.html" target="_blank">test.html</a>
+      </div>
+
+      <div class="nav">
+        <a href="simple-test.html" target="_blank">🧪 Simple Test</a>
+        <a href="test.html" target="_blank">🔬 Full Test</a>
+      </div>
+
+      <div class="api-info">
+        <h2>🔧 API Interface</h2>
+        <div class="code">
+          POST /api/eip7702/status { "userAddress": "0x..." } POST /api/eip7702/enable {
+          "userAddress": "0x...", "dailyLimit": "100000000000000000" }
+        </div>
+      </div>
+
+      <div class="api-info">
+        <h2>🎯 Test Flow</h2>
+        <ol>
+          <li>Check system health status</li>
+          <li>Connect MetaMask wallet</li>
+          <li>Enter user address</li>
+          <li>Check current delegation status</li>
+          <li>Enable EIP-7702 delegation</li>
+          <li>Verify delegation activation</li>
+          <li>Test gasless transactions</li>
+        </ol>
+      </div>
+    </div>
+  </body>
+</html>

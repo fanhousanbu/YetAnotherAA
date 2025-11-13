@@ -9,6 +9,13 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// DelegationFactory ABI (只需要 deployDelegation 函数)
+const FACTORY_ABI = [
+  "function deployDelegation(address owner, uint256 dailyLimit) external returns (address delegation)",
+  "function predictDelegationAddress(address owner) external view returns (address)",
+  "function getDelegation(address owner) external view returns (address)"
+];
+
 // 配置
 const SEPOLIA_RPC_URL =
   process.env.SEPOLIA_RPC_URL || "https://eth-sepolia.g.alchemy.com/v2/Bx4QRW1-vnwJUePSAAD7N";
@@ -250,17 +257,27 @@ async function chooseOptimalApproach(userAddress) {
 async function enableWithRelayer(userAddress, dailyLimit) {
   try {
     console.log("Using Relayer approach");
+    console.log(`User: ${userAddress}, Daily Limit: ${dailyLimit}`);
+
+    // 创建 Interface 用于编码函数调用
+    const factoryInterface = new ethers.Interface(FACTORY_ABI);
+
+    // 编码 deployDelegation 函数调用
+    const calldata = factoryInterface.encodeFunctionData("deployDelegation", [
+      userAddress,
+      dailyLimit
+    ]);
+
+    console.log(`Generated calldata: ${calldata}`);
 
     // 预测委托合约地址
     const delegationAddress = await factoryContract.predictDelegationAddress(userAddress);
     console.log(`Predicted delegation address: ${delegationAddress}`);
 
-    // 模拟交易数据
-    const deployTx = {
-      to: DELEGATION_FACTORY_ADDRESS,
-      data: "0xmockdata",
-      gasLimit: "500000",
-    };
+    // 获取当前 gas 价格
+    const feeData = await provider.getFeeData();
+    const maxFeePerGas = feeData.maxFeePerGas || ethers.parseUnits("20", "gwei");
+    const maxPriorityFeePerGas = feeData.maxPriorityFeePerGas || ethers.parseUnits("2", "gwei");
 
     // 返回需要用户签名的交易数据
     return {
@@ -268,12 +285,13 @@ async function enableWithRelayer(userAddress, dailyLimit) {
       needsSignature: true,
       transaction: {
         to: DELEGATION_FACTORY_ADDRESS,
-        data: deployTx.data,
+        data: calldata,
         gasLimit: "500000",
-        maxFeePerGas: ethers.formatUnits("20000000000", "wei"), // 20 gwei
-        maxPriorityFeePerGas: ethers.formatUnits("2000000000", "wei"), // 2 gwei
+        maxFeePerGas: maxFeePerGas.toString(),
+        maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
         chainId: 11155111,
       },
+      delegationAddress,
       method: "relayer",
       message: "请签名交易以设置委托",
     };
