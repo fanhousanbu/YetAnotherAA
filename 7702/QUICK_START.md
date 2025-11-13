@@ -22,8 +22,7 @@
 
 启动成功后，打开浏览器访问：
 
-- **前端界面**: http://localhost:8080
-- **测试页面**: http://localhost:8080/test.html
+- **主页**: http://localhost:8080 - 包含完整测试功能
 - **健康检查**: http://localhost:3001/health
 - **API 测试**: http://localhost:3001/api/test
 

@@ -69,9 +69,7 @@
 **访问地址**: http://localhost:8080/
 
 **可用页面**:
-- **主页**: http://localhost:8080/ - 导航和系统状态
-- **完整测试**: http://localhost:8080/test.html - 完整功能测试界面
-- **简单测试**: http://localhost:8080/simple-test.html - 简化测试界面
+- **主页**: http://localhost:8080/ - 完整功能测试界面
 
 **日志位置**: `logs/frontend.log`
 
@@ -180,9 +178,9 @@ cast balance 0xf5023C131A8aD2506972B29D5F84310D5e754767 \
 ## 下一步操作
 
 ### 立即可做的测试
-1. ✅ 访问 http://localhost:8080 查看系统状态
-2. ✅ 使用 test.html 进行功能测试
-3. ✅ 连接 MetaMask 测试钱包连接
+1. ✅ 访问 http://localhost:8080 查看系统状态和进行功能测试
+2. ✅ 点击测试按钮验证 API 功能
+3. ✅ （可选）连接 MetaMask 测试钱包连接
 4. ⏳ 测试零 ETH 用户委托设置
 5. ⏳ 测试 Paymaster 赞助交易
 

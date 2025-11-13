@@ -1,6 +1,6 @@
 # 更新日志
 
-## 2025-11-13 - 系统启动和问题修复
+## 2025-11-13 - 系统启动和页面整合
 
 ### 修复
 - 修复 Backend mock 数据问题
@@ -28,16 +28,29 @@
   - 常见问题解答
 
 ### 改进
-- 合并完整测试页面到主页
-  - 将 test.html 功能集成到 index.html
-  - 保留旧 index.html 为 index.old.html
-  - 统一用户界面和功能入口
+- 页面整合和简化
+  - 将 simple-test.html 的测试功能合并到 index.html
+  - 保留原始 index.html 的导航和信息展示
+  - 删除 test.html 和 simple-test.html，统一入口
+  - 更新所有文档中的页面引用
+
+### 删除
+- ❌ test.html - 复杂的测试页面已移除
+- ❌ simple-test.html - 功能已合并到主页
+- ❌ index.old.html - 备份文件已清理
 
 ### 部署状态
 - ✅ 智能合约已部署到 Sepolia 测试网
 - ✅ Backend API 运行正常 (端口 3001)
 - ✅ Frontend 运行正常 (端口 8080)
 - ✅ Paymaster 已充值 0.1 ETH
+- ✅ 主页整合完成，功能统一
+
+### 文件结构
+```
+frontend/
+└── index.html          # 主页，包含完整测试功能
+```
 
 ### 下一步
 - 开始集成测试
