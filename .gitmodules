@@ -4,3 +4,30 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "7702/vendor/metamask-7702-livestream-demo"]
+	path = 7702/vendor/metamask-7702-livestream-demo
+	url = https://github.com/MetaMask/7702-livestream-demo
+[submodule "7702/vendor/amiecorso-eip7702-viem-demo"]
+	path = 7702/vendor/amiecorso-eip7702-viem-demo
+	url = https://github.com/amiecorso/eip7702-viem-demo
+[submodule "7702/vendor/pimlico-7702-userop-demo"]
+	path = 7702/vendor/pimlico-7702-userop-demo
+	url = https://github.com/pimlicolabs/7702-userop-demo
+[submodule "7702/vendor/gelato-eip-7702-demo"]
+	path = 7702/vendor/gelato-eip-7702-demo
+	url = https://github.com/gelatodigital/gelato-eip-7702-demo
+[submodule "7702/vendor/pimlico-7702-demo"]
+	path = 7702/vendor/pimlico-7702-demo
+	url = https://github.com/pimlicolabs/7702-demo
+[submodule "7702/vendor/mart1n-eip7702-viem-demo"]
+	path = 7702/vendor/mart1n-eip7702-viem-demo
+	url = https://github.com/mart1n-xyz/eip7702-viem-demo
+[submodule "7702/vendor/cqlyj-simple-eip-7702"]
+	path = 7702/vendor/cqlyj-simple-eip-7702
+	url = https://github.com/cqlyj/simple-eip-7702
+[submodule "7702/vendor/myronzhang-erc7702-demo"]
+	path = 7702/vendor/myronzhang-erc7702-demo
+	url = https://github.com/myronzhangweb3/erc7702-demo
+[submodule "7702/vendor/jooohneth-7702-demo"]
+	path = 7702/vendor/jooohneth-7702-demo
+	url = https://github.com/jooohneth/7702-demo
