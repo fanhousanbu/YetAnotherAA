@@ -1,0 +1,10 @@
+{
+  "paymaster": "0x91Cb993E50e959C10b4600CB825A93740b79FeA9",
+  "xPNTsToken": "0x868F843723a98c6EECC4BF0aF3352C53d5004147",
+  "sponsorshipCap": "10000000000000000000",
+  "initialDeposit": "5000000000000000000",
+  "chainId": 11155111,
+  "deployedAt": "1762843875",
+  "network": "sepolia",
+  "depositStatus": "failed"
+}

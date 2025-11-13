@@ -1,0 +1,8 @@
+{
+  "factory": "0x91Cb993E50e959C10b4600CB825A93740b79FeA9",
+  "testDelegation": "0x8FBCC984eA256574d6C9550F51ab1c116DFd0805",
+  "chainId": 11155111,
+  "paymaster": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+  "deployedAt": "1762840872",
+  "network": "sepolia"
+}

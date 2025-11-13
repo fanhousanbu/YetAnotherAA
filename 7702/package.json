@@ -1,0 +1,22 @@
+{
+  "name": "eip7702-delegation",
+  "version": "1.0.0",
+  "description": "EIP-7702 Delegation Implementation for Gasless EOA",
+  "private": true,
+  "scripts": {
+    "build": "forge build",
+    "deploy:sepolia": "forge script script/Deploy.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $DEPLOYER_PRIVATE_KEY --broadcast --verify",
+    "deploy:op-sepolia": "forge script script/Deploy.s.sol --rpc-url $OP_SEPOLIA_RPC_URL --private-key $DEPLOYER_PRIVATE_KEY --broadcast --verify",
+    "test": "forge test",
+    "test:local": "forge test --fork-url $SEPOLIA_RPC_URL",
+    "verify": "forge verify-contract"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "^5.0.0",
+    "foundry": "latest"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts/token/ERC20/IERC20.sol": "^5.0.0",
+    "@openzeppelin/contracts/token/ERC721/IERC721.sol": "^5.0.0"
+  }
+}
