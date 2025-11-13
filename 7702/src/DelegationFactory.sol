@@ -166,7 +166,7 @@ contract DelegationFactory {
         bytes memory bytecode = type(MinimalDelegationContract).creationCode;
         bytes memory initCode = abi.encodePacked(
             bytecode,
-            abi.encode(owner, DEFAULT_PAYMASTER, SBT_CONTRACT, XPNTS_CONTRACT, uint256(0))
+            abi.encode(owner, DEFAULT_PAYMASTER, SBT_CONTRACT, XPNTS_CONTRACT)
         );
 
         bytes32 data = keccak256(initCode);
@@ -187,7 +187,7 @@ contract DelegationFactory {
         bytes memory bytecode = type(MinimalDelegationContract).creationCode;
         bytes memory initCode = abi.encodePacked(
             bytecode,
-            abi.encode(owner, paymaster, SBT_CONTRACT, XPNTS_CONTRACT, uint256(0))
+            abi.encode(owner, paymaster, SBT_CONTRACT, XPNTS_CONTRACT)
         );
 
         bytes32 data = keccak256(initCode);
