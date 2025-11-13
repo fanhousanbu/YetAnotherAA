@@ -394,6 +394,46 @@ app.post("/api/delegation/info", async (req, res) => {
   }
 });
 
+// 获取账户信息端点
+app.get("/api/account-info", async (req, res) => {
+  try {
+    const testAddress = process.env.TEST_EOA_ADDRESS || relayerWallet.address;
+    const xPNTsAddress = process.env.XPNTS_CONTRACT_ADDRESS ||  process.env.GTOKEN_CONTRACT_ADDRESS;
+
+    // 获取 ETH 余额
+    const ethBalance = await provider.getBalance(testAddress);
+
+    // 获取 xPNTs 余额
+    let xPNTsBalance = "0";
+    if (xPNTsAddress && xPNTsAddress !== "0x0000000000000000000000000000000000000000") {
+      try {
+        const xPNTsContract = new ethers.Contract(
+          xPNTsAddress,
+          ["function balanceOf(address) view returns (uint256)"],
+          provider
+        );
+        const balance = await xPNTsContract.balanceOf(testAddress);
+        xPNTsBalance = ethers.formatEther(balance);
+      } catch (error) {
+        console.log("xPNTs balance check failed:", error.message);
+      }
+    }
+
+    res.json({
+      testAddress,
+      ethBalance: ethers.formatEther(ethBalance),
+      xPNTsAddress,
+      xPNTsBalance,
+      factoryAddress: DELEGATION_FACTORY_ADDRESS,
+      paymasterAddress: SPONSOR_PAYMASTER_ADDRESS,
+      network: "sepolia",
+      chainId: 11155111,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 测试端点
 app.get("/api/test", async (req, res) => {
   try {

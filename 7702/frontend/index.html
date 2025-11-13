@@ -4,61 +4,87 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EIP-7702 Delegation System</title>
-    <!-- Load ethers.js v6 -->
+    <!-- Load ethers.js v6 for wallet integration -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.1/dist/ethers.umd.min.js"></script>
     <style>
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        max-width: 800px;
+        max-width: 900px;
         margin: 0 auto;
         padding: 20px;
         background-color: #f5f5f5;
       }
-
       .container {
         background: white;
         padding: 30px;
         border-radius: 12px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
-
       h1 {
         color: #333;
         text-align: center;
         margin-bottom: 30px;
       }
-
+      h2 {
+        color: #555;
+        margin-top: 30px;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+      }
       .section {
         margin-bottom: 30px;
         padding: 20px;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
+        background: #fafafa;
       }
-
       .status {
-        padding: 10px;
+        padding: 15px;
         border-radius: 6px;
-        margin: 10px 0;
+        margin: 15px 0;
       }
-
       .status.success {
         background-color: #d4edda;
         color: #155724;
         border: 1px solid #c3e6cb;
       }
-
       .status.error {
         background-color: #f8d7da;
         color: #721c24;
         border: 1px solid #f5c6cb;
       }
-
       .status.info {
         background-color: #d1ecf1;
         color: #0c5460;
         border: 1px solid #bee5eb;
       }
-
+      .contract-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 15px 0;
+      }
+      .contract-info code {
+        background-color: #e9ecef;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: monospace;
+      }
+      .api-info {
+        background: #e9ecef;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 15px 0;
+      }
+      .code {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: monospace;
+        margin: 10px 0;
+        white-space: pre-wrap;
+      }
       button {
         background-color: #007bff;
         color: white;
@@ -67,18 +93,16 @@
         border-radius: 6px;
         cursor: pointer;
         font-size: 16px;
+        margin: 5px;
         transition: background-color 0.2s;
       }
-
       button:hover {
         background-color: #0056b3;
       }
-
       button:disabled {
         background-color: #6c757d;
         cursor: not-allowed;
       }
-
       input {
         width: 100%;
         padding: 10px;
@@ -87,77 +111,121 @@
         font-size: 16px;
         margin-bottom: 10px;
       }
-
+      .test-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 20px 0;
+      }
       .loading {
         display: inline-block;
         width: 20px;
         height: 20px;
-        border: 3px solid rgba(255, 255, 255, 0.3);
+        border: 3px solid rgba(255,255,255,.3);
         border-radius: 50%;
         border-top-color: #fff;
         animation: spin 1s ease-in-out infinite;
       }
-
       @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
+        to { transform: rotate(360deg); }
       }
-
-      .contract-info {
-        background-color: #f8f9fa;
-        padding: 15px;
-        border-radius: 6px;
-        margin: 15px 0;
+      #results {
+        margin-top: 20px;
       }
-
-      .contract-info code {
-        background-color: #e9ecef;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-family: "Courier New", monospace;
+      #results .status {
+        font-family: monospace;
+        font-size: 14px;
+        word-wrap: break-word;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>🚀 EIP-7702 Gasless Delegation System</h1>
+      <h1>🚀 EIP-7702 Delegation System</h1>
 
-      <div class="section">
-        <h2>📋 Contract Addresses</h2>
-        <div class="contract-info">
-          <p>
-            <strong>DelegationFactory:</strong>
-            <code>0xDcBDCcE3f4A1B59e7dA5fa1Cd6FD9E1C9f9b88C2</code>
-          </p>
-          <p>
-            <strong>SponsorPaymaster:</strong>
-            <code>0xf5023C131A8aD2506972B29D5F84310D5e754767</code>
-          </p>
-          <p><strong>Network:</strong> Sepolia Testnet</p>
-        </div>
+      <!-- System Status Info -->
+      <div class="status info">
+        <h2>📊 System Status</h2>
+        <p>
+          <strong>Backend API:</strong>
+          <a href="http://localhost:3001/health" target="_blank">http://localhost:3001/health</a>
+        </p>
+        <p>
+          <strong>Test Endpoint:</strong>
+          <a href="http://localhost:3001/api/test" target="_blank">http://localhost:3001/api/test</a>
+        </p>
+        <p>
+          <strong>Network:</strong> Sepolia Testnet (Chain ID: 11155111)
+        </p>
       </div>
 
+      <!-- Contract Addresses -->
+      <div class="contract-info">
+        <h2>📋 Contract Addresses</h2>
+        <p>
+          <strong>DelegationFactory:</strong>
+          <code>0xDcBDCcE3f4A1B59e7dA5fa1Cd6FD9E1C9f9b88C2</code>
+          <a href="https://sepolia.etherscan.io/address/0xDcBDCcE3f4A1B59e7dA5fa1Cd6FD9E1C9f9b88C2" target="_blank">↗</a>
+        </p>
+        <p>
+          <strong>SponsorPaymaster:</strong>
+          <code>0xf5023C131A8aD2506972B29D5F84310D5e754767</code>
+          <a href="https://sepolia.etherscan.io/address/0xf5023C131A8aD2506972B29D5F84310D5e754767" target="_blank">↗</a>
+        </p>
+      </div>
+
+      <!-- API Endpoints -->
+      <div class="api-info">
+        <h2>🔧 API Endpoints</h2>
+        <div class="code">POST /api/eip7702/status
+{ "userAddress": "0x..." }
+
+POST /api/eip7702/enable
+{ "userAddress": "0x...", "dailyLimit": "100000000000000000" }</div>
+      </div>
+
+      <!-- Test Account Information -->
+      <div class="section">
+        <h2>👤 Test Account Information</h2>
+        <button onclick="loadAccountInfo()">🔄 Refresh Account Info</button>
+        <div id="accountInfo" style="margin-top: 15px;"></div>
+      </div>
+
+      <!-- Quick Test Buttons (from simple-test.html) -->
+      <div class="section">
+        <h2>🧪 Quick Test (No Wallet Required)</h2>
+        <div class="test-buttons">
+          <button onclick="testHealth()">检查健康状态</button>
+          <button onclick="testApi()">测试 API</button>
+          <button onclick="testStatus()">检查委托状态</button>
+          <button onclick="testEnable()">测试启用委托</button>
+        </div>
+        <div id="results"></div>
+      </div>
+
+      <!-- Connect Wallet Section (from test.html) -->
       <div class="section">
         <h2>🔗 Connect Wallet</h2>
         <button id="connectWallet">Connect MetaMask</button>
         <div id="walletStatus" class="status info" style="display: none">Wallet not connected</div>
       </div>
 
+      <!-- Check Delegation Status (from test.html) -->
       <div class="section">
         <h2>📊 Check Delegation Status</h2>
         <input
           type="text"
           id="userAddress"
           placeholder="Enter user address (0x...)"
-          value="0xc8d1Ae1063176BEBC750D9aD5D057BA4A65daf3d"
+          value="0xE3D28Aa77c95d5C098170698e5ba68824BFC008d"
         />
         <button id="checkStatus" disabled>Check Status</button>
         <div id="statusResult"></div>
       </div>
 
+      <!-- Enable Delegation (from test.html) -->
       <div class="section">
-        <h2>🚀 Enable Delegation</h2>
+        <h2>🚀 Enable Delegation (With Signature)</h2>
         <label>
           Daily Limit (ETH):
           <input type="number" id="dailyLimit" value="0.1" step="0.01" min="0" />
@@ -166,59 +234,151 @@
         <div id="enableResult"></div>
       </div>
 
+      <!-- Backend Service Status (from test.html) -->
       <div class="section">
-        <h2>📡 Service Status</h2>
+        <h2>📡 Backend Service Status</h2>
         <button id="checkBackend">Check Backend Service</button>
         <div id="backendStatus"></div>
+      </div>
+
+      <!-- Test Flow Info -->
+      <div class="api-info">
+        <h2>🎯 Integration Test Flow</h2>
+        <ol>
+          <li>Check system health status</li>
+          <li>Connect MetaMask wallet</li>
+          <li>Check current delegation status</li>
+          <li>Enable EIP-7702 delegation (requires signature)</li>
+          <li>Verify delegation activation</li>
+          <li>Test gasless transactions</li>
+        </ol>
+        <p><strong>For detailed testing:</strong> See <code>INTEGRATION_TEST_GUIDE.md</code></p>
       </div>
     </div>
 
     <script>
+      const API_BASE = 'http://localhost:3001';
       let provider;
       let signer;
       let userAddress;
 
-      // 连接钱包
-      document.getElementById("connectWallet").addEventListener("click", async () => {
-        console.log("Starting wallet connection...");
-        console.log("window.ethereum exists:", typeof window.ethereum);
-        console.log("ethers loaded:", typeof ethers);
+      // Load Account Information
+      async function loadAccountInfo() {
+        const infoDiv = document.getElementById('accountInfo');
+        infoDiv.innerHTML = '<div class="status info"><span class="loading"></span> Loading account info...</div>';
 
+        try {
+          const response = await fetch(`${API_BASE}/api/account-info`);
+          const data = await response.json();
+
+          let html = '<div class="contract-info">';
+          html += `<p><strong>📍 Address:</strong> <code>${data.testAddress}</code></p>`;
+          html += `<p><strong>💰 ETH Balance:</strong> ${data.ethBalance} ETH</p>`;
+          html += `<p><strong>🪙 xPNTs Balance:</strong> <span style="color: ${parseFloat(data.xPNTsBalance) > 0 ? 'green' : 'red'}; font-weight: bold;">${data.xPNTsBalance} xPNTs</span></p>`;
+          html += `<p><strong>🔗 xPNTs Contract:</strong> <code>${data.xPNTsAddress}</code></p>`;
+          html += `<p><strong>Network:</strong> ${data.network} (Chain ID: ${data.chainId})</p>`;
+          html += '</div>';
+
+          infoDiv.innerHTML = html;
+        } catch (error) {
+          console.error('Failed to load account info:', error);
+          infoDiv.innerHTML = `<div class="status error">❌ Failed to load account info: ${error.message}</div>`;
+        }
+      }
+
+      // Simple test functions (from simple-test.html)
+      function log(message, type = 'info') {
+        const div = document.createElement('div');
+        div.className = `status ${type}`;
+        div.innerHTML = `${new Date().toLocaleTimeString()} - ${message}`;
+        document.getElementById('results').appendChild(div);
+        div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+
+      async function testHealth() {
+        log('🔍 Checking health status...', 'info');
+        try {
+          const response = await fetch(`${API_BASE}/health`);
+          const data = await response.json();
+          log(`✅ Health Status: ${JSON.stringify(data)}`, 'success');
+        } catch (error) {
+          log(`❌ Health check failed: ${error.message}`, 'error');
+        }
+      }
+
+      async function testApi() {
+        log('🧪 Testing API...', 'info');
+        try {
+          const response = await fetch(`${API_BASE}/api/test`);
+          const data = await response.json();
+          log(`✅ API Test Results:<br>${JSON.stringify(data, null, 2)}`, 'success');
+        } catch (error) {
+          log(`❌ API test failed: ${error.message}`, 'error');
+        }
+      }
+
+      async function testStatus() {
+        const userAddr = '0xE3D28Aa77c95d5C098170698e5ba68824BFC008d';
+        log(`🔍 Checking delegation status (${userAddr})...`, 'info');
+        try {
+          const response = await fetch(`${API_BASE}/api/eip7702/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userAddress: userAddr })
+          });
+          const data = await response.json();
+          log(`✅ Delegation Status:<br>${JSON.stringify(data, null, 2)}`, 'success');
+        } catch (error) {
+          log(`❌ Delegation status check failed: ${error.message}`, 'error');
+        }
+      }
+
+      async function testEnable() {
+        const userAddr = '0xE3D28Aa77c95d5C098170698e5ba68824BFC008d';
+        log(`🚀 Attempting to enable delegation (${userAddr})...`, 'info');
+        try {
+          const response = await fetch(`${API_BASE}/api/eip7702/enable`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userAddress: userAddr,
+              dailyLimit: '100000000000000000'
+            })
+          });
+          const data = await response.json();
+          log(`✅ Enable Delegation Response:<br>${JSON.stringify(data, null, 2)}`, 'success');
+        } catch (error) {
+          log(`❌ Enable delegation failed: ${error.message}`, 'error');
+        }
+      }
+
+      // Wallet connection (from test.html)
+      document.getElementById("connectWallet").addEventListener("click", async () => {
         if (typeof window.ethereum !== "undefined") {
           try {
-            console.log("Requesting account access...");
             await window.ethereum.request({ method: "eth_requestAccounts" });
-            console.log("Creating provider...");
             provider = new ethers.BrowserProvider(window.ethereum);
-            console.log("Getting signer...");
             signer = await provider.getSigner();
-            console.log("Getting address...");
             userAddress = await signer.getAddress();
-            console.log("Successfully got address:", userAddress);
 
             document.getElementById("walletStatus").className = "status success";
             document.getElementById("walletStatus").textContent = `Connected: ${userAddress}`;
             document.getElementById("walletStatus").style.display = "block";
             document.getElementById("userAddress").value = userAddress;
 
-            // 启用按钮
             document.getElementById("checkStatus").disabled = false;
             document.getElementById("enableDelegation").disabled = false;
           } catch (error) {
-            console.error("Wallet connection failed:", error);
-            console.error("Error details:", error.message);
             document.getElementById("walletStatus").className = "status error";
-            document.getElementById("walletStatus").textContent =
-              `Connection failed: ${error.message}`;
+            document.getElementById("walletStatus").textContent = `Connection failed: ${error.message}`;
             document.getElementById("walletStatus").style.display = "block";
           }
         } else {
-          console.error("MetaMask not installed");
           alert("Please install MetaMask");
         }
       });
 
-      // 检查委托状态
+      // Check status (from test.html)
       document.getElementById("checkStatus").addEventListener("click", async () => {
         const address = document.getElementById("userAddress").value;
         if (!ethers.isAddress(address)) {
@@ -231,16 +391,13 @@
         statusDiv.innerHTML = '<span class="loading"></span> Checking...';
 
         try {
-          const response = await fetch("http://localhost:3001/api/eip7702/status", {
+          const response = await fetch(`${API_BASE}/api/eip7702/status`, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ userAddress: address }),
           });
 
           const status = await response.json();
-
           let html = `<strong>Delegation Status:</strong> `;
           if (status.enabled) {
             html += `<span style="color: green;">✅ Enabled</span><br>`;
@@ -249,19 +406,17 @@
           } else {
             html += `<span style="color: red;">❌ Not Enabled</span>`;
           }
-
-          html += `<strong>Sponsorship Status:</strong> ${status.isSponsored ? "✅ Sponsored" : "❌ Not Sponsored"}`;
+          html += `<br><strong>Sponsorship:</strong> ${status.isSponsored ? "✅ Sponsored" : "❌ Not Sponsored"}`;
 
           statusDiv.className = "status success";
           statusDiv.innerHTML = html;
         } catch (error) {
-          console.error("Status check failed:", error);
           statusDiv.className = "status error";
           statusDiv.innerHTML = `Check failed: ${error.message}`;
         }
       });
 
-      // 启用委托
+      // Enable delegation (from test.html)
       document.getElementById("enableDelegation").addEventListener("click", async () => {
         const address = document.getElementById("userAddress").value;
         const dailyLimit = document.getElementById("dailyLimit").value;
@@ -276,11 +431,9 @@
         resultDiv.innerHTML = '<span class="loading"></span> Setting up delegation...';
 
         try {
-          const response = await fetch("http://localhost:3001/api/eip7702/enable", {
+          const response = await fetch(`${API_BASE}/api/eip7702/enable`, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               userAddress: address,
               dailyLimit: ethers.parseEther(dailyLimit).toString(),
@@ -291,47 +444,30 @@
 
           if (result.success) {
             resultDiv.className = "status success";
-            let html = `<strong>✅ Delegation setup successful!</strong><br>`;
-            html += `<strong>Address:</strong> ${result.delegationAddress}<br>`;
-            html += `<strong>Method:</strong> ${result.method}<br>`;
-            html += `<strong>Transaction Hash:</strong> ${result.txHash}`;
-            resultDiv.innerHTML = html;
+            resultDiv.innerHTML = `<strong>✅ Delegation setup successful!</strong><br>
+                                    <strong>Address:</strong> ${result.delegationAddress}<br>
+                                    <strong>Method:</strong> ${result.method}<br>
+                                    <strong>TX Hash:</strong> ${result.txHash}`;
           } else if (result.needsSignature) {
             resultDiv.className = "status info";
             let html = `<strong>📝 Signature Required</strong><br>`;
             html += `<strong>Target:</strong> ${result.transaction.to}<br>`;
             html += `<strong>Gas Limit:</strong> ${result.transaction.gasLimit}<br>`;
             html += `<strong>Data:</strong> <code style="word-break: break-all;">${result.transaction.data}</code><br><br>`;
-            html += `<em>Please sign the transaction in MetaMask</em>`;
+            html += `<em>Signing transaction with MetaMask...</em>`;
             resultDiv.innerHTML = html;
 
-            // 这里可以实现实际的前端签名逻辑
             if (signer) {
               try {
                 const tx = await signer.sendTransaction(result.transaction);
+                resultDiv.innerHTML += `<br><br><strong>Transaction sent!</strong> Hash: ${tx.hash}<br>Waiting for confirmation...`;
+
                 const receipt = await tx.wait();
-
-                // 广播到 relayer
-                const broadcastResponse = await fetch(
-                  "http://localhost:3001/api/relayer/broadcast",
-                  {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                      signedTx: tx.raw,
-                      userAddress: address,
-                    }),
-                  }
-                );
-
-                const broadcastResult = await broadcastResponse.json();
-
                 resultDiv.className = "status success";
-                resultDiv.innerHTML = `<strong>✅ Transaction submitted!</strong><br>
-                                <strong>Transaction Hash:</strong> ${receipt.hash}<br>
-                                <strong>Status:</strong> ${broadcastResult.success ? "✅ Success" : "❌ Failed"}`;
+                resultDiv.innerHTML = `<strong>✅ Transaction confirmed!</strong><br>
+                                        <strong>TX Hash:</strong> ${receipt.hash}<br>
+                                        <strong>Block:</strong> ${receipt.blockNumber}<br>
+                                        <strong>Delegation Address:</strong> ${result.delegationAddress}`;
               } catch (signError) {
                 resultDiv.className = "status error";
                 resultDiv.innerHTML = `<strong>❌ Signature failed:</strong> ${signError.message}`;
@@ -342,20 +478,19 @@
             resultDiv.innerHTML = `<strong>❌ Setup failed:</strong> ${result.error}`;
           }
         } catch (error) {
-          console.error("Delegation setup failed:", error);
           resultDiv.className = "status error";
           resultDiv.innerHTML = `Setup failed: ${error.message}`;
         }
       });
 
-      // 检查后端服务
+      // Check backend service (from test.html)
       document.getElementById("checkBackend").addEventListener("click", async () => {
         const statusDiv = document.getElementById("backendStatus");
         statusDiv.className = "status info";
         statusDiv.innerHTML = '<span class="loading"></span> Checking...';
 
         try {
-          const response = await fetch("http://localhost:3001/api/test");
+          const response = await fetch(`${API_BASE}/api/test`);
           const data = await response.json();
 
           let html = `<strong>✅ Backend service is normal</strong><br>`;
@@ -368,22 +503,20 @@
           statusDiv.className = "status success";
           statusDiv.innerHTML = html;
         } catch (error) {
-          console.error("Backend check failed:", error);
           statusDiv.className = "status error";
           statusDiv.innerHTML = `❌ Backend service error: ${error.message}`;
         }
       });
 
-      // 页面加载时自动检查后端
+      // Auto-load account info and check backend on page load
       window.addEventListener("load", () => {
-        console.log("Page loaded, starting initialization...");
-        console.log("Check ethers library:", typeof ethers);
-        console.log("Check MetaMask:", typeof window.ethereum);
-
-        // Auto check backend
+        console.log("Page loaded, loading account info and checking backend...");
+        setTimeout(() => {
+          loadAccountInfo();
+        }, 300);
         setTimeout(() => {
           document.getElementById("checkBackend").click();
-        }, 100);
+        }, 600);
       });
     </script>
   </body>
