@@ -54,7 +54,7 @@
     "@nestjs/jwt": "^11.0.1",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.8",
-    "@nestjs/swagger": "^11.2.1",
+    "@nestjs/swagger": "^11.2.3",
     "@nestjs/typeorm": "^11.0.0",
     "@noble/curves": "^2.0.1",
     "@simplewebauthn/server": "^13.2.2",
