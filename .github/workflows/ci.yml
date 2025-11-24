@@ -17,7 +17,7 @@ jobs:
     name: Security Audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Use Node.js 20
         uses: actions/setup-node@v6
@@ -58,7 +58,7 @@ jobs:
       matrix:
         project: [aastar, aastar-frontend]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Use Node.js 20
         uses: actions/setup-node@v6
@@ -98,7 +98,7 @@ jobs:
           - project: aastar-frontend
             build-command: npm run build
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Use Node.js 20
         uses: actions/setup-node@v6
@@ -122,7 +122,7 @@ jobs:
       matrix:
         project: [aastar]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Use Node.js 20
         uses: actions/setup-node@v6
@@ -147,7 +147,7 @@ jobs:
       matrix:
         project: [aastar, aastar-frontend]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Use Node.js 20
         uses: actions/setup-node@v6
@@ -179,7 +179,7 @@ jobs:
       matrix:
         language: ["javascript", "typescript"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
