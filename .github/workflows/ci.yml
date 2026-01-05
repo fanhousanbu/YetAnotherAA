@@ -25,7 +25,7 @@ jobs:
           node-version: "20"
 
       - name: Install root dependencies with force
-        run: npm ci --force
+        run: npm ci
 
       - name: Run npm audit (All workspaces)
         run: npm audit --audit-level=high --workspaces --if-present
@@ -66,7 +66,7 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm ci --force
+        run: npm ci
 
       - name: Check formatting
         working-directory: ./${{ matrix.project }}
@@ -108,7 +108,7 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm ci --force
+        run: npm ci
 
       - name: Build project
         working-directory: ./${{ matrix.project }}
@@ -132,7 +132,7 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm ci --force
+        run: npm ci
 
       - name: Run tests
         working-directory: ./${{ matrix.project }}
@@ -157,7 +157,7 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm ci --force
+        run: npm ci
 
       - name: Run TypeScript compiler
         working-directory: ./${{ matrix.project }}
