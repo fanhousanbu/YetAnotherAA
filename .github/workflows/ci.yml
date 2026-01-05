@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [aastar, aastar-frontend]
+        project: [aastar, aastar-frontend, sdk]
     steps:
       - uses: actions/checkout@v5
 
@@ -96,6 +96,8 @@ jobs:
           - project: aastar
             build-command: npm run build
           - project: aastar-frontend
+            build-command: npm run build
+          - project: sdk
             build-command: npm run build
     steps:
       - uses: actions/checkout@v5
@@ -145,7 +147,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [aastar, aastar-frontend]
+        project: [aastar, aastar-frontend, sdk]
     steps:
       - uses: actions/checkout@v5
 
