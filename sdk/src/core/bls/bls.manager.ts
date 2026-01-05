@@ -15,26 +15,26 @@ export class BLSManager {
    */
   async getAvailableNodes(): Promise<BLSNode[]> {
     const { seedNodes, discoveryTimeout = 5000 } = this.config;
-    
+
     for (const seedEndpoint of seedNodes) {
       try {
         // Try to get peers from gossip endpoint
         const response = await axios.get(`${seedEndpoint}/gossip/peers`, {
-            timeout: discoveryTimeout
+          timeout: discoveryTimeout,
         });
-        
+
         const peers = response.data.peers || [];
-        
+
         // Filter active nodes with proper structure
         const activeNodes: BLSNode[] = peers
-          .filter((p: any) => p.status === 'active' && p.apiEndpoint && p.publicKey)
+          .filter((p: any) => p.status === "active" && p.apiEndpoint && p.publicKey)
           .map((p: any, index: number) => ({
             index: index + 1, // 1-based index likely expected by contract if using bitmap
             nodeId: p.nodeId,
             nodeName: p.nodeName,
             apiEndpoint: p.apiEndpoint,
-            status: 'active',
-            publicKey: p.publicKey
+            status: "active",
+            publicKey: p.publicKey,
           }));
 
         if (activeNodes.length > 0) {
@@ -81,12 +81,12 @@ export class BLSManager {
    * Calculate the MessagePoint G2 point for a given message (UserOpHash)
    */
   async generateMessagePoint(message: string | Uint8Array): Promise<string> {
-    const messageBytes = typeof message === 'string' ? ethers.getBytes(message) : message;
+    const messageBytes = typeof message === "string" ? ethers.getBytes(message) : message;
     const DST = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
-    
+
     const messagePointBLS = await bls.G2.hashToCurve(messageBytes, { DST });
     const messageG2EIP = this.encodeG2Point(messagePointBLS);
-    
+
     return "0x" + Buffer.from(messageG2EIP).toString("hex");
   }
 
@@ -110,41 +110,44 @@ export class BLSManager {
   }
 
   private hexToBytes(hex: string): Uint8Array {
-    if (hex.startsWith('0x')) hex = hex.slice(2);
+    if (hex.startsWith("0x")) hex = hex.slice(2);
     const bytes = new Uint8Array(hex.length / 2);
     for (let i = 0; i < hex.length; i += 2) {
       bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
     }
     return bytes;
   }
-  
+
   /**
    * Request signature from a single node
    */
-  async requestNodeSignature(node: BLSNode, message: string): Promise<{ signature: string, publicKey: string }> {
-      const response = await axios.post(`${node.apiEndpoint}/signature/sign`, {
-          message
-      });
-      
-      const signatureEIP = response.data.signature;
-      // Prefer compact if available, logic copied from legacy service
-      const signature = response.data.signatureCompact || signatureEIP;
-      
-      return {
-          signature: signature.startsWith('0x') ? signature : `0x${signature}`,
-          publicKey: response.data.publicKey
-      };
+  async requestNodeSignature(
+    node: BLSNode,
+    message: string
+  ): Promise<{ signature: string; publicKey: string }> {
+    const response = await axios.post(`${node.apiEndpoint}/signature/sign`, {
+      message,
+    });
+
+    const signatureEIP = response.data.signature;
+    // Prefer compact if available, logic copied from legacy service
+    const signature = response.data.signatureCompact || signatureEIP;
+
+    return {
+      signature: signature.startsWith("0x") ? signature : `0x${signature}`,
+      publicKey: response.data.publicKey,
+    };
   }
 
   /**
    * Request aggregation from a node
    */
   async aggregateSignatures(node: BLSNode, signatures: string[]): Promise<string> {
-      const response = await axios.post(`${node.apiEndpoint}/signature/aggregate`, {
-          signatures
-      });
-      
-      const sig = response.data.signature;
-      return sig.startsWith('0x') ? sig : `0x${sig}`;
+    const response = await axios.post(`${node.apiEndpoint}/signature/aggregate`, {
+      signatures,
+    });
+
+    const sig = response.data.signature;
+    return sig.startsWith("0x") ? sig : `0x${sig}`;
   }
 }

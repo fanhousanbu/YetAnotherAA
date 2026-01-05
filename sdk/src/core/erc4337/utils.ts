@@ -23,10 +23,7 @@ export class ERC4337Utils {
     };
   }
 
-  static packGasFees(
-    maxPriorityFeePerGas: bigint | string,
-    maxFeePerGas: bigint | string
-  ): string {
+  static packGasFees(maxPriorityFeePerGas: bigint | string, maxFeePerGas: bigint | string): string {
     const priority = BigInt(maxPriorityFeePerGas);
     const max = BigInt(maxFeePerGas);
     const packed = (priority << 128n) | max;
@@ -51,14 +48,11 @@ export class ERC4337Utils {
       initCode: userOp.initCode || "0x",
       callData: userOp.callData,
       accountGasLimits: ERC4337Utils.packAccountGasLimits(
-        userOp.verificationGasLimit, 
+        userOp.verificationGasLimit,
         userOp.callGasLimit
       ),
       preVerificationGas: userOp.preVerificationGas,
-      gasFees: ERC4337Utils.packGasFees(
-        userOp.maxPriorityFeePerGas, 
-        userOp.maxFeePerGas
-      ),
+      gasFees: ERC4337Utils.packGasFees(userOp.maxPriorityFeePerGas, userOp.maxFeePerGas),
       paymasterAndData: userOp.paymasterAndData || "0x",
       signature: userOp.signature || "0x",
     };

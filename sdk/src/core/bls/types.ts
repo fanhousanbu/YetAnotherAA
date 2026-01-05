@@ -3,7 +3,7 @@ export interface BLSNode {
   nodeId: string;
   nodeName: string;
   apiEndpoint: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   publicKey?: string;
   lastSeen?: Date;
 }

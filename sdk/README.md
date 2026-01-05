@@ -2,13 +2,15 @@
 
 > Yet Another Account Abstraction SDK - ERC-4337 + BLS + Passkey
 
-A lightweight, production-ready SDK for building Web3 applications with Passkey authentication and ERC-4337 account abstraction.
+A lightweight, production-ready SDK for building Web3 applications with Passkey
+authentication and ERC-4337 account abstraction.
 
 ## Features
 
 - 🔐 **Passkey Authentication**: Passwordless login with biometric verification
 - 🔑 **BLS Aggregate Signatures**: Efficient multi-signature support
-- 💼 **ERC-4337 Account Abstraction**: Smart contract wallets with advanced features
+- 💼 **ERC-4337 Account Abstraction**: Smart contract wallets with advanced
+  features
 - 🚫 **No Private Keys**: All sensitive operations handled securely
 - 🎯 **TypeScript First**: Full type safety and IntelliSense support
 - 🪶 **Lightweight**: Minimal dependencies, tree-shakeable
@@ -22,21 +24,21 @@ npm install @yaaa/sdk
 ## Quick Start
 
 ```typescript
-import { YAAAClient } from '@yaaa/sdk';
+import { YAAAClient } from "@yaaa/sdk";
 
 // Initialize the client
 const yaaa = new YAAAClient({
-  apiURL: 'https://api.your-backend.com/v1',
-  tokenProvider: () => localStorage.getItem('token'),
+  apiURL: "https://api.your-backend.com/v1",
+  tokenProvider: () => localStorage.getItem("token"),
   bls: {
-    seedNodes: ['https://validator.your-domain.com']
-  }
+    seedNodes: ["https://validator.your-domain.com"],
+  },
 });
 
 // Register with Passkey
 const { user, token } = await yaaa.passkey.register({
-  email: 'user@example.com',
-  username: 'JohnDoe'
+  email: "user@example.com",
+  username: "JohnDoe",
 });
 
 // Login with Passkey
@@ -44,8 +46,8 @@ const result = await yaaa.passkey.authenticate();
 
 // Send transaction with Passkey verification
 const verification = await yaaa.passkey.verifyTransaction({
-  to: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-  value: '0.01'
+  to: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+  value: "0.01",
 });
 ```
 
@@ -63,11 +65,11 @@ const yaaa = new YAAAClient(config: YAAAConfig);
 
 ```typescript
 interface YAAAConfig {
-  apiURL: string;                      // Your backend API URL
+  apiURL: string; // Your backend API URL
   tokenProvider?: () => string | null; // JWT token provider
   bls: {
-    seedNodes: string[];               // BLS validator seed nodes
-    discoveryTimeout?: number;         // Node discovery timeout (ms)
+    seedNodes: string[]; // BLS validator seed nodes
+    discoveryTimeout?: number; // Node discovery timeout (ms)
   };
 }
 ```
@@ -157,12 +159,12 @@ Pack BLS signature data for UserOperation.
 
 ```typescript
 const packed = yaaa.bls.packSignature({
-  nodeIds: ['0x...', '0x...'],
-  signature: '0x...',
-  messagePoint: '0x...',
-  aaAddress: '0x...',
-  aaSignature: '0x...',
-  messagePointSignature: '0x...'
+  nodeIds: ["0x...", "0x..."],
+  signature: "0x...",
+  messagePoint: "0x...",
+  aaAddress: "0x...",
+  aaSignature: "0x...",
+  messagePointSignature: "0x...",
 });
 ```
 
@@ -171,7 +173,7 @@ const packed = yaaa.bls.packSignature({
 UserOperation packing/unpacking utilities.
 
 ```typescript
-import { ERC4337Utils } from '@yaaa/sdk';
+import { ERC4337Utils } from "@yaaa/sdk";
 
 // Pack gas limits
 const packed = ERC4337Utils.packAccountGasLimits(
@@ -180,7 +182,7 @@ const packed = ERC4337Utils.packAccountGasLimits(
 );
 
 // Unpack gas limits
-const { verificationGasLimit, callGasLimit } = 
+const { verificationGasLimit, callGasLimit } =
   ERC4337Utils.unpackAccountGasLimits(packed);
 
 // Pack UserOperation (v0.6 -> v0.7)
@@ -225,7 +227,7 @@ interface BLSNode {
   nodeId: string;
   nodeName: string;
   apiEndpoint: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   publicKey?: string;
 }
 
@@ -248,6 +250,7 @@ See the [examples](./examples) directory for complete usage examples:
 ## Architecture
 
 The SDK is designed to work with a backend API that handles:
+
 - Bundler communication (submitting UserOperations)
 - Paymaster integration (gas sponsorship)
 - BLS signature coordination
@@ -315,5 +318,6 @@ MIT
 ## Support
 
 For issues and questions:
+
 - GitHub Issues: https://github.com/fanhousanbu/YetAnotherAA/issues
 - Email: support@yetanotheraa.com

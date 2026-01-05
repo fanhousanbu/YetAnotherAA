@@ -37,6 +37,8 @@
     "dev": "tsup --watch",
     "test": "jest",
     "lint": "eslint src --max-warnings 0",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "clean": "rm -rf dist"
   },
   "keywords": [

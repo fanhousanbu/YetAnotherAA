@@ -1,4 +1,4 @@
-const sdk = require('./dist/index.js');
+const sdk = require("./dist/index.js");
 
 try {
   if (sdk.YAAAClient) {
