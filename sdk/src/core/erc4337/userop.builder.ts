@@ -1,6 +1,5 @@
 import { ethers } from "ethers";
-import { UserOperation, PackedUserOperation } from "../types";
-import { ERC4337Utils } from "./utils";
+import type { PackedUserOperation, UserOperation } from "../types";
 
 export class UserOpBuilder {
   // Basic defaults

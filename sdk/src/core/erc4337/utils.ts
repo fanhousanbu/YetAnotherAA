@@ -1,5 +1,4 @@
-import { ethers } from "ethers";
-import { UserOperation, PackedUserOperation } from "../types";
+import type { PackedUserOperation } from "../types";
 
 export class ERC4337Utils {
   static packAccountGasLimits(

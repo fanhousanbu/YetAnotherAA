@@ -40,7 +40,7 @@ export class BLSManager {
         if (activeNodes.length > 0) {
           return activeNodes;
         }
-      } catch (error) {
+      } catch {
         // Try next seed node
         continue;
       }

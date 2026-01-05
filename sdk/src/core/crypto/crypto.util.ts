@@ -4,7 +4,6 @@ export class CryptoUtil {
   private static readonly ALGORITHM = "aes-256-gcm";
   private static readonly KEY_LENGTH = 32;
   private static readonly IV_LENGTH = 16;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private static readonly TAG_LENGTH = 16;
 
   static encrypt(text: string, secretKey: string): string {

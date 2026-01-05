@@ -46,7 +46,7 @@ export class PasskeyManager {
     );
 
     // 2. Client-side WebAuthn (Browser UI)
-    // @ts-ignore - simplewebauthn types mismatch sometimes
+    // @ts-expect-error - simplewebauthn types mismatch sometimes
     const credential = await startRegistration(beginResponse.data);
 
     // 3. Complete Registration (Verify with backend)
@@ -119,7 +119,7 @@ export class PasskeyManager {
     );
 
     // 2. WebAuthn
-    // @ts-ignore
+    // @ts-expect-error - simplewebauthn types mismatch sometimes
     const credential = await startRegistration(beginResponse.data);
 
     // 3. Complete
