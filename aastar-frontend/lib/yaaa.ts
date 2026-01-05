@@ -11,7 +11,7 @@ export const yaaa = new YAAAClient({
   bls: {
     // These should ideally come from backend config or env
     seedNodes: [
-      process.env.NEXT_PUBLIC_BLS_SEED_NODE || "https://yetanotheraa-validator.onrender.com"
-    ]
-  }
+      process.env.NEXT_PUBLIC_BLS_SEED_NODE || "https://yetanotheraa-validator.onrender.com",
+    ],
+  },
 });
