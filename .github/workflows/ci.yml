@@ -163,13 +163,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Build SDK first if this is not the SDK type check itself
+      - name: Build SDK (dependency)
+        if: matrix.project != 'sdk'
+        run: npm run build --workspace=sdk
+
       - name: Run TypeScript compiler
-        working-directory: ./${{ matrix.project }}
         run: |
-          if [ -f package.json ] && jq -e '.scripts["type-check"]' package.json > /dev/null; then
-            npm run type-check
+          if [ -f ${{ matrix.project }}/package.json ] && jq -e '.scripts["type-check"]' ${{ matrix.project }}/package.json > /dev/null; then
+            npm run type-check --workspace=${{ matrix.project }}
           else
-            npx tsc --noEmit
+            cd ${{ matrix.project }} && npx tsc --noEmit
           fi
 
   # Job 6: CodeQL Analysis
