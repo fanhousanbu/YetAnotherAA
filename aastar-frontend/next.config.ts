@@ -6,8 +6,13 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  output: "standalone",
-  outputFileTracingRoot: path.join(__dirname, ".."),
+  // Only use standalone output when explicitly enabled (e.g., for Docker builds)
+  // Set NEXT_BUILD_STANDALONE=true when building for Docker
+  // This prevents warnings when using 'npm run start' locally
+  ...(process.env.NEXT_BUILD_STANDALONE === "true" && {
+    output: "standalone",
+    outputFileTracingRoot: path.join(__dirname, ".."),
+  }),
   // Fix for monorepo setup with Next.js 16+
   // Point to monorepo root where node_modules/next is located
   turbopack: {

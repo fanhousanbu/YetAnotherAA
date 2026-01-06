@@ -273,7 +273,13 @@ export class AuthService {
     user.kmsKeyId = kmsKeyId;
     user.useKms = useKms;
 
-    await this.databaseService.saveUser(user);
+    await this.databaseService.updateUser(user.id, {
+      walletAddress,
+      encryptedPrivateKey,
+      mnemonic,
+      kmsKeyId,
+      useKms,
+    });
 
     console.log("════════════════════════════════════════════");
     console.log("✅ User wallet created and saved");

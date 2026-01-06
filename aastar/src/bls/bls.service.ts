@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import axios from "axios";
 import { ethers } from "ethers";
-import { bls12_381 as bls } from "@noble/curves/bls12-381.js";
+import { BLSManager } from "@yaaa/sdk";
 import { DatabaseService } from "../database/database.service";
 import { AccountService } from "../account/account.service";
 import { AuthService } from "../auth/auth.service";
@@ -11,6 +11,7 @@ import { BlsSignatureData } from "../common/interfaces/erc4337.interface";
 @Injectable()
 export class BlsService implements OnModuleInit {
   private blsConfig: any;
+  private blsManager: BLSManager;
 
   constructor(
     private databaseService: DatabaseService,
@@ -21,6 +22,17 @@ export class BlsService implements OnModuleInit {
 
   async onModuleInit() {
     await this.initBlsConfig();
+
+    // Initialize SDK BLSManager
+    const seedNodeOverrides = this.configService.get<string>("BLS_SEED_NODES");
+    const seedNodes = seedNodeOverrides
+      ? seedNodeOverrides.split(",").map(s => s.trim())
+      : this.blsConfig?.discovery?.seedNodes?.map((n: any) => n.endpoint) || [];
+
+    this.blsManager = new BLSManager({
+      seedNodes,
+      discoveryTimeout: this.blsConfig?.discovery?.discoveryTimeout || 10000,
+    });
   }
 
   private async initBlsConfig() {
@@ -28,113 +40,15 @@ export class BlsService implements OnModuleInit {
   }
 
   async getActiveSignerNodes(): Promise<any[]> {
-    if (!this.blsConfig) {
-      await this.initBlsConfig();
-    }
-    const config = this.blsConfig;
-    if (!config || !config.signerNodes) {
-      throw new Error("BLS configuration not found or invalid");
-    }
+    // Use SDK's BLSManager for node discovery
+    const nodes = await this.blsManager.getAvailableNodes();
 
-    // Step 1: Try cached nodes first
-    const cachedNodes = config.signerNodes.nodes || [];
-    const activeCachedNodes = [];
-
-    for (const node of cachedNodes) {
-      if (node.status === "active" && node.apiEndpoint) {
-        try {
-          // Quick health check
-          const response = await axios.get(`${node.apiEndpoint}/health`, { timeout: 3000 });
-          if (response.status === 200) {
-            activeCachedNodes.push({
-              nodeId: node.nodeId,
-              nodeName: node.nodeName,
-              apiEndpoint: node.apiEndpoint,
-              publicKey: node.publicKey,
-              status: "active",
-            });
-          }
-        } catch {
-          // Continue checking other nodes
-        }
-      }
+    if (nodes.length > 0) {
+      // Update cache with discovered nodes
+      await this.updateSignerNodeCache(nodes);
     }
 
-    if (activeCachedNodes.length > 0) {
-      return activeCachedNodes;
-    }
-
-    // Step 2: Fallback to seed nodes discovery
-
-    // Check for environment variable overrides
-    const seedNodeOverrides = this.configService.get<string>("BLS_SEED_NODES");
-    let seedNodes;
-
-    if (seedNodeOverrides) {
-      // Parse comma-separated seed nodes from environment
-      seedNodes = seedNodeOverrides.split(",").map(endpoint => ({
-        endpoint: endpoint.trim(),
-      }));
-    } else {
-      // Use config file defaults
-      seedNodes = config.discovery?.seedNodes || [];
-    }
-
-    for (const seedNode of seedNodes) {
-      try {
-        const response = await axios.get(`${seedNode.endpoint}/gossip/peers`, {
-          timeout: config.discovery?.discoveryTimeout || 10000,
-        });
-        const peers = response.data.peers || [];
-
-        // Filter active peers
-        const activeNodes = peers.filter(
-          peer => peer.status === "active" && peer.apiEndpoint && peer.publicKey
-        );
-
-        if (activeNodes.length > 0) {
-          // Update cache with discovered nodes
-          await this.updateSignerNodeCache(activeNodes);
-
-          return activeNodes;
-        }
-      } catch {
-        // Continue with next seed node
-      }
-    }
-
-    // Step 3: Try default fallback endpoints if configured
-    const fallbackOverrides = this.configService.get<string>("BLS_FALLBACK_ENDPOINTS");
-    let fallbackEndpoints;
-
-    if (fallbackOverrides) {
-      // Parse comma-separated fallback endpoints from environment
-      fallbackEndpoints = fallbackOverrides.split(",").map(endpoint => endpoint.trim());
-    } else {
-      // Use config file defaults
-      fallbackEndpoints = config.discovery?.fallbackEndpoints || [];
-    }
-
-    if (fallbackEndpoints.length > 0) {
-      for (const endpoint of fallbackEndpoints) {
-        try {
-          const response = await axios.get(`${endpoint}/gossip/peers`, { timeout: 5000 });
-          const peers = response.data.peers || [];
-          const activeNodes = peers.filter(
-            peer => peer.status === "active" && peer.apiEndpoint && peer.publicKey
-          );
-
-          if (activeNodes.length > 0) {
-            await this.updateSignerNodeCache(activeNodes);
-            return activeNodes;
-          }
-        } catch {
-          // Continue with next fallback endpoint
-        }
-      }
-    }
-
-    throw new Error("No active BLS signer nodes available");
+    return nodes;
   }
 
   private async updateSignerNodeCache(discoveredNodes: any[]): Promise<void> {
@@ -229,13 +143,9 @@ export class BlsService implements OnModuleInit {
         }
       }
 
-      // Generate message point using the same method as signer nodes
+      // Generate message point using SDK's BLSManager
       try {
-        const messageBytes = ethers.getBytes(userOpHash);
-        const DST = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
-        const messagePointBLS = await bls.G2.hashToCurve(messageBytes, { DST });
-        const messageG2EIP = this.encodeG2Point(messagePointBLS);
-        messagePoint = "0x" + Buffer.from(messageG2EIP).toString("hex");
+        messagePoint = await this.blsManager.generateMessagePoint(userOpHash);
       } catch (error) {
         throw new Error(`Failed to generate message point: ${error.message}`);
       }
@@ -284,30 +194,8 @@ export class BlsService implements OnModuleInit {
   }
 
   async packSignature(blsData: BlsSignatureData): Promise<string> {
-    // Only support the new extended format with messagePoint ECDSA signature
-    if (!blsData.nodeIds || !blsData.aaSignature || !blsData.messagePointSignature) {
-      throw new Error(
-        "Missing required signature components: nodeIds, aaSignature, or messagePointSignature"
-      );
-    }
-
-    const nodeIdsLength = ethers.solidityPacked(["uint256"], [blsData.nodeIds.length]);
-    const nodeIdsBytes = ethers.solidityPacked(
-      Array(blsData.nodeIds.length).fill("bytes32"),
-      blsData.nodeIds
-    );
-
-    return ethers.solidityPacked(
-      ["bytes", "bytes", "bytes", "bytes", "bytes", "bytes"],
-      [
-        nodeIdsLength,
-        nodeIdsBytes,
-        blsData.signature,
-        blsData.messagePoint,
-        blsData.aaSignature,
-        blsData.messagePointSignature,
-      ]
-    );
+    // Delegate to SDK's BLSManager
+    return this.blsManager.packSignature(blsData);
   }
 
   async getAvailableNodes() {
@@ -347,29 +235,5 @@ export class BlsService implements OnModuleInit {
         status: node.status,
       };
     });
-  }
-
-  private hexToBytes(hex: string): Uint8Array {
-    const bytes = new Uint8Array(hex.length / 2);
-    for (let i = 0; i < hex.length; i += 2) {
-      bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
-    }
-    return bytes;
-  }
-
-  private encodeG2Point(point: any): Uint8Array {
-    const result = new Uint8Array(256);
-    const affine = point.toAffine();
-
-    const x0Bytes = this.hexToBytes(affine.x.c0.toString(16).padStart(96, "0"));
-    const x1Bytes = this.hexToBytes(affine.x.c1.toString(16).padStart(96, "0"));
-    const y0Bytes = this.hexToBytes(affine.y.c0.toString(16).padStart(96, "0"));
-    const y1Bytes = this.hexToBytes(affine.y.c1.toString(16).padStart(96, "0"));
-
-    result.set(x0Bytes, 16);
-    result.set(x1Bytes, 80);
-    result.set(y0Bytes, 144);
-    result.set(y1Bytes, 208);
-    return result;
   }
 }

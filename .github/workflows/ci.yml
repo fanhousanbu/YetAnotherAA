@@ -25,7 +25,7 @@ jobs:
           node-version: "20"
 
       - name: Install root dependencies with force
-        run: npm ci --force
+        run: npm ci
 
       - name: Run npm audit (All workspaces)
         run: npm audit --audit-level=high --workspaces --if-present
@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [aastar, aastar-frontend]
+        project: [aastar, aastar-frontend, sdk]
     steps:
       - uses: actions/checkout@v5
 
@@ -66,24 +66,24 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm ci --force
+        run: npm ci
 
       - name: Check formatting
-        working-directory: ./${{ matrix.project }}
         run: |
-          if [ -f package.json ] && jq -e '.scripts["format:check"]' package.json > /dev/null; then
-            npm run format:check
+          if [ -f ${{ matrix.project }}/package.json ] && jq -e '.scripts["format:check"]' ${{ matrix.project }}/package.json > /dev/null; then
+            npm run format:check --workspace=${{ matrix.project }}
           else
-            npx prettier --check "**/*.{js,jsx,ts,tsx,json,css,md}"
+            cd ${{ matrix.project }} && npx prettier --check "**/*.{js,jsx,ts,tsx,json,css,md}"
           fi
 
       - name: Run linter
-        working-directory: ./${{ matrix.project }}
         run: |
-          if [ -f package.json ] && jq -e '.scripts.lint' package.json > /dev/null; then
-            npm run lint:check || npm run lint
+          if [ -f ${{ matrix.project }}/package.json ] && jq -e '.scripts["lint:check"]' ${{ matrix.project }}/package.json > /dev/null; then
+            npm run lint:check --workspace=${{ matrix.project }}
+          elif [ -f ${{ matrix.project }}/package.json ] && jq -e '.scripts.lint' ${{ matrix.project }}/package.json > /dev/null; then
+            npm run lint --workspace=${{ matrix.project }}
           else
-            npx eslint . --ext .js,.jsx,.ts,.tsx
+            cd ${{ matrix.project }} && npx eslint . --ext .js,.jsx,.ts,.tsx
           fi
 
   # Job 3: Build all projects
@@ -97,6 +97,8 @@ jobs:
             build-command: npm run build
           - project: aastar-frontend
             build-command: npm run build
+          - project: sdk
+            build-command: npm run build
     steps:
       - uses: actions/checkout@v5
 
@@ -106,11 +108,15 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm ci --force
+        run: npm ci
+
+      # Build SDK first if this is not the SDK build itself
+      - name: Build SDK (dependency)
+        if: matrix.project != 'sdk'
+        run: npm run build --workspace=sdk
 
       - name: Build project
-        working-directory: ./${{ matrix.project }}
-        run: ${{ matrix.build-command }}
+        run: npm run build --workspace=${{ matrix.project }}
         env:
           CI: true
 
@@ -130,7 +136,7 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm ci --force
+        run: npm ci
 
       - name: Run tests
         working-directory: ./${{ matrix.project }}
@@ -145,7 +151,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [aastar, aastar-frontend]
+        project: [aastar, aastar-frontend, sdk]
     steps:
       - uses: actions/checkout@v5
 
@@ -155,15 +161,19 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm ci --force
+        run: npm ci
+
+      # Build SDK first if this is not the SDK type check itself
+      - name: Build SDK (dependency)
+        if: matrix.project != 'sdk'
+        run: npm run build --workspace=sdk
 
       - name: Run TypeScript compiler
-        working-directory: ./${{ matrix.project }}
         run: |
-          if [ -f package.json ] && jq -e '.scripts["type-check"]' package.json > /dev/null; then
-            npm run type-check
+          if [ -f ${{ matrix.project }}/package.json ] && jq -e '.scripts["type-check"]' ${{ matrix.project }}/package.json > /dev/null; then
+            npm run type-check --workspace=${{ matrix.project }}
           else
-            npx tsc --noEmit
+            cd ${{ matrix.project }} && npx tsc --noEmit
           fi
 
   # Job 6: CodeQL Analysis
