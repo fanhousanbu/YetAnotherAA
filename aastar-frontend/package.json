@@ -26,7 +26,7 @@
     "axios": "^1.13.1",
     "next": "^16.1.1",
     "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "react-dom": "19.2.3",
     "react-hot-toast": "^2.6.0",
     "react-qr-code": "^2.0.18",
     "typescript": "^5"
