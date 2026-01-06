@@ -22,16 +22,16 @@ export class BlsService implements OnModuleInit {
 
   async onModuleInit() {
     await this.initBlsConfig();
-    
+
     // Initialize SDK BLSManager
     const seedNodeOverrides = this.configService.get<string>("BLS_SEED_NODES");
-    const seedNodes = seedNodeOverrides 
+    const seedNodes = seedNodeOverrides
       ? seedNodeOverrides.split(",").map(s => s.trim())
-      : (this.blsConfig?.discovery?.seedNodes?.map((n: any) => n.endpoint) || []);
-    
+      : this.blsConfig?.discovery?.seedNodes?.map((n: any) => n.endpoint) || [];
+
     this.blsManager = new BLSManager({
       seedNodes,
-      discoveryTimeout: this.blsConfig?.discovery?.discoveryTimeout || 10000
+      discoveryTimeout: this.blsConfig?.discovery?.discoveryTimeout || 10000,
     });
   }
 
@@ -42,12 +42,12 @@ export class BlsService implements OnModuleInit {
   async getActiveSignerNodes(): Promise<any[]> {
     // Use SDK's BLSManager for node discovery
     const nodes = await this.blsManager.getAvailableNodes();
-    
+
     if (nodes.length > 0) {
       // Update cache with discovered nodes
       await this.updateSignerNodeCache(nodes);
     }
-    
+
     return nodes;
   }
 
@@ -237,4 +237,3 @@ export class BlsService implements OnModuleInit {
     });
   }
 }
-
