@@ -110,9 +110,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Build SDK first if this is not the SDK build itself
+      - name: Build SDK (dependency)
+        if: matrix.project != 'sdk'
+        run: npm run build --workspace=sdk
+
       - name: Build project
-        working-directory: ./${{ matrix.project }}
-        run: ${{ matrix.build-command }}
+        run: npm run build --workspace=${{ matrix.project }}
         env:
           CI: true
 
