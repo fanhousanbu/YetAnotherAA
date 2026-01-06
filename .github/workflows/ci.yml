@@ -69,21 +69,21 @@ jobs:
         run: npm ci
 
       - name: Check formatting
-        working-directory: ./${{ matrix.project }}
         run: |
-          if [ -f package.json ] && jq -e '.scripts["format:check"]' package.json > /dev/null; then
-            npm run format:check
+          if [ -f ${{ matrix.project }}/package.json ] && jq -e '.scripts["format:check"]' ${{ matrix.project }}/package.json > /dev/null; then
+            npm run format:check --workspace=${{ matrix.project }}
           else
-            npx prettier --check "**/*.{js,jsx,ts,tsx,json,css,md}"
+            cd ${{ matrix.project }} && npx prettier --check "**/*.{js,jsx,ts,tsx,json,css,md}"
           fi
 
       - name: Run linter
-        working-directory: ./${{ matrix.project }}
         run: |
-          if [ -f package.json ] && jq -e '.scripts.lint' package.json > /dev/null; then
-            npm run lint:check || npm run lint
+          if [ -f ${{ matrix.project }}/package.json ] && jq -e '.scripts["lint:check"]' ${{ matrix.project }}/package.json > /dev/null; then
+            npm run lint:check --workspace=${{ matrix.project }}
+          elif [ -f ${{ matrix.project }}/package.json ] && jq -e '.scripts.lint' ${{ matrix.project }}/package.json > /dev/null; then
+            npm run lint --workspace=${{ matrix.project }}
           else
-            npx eslint . --ext .js,.jsx,.ts,.tsx
+            cd ${{ matrix.project }} && npx eslint . --ext .js,.jsx,.ts,.tsx
           fi
 
   # Job 3: Build all projects
