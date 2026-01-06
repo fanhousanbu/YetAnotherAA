@@ -139,6 +139,10 @@ export class TransferService {
     // Get UserOp hash
     const userOpHash = await this.ethereumService.getUserOpHash(userOp, version);
 
+    // Ensure user has a wallet (EOA) before generating BLS signature
+    // This is needed because BLS signature requires signing with the user's wallet
+    await this.authService.ensureUserWallet(userId);
+
     // Generate BLS signature using active signer nodes
     const blsData = await this.blsService.generateBLSSignature(userId, userOpHash);
 
