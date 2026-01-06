@@ -20,6 +20,7 @@ COPY . .
 # Build all applications
 ENV NEXT_PUBLIC_API_URL=/api/v1
 ENV BACKEND_API_URL=http://localhost:3000
+ENV NEXT_BUILD_STANDALONE=true
 RUN npm run build -w aastar && \
     npm run build -w aastar-frontend
 

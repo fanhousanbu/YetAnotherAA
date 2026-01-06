@@ -1,7 +1,6 @@
 {
   "name": "@yaaa/sdk",
   "version": "0.1.0",
-  "type": "module",
   "description": "Yet Another Account Abstraction SDK - ERC-4337 + BLS + Passkey",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
