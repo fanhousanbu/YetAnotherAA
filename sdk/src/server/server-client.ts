@@ -1,12 +1,12 @@
-import { ServerConfig, validateConfig } from './config';
-import { ConsoleLogger } from './interfaces/logger';
-import { EthereumProvider } from './providers/ethereum-provider';
-import { AccountManager } from './services/account-manager';
-import { TransferManager } from './services/transfer-manager';
-import { BLSSignatureService } from './services/bls-signature-service';
-import { PaymasterManager } from './services/paymaster-manager';
-import { TokenService } from './services/token-service';
-import { WalletManager } from './services/wallet-manager';
+import { ServerConfig, validateConfig } from "./config";
+import { ConsoleLogger } from "./interfaces/logger";
+import { EthereumProvider } from "./providers/ethereum-provider";
+import { AccountManager } from "./services/account-manager";
+import { TransferManager } from "./services/transfer-manager";
+import { BLSSignatureService } from "./services/bls-signature-service";
+import { PaymasterManager } from "./services/paymaster-manager";
+import { TokenService } from "./services/token-service";
+import { WalletManager } from "./services/wallet-manager";
 
 /**
  * Main facade for the YAAA Server SDK.
@@ -46,7 +46,7 @@ export class YAAAServerClient {
   constructor(config: ServerConfig) {
     validateConfig(config);
 
-    const logger = config.logger ?? new ConsoleLogger('[YAAA]');
+    const logger = config.logger ?? new ConsoleLogger("[YAAA]");
 
     // Core provider
     this.ethereum = new EthereumProvider(config);
@@ -55,18 +55,13 @@ export class YAAAServerClient {
     this.wallets = new WalletManager(config.signer);
     this.tokens = new TokenService(this.ethereum);
     this.paymaster = new PaymasterManager(this.ethereum, config.storage, logger);
-    this.accounts = new AccountManager(
-      this.ethereum,
-      config.storage,
-      config.signer,
-      logger,
-    );
+    this.accounts = new AccountManager(this.ethereum, config.storage, config.signer, logger);
     this.bls = new BLSSignatureService(
       config,
       this.ethereum,
       config.storage,
       config.signer,
-      logger,
+      logger
     );
     this.transfers = new TransferManager(
       this.ethereum,
@@ -76,7 +71,7 @@ export class YAAAServerClient {
       this.tokens,
       config.storage,
       config.signer,
-      logger,
+      logger
     );
   }
 }

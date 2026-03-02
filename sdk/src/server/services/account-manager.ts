@@ -1,9 +1,9 @@
-import { ethers } from 'ethers';
-import { EthereumProvider } from '../providers/ethereum-provider';
-import { IStorageAdapter, AccountRecord } from '../interfaces/storage-adapter';
-import { ISignerAdapter } from '../interfaces/signer-adapter';
-import { EntryPointVersion } from '../constants/entrypoint';
-import { ILogger, ConsoleLogger } from '../interfaces/logger';
+import { ethers } from "ethers";
+import { EthereumProvider } from "../providers/ethereum-provider";
+import { IStorageAdapter, AccountRecord } from "../interfaces/storage-adapter";
+import { ISignerAdapter } from "../interfaces/signer-adapter";
+import { EntryPointVersion } from "../constants/entrypoint";
+import { ILogger, ConsoleLogger } from "../interfaces/logger";
 
 /**
  * Account manager — extracted from NestJS AccountService.
@@ -16,9 +16,9 @@ export class AccountManager {
     private readonly ethereum: EthereumProvider,
     private readonly storage: IStorageAdapter,
     private readonly signer: ISignerAdapter,
-    logger?: ILogger,
+    logger?: ILogger
   ) {
-    this.logger = logger ?? new ConsoleLogger('[AccountManager]');
+    this.logger = logger ?? new ConsoleLogger("[AccountManager]");
   }
 
   async createAccount(
@@ -26,7 +26,7 @@ export class AccountManager {
     options?: {
       entryPointVersion?: EntryPointVersion;
       salt?: number;
-    },
+    }
   ): Promise<AccountRecord> {
     const version = options?.entryPointVersion ?? this.ethereum.getDefaultVersion();
     const versionStr = version as string;
@@ -34,7 +34,7 @@ export class AccountManager {
     // Check for existing account with this version
     const existingAccounts = await this.storage.getAccounts();
     const existing = existingAccounts.find(
-      a => a.userId === userId && a.entryPointVersion === versionStr,
+      a => a.userId === userId && a.entryPointVersion === versionStr
     );
     if (existing) return existing;
 
@@ -48,19 +48,19 @@ export class AccountManager {
     const salt = options?.salt ?? Math.floor(Math.random() * 1000000);
 
     // Predict account address (unified architecture: creator = signer)
-    const accountAddress = await factory['getAddress(address,address,address,bool,uint256)'](
+    const accountAddress = await factory["getAddress(address,address,address,bool,uint256)"](
       signerAddress,
       signerAddress,
       validatorAddress,
       true,
-      salt,
+      salt
     );
 
     // Check deployment status
     let deployed = false;
     try {
       const code = await this.ethereum.getProvider().getCode(accountAddress);
-      deployed = code !== '0x';
+      deployed = code !== "0x";
     } catch {
       // Assume not deployed
     }
@@ -82,18 +82,20 @@ export class AccountManager {
     return account;
   }
 
-  async getAccount(userId: string): Promise<(AccountRecord & { balance: string; nonce: string }) | null> {
+  async getAccount(
+    userId: string
+  ): Promise<(AccountRecord & { balance: string; nonce: string }) | null> {
     const account = await this.storage.findAccountByUserId(userId);
     if (!account) return null;
 
-    let balance = '0';
+    let balance = "0";
     try {
       balance = await this.ethereum.getBalance(account.address);
     } catch {
       // Use default
     }
 
-    const version = (account.entryPointVersion || '0.6') as unknown as EntryPointVersion;
+    const version = (account.entryPointVersion || "0.6") as unknown as EntryPointVersion;
     const nonce = await this.ethereum.getNonce(account.address, 0, version);
 
     return { ...account, balance, nonce: nonce.toString() };
@@ -101,13 +103,15 @@ export class AccountManager {
 
   async getAccountAddress(userId: string): Promise<string> {
     const account = await this.storage.findAccountByUserId(userId);
-    if (!account) throw new Error('Account not found');
+    if (!account) throw new Error("Account not found");
     return account.address;
   }
 
-  async getAccountBalance(userId: string): Promise<{ address: string; balance: string; balanceInWei: string }> {
+  async getAccountBalance(
+    userId: string
+  ): Promise<{ address: string; balance: string; balanceInWei: string }> {
     const account = await this.storage.findAccountByUserId(userId);
-    if (!account) throw new Error('Account not found');
+    if (!account) throw new Error("Account not found");
     const balance = await this.ethereum.getBalance(account.address);
     return {
       address: account.address,
@@ -118,7 +122,7 @@ export class AccountManager {
 
   async getAccountNonce(userId: string): Promise<{ address: string; nonce: string }> {
     const account = await this.storage.findAccountByUserId(userId);
-    if (!account) throw new Error('Account not found');
+    if (!account) throw new Error("Account not found");
     const nonce = await this.ethereum.getNonce(account.address);
     return { address: account.address, nonce: nonce.toString() };
   }

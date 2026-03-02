@@ -1,11 +1,11 @@
-import { ethers } from 'ethers';
-import axios from 'axios';
-import { BLSManager, BLSSignatureData } from '../../core/bls';
-import { EthereumProvider } from '../providers/ethereum-provider';
-import { IStorageAdapter } from '../interfaces/storage-adapter';
-import { ISignerAdapter } from '../interfaces/signer-adapter';
-import { ILogger, ConsoleLogger } from '../interfaces/logger';
-import { ServerConfig } from '../config';
+import { ethers } from "ethers";
+import axios from "axios";
+import { BLSManager, BLSSignatureData } from "../../core/bls";
+import { EthereumProvider } from "../providers/ethereum-provider";
+import { IStorageAdapter } from "../interfaces/storage-adapter";
+import { ISignerAdapter } from "../interfaces/signer-adapter";
+import { ILogger, ConsoleLogger } from "../interfaces/logger";
+import { ServerConfig } from "../config";
 
 /**
  * BLS signature service — extracted from NestJS BlsService.
@@ -20,9 +20,9 @@ export class BLSSignatureService {
     private readonly ethereum: EthereumProvider,
     private readonly storage: IStorageAdapter,
     private readonly signer: ISignerAdapter,
-    logger?: ILogger,
+    logger?: ILogger
   ) {
-    this.logger = logger ?? new ConsoleLogger('[BLSSignatureService]');
+    this.logger = logger ?? new ConsoleLogger("[BLSSignatureService]");
   }
 
   /** Lazy-initialize BLSManager on first use. */
@@ -31,9 +31,7 @@ export class BLSSignatureService {
 
     const blsConfig = await this.storage.getBlsConfig();
     const seedNodes =
-      this.config.blsSeedNodes ??
-      blsConfig?.discovery?.seedNodes?.map(n => n.endpoint) ??
-      [];
+      this.config.blsSeedNodes ?? blsConfig?.discovery?.seedNodes?.map(n => n.endpoint) ?? [];
 
     this.blsManager = new BLSManager({
       seedNodes,
@@ -58,21 +56,17 @@ export class BLSSignatureService {
     return nodes;
   }
 
-  async generateBLSSignature(
-    userId: string,
-    userOpHash: string,
-  ): Promise<BLSSignatureData> {
+  async generateBLSSignature(userId: string, userOpHash: string): Promise<BLSSignatureData> {
     const manager = await this.ensureInitialized();
 
     const activeNodes = await this.getActiveSignerNodes();
     if (activeNodes.length < 1) {
-      throw new Error('No active BLS signer nodes available');
+      throw new Error("No active BLS signer nodes available");
     }
 
-    const selectedNodes = activeNodes.slice(
-      0,
-      Math.min(3, activeNodes.length),
-    ) as Array<{ apiEndpoint: string }>;
+    const selectedNodes = activeNodes.slice(0, Math.min(3, activeNodes.length)) as Array<{
+      apiEndpoint: string;
+    }>;
 
     const signerNodeSignatures: string[] = [];
     const signerNodeIds: string[] = [];
@@ -83,9 +77,8 @@ export class BLSSignatureService {
           message: userOpHash,
         });
 
-        const signatureForAggregation =
-          response.data.signatureCompact || response.data.signature;
-        const formatted = signatureForAggregation.startsWith('0x')
+        const signatureForAggregation = response.data.signatureCompact || response.data.signature;
+        const formatted = signatureForAggregation.startsWith("0x")
           ? signatureForAggregation
           : `0x${signatureForAggregation}`;
 
@@ -97,25 +90,25 @@ export class BLSSignatureService {
     }
 
     if (signerNodeSignatures.length === 0) {
-      throw new Error('Failed to get signatures from any BLS signer nodes');
+      throw new Error("Failed to get signatures from any BLS signer nodes");
     }
 
     let aggregatedSignature: string;
     if (signerNodeSignatures.length > 1) {
       const aggregateResponse = await axios.post(
         `${selectedNodes[0].apiEndpoint}/signature/aggregate`,
-        { signatures: signerNodeSignatures },
+        { signatures: signerNodeSignatures }
       );
-      aggregatedSignature = aggregateResponse.data.signature.startsWith('0x')
+      aggregatedSignature = aggregateResponse.data.signature.startsWith("0x")
         ? aggregateResponse.data.signature
         : `0x${aggregateResponse.data.signature}`;
     } else {
       // Single signature — re-request in EIP format
       const singleSignResponse = await axios.post(
         `${selectedNodes[0].apiEndpoint}/signature/sign`,
-        { message: userOpHash },
+        { message: userOpHash }
       );
-      aggregatedSignature = singleSignResponse.data.signature.startsWith('0x')
+      aggregatedSignature = singleSignResponse.data.signature.startsWith("0x")
         ? singleSignResponse.data.signature
         : `0x${singleSignResponse.data.signature}`;
     }
@@ -134,15 +127,13 @@ export class BLSSignatureService {
 
     if (walletAddress.toLowerCase() !== account.signerAddress.toLowerCase()) {
       throw new Error(
-        `Wallet address mismatch! Wallet: ${walletAddress}, Expected: ${account.signerAddress}`,
+        `Wallet address mismatch! Wallet: ${walletAddress}, Expected: ${account.signerAddress}`
       );
     }
 
     const aaSignature = await wallet.signMessage(ethers.getBytes(userOpHash));
     const messagePointHash = ethers.keccak256(messagePoint);
-    const messagePointSignature = await wallet.signMessage(
-      ethers.getBytes(messagePointHash),
-    );
+    const messagePointSignature = await wallet.signMessage(ethers.getBytes(messagePointHash));
 
     return {
       nodeIds: signerNodeIds,

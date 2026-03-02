@@ -27,7 +27,7 @@ export interface TransferRecord {
   userOpHash: string;
   bundlerUserOpHash?: string;
   transactionHash?: string;
-  status: 'pending' | 'submitted' | 'completed' | 'failed';
+  status: "pending" | "submitted" | "completed" | "failed";
   error?: string;
   nodeIndices: number[];
   tokenAddress?: string;
@@ -46,7 +46,7 @@ export interface PaymasterRecord {
   name: string;
   address: string;
   apiKey?: string;
-  type: 'pimlico' | 'stackup' | 'alchemy' | 'custom';
+  type: "pimlico" | "stackup" | "alchemy" | "custom";
   endpoint?: string;
   createdAt?: string;
 }

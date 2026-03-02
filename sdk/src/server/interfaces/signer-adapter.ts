@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { ethers } from "ethers";
 
 /**
  * Pluggable signer adapter — replaces NestJS AuthService wallet management.

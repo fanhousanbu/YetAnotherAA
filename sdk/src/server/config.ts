@@ -1,6 +1,6 @@
-import { IStorageAdapter } from './interfaces/storage-adapter';
-import { ISignerAdapter } from './interfaces/signer-adapter';
-import { ILogger } from './interfaces/logger';
+import { IStorageAdapter } from "./interfaces/storage-adapter";
+import { ISignerAdapter } from "./interfaces/signer-adapter";
+import { ILogger } from "./interfaces/logger";
 
 /**
  * Per-version EntryPoint configuration.
@@ -30,7 +30,7 @@ export interface ServerConfig {
   };
 
   /** Default EntryPoint version to use when not specified. */
-  defaultVersion?: '0.6' | '0.7' | '0.8';
+  defaultVersion?: "0.6" | "0.7" | "0.8";
 
   /** BLS signer seed nodes for gossip discovery. */
   blsSeedNodes?: string[];
@@ -55,18 +55,18 @@ export interface ServerConfig {
  */
 export function validateConfig(config: ServerConfig): void {
   if (!config.rpcUrl) {
-    throw new Error('ServerConfig: rpcUrl is required');
+    throw new Error("ServerConfig: rpcUrl is required");
   }
   if (!config.bundlerRpcUrl) {
-    throw new Error('ServerConfig: bundlerRpcUrl is required');
+    throw new Error("ServerConfig: bundlerRpcUrl is required");
   }
   if (!config.chainId) {
-    throw new Error('ServerConfig: chainId is required');
+    throw new Error("ServerConfig: chainId is required");
   }
 
   const { entryPoints } = config;
   if (!entryPoints || (!entryPoints.v06 && !entryPoints.v07 && !entryPoints.v08)) {
-    throw new Error('ServerConfig: at least one entryPoint version must be configured');
+    throw new Error("ServerConfig: at least one entryPoint version must be configured");
   }
 
   for (const [key, ep] of Object.entries(entryPoints)) {
@@ -84,9 +84,9 @@ export function validateConfig(config: ServerConfig): void {
   }
 
   if (!config.storage) {
-    throw new Error('ServerConfig: storage adapter is required');
+    throw new Error("ServerConfig: storage adapter is required");
   }
   if (!config.signer) {
-    throw new Error('ServerConfig: signer adapter is required');
+    throw new Error("ServerConfig: signer adapter is required");
   }
 }

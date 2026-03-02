@@ -33,10 +33,7 @@ export class GuardianService {
       throw new BadRequestException("Account cannot be its own guardian");
     }
 
-    const existing = await this.databaseService.findGuardian(
-      accountAddress,
-      dto.guardianAddress
-    );
+    const existing = await this.databaseService.findGuardian(accountAddress, dto.guardianAddress);
 
     if (existing && existing.status !== "revoked") {
       throw new BadRequestException("Guardian already exists for this account");
@@ -56,10 +53,7 @@ export class GuardianService {
   }
 
   async removeGuardian(accountAddress: string, dto: RemoveGuardianDto) {
-    const existing = await this.databaseService.findGuardian(
-      accountAddress,
-      dto.guardianAddress
-    );
+    const existing = await this.databaseService.findGuardian(accountAddress, dto.guardianAddress);
 
     if (!existing || existing.status === "revoked") {
       throw new NotFoundException("Guardian not found for this account");
@@ -85,9 +79,7 @@ export class GuardianService {
     // Check no pending recovery already exists
     const existing = await this.databaseService.findPendingRecovery(accountAddress);
     if (existing) {
-      throw new BadRequestException(
-        "A recovery request is already pending for this account"
-      );
+      throw new BadRequestException("A recovery request is already pending for this account");
     }
 
     const executeAfter = Date.now() + RECOVERY_DELAY_MS;
@@ -207,7 +199,8 @@ export class GuardianService {
     const account = await this.databaseService.findAccountByAddress(accountAddress);
 
     const isGuardian = guardian && guardian.status === "active";
-    const isSigner = account && account.signerAddress?.toLowerCase() === callerAddress.toLowerCase();
+    const isSigner =
+      account && account.signerAddress?.toLowerCase() === callerAddress.toLowerCase();
 
     if (!isGuardian && !isSigner) {
       throw new ForbiddenException(

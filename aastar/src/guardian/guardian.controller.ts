@@ -90,7 +90,9 @@ export class GuardianController {
   }
 
   @Post("recovery/cancel")
-  @ApiOperation({ summary: "Cancel a pending recovery (caller must be guardian or account signer)" })
+  @ApiOperation({
+    summary: "Cancel a pending recovery (caller must be guardian or account signer)",
+  })
   async cancelRecovery(@Request() req, @Body() dto: CancelRecoveryDto) {
     const callerAddress = await this.getWalletAddress(req.user.sub);
     return this.guardianService.cancelRecovery(callerAddress, dto.accountAddress);

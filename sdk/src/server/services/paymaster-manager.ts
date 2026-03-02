@@ -1,7 +1,7 @@
-import { ethers } from 'ethers';
-import { EthereumProvider } from '../providers/ethereum-provider';
-import { IStorageAdapter, PaymasterRecord } from '../interfaces/storage-adapter';
-import { ILogger, ConsoleLogger } from '../interfaces/logger';
+import { ethers } from "ethers";
+import { EthereumProvider } from "../providers/ethereum-provider";
+import { IStorageAdapter, PaymasterRecord } from "../interfaces/storage-adapter";
+import { ILogger, ConsoleLogger } from "../interfaces/logger";
 
 /**
  * Paymaster manager — extracted from NestJS PaymasterService.
@@ -13,19 +13,19 @@ export class PaymasterManager {
   constructor(
     private readonly ethereum: EthereumProvider,
     private readonly storage: IStorageAdapter,
-    logger?: ILogger,
+    logger?: ILogger
   ) {
-    this.logger = logger ?? new ConsoleLogger('[PaymasterManager]');
+    this.logger = logger ?? new ConsoleLogger("[PaymasterManager]");
   }
 
   async getAvailablePaymasters(
-    userId: string,
+    userId: string
   ): Promise<{ name: string; address: string; configured: boolean }[]> {
     const paymasters = await this.storage.getPaymasters(userId);
     return paymasters.map(config => ({
       name: config.name,
       address: config.address,
-      configured: !!config.address && config.address !== '0x',
+      configured: !!config.address && config.address !== "0x",
     }));
   }
 
@@ -33,9 +33,9 @@ export class PaymasterManager {
     userId: string,
     name: string,
     address: string,
-    type: 'pimlico' | 'stackup' | 'alchemy' | 'custom' = 'custom',
+    type: "pimlico" | "stackup" | "alchemy" | "custom" = "custom",
     apiKey?: string,
-    endpoint?: string,
+    endpoint?: string
   ): Promise<void> {
     const paymaster: PaymasterRecord = {
       id: `${userId}-${name}-${Date.now()}`,
@@ -58,11 +58,11 @@ export class PaymasterManager {
     paymasterName: string,
     userOp: unknown,
     entryPoint: string,
-    customAddress?: string,
+    customAddress?: string
   ): Promise<string> {
     // Handle custom user-provided paymaster addresses
-    if (paymasterName === 'custom-user-provided' && customAddress) {
-      const formattedAddress = customAddress.toLowerCase().startsWith('0x')
+    if (paymasterName === "custom-user-provided" && customAddress) {
+      const formattedAddress = customAddress.toLowerCase().startsWith("0x")
         ? customAddress
         : `0x${customAddress}`;
 
@@ -71,8 +71,8 @@ export class PaymasterManager {
       }
 
       const isV07OrV08 =
-        entryPoint.toLowerCase() === '0x0000000071727De22E5E9d8BAf0edAc6f37da032'.toLowerCase() ||
-        entryPoint.toLowerCase() === '0x0576a174D229E3cFA37253523E645A78A0C91B57'.toLowerCase();
+        entryPoint.toLowerCase() === "0x0000000071727De22E5E9d8BAf0edAc6f37da032".toLowerCase() ||
+        entryPoint.toLowerCase() === "0x0576a174D229E3cFA37253523E645A78A0C91B57".toLowerCase();
 
       if (isV07OrV08) {
         const paymasterVerificationGasLimit = BigInt(0x30000);
@@ -81,7 +81,7 @@ export class PaymasterManager {
           formattedAddress,
           ethers.zeroPadValue(ethers.toBeHex(paymasterVerificationGasLimit), 16),
           ethers.zeroPadValue(ethers.toBeHex(paymasterPostOpGasLimit), 16),
-          '0x',
+          "0x",
         ]);
       }
 
@@ -95,45 +95,45 @@ export class PaymasterManager {
     }
 
     switch (config.type) {
-      case 'pimlico':
-        if (!config.apiKey) return '0x';
+      case "pimlico":
+        if (!config.apiKey) return "0x";
         return this.getPimlicoPaymasterData(config, userOp, entryPoint);
-      case 'stackup':
-        if (!config.apiKey) return '0x';
+      case "stackup":
+        if (!config.apiKey) return "0x";
         return this.getStackUpPaymasterData(config, userOp, entryPoint);
-      case 'alchemy':
-        if (!config.apiKey) return '0x';
+      case "alchemy":
+        if (!config.apiKey) return "0x";
         return this.getAlchemyPaymasterData(config, userOp, entryPoint);
-      case 'custom':
+      case "custom":
         if (
           config.address.toLowerCase() ===
-            '0x0000000000325602a77416A16136FDafd04b299f'.toLowerCase() &&
+            "0x0000000000325602a77416A16136FDafd04b299f".toLowerCase() &&
           config.apiKey
         ) {
           return this.getPimlicoPaymasterData(
-            { ...config, type: 'pimlico', endpoint: 'https://api.pimlico.io/v2/11155111/rpc' },
+            { ...config, type: "pimlico", endpoint: "https://api.pimlico.io/v2/11155111/rpc" },
             userOp,
-            entryPoint,
+            entryPoint
           );
         }
         return config.address;
       default:
-        return '0x';
+        return "0x";
     }
   }
 
   private async getPimlicoPaymasterData(
     config: PaymasterRecord,
     userOp: unknown,
-    entryPoint: string,
+    entryPoint: string
   ): Promise<string> {
     const url = `${config.endpoint}?apikey=${config.apiKey}`;
     const response = await globalThis.fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'pm_sponsorUserOperation',
+        jsonrpc: "2.0",
+        method: "pm_sponsorUserOperation",
         params: [userOp, entryPoint, {}],
         id: 1,
       }),
@@ -152,7 +152,7 @@ export class PaymasterManager {
 
     if (result.error) {
       throw new Error(
-        `Pimlico sponsorship failed: ${result.error.message || JSON.stringify(result.error)}`,
+        `Pimlico sponsorship failed: ${result.error.message || JSON.stringify(result.error)}`
       );
     }
 
@@ -164,58 +164,58 @@ export class PaymasterManager {
         return ethers.concat([
           result.result.paymaster,
           ethers.zeroPadValue(
-            ethers.toBeHex(BigInt(result.result.paymasterVerificationGasLimit || '0x30000')),
-            16,
+            ethers.toBeHex(BigInt(result.result.paymasterVerificationGasLimit || "0x30000")),
+            16
           ),
           ethers.zeroPadValue(
-            ethers.toBeHex(BigInt(result.result.paymasterPostOpGasLimit || '0x30000')),
-            16,
+            ethers.toBeHex(BigInt(result.result.paymasterPostOpGasLimit || "0x30000")),
+            16
           ),
-          result.result.paymasterData || '0x',
+          result.result.paymasterData || "0x",
         ]);
       }
     }
 
-    throw new Error('Pimlico API did not return valid paymaster data');
+    throw new Error("Pimlico API did not return valid paymaster data");
   }
 
   private async getStackUpPaymasterData(
     config: PaymasterRecord,
     userOp: unknown,
-    entryPoint: string,
+    entryPoint: string
   ): Promise<string> {
     try {
       const response = await globalThis.fetch(`${config.endpoint}/${config.apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'pm_sponsorUserOperation',
-          params: { userOperation: userOp, entryPoint, context: { type: 'payg' } },
+          jsonrpc: "2.0",
+          method: "pm_sponsorUserOperation",
+          params: { userOperation: userOp, entryPoint, context: { type: "payg" } },
           id: 1,
         }),
       });
       const result = (await response.json()) as { error?: unknown; result?: string };
-      if (result.error) return '0x';
-      return result.result || '0x';
+      if (result.error) return "0x";
+      return result.result || "0x";
     } catch {
-      return '0x';
+      return "0x";
     }
   }
 
   private async getAlchemyPaymasterData(
     config: PaymasterRecord,
     userOp: unknown,
-    entryPoint: string,
+    entryPoint: string
   ): Promise<string> {
     try {
       const response = await globalThis.fetch(`${config.endpoint}/${config.apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'alchemy_requestGasAndPaymasterAndData',
-          params: [{ policyId: 'default', entryPoint, userOperation: userOp }],
+          jsonrpc: "2.0",
+          method: "alchemy_requestGasAndPaymasterAndData",
+          params: [{ policyId: "default", entryPoint, userOperation: userOp }],
           id: 1,
         }),
       });
@@ -223,10 +223,10 @@ export class PaymasterManager {
         error?: unknown;
         result?: { paymasterAndData?: string };
       };
-      if (result.error) return '0x';
-      return result.result?.paymasterAndData || '0x';
+      if (result.error) return "0x";
+      return result.result?.paymasterAndData || "0x";
     } catch {
-      return '0x';
+      return "0x";
     }
   }
 }

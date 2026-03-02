@@ -1,6 +1,6 @@
-import { ethers } from 'ethers';
-import { EthereumProvider } from '../providers/ethereum-provider';
-import { ERC20_ABI } from '../constants/entrypoint';
+import { ethers } from "ethers";
+import { EthereumProvider } from "../providers/ethereum-provider";
+import { ERC20_ABI } from "../constants/entrypoint";
 
 export interface TokenInfo {
   address: string;
@@ -48,13 +48,13 @@ export class TokenService {
       const balance = await contract.balanceOf(walletAddress);
       return balance.toString();
     } catch {
-      return '0';
+      return "0";
     }
   }
 
   async getFormattedTokenBalance(
     tokenAddress: string,
-    walletAddress: string,
+    walletAddress: string
   ): Promise<TokenBalance> {
     const tokenInfo = await this.getTokenInfo(tokenAddress);
     const rawBalance = await this.getTokenBalance(tokenAddress, walletAddress);
@@ -65,7 +65,7 @@ export class TokenService {
   generateTransferCalldata(to: string, amount: string, decimals: number): string {
     const contract = new ethers.Contract(ethers.ZeroAddress, ERC20_ABI);
     const parsedAmount = ethers.parseUnits(amount, decimals);
-    return contract.interface.encodeFunctionData('transfer', [to, parsedAmount]);
+    return contract.interface.encodeFunctionData("transfer", [to, parsedAmount]);
   }
 
   async validateToken(tokenAddress: string): Promise<{
@@ -79,7 +79,7 @@ export class TokenService {
 
       const [name, symbol, decimals] = (await Promise.race([
         Promise.all([contract.name(), contract.symbol(), contract.decimals()]),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000)),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000)),
       ])) as [string, string, bigint];
 
       return {
@@ -94,7 +94,7 @@ export class TokenService {
     } catch (error: unknown) {
       return {
         isValid: false,
-        error: error instanceof Error ? error.message : 'Invalid ERC20 token',
+        error: error instanceof Error ? error.message : "Invalid ERC20 token",
       };
     }
   }

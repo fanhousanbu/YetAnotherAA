@@ -109,9 +109,7 @@ export class JsonAdapter implements PersistenceAdapter {
 
   async updateAccountByAddress(address: string, updates: any): Promise<void> {
     const accounts = await this.getAccounts();
-    const index = accounts.findIndex(
-      a => a.address?.toLowerCase() === address.toLowerCase()
-    );
+    const index = accounts.findIndex(a => a.address?.toLowerCase() === address.toLowerCase());
     if (index !== -1) {
       accounts[index] = { ...accounts[index], ...updates };
       await this.writeJSON("accounts.json", accounts);

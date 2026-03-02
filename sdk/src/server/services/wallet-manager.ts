@@ -1,5 +1,5 @@
-import { ethers } from 'ethers';
-import { ISignerAdapter } from '../interfaces/signer-adapter';
+import { ethers } from "ethers";
+import { ISignerAdapter } from "../interfaces/signer-adapter";
 
 /**
  * Thin wrapper around ISignerAdapter for consistent wallet access.

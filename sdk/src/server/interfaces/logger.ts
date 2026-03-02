@@ -13,7 +13,7 @@ export interface ILogger {
  * Default console logger used when no custom logger is provided.
  */
 export class ConsoleLogger implements ILogger {
-  constructor(private readonly prefix: string = '[YAAA]') {}
+  constructor(private readonly prefix: string = "[YAAA]") {}
 
   debug(message: string, ...args: unknown[]): void {
     console.debug(`${this.prefix} ${message}`, ...args);

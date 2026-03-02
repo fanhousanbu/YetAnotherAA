@@ -1,5 +1,5 @@
-import { ethers } from 'ethers';
-import { ServerConfig, EntryPointVersionConfig } from '../config';
+import { ethers } from "ethers";
+import { ServerConfig, EntryPointVersionConfig } from "../config";
 import {
   EntryPointVersion,
   ENTRYPOINT_ABI_V6,
@@ -8,9 +8,9 @@ import {
   FACTORY_ABI_V7_V8,
   ACCOUNT_ABI,
   VALIDATOR_ABI,
-} from '../constants/entrypoint';
-import { ILogger, ConsoleLogger } from '../interfaces/logger';
-import { UserOperation, PackedUserOperation } from '../../core/types';
+} from "../constants/entrypoint";
+import { ILogger, ConsoleLogger } from "../interfaces/logger";
+import { UserOperation, PackedUserOperation } from "../../core/types";
 
 /**
  * Unified Ethereum provider — replaces NestJS EthereumService.
@@ -24,7 +24,7 @@ export class EthereumProvider {
 
   constructor(config: ServerConfig) {
     this.config = config;
-    this.logger = config.logger ?? new ConsoleLogger('[EthereumProvider]');
+    this.logger = config.logger ?? new ConsoleLogger("[EthereumProvider]");
     this.provider = new ethers.JsonRpcProvider(config.rpcUrl);
     this.bundlerProvider = new ethers.JsonRpcProvider(config.bundlerRpcUrl);
   }
@@ -66,8 +66,8 @@ export class EthereumProvider {
 
   getDefaultVersion(): EntryPointVersion {
     const v = this.config.defaultVersion;
-    if (v === '0.7') return EntryPointVersion.V0_7;
-    if (v === '0.8') return EntryPointVersion.V0_8;
+    if (v === "0.7") return EntryPointVersion.V0_7;
+    if (v === "0.8") return EntryPointVersion.V0_8;
     return EntryPointVersion.V0_6;
   }
 
@@ -104,7 +104,7 @@ export class EthereumProvider {
   async getNonce(
     accountAddress: string,
     key: number = 0,
-    version: EntryPointVersion = EntryPointVersion.V0_6,
+    version: EntryPointVersion = EntryPointVersion.V0_6
   ): Promise<bigint> {
     const entryPoint = this.getEntryPointContract(version);
     return await entryPoint.getNonce(accountAddress, key);
@@ -112,7 +112,7 @@ export class EthereumProvider {
 
   async getUserOpHash(
     userOp: UserOperation | PackedUserOperation,
-    version: EntryPointVersion = EntryPointVersion.V0_6,
+    version: EntryPointVersion = EntryPointVersion.V0_6
   ): Promise<string> {
     const entryPoint = this.getEntryPointContract(version);
 
@@ -121,15 +121,15 @@ export class EthereumProvider {
       const userOpArray = [
         op.sender,
         op.nonce,
-        op.initCode || '0x',
+        op.initCode || "0x",
         op.callData,
         op.callGasLimit,
         op.verificationGasLimit,
         op.preVerificationGas,
         op.maxFeePerGas,
         op.maxPriorityFeePerGas,
-        op.paymasterAndData || '0x',
-        '0x', // Always use empty signature for hash calculation
+        op.paymasterAndData || "0x",
+        "0x", // Always use empty signature for hash calculation
       ];
       return await entryPoint.getUserOpHash(userOpArray);
     } else {
@@ -137,13 +137,13 @@ export class EthereumProvider {
       const packedOpArray = [
         packedOp.sender,
         packedOp.nonce,
-        packedOp.initCode || '0x',
+        packedOp.initCode || "0x",
         packedOp.callData,
         packedOp.accountGasLimits,
         packedOp.preVerificationGas,
         packedOp.gasFees,
-        packedOp.paymasterAndData || '0x',
-        '0x',
+        packedOp.paymasterAndData || "0x",
+        "0x",
       ];
       return await entryPoint.getUserOpHash(packedOpArray);
     }
@@ -153,34 +153,34 @@ export class EthereumProvider {
 
   async estimateUserOperationGas(
     userOp: unknown,
-    version: EntryPointVersion = EntryPointVersion.V0_6,
+    version: EntryPointVersion = EntryPointVersion.V0_6
   ): Promise<{ callGasLimit: string; verificationGasLimit: string; preVerificationGas: string }> {
     try {
-      return await this.bundlerProvider.send('eth_estimateUserOperationGas', [
+      return await this.bundlerProvider.send("eth_estimateUserOperationGas", [
         userOp,
         this.getEntryPointAddress(version),
       ]);
     } catch {
       return {
-        callGasLimit: '0x249f0',
-        verificationGasLimit: '0xf4240',
-        preVerificationGas: '0x11170',
+        callGasLimit: "0x249f0",
+        verificationGasLimit: "0xf4240",
+        preVerificationGas: "0x11170",
       };
     }
   }
 
   async sendUserOperation(
     userOp: unknown,
-    version: EntryPointVersion = EntryPointVersion.V0_6,
+    version: EntryPointVersion = EntryPointVersion.V0_6
   ): Promise<string> {
-    return await this.bundlerProvider.send('eth_sendUserOperation', [
+    return await this.bundlerProvider.send("eth_sendUserOperation", [
       userOp,
       this.getEntryPointAddress(version),
     ]);
   }
 
   async getUserOperationReceipt(userOpHash: string): Promise<unknown> {
-    return await this.bundlerProvider.send('eth_getUserOperationReceipt', [userOpHash]);
+    return await this.bundlerProvider.send("eth_getUserOperationReceipt", [userOpHash]);
   }
 
   async waitForUserOp(userOpHash: string, maxAttempts: number = 60): Promise<string> {
@@ -188,7 +188,10 @@ export class EthereumProvider {
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        const receipt = (await this.getUserOperationReceipt(userOpHash)) as Record<string, unknown> | null;
+        const receipt = (await this.getUserOperationReceipt(userOpHash)) as Record<
+          string,
+          unknown
+        > | null;
         if (receipt) {
           const txHash =
             (receipt.transactionHash as string) ||
@@ -209,7 +212,7 @@ export class EthereumProvider {
     maxPriorityFeePerGas: string;
   }> {
     try {
-      const gasPrice = await this.bundlerProvider.send('pimlico_getUserOperationGasPrice', []);
+      const gasPrice = await this.bundlerProvider.send("pimlico_getUserOperationGasPrice", []);
       return {
         maxFeePerGas: gasPrice.fast.maxFeePerGas,
         maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas,
@@ -217,18 +220,18 @@ export class EthereumProvider {
     } catch {
       try {
         const feeData = await this.provider.getFeeData();
-        const baseFee = feeData.maxFeePerGas || ethers.parseUnits('20', 'gwei');
-        const priorityFee = feeData.maxPriorityFeePerGas || ethers.parseUnits('2', 'gwei');
+        const baseFee = feeData.maxFeePerGas || ethers.parseUnits("20", "gwei");
+        const priorityFee = feeData.maxPriorityFeePerGas || ethers.parseUnits("2", "gwei");
         const maxFeePerGas = (baseFee * 3n) / 2n;
         const maxPriorityFeePerGas = (priorityFee * 3n) / 2n;
         return {
-          maxFeePerGas: '0x' + maxFeePerGas.toString(16),
-          maxPriorityFeePerGas: '0x' + maxPriorityFeePerGas.toString(16),
+          maxFeePerGas: "0x" + maxFeePerGas.toString(16),
+          maxPriorityFeePerGas: "0x" + maxPriorityFeePerGas.toString(16),
         };
       } catch {
         return {
-          maxFeePerGas: '0x' + ethers.parseUnits('3', 'gwei').toString(16),
-          maxPriorityFeePerGas: '0x' + ethers.parseUnits('1', 'gwei').toString(16),
+          maxFeePerGas: "0x" + ethers.parseUnits("3", "gwei").toString(16),
+          maxPriorityFeePerGas: "0x" + ethers.parseUnits("1", "gwei").toString(16),
         };
       }
     }

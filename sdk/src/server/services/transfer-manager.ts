@@ -1,15 +1,15 @@
-import { ethers } from 'ethers';
-import { EthereumProvider } from '../providers/ethereum-provider';
-import { AccountManager } from './account-manager';
-import { BLSSignatureService } from './bls-signature-service';
-import { PaymasterManager } from './paymaster-manager';
-import { TokenService } from './token-service';
-import { IStorageAdapter } from '../interfaces/storage-adapter';
-import { ISignerAdapter } from '../interfaces/signer-adapter';
-import { EntryPointVersion } from '../constants/entrypoint';
-import { ILogger, ConsoleLogger } from '../interfaces/logger';
-import { UserOperation, PackedUserOperation } from '../../core/types';
-import { ERC4337Utils } from '../../core/erc4337';
+import { ethers } from "ethers";
+import { EthereumProvider } from "../providers/ethereum-provider";
+import { AccountManager } from "./account-manager";
+import { BLSSignatureService } from "./bls-signature-service";
+import { PaymasterManager } from "./paymaster-manager";
+import { TokenService } from "./token-service";
+import { IStorageAdapter } from "../interfaces/storage-adapter";
+import { ISignerAdapter } from "../interfaces/signer-adapter";
+import { EntryPointVersion } from "../constants/entrypoint";
+import { ILogger, ConsoleLogger } from "../interfaces/logger";
+import { UserOperation, PackedUserOperation } from "../../core/types";
+import { ERC4337Utils } from "../../core/erc4337";
 
 // ── Public DTOs ───────────────────────────────────────────────────
 
@@ -63,30 +63,25 @@ export class TransferManager {
     private readonly tokenService: TokenService,
     private readonly storage: IStorageAdapter,
     private readonly signer: ISignerAdapter,
-    logger?: ILogger,
+    logger?: ILogger
   ) {
-    this.logger = logger ?? new ConsoleLogger('[TransferManager]');
+    this.logger = logger ?? new ConsoleLogger("[TransferManager]");
   }
 
-  async executeTransfer(
-    userId: string,
-    params: ExecuteTransferParams,
-  ): Promise<TransferResult> {
+  async executeTransfer(userId: string, params: ExecuteTransferParams): Promise<TransferResult> {
     // Get user's account
     const account = await this.accountManager.getAccountByUserId(userId);
-    if (!account) throw new Error('User account not found');
+    if (!account) throw new Error("User account not found");
 
     // Check deployment
     const code = await this.ethereum.getProvider().getCode(account.address);
-    const needsDeployment = code === '0x';
+    const needsDeployment = code === "0x";
     if (needsDeployment) {
-      this.logger.log('Account needs deployment, will deploy with first transaction');
+      this.logger.log("Account needs deployment, will deploy with first transaction");
     }
 
     // Balance validation
-    const smartAccountBalance = parseFloat(
-      await this.ethereum.getBalance(account.address),
-    );
+    const smartAccountBalance = parseFloat(await this.ethereum.getBalance(account.address));
     const isTokenTransfer = !!params.tokenAddress;
     const transferAmount = isTokenTransfer ? 0 : parseFloat(params.amount);
 
@@ -95,16 +90,16 @@ export class TransferManager {
       const totalNeeded = transferAmount + minRequiredBalance;
       if (smartAccountBalance < totalNeeded) {
         throw new Error(
-          `Insufficient balance: Account has ${smartAccountBalance} ETH but needs ${totalNeeded} ETH`,
+          `Insufficient balance: Account has ${smartAccountBalance} ETH but needs ${totalNeeded} ETH`
         );
       }
     } else if (!isTokenTransfer && transferAmount > smartAccountBalance) {
       throw new Error(
-        `Insufficient balance: Account has ${smartAccountBalance} ETH but trying to send ${transferAmount} ETH`,
+        `Insufficient balance: Account has ${smartAccountBalance} ETH but trying to send ${transferAmount} ETH`
       );
     }
 
-    const version = (account.entryPointVersion || '0.6') as unknown as EntryPointVersion;
+    const version = (account.entryPointVersion || "0.6") as unknown as EntryPointVersion;
 
     // Build UserOperation
     const userOp = await this.buildUserOperation(
@@ -112,12 +107,12 @@ export class TransferManager {
       account.address,
       params.to,
       params.amount,
-      params.data || '0x',
+      params.data || "0x",
       params.usePaymaster,
       params.paymasterAddress,
       params.paymasterData,
       params.tokenAddress,
-      version,
+      version
     );
 
     // Get hash
@@ -132,7 +127,7 @@ export class TransferManager {
 
     // Create transfer record
     const transferId = generateId();
-    let tokenSymbol = 'ETH';
+    let tokenSymbol = "ETH";
     if (params.tokenAddress) {
       try {
         const tokenInfo = await this.tokenService.getTokenInfo(params.tokenAddress);
@@ -150,7 +145,7 @@ export class TransferManager {
       amount: params.amount,
       data: params.data,
       userOpHash,
-      status: 'pending',
+      status: "pending",
       nodeIndices: [],
       createdAt: new Date().toISOString(),
       tokenAddress: params.tokenAddress,
@@ -164,8 +159,8 @@ export class TransferManager {
       success: true,
       transferId,
       userOpHash,
-      status: 'pending',
-      message: 'Transfer submitted successfully. Use transferId to check status.',
+      status: "pending",
+      message: "Transfer submitted successfully. Use transferId to check status.",
       from: account.address,
       to: params.to,
       amount: params.amount,
@@ -176,7 +171,7 @@ export class TransferManager {
     transferId: string,
     userOp: UserOperation | PackedUserOperation,
     from: string,
-    version: EntryPointVersion,
+    version: EntryPointVersion
   ): Promise<void> {
     try {
       const formatted = this.formatUserOpForBundler(userOp, version);
@@ -184,21 +179,21 @@ export class TransferManager {
 
       await this.storage.updateTransfer(transferId, {
         bundlerUserOpHash,
-        status: 'submitted',
+        status: "submitted",
         submittedAt: new Date().toISOString(),
-      } as Partial<import('../interfaces/storage-adapter').TransferRecord>);
+      } as Partial<import("../interfaces/storage-adapter").TransferRecord>);
 
       const txHash = await this.ethereum.waitForUserOp(bundlerUserOpHash);
 
       await this.storage.updateTransfer(transferId, {
         transactionHash: txHash,
-        status: 'completed',
+        status: "completed",
         completedAt: new Date().toISOString(),
-      } as Partial<import('../interfaces/storage-adapter').TransferRecord>);
+      } as Partial<import("../interfaces/storage-adapter").TransferRecord>);
 
       // Update deployment status if first tx
       const code = await this.ethereum.getProvider().getCode(from);
-      if (code !== '0x') {
+      if (code !== "0x") {
         const account = (await this.storage.getAccounts()).find(a => a.address === from);
         if (account && !account.deployed) {
           await this.storage.updateAccount(account.userId, {
@@ -210,31 +205,31 @@ export class TransferManager {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       await this.storage.updateTransfer(transferId, {
-        status: 'failed',
+        status: "failed",
         error: message,
         failedAt: new Date().toISOString(),
-      } as Partial<import('../interfaces/storage-adapter').TransferRecord>);
+      } as Partial<import("../interfaces/storage-adapter").TransferRecord>);
       this.logger.error(`Transfer ${transferId} failed: ${message}`);
     }
   }
 
   async estimateGas(userId: string, params: EstimateGasParams) {
     const account = await this.accountManager.getAccountByUserId(userId);
-    if (!account) throw new Error('User account not found');
+    if (!account) throw new Error("User account not found");
 
-    const version = (account.entryPointVersion || '0.6') as unknown as EntryPointVersion;
+    const version = (account.entryPointVersion || "0.6") as unknown as EntryPointVersion;
 
     const userOp = await this.buildUserOperation(
       userId,
       account.address,
       params.to,
       params.amount,
-      params.data || '0x',
+      params.data || "0x",
       false,
       undefined,
       undefined,
       params.tokenAddress,
-      version,
+      version
     );
 
     const formatted = this.formatUserOpForBundler(userOp, version);
@@ -262,15 +257,13 @@ export class TransferManager {
   async getTransferStatus(userId: string, transferId: string) {
     const transfer = await this.storage.findTransferById(transferId);
     if (!transfer || transfer.userId !== userId) {
-      throw new Error('Transfer not found');
+      throw new Error("Transfer not found");
     }
 
     const response: Record<string, unknown> = { ...transfer };
 
-    if (transfer.status === 'pending' || transfer.status === 'submitted') {
-      const elapsed = Math.floor(
-        (Date.now() - new Date(transfer.createdAt).getTime()) / 1000,
-      );
+    if (transfer.status === "pending" || transfer.status === "submitted") {
+      const elapsed = Math.floor((Date.now() - new Date(transfer.createdAt).getTime()) / 1000);
       response.elapsedSeconds = elapsed;
     }
 
@@ -279,10 +272,10 @@ export class TransferManager {
     }
 
     const statusDescriptions: Record<string, string> = {
-      pending: 'Preparing transaction and generating signatures',
-      submitted: 'Transaction submitted to bundler, waiting for confirmation',
-      completed: 'Transaction confirmed on chain',
-      failed: 'Transaction failed',
+      pending: "Preparing transaction and generating signatures",
+      submitted: "Transaction submitted to bundler, waiting for confirmation",
+      completed: "Transaction confirmed on chain",
+      failed: "Transaction failed",
     };
     response.statusDescription = statusDescriptions[transfer.status] || transfer.status;
 
@@ -295,9 +288,7 @@ export class TransferManager {
       return { transfers: [], total: 0, page, limit, totalPages: 0 };
     }
 
-    transfers.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
+    transfers.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const start = (page - 1) * limit;
     const paginated = transfers.slice(start, start + limit);
@@ -323,7 +314,7 @@ export class TransferManager {
     paymasterAddress?: string,
     _paymasterData?: string,
     tokenAddress?: string,
-    version: EntryPointVersion = EntryPointVersion.V0_6,
+    version: EntryPointVersion = EntryPointVersion.V0_6
   ): Promise<UserOperation | PackedUserOperation> {
     const accountContract = this.ethereum.getAccountContract(sender);
     const nonce = await this.ethereum.getNonce(sender, 0, version);
@@ -331,9 +322,9 @@ export class TransferManager {
     // initCode for deployment
     const provider = this.ethereum.getProvider();
     const code = await provider.getCode(sender);
-    const needsDeployment = code === '0x';
+    const needsDeployment = code === "0x";
 
-    let initCode = '0x';
+    let initCode = "0x";
     if (needsDeployment) {
       const accounts = await this.storage.getAccounts();
       const account = accounts.find(a => a.address === sender);
@@ -343,8 +334,8 @@ export class TransferManager {
 
         const methodName =
           version === EntryPointVersion.V0_7 || version === EntryPointVersion.V0_8
-            ? 'createAccount'
-            : 'createAccountWithAAStarValidator';
+            ? "createAccount"
+            : "createAccountWithAAStarValidator";
 
         const deployCalldata = factory.interface.encodeFunctionData(methodName, [
           account.signerAddress,
@@ -365,15 +356,15 @@ export class TransferManager {
       const transferCalldata = this.tokenService.generateTransferCalldata(
         to,
         amount,
-        tokenInfo.decimals,
+        tokenInfo.decimals
       );
-      callData = accountContract.interface.encodeFunctionData('execute', [
+      callData = accountContract.interface.encodeFunctionData("execute", [
         tokenAddress,
         0,
         transferCalldata,
       ]);
     } else {
-      callData = accountContract.interface.encodeFunctionData('execute', [
+      callData = accountContract.interface.encodeFunctionData("execute", [
         to,
         ethers.parseEther(amount),
         data,
@@ -384,29 +375,29 @@ export class TransferManager {
 
     const baseUserOp: Record<string, unknown> = {
       sender,
-      nonce: '0x' + nonce.toString(16),
+      nonce: "0x" + nonce.toString(16),
       initCode,
       callData,
-      callGasLimit: '0x0',
-      verificationGasLimit: '0x0',
-      preVerificationGas: '0x0',
+      callGasLimit: "0x0",
+      verificationGasLimit: "0x0",
+      preVerificationGas: "0x0",
       maxFeePerGas: gasPrices.maxFeePerGas,
       maxPriorityFeePerGas: gasPrices.maxPriorityFeePerGas,
-      paymasterAndData: '0x',
-      signature: '0x',
+      paymasterAndData: "0x",
+      signature: "0x",
     };
 
     // Paymaster
-    let paymasterAndData = '0x';
+    let paymasterAndData = "0x";
     if (usePaymaster) {
       if (paymasterAddress) {
         const entryPoint = this.ethereum.getEntryPointAddress(version);
         paymasterAndData = await this.paymasterManager.getPaymasterData(
           userId,
-          'custom-user-provided',
+          "custom-user-provided",
           baseUserOp,
           entryPoint,
-          paymasterAddress,
+          paymasterAddress
         );
       } else {
         const available = await this.paymasterManager.getAvailablePaymasters(userId);
@@ -417,16 +408,16 @@ export class TransferManager {
             userId,
             configured.name,
             baseUserOp,
-            entryPoint,
+            entryPoint
           );
         } else {
-          throw new Error('No paymaster configured and no paymaster address provided');
+          throw new Error("No paymaster configured and no paymaster address provided");
         }
       }
 
-      if (!paymasterAndData || paymasterAndData === '0x') {
+      if (!paymasterAndData || paymasterAndData === "0x") {
         throw new Error(
-          `Paymaster failed to provide sponsorship data. The paymaster at ${paymasterAddress} may not be configured correctly.`,
+          `Paymaster failed to provide sponsorship data. The paymaster at ${paymasterAddress} may not be configured correctly.`
         );
       }
       baseUserOp.paymasterAndData = paymasterAndData;
@@ -446,7 +437,7 @@ export class TransferManager {
       maxFeePerGas: BigInt(gasPrices.maxFeePerGas),
       maxPriorityFeePerGas: BigInt(gasPrices.maxPriorityFeePerGas),
       paymasterAndData,
-      signature: '0x',
+      signature: "0x",
     };
 
     if (version === EntryPointVersion.V0_7 || version === EntryPointVersion.V0_8) {
@@ -458,7 +449,7 @@ export class TransferManager {
 
   private formatUserOpForBundler(
     userOp: UserOperation | PackedUserOperation,
-    version: EntryPointVersion = EntryPointVersion.V0_6,
+    version: EntryPointVersion = EntryPointVersion.V0_6
   ): Record<string, unknown> {
     if (version === EntryPointVersion.V0_7 || version === EntryPointVersion.V0_8) {
       const packedOp = userOp as PackedUserOperation;
@@ -467,10 +458,10 @@ export class TransferManager {
 
       let factory: string | undefined;
       let factoryData: string | undefined;
-      if (packedOp.initCode && packedOp.initCode !== '0x' && packedOp.initCode.length > 2) {
+      if (packedOp.initCode && packedOp.initCode !== "0x" && packedOp.initCode.length > 2) {
         factory = packedOp.initCode.slice(0, 42);
         if (packedOp.initCode.length > 42) {
-          factoryData = '0x' + packedOp.initCode.slice(42);
+          factoryData = "0x" + packedOp.initCode.slice(42);
         }
       }
 
@@ -481,43 +472,43 @@ export class TransferManager {
 
       if (
         packedOp.paymasterAndData &&
-        packedOp.paymasterAndData !== '0x' &&
+        packedOp.paymasterAndData !== "0x" &&
         packedOp.paymasterAndData.length > 2
       ) {
         paymaster = packedOp.paymasterAndData.slice(0, 42);
         if (packedOp.paymasterAndData.length >= 74) {
           paymasterVerificationGasLimit =
-            '0x' + BigInt('0x' + packedOp.paymasterAndData.slice(42, 74)).toString(16);
+            "0x" + BigInt("0x" + packedOp.paymasterAndData.slice(42, 74)).toString(16);
         }
         if (packedOp.paymasterAndData.length >= 106) {
           paymasterPostOpGasLimit =
-            '0x' + BigInt('0x' + packedOp.paymasterAndData.slice(74, 106)).toString(16);
+            "0x" + BigInt("0x" + packedOp.paymasterAndData.slice(74, 106)).toString(16);
         }
         if (packedOp.paymasterAndData.length > 106) {
-          paymasterData = '0x' + packedOp.paymasterAndData.slice(106);
+          paymasterData = "0x" + packedOp.paymasterAndData.slice(106);
         }
       }
 
       const result: Record<string, unknown> = {
         sender: packedOp.sender,
         nonce:
-          typeof packedOp.nonce === 'bigint'
-            ? '0x' + packedOp.nonce.toString(16)
-            : packedOp.nonce.toString().startsWith('0x')
+          typeof packedOp.nonce === "bigint"
+            ? "0x" + packedOp.nonce.toString(16)
+            : packedOp.nonce.toString().startsWith("0x")
               ? packedOp.nonce.toString()
-              : '0x' + BigInt(packedOp.nonce).toString(16),
+              : "0x" + BigInt(packedOp.nonce).toString(16),
         callData: packedOp.callData,
-        callGasLimit: '0x' + gasLimits.callGasLimit.toString(16),
-        verificationGasLimit: '0x' + gasLimits.verificationGasLimit.toString(16),
+        callGasLimit: "0x" + gasLimits.callGasLimit.toString(16),
+        verificationGasLimit: "0x" + gasLimits.verificationGasLimit.toString(16),
         preVerificationGas:
-          typeof packedOp.preVerificationGas === 'bigint'
-            ? '0x' + packedOp.preVerificationGas.toString(16)
-            : packedOp.preVerificationGas.toString().startsWith('0x')
+          typeof packedOp.preVerificationGas === "bigint"
+            ? "0x" + packedOp.preVerificationGas.toString(16)
+            : packedOp.preVerificationGas.toString().startsWith("0x")
               ? packedOp.preVerificationGas.toString()
-              : '0x' + BigInt(packedOp.preVerificationGas).toString(16),
-        maxFeePerGas: '0x' + gasFees.maxFeePerGas.toString(16),
-        maxPriorityFeePerGas: '0x' + gasFees.maxPriorityFeePerGas.toString(16),
-        signature: packedOp.signature || '0x',
+              : "0x" + BigInt(packedOp.preVerificationGas).toString(16),
+        maxFeePerGas: "0x" + gasFees.maxFeePerGas.toString(16),
+        maxPriorityFeePerGas: "0x" + gasFees.maxPriorityFeePerGas.toString(16),
+        signature: packedOp.signature || "0x",
       };
 
       if (factory) result.factory = factory;
@@ -525,9 +516,9 @@ export class TransferManager {
 
       if (paymaster) {
         result.paymaster = paymaster;
-        result.paymasterVerificationGasLimit = paymasterVerificationGasLimit || '0x30000';
-        result.paymasterPostOpGasLimit = paymasterPostOpGasLimit || '0x30000';
-        if (paymasterData && paymasterData !== '0x') {
+        result.paymasterVerificationGasLimit = paymasterVerificationGasLimit || "0x30000";
+        result.paymasterPostOpGasLimit = paymasterPostOpGasLimit || "0x30000";
+        if (paymasterData && paymasterData !== "0x") {
           result.paymasterData = paymasterData;
         }
       }
@@ -539,14 +530,14 @@ export class TransferManager {
     const op = userOp as UserOperation;
     return {
       sender: op.sender,
-      nonce: '0x' + op.nonce.toString(16),
+      nonce: "0x" + op.nonce.toString(16),
       initCode: op.initCode,
       callData: op.callData,
-      callGasLimit: '0x' + op.callGasLimit.toString(16),
-      verificationGasLimit: '0x' + op.verificationGasLimit.toString(16),
-      preVerificationGas: '0x' + op.preVerificationGas.toString(16),
-      maxFeePerGas: '0x' + op.maxFeePerGas.toString(16),
-      maxPriorityFeePerGas: '0x' + op.maxPriorityFeePerGas.toString(16),
+      callGasLimit: "0x" + op.callGasLimit.toString(16),
+      verificationGasLimit: "0x" + op.verificationGasLimit.toString(16),
+      preVerificationGas: "0x" + op.preVerificationGas.toString(16),
+      maxFeePerGas: "0x" + op.maxFeePerGas.toString(16),
+      maxPriorityFeePerGas: "0x" + op.maxPriorityFeePerGas.toString(16),
       paymasterAndData: op.paymasterAndData,
       signature: op.signature,
     };

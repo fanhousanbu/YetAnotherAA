@@ -2,7 +2,15 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { PersistenceAdapter } from "../persistence.interface";
-import { User, Account, Transfer, Passkey, BlsConfig, Guardian, RecoveryRequest } from "../../entities";
+import {
+  User,
+  Account,
+  Transfer,
+  Passkey,
+  BlsConfig,
+  Guardian,
+  RecoveryRequest,
+} from "../../entities";
 
 @Injectable()
 export class PostgresAdapter implements PersistenceAdapter {

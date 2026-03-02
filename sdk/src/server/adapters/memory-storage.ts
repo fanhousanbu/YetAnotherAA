@@ -4,7 +4,7 @@ import {
   TransferRecord,
   PaymasterRecord,
   BlsConfigRecord,
-} from '../interfaces/storage-adapter';
+} from "../interfaces/storage-adapter";
 
 /**
  * In-memory storage adapter — useful for testing and demos.
@@ -95,7 +95,7 @@ export class MemoryStorage implements IStorageAdapter {
     this.blsConfig = {
       ...this.blsConfig,
       signerNodes: {
-        nodes: nodes as BlsConfigRecord['signerNodes'] extends { nodes: infer N } ? N : never,
+        nodes: nodes as BlsConfigRecord["signerNodes"] extends { nodes: infer N } ? N : never,
       },
     } as BlsConfigRecord;
   }

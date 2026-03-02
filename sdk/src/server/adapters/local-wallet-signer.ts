@@ -1,5 +1,5 @@
-import { ethers } from 'ethers';
-import { ISignerAdapter } from '../interfaces/signer-adapter';
+import { ethers } from "ethers";
+import { ISignerAdapter } from "../interfaces/signer-adapter";
 
 /**
  * Local wallet signer — backs all users with a single private key.
