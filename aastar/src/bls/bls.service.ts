@@ -5,9 +5,7 @@ import { BLSSignatureData as BlsSignatureData } from "@yaaa/sdk/server";
 
 @Injectable()
 export class BlsService {
-  constructor(
-    @Inject(YAAA_SERVER_CLIENT) private client: YAAAServerClient,
-  ) {}
+  constructor(@Inject(YAAA_SERVER_CLIENT) private client: YAAAServerClient) {}
 
   async getActiveSignerNodes(): Promise<any[]> {
     return this.client.bls.getActiveSignerNodes();

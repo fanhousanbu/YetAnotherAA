@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  Inject,
-  NotFoundException,
-  BadRequestException,
-  UnauthorizedException,
-} from "@nestjs/common";
+import { Injectable, Inject, BadRequestException, UnauthorizedException } from "@nestjs/common";
 import { YAAAServerClient } from "@yaaa/sdk/server";
 import { YAAA_SERVER_CLIENT } from "../sdk/sdk.providers";
 import { AuthService } from "../auth/auth.service";
@@ -17,7 +11,7 @@ export class TransferService {
   constructor(
     @Inject(YAAA_SERVER_CLIENT) private client: YAAAServerClient,
     private authService: AuthService,
-    private addressBookService: AddressBookService,
+    private addressBookService: AddressBookService
   ) {}
 
   async executeTransfer(userId: string, transferDto: ExecuteTransferDto) {
@@ -29,7 +23,7 @@ export class TransferService {
     try {
       const verification = await this.authService.completeTransactionVerification(
         userId,
-        transferDto.passkeyCredential,
+        transferDto.passkeyCredential
       );
 
       if (!verification.verified) {
@@ -83,7 +77,7 @@ export class TransferService {
   private async recordAddressBookEntry(
     userId: string,
     to: string,
-    transferId: string,
+    transferId: string
   ): Promise<void> {
     try {
       // Wait a bit for the transfer to potentially complete
@@ -93,7 +87,7 @@ export class TransferService {
         await this.addressBookService.recordSuccessfulTransfer(
           userId,
           to,
-          (status as any).transactionHash,
+          (status as any).transactionHash
         );
       }
     } catch {

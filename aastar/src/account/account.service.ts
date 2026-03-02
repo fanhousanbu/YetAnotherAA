@@ -9,17 +9,17 @@ import { ethers } from "ethers";
 export class AccountService {
   constructor(
     @Inject(YAAA_SERVER_CLIENT) private client: YAAAServerClient,
-    private databaseService: DatabaseService,
+    private databaseService: DatabaseService
   ) {}
 
   async createAccount(userId: string, createAccountDto: CreateAccountDto) {
     const versionDto = createAccountDto.entryPointVersion || EntryPointVersionDto.V0_6;
 
     // Map DTO version to SDK EntryPointVersion
-    const versionMap: Record<string, '0.6' | '0.7' | '0.8'> = {
-      '0.6': '0.6',
-      '0.7': '0.7',
-      '0.8': '0.8',
+    const versionMap: Record<string, "0.6" | "0.7" | "0.8"> = {
+      "0.6": "0.6",
+      "0.7": "0.7",
+      "0.8": "0.8",
     };
 
     return this.client.accounts.createAccount(userId, {

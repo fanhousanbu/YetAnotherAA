@@ -11,7 +11,7 @@ export const yaaaServerClientProvider: Provider = {
   useFactory: (
     configService: ConfigService,
     storageAdapter: BackendStorageAdapter,
-    signerAdapter: BackendSignerAdapter,
+    signerAdapter: BackendSignerAdapter
   ): YAAAServerClient => {
     const entryPoints: ServerConfig["entryPoints"] = {};
 
@@ -52,7 +52,8 @@ export const yaaaServerClientProvider: Provider = {
     }
 
     // BLS seed nodes
-    const blsSeedNodesStr = configService.get<string>("blsSeedNodes") || configService.get<string>("BLS_SEED_NODES");
+    const blsSeedNodesStr =
+      configService.get<string>("blsSeedNodes") || configService.get<string>("BLS_SEED_NODES");
     const blsSeedNodes = blsSeedNodesStr ? blsSeedNodesStr.split(",").map(s => s.trim()) : [];
 
     // Default version mapping

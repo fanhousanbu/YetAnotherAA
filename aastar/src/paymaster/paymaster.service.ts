@@ -10,15 +10,15 @@ export class PaymasterService {
 
   constructor(
     @Inject(YAAA_SERVER_CLIENT) private client: YAAAServerClient,
-    private configService: ConfigService,
+    private configService: ConfigService
   ) {
     this.provider = new ethers.JsonRpcProvider(
-      this.configService.get<string>("ethRpcUrl") || "https://sepolia.infura.io/v3/YOUR_PROJECT_ID",
+      this.configService.get<string>("ethRpcUrl") || "https://sepolia.infura.io/v3/YOUR_PROJECT_ID"
     );
   }
 
   async getAvailablePaymasters(
-    userId: string,
+    userId: string
   ): Promise<{ name: string; address: string; configured: boolean }[]> {
     return this.client.paymaster.getAvailablePaymasters(userId);
   }
@@ -29,7 +29,7 @@ export class PaymasterService {
     address: string,
     type: "pimlico" | "stackup" | "alchemy" | "custom" = "custom",
     apiKey?: string,
-    endpoint?: string,
+    endpoint?: string
   ): Promise<void> {
     return this.client.paymaster.addCustomPaymaster(userId, name, address, type, apiKey, endpoint);
   }
@@ -43,33 +43,28 @@ export class PaymasterService {
     paymasterName: string,
     userOp: any,
     entryPoint: string,
-    customAddress?: string,
+    customAddress?: string
   ): Promise<string> {
     return this.client.paymaster.getPaymasterData(
       userId,
       paymasterName,
       userOp,
       entryPoint,
-      customAddress,
+      customAddress
     );
   }
 
   // Backend-specific: SDK doesn't include this
   async validatePaymasterSignature(
     paymasterAndData: string,
-    _userOpHash: string,
+    _userOpHash: string
   ): Promise<boolean> {
     if (!paymasterAndData || paymasterAndData === "0x") {
       return false;
     }
 
-    try {
-      // Placeholder - actual implementation depends on paymaster
-      return true;
-    } catch (error) {
-      console.error("Paymaster validation failed:", error);
-      return false;
-    }
+    // Placeholder - actual implementation depends on paymaster
+    return true;
   }
 
   // Backend-specific: SDK doesn't include this
@@ -126,8 +121,7 @@ export class PaymasterService {
             verificationGasLimit: userOp.verificationGasLimit.toString(),
             preVerificationGas: userOp.preVerificationGas.toString(),
             maxFeePerGas: ethers.formatUnits(userOp.maxFeePerGas, "gwei") + " gwei",
-            maxPriorityFeePerGas:
-              ethers.formatUnits(userOp.maxPriorityFeePerGas, "gwei") + " gwei",
+            maxPriorityFeePerGas: ethers.formatUnits(userOp.maxPriorityFeePerGas, "gwei") + " gwei",
             paymasterAndDataLength: paymasterAndData.length,
           };
         }

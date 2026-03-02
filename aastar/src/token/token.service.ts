@@ -128,7 +128,7 @@ export class TokenService {
 
   constructor(
     @Inject(YAAA_SERVER_CLIENT) private client: YAAAServerClient,
-    private configService: ConfigService,
+    private configService: ConfigService
   ) {
     this.provider = new ethers.JsonRpcProvider(this.configService.get<string>("ethRpcUrl"));
   }
@@ -152,7 +152,7 @@ export class TokenService {
         token.symbol.toLowerCase().includes(searchTerm) ||
         token.name.toLowerCase().includes(searchTerm) ||
         token.address.toLowerCase().includes(searchTerm) ||
-        token.tags?.some(tag => tag.toLowerCase().includes(searchTerm)),
+        token.tags?.some(tag => tag.toLowerCase().includes(searchTerm))
     );
   }
 
@@ -184,7 +184,7 @@ export class TokenService {
           token.symbol.toLowerCase().includes(searchTerm) ||
           token.name.toLowerCase().includes(searchTerm) ||
           token.address.toLowerCase().includes(searchTerm) ||
-          token.tags?.some(tag => tag.toLowerCase().includes(searchTerm)),
+          token.tags?.some(tag => tag.toLowerCase().includes(searchTerm))
       );
     }
 
@@ -260,11 +260,11 @@ export class TokenService {
 
   async getFormattedTokenBalance(
     tokenAddress: string,
-    walletAddress: string,
+    walletAddress: string
   ): Promise<TokenBalance> {
     const sdkBalance = await this.client.tokens.getFormattedTokenBalance(
       tokenAddress,
-      walletAddress,
+      walletAddress
     );
     return {
       token: {
@@ -323,7 +323,7 @@ export class TokenService {
 
   async getAllTokenBalances(
     walletAddress: string,
-    includeZeroBalances = true,
+    includeZeroBalances = true
   ): Promise<TokenBalance[]> {
     const tokens = this.PRESET_TOKENS;
     const balances: TokenBalance[] = [];

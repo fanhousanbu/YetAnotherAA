@@ -9,7 +9,7 @@ import { EntryPointVersion } from "../common/constants/entrypoint.constants";
 export class EthereumService {
   constructor(
     @Inject(YAAA_SERVER_CLIENT) private client: YAAAServerClient,
-    private configService: ConfigService,
+    private configService: ConfigService
   ) {}
 
   getProvider(): ethers.JsonRpcProvider {
@@ -43,25 +43,28 @@ export class EthereumService {
   async getNonce(
     accountAddress: string,
     key: number = 0,
-    version: EntryPointVersion = EntryPointVersion.V0_6,
+    version: EntryPointVersion = EntryPointVersion.V0_6
   ): Promise<bigint> {
     return this.client.ethereum.getNonce(accountAddress, key, version);
   }
 
-  async getUserOpHash(userOp: any, version: EntryPointVersion = EntryPointVersion.V0_6): Promise<string> {
+  async getUserOpHash(
+    userOp: any,
+    version: EntryPointVersion = EntryPointVersion.V0_6
+  ): Promise<string> {
     return this.client.ethereum.getUserOpHash(userOp, version);
   }
 
   async estimateUserOperationGas(
     userOp: any,
-    version: EntryPointVersion = EntryPointVersion.V0_6,
+    version: EntryPointVersion = EntryPointVersion.V0_6
   ): Promise<any> {
     return this.client.ethereum.estimateUserOperationGas(userOp, version);
   }
 
   async sendUserOperation(
     userOp: any,
-    version: EntryPointVersion = EntryPointVersion.V0_6,
+    version: EntryPointVersion = EntryPointVersion.V0_6
   ): Promise<string> {
     return this.client.ethereum.sendUserOperation(userOp, version);
   }
