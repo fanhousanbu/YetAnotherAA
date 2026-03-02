@@ -14,4 +14,8 @@ module.exports = {
       },
     ],
   },
+  // @noble/curves and @noble/hashes are ESM-only — transform them so Jest can load them
+  transformIgnorePatterns: [
+    "node_modules/(?!(@noble/curves|@noble/hashes)/)",
+  ],
 };

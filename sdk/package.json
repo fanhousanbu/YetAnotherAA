@@ -25,6 +25,11 @@
       "types": "./dist/auth/passkey/index.d.ts",
       "import": "./dist/auth/passkey/index.mjs",
       "require": "./dist/auth/passkey/index.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "import": "./dist/server/index.mjs",
+      "require": "./dist/server/index.js"
     }
   },
   "files": [
