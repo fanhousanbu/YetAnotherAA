@@ -2,6 +2,7 @@ import { Controller, Post, Get, Body, UseGuards, Request, HttpStatus, Res } from
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from "@nestjs/swagger";
 import { AccountService } from "./account.service";
 import { CreateAccountDto } from "./dto/create-account.dto";
+import { RotateSignerDto } from "./dto/rotate-signer.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @ApiTags("account")
@@ -53,6 +54,17 @@ export class AccountController {
   @ApiOperation({ summary: "Get account nonce" })
   async getNonce(@Request() req) {
     return this.accountService.getAccountNonce(req.user.sub);
+  }
+
+  @Post("rotate-signer")
+  @ApiOperation({
+    summary: "Update the off-chain signer address (Phase 1: Owner Rotation)",
+    description:
+      "Updates the signerAddress record in the backend. " +
+      "To fully rotate on-chain, also submit a UserOp calling updateSigner() on the account contract.",
+  })
+  async rotateSigner(@Request() req, @Body() dto: RotateSignerDto) {
+    return this.accountService.rotateSigner(req.user.sub, dto.newSignerAddress);
   }
 
   // fund and sponsor endpoints removed - not needed with Paymaster

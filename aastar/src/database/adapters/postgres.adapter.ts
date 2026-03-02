@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { PersistenceAdapter } from "../persistence.interface";
-import { User, Account, Transfer, Passkey, BlsConfig } from "../../entities";
+import { User, Account, Transfer, Passkey, BlsConfig, Guardian, RecoveryRequest } from "../../entities";
 
 @Injectable()
 export class PostgresAdapter implements PersistenceAdapter {
@@ -16,7 +16,11 @@ export class PostgresAdapter implements PersistenceAdapter {
     @InjectRepository(Passkey)
     private passkeyRepository: Repository<Passkey>,
     @InjectRepository(BlsConfig)
-    private blsConfigRepository: Repository<BlsConfig>
+    private blsConfigRepository: Repository<BlsConfig>,
+    @InjectRepository(Guardian)
+    private guardianRepository: Repository<Guardian>,
+    @InjectRepository(RecoveryRequest)
+    private recoveryRequestRepository: Repository<RecoveryRequest>
   ) {
     console.log("🐘 PostgreSQL adapter initialized");
   }
@@ -55,8 +59,16 @@ export class PostgresAdapter implements PersistenceAdapter {
     return this.accountRepository.findOne({ where: { userId } });
   }
 
+  async findAccountByAddress(address: string): Promise<any> {
+    return this.accountRepository.findOne({ where: { address } });
+  }
+
   async updateAccount(userId: string, updates: any): Promise<void> {
     await this.accountRepository.update({ userId }, updates);
+  }
+
+  async updateAccountByAddress(address: string, updates: any): Promise<void> {
+    await this.accountRepository.update({ address }, updates);
   }
 
   // Transfers operations
@@ -182,6 +194,38 @@ export class PostgresAdapter implements PersistenceAdapter {
     const currentConfig = await this.getBlsConfig();
     const updatedConfig = { ...currentConfig, ...updates };
     await this.blsConfigRepository.save({ id: 1, ...updatedConfig });
+  }
+
+  // Guardians
+  async getGuardiansByAccount(accountAddress: string): Promise<any[]> {
+    return this.guardianRepository.find({ where: { accountAddress } });
+  }
+
+  async saveGuardian(guardian: any): Promise<void> {
+    await this.guardianRepository.save(guardian);
+  }
+
+  async updateGuardian(id: string, updates: any): Promise<void> {
+    await this.guardianRepository.update(id, updates);
+  }
+
+  async findGuardian(accountAddress: string, guardianAddress: string): Promise<any> {
+    return this.guardianRepository.findOne({ where: { accountAddress, guardianAddress } });
+  }
+
+  // Recovery Requests
+  async saveRecoveryRequest(request: any): Promise<void> {
+    await this.recoveryRequestRepository.save(request);
+  }
+
+  async findPendingRecovery(accountAddress: string): Promise<any> {
+    return this.recoveryRequestRepository.findOne({
+      where: { accountAddress, status: "pending" },
+    });
+  }
+
+  async updateRecoveryRequest(id: string, updates: any): Promise<void> {
+    await this.recoveryRequestRepository.update(id, updates);
   }
 
   async updateSignerNodesCache(discoveredNodes: any[]): Promise<void> {

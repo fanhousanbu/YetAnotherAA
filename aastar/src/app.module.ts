@@ -13,12 +13,15 @@ import { TokenModule } from "./token/token.module";
 import { UserTokenModule } from "./user-token/user-token.module";
 import { UserNFTModule } from "./user-nft/user-nft.module";
 import { DataToolsModule } from "./data-tools/data-tools.module";
+import { SdkModule } from "./sdk/sdk.module";
+import { GuardianModule } from "./guardian/guardian.module";
 
 @Module({
   imports: [
     AppConfigModule, // This must be first to validate env vars on startup
     DatabaseModule.forRoot(),
     AuthModule,
+    SdkModule, // After DatabaseModule and AuthModule (provides YAAA_SERVER_CLIENT globally)
     AccountModule,
     TransferModule,
     BlsModule,
@@ -28,6 +31,7 @@ import { DataToolsModule } from "./data-tools/data-tools.module";
     UserTokenModule,
     UserNFTModule,
     DataToolsModule,
+    GuardianModule,
   ],
   controllers: [AppController],
   providers: [AppService],
