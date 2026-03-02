@@ -1,8 +1,9 @@
-// Re-export types and utilities from SDK
-import { ERC4337Utils } from "@yaaa/sdk";
+import { ERC4337Utils, PackedUserOperation } from "@yaaa/sdk";
 
-export type { PackedUserOperation } from "@yaaa/sdk";
+// Export type from SDK
+export { PackedUserOperation };
 
+// Helper functions (proxies to SDK)
 export function packAccountGasLimits(
   verificationGasLimit: bigint | string,
   callGasLimit: bigint | string,
@@ -31,10 +32,10 @@ export function unpackGasFees(gasFees: string): {
   return ERC4337Utils.unpackGasFees(gasFees);
 }
 
-export function packUserOperation(userOp: any): any {
+export function packUserOperation(userOp: any): PackedUserOperation {
   return ERC4337Utils.packUserOperation(userOp);
 }
 
-export function unpackUserOperation(packedOp: any): any {
+export function unpackUserOperation(packedOp: PackedUserOperation): any {
   return ERC4337Utils.unpackUserOperation(packedOp);
 }
