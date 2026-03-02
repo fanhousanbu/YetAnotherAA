@@ -93,9 +93,23 @@ export class JsonAdapter implements PersistenceAdapter {
     return accounts.find(a => a.userId === userId);
   }
 
+  async findAccountByAddress(address: string): Promise<any> {
+    const accounts = await this.getAccounts();
+    return accounts.find(a => a.address?.toLowerCase() === address.toLowerCase());
+  }
+
   async updateAccount(userId: string, updates: any): Promise<void> {
     const accounts = await this.getAccounts();
     const index = accounts.findIndex(a => a.userId === userId);
+    if (index !== -1) {
+      accounts[index] = { ...accounts[index], ...updates };
+      await this.writeJSON("accounts.json", accounts);
+    }
+  }
+
+  async updateAccountByAddress(address: string, updates: any): Promise<void> {
+    const accounts = await this.getAccounts();
+    const index = accounts.findIndex(a => a.address?.toLowerCase() === address.toLowerCase());
     if (index !== -1) {
       accounts[index] = { ...accounts[index], ...updates };
       await this.writeJSON("accounts.json", accounts);
@@ -203,6 +217,55 @@ export class JsonAdapter implements PersistenceAdapter {
     } catch (error) {
       console.error("Failed to update BLS config:", error);
       throw new Error("Failed to update BLS configuration");
+    }
+  }
+
+  // Guardians
+  async getGuardiansByAccount(accountAddress: string): Promise<any[]> {
+    const guardians = await this.readJSON("guardians.json");
+    return guardians.filter(g => g.accountAddress === accountAddress);
+  }
+
+  async saveGuardian(guardian: any): Promise<void> {
+    const guardians = await this.readJSON("guardians.json");
+    guardians.push(guardian);
+    await this.writeJSON("guardians.json", guardians);
+  }
+
+  async updateGuardian(id: string, updates: any): Promise<void> {
+    const guardians = await this.readJSON("guardians.json");
+    const index = guardians.findIndex(g => g.id === id);
+    if (index !== -1) {
+      guardians[index] = { ...guardians[index], ...updates };
+      await this.writeJSON("guardians.json", guardians);
+    }
+  }
+
+  async findGuardian(accountAddress: string, guardianAddress: string): Promise<any> {
+    const guardians = await this.readJSON("guardians.json");
+    return guardians.find(
+      g => g.accountAddress === accountAddress && g.guardianAddress === guardianAddress
+    );
+  }
+
+  // Recovery Requests
+  async saveRecoveryRequest(request: any): Promise<void> {
+    const requests = await this.readJSON("recovery-requests.json");
+    requests.push(request);
+    await this.writeJSON("recovery-requests.json", requests);
+  }
+
+  async findPendingRecovery(accountAddress: string): Promise<any> {
+    const requests = await this.readJSON("recovery-requests.json");
+    return requests.find(r => r.accountAddress === accountAddress && r.status === "pending");
+  }
+
+  async updateRecoveryRequest(id: string, updates: any): Promise<void> {
+    const requests = await this.readJSON("recovery-requests.json");
+    const index = requests.findIndex(r => r.id === id);
+    if (index !== -1) {
+      requests[index] = { ...requests[index], ...updates };
+      await this.writeJSON("recovery-requests.json", requests);
     }
   }
 

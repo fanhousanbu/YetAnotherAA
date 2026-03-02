@@ -4,7 +4,16 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { DatabaseService } from "./database.service";
 import { JsonAdapter } from "./adapters/json.adapter";
 import { PostgresAdapter } from "./adapters/postgres.adapter";
-import { User, Account, Transfer, Passkey, BlsConfig, UserToken } from "../entities";
+import {
+  User,
+  Account,
+  Transfer,
+  Passkey,
+  BlsConfig,
+  UserToken,
+  Guardian,
+  RecoveryRequest,
+} from "../entities";
 import { EnvConfigService } from "../config/env.config";
 
 @Global()
@@ -33,7 +42,16 @@ export class DatabaseModule {
             return {
               type: "postgres",
               url: databaseUrl,
-              entities: [User, Account, Transfer, Passkey, BlsConfig, UserToken],
+              entities: [
+                User,
+                Account,
+                Transfer,
+                Passkey,
+                BlsConfig,
+                UserToken,
+                Guardian,
+                RecoveryRequest,
+              ],
               synchronize: true, // Auto-create tables
               logging: configService.get<string>("NODE_ENV") === "development",
               ssl:
@@ -45,7 +63,16 @@ export class DatabaseModule {
           },
           inject: [ConfigService],
         }),
-        TypeOrmModule.forFeature([User, Account, Transfer, Passkey, BlsConfig, UserToken])
+        TypeOrmModule.forFeature([
+          User,
+          Account,
+          Transfer,
+          Passkey,
+          BlsConfig,
+          UserToken,
+          Guardian,
+          RecoveryRequest,
+        ])
       );
       providers.push(PostgresAdapter);
     }

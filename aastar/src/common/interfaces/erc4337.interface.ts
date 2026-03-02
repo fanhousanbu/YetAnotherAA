@@ -1,31 +1,3 @@
-export interface UserOperation {
-  sender: string;
-  nonce: bigint | string;
-  initCode: string;
-  callData: string;
-  callGasLimit: bigint | string;
-  verificationGasLimit: bigint | string;
-  preVerificationGas: bigint | string;
-  maxFeePerGas: bigint | string;
-  maxPriorityFeePerGas: bigint | string;
-  paymasterAndData: string;
-  signature: string;
-}
-
-export interface GasEstimate {
-  callGasLimit: string;
-  verificationGasLimit: string;
-  preVerificationGas: string;
-}
-
-export interface BlsSignatureData {
-  nodeIds: string[];
-  signatures?: string[];
-  publicKeys?: string[];
-  signature: string;
-  messagePoint: string;
-  aaAddress: string;
-  aaSignature: string;
-  messagePointSignature: string;
-  aggregatedSignature?: string;
-}
+// Re-export types from SDK
+export type { UserOperation, GasEstimate } from "@yaaa/sdk/server";
+export type { BLSSignatureData as BlsSignatureData } from "@yaaa/sdk/server";

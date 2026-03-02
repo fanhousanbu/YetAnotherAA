@@ -6,6 +6,7 @@ export default defineConfig({
     "core/bls/index": "src/core/bls/index.ts",
     "core/erc4337/index": "src/core/erc4337/index.ts",
     "auth/passkey/index": "src/auth/passkey/index.ts",
+    "server/index": "src/server/index.ts",
   },
   format: ["cjs", "esm"],
   dts: true,

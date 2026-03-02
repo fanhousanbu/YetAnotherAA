@@ -4,3 +4,5 @@ export { Transfer } from "./transfer.entity";
 export { Passkey } from "./passkey.entity";
 export { BlsConfig } from "./bls-config.entity";
 export { UserToken } from "./user-token.entity";
+export { Guardian } from "./guardian.entity";
+export { RecoveryRequest } from "./recovery-request.entity";

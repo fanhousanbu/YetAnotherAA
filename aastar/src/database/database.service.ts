@@ -75,8 +75,16 @@ export class DatabaseService implements OnModuleInit, PersistenceAdapter {
     return this.adapter.findAccountByUserId(userId);
   }
 
+  async findAccountByAddress(address: string): Promise<any> {
+    return this.adapter.findAccountByAddress(address);
+  }
+
   async updateAccount(userId: string, updates: any): Promise<void> {
     return this.adapter.updateAccount(userId, updates);
+  }
+
+  async updateAccountByAddress(address: string, updates: any): Promise<void> {
+    return this.adapter.updateAccountByAddress(address, updates);
   }
 
   // Transfers operations
@@ -132,5 +140,35 @@ export class DatabaseService implements OnModuleInit, PersistenceAdapter {
 
   async updateSignerNodesCache(discoveredNodes: any[]): Promise<void> {
     return this.adapter.updateSignerNodesCache(discoveredNodes);
+  }
+
+  // Guardian operations
+  async getGuardiansByAccount(accountAddress: string): Promise<any[]> {
+    return this.adapter.getGuardiansByAccount(accountAddress);
+  }
+
+  async saveGuardian(guardian: any): Promise<void> {
+    return this.adapter.saveGuardian(guardian);
+  }
+
+  async updateGuardian(id: string, updates: any): Promise<void> {
+    return this.adapter.updateGuardian(id, updates);
+  }
+
+  async findGuardian(accountAddress: string, guardianAddress: string): Promise<any> {
+    return this.adapter.findGuardian(accountAddress, guardianAddress);
+  }
+
+  // Recovery Request operations
+  async saveRecoveryRequest(request: any): Promise<void> {
+    return this.adapter.saveRecoveryRequest(request);
+  }
+
+  async findPendingRecovery(accountAddress: string): Promise<any> {
+    return this.adapter.findPendingRecovery(accountAddress);
+  }
+
+  async updateRecoveryRequest(id: string, updates: any): Promise<void> {
+    return this.adapter.updateRecoveryRequest(id, updates);
   }
 }

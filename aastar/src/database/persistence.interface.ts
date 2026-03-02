@@ -10,7 +10,9 @@ export interface PersistenceAdapter {
   getAccounts(): Promise<any[]>;
   saveAccount(account: any): Promise<void>;
   findAccountByUserId(userId: string): Promise<any>;
+  findAccountByAddress(address: string): Promise<any>;
   updateAccount(userId: string, updates: any): Promise<void>;
+  updateAccountByAddress(address: string, updates: any): Promise<void>;
 
   // Transfers
   getTransfers(): Promise<any[]>;
@@ -30,4 +32,15 @@ export interface PersistenceAdapter {
   getBlsConfig(): Promise<any>;
   updateBlsConfig(updates: any): Promise<void>;
   updateSignerNodesCache(discoveredNodes: any[]): Promise<void>;
+
+  // Guardians
+  getGuardiansByAccount(accountAddress: string): Promise<any[]>;
+  saveGuardian(guardian: any): Promise<void>;
+  updateGuardian(id: string, updates: any): Promise<void>;
+  findGuardian(accountAddress: string, guardianAddress: string): Promise<any>;
+
+  // Recovery Requests
+  saveRecoveryRequest(request: any): Promise<void>;
+  findPendingRecovery(accountAddress: string): Promise<any>;
+  updateRecoveryRequest(id: string, updates: any): Promise<void>;
 }
