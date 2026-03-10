@@ -5,7 +5,6 @@ import {
   TierConfig,
   GuardStatus,
   PreCheckResult,
-  AlgId,
   ALG_ECDSA,
   ALG_P256,
   ALG_BLS,
