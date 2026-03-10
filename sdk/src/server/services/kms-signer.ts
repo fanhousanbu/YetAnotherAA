@@ -171,10 +171,7 @@ export class KmsManager {
 
   // ── Key Management ──────────────────────────────────────────────
 
-  async createKey(
-    description: string,
-    passkeyPublicKey: string,
-  ): Promise<KmsCreateKeyResponse> {
+  async createKey(description: string, passkeyPublicKey: string): Promise<KmsCreateKeyResponse> {
     this.ensureEnabled();
 
     return this.amzPost("/CreateKey", "TrentService.CreateKey", {
@@ -208,7 +205,7 @@ export class KmsManager {
   async pollUntilReady(
     keyId: string,
     timeoutMs: number = 120_000,
-    intervalMs: number = 3_000,
+    intervalMs: number = 3_000
   ): Promise<KmsKeyStatusResponse> {
     this.ensureEnabled();
 
@@ -225,7 +222,7 @@ export class KmsManager {
         throw new Error(`KMS key derivation failed: ${status.Error ?? "unknown error"}`);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      await new Promise(resolve => setTimeout(resolve, intervalMs));
     }
 
     throw new Error(`KMS key derivation timed out after ${timeoutMs}ms`);
@@ -239,7 +236,7 @@ export class KmsManager {
   async signHash(
     hash: string,
     assertion: LegacyPasskeyAssertion,
-    target: { Address?: string; KeyId?: string },
+    target: { Address?: string; KeyId?: string }
   ): Promise<KmsSignHashResponse> {
     this.ensureEnabled();
 
@@ -267,7 +264,7 @@ export class KmsManager {
     hash: string,
     challengeId: string,
     credential: unknown,
-    target: { Address?: string; KeyId?: string },
+    target: { Address?: string; KeyId?: string }
   ): Promise<KmsSignHashResponse> {
     this.ensureEnabled();
 
@@ -291,7 +288,7 @@ export class KmsManager {
   // ── WebAuthn Ceremonies ─────────────────────────────────────────
 
   async beginRegistration(
-    params: KmsBeginRegistrationRequest,
+    params: KmsBeginRegistrationRequest
   ): Promise<KmsBeginRegistrationResponse> {
     this.ensureEnabled();
 
@@ -300,7 +297,7 @@ export class KmsManager {
   }
 
   async completeRegistration(
-    params: KmsCompleteRegistrationRequest,
+    params: KmsCompleteRegistrationRequest
   ): Promise<KmsCompleteRegistrationResponse> {
     this.ensureEnabled();
 
@@ -309,7 +306,7 @@ export class KmsManager {
   }
 
   async beginAuthentication(
-    params: KmsBeginAuthenticationRequest,
+    params: KmsBeginAuthenticationRequest
   ): Promise<KmsBeginAuthenticationResponse> {
     this.ensureEnabled();
 
@@ -323,7 +320,7 @@ export class KmsManager {
     keyId: string,
     address: string,
     assertionProvider: () => Promise<LegacyPasskeyAssertion>,
-    provider?: ethers.Provider,
+    provider?: ethers.Provider
   ): KmsSigner {
     this.ensureEnabled();
     return new KmsSigner(keyId, address, this, assertionProvider, provider);
@@ -343,7 +340,7 @@ export class KmsSigner extends ethers.AbstractSigner {
     private readonly _address: string,
     private readonly kmsManager: KmsManager,
     private readonly assertionProvider: () => Promise<LegacyPasskeyAssertion>,
-    provider?: ethers.Provider,
+    provider?: ethers.Provider
   ) {
     super(provider);
   }
@@ -384,7 +381,7 @@ export class KmsSigner extends ethers.AbstractSigner {
   async signTypedData(
     domain: ethers.TypedDataDomain,
     types: Record<string, ethers.TypedDataField[]>,
-    value: Record<string, unknown>,
+    value: Record<string, unknown>
   ): Promise<string> {
     const hash = ethers.TypedDataEncoder.hash(domain, types, value);
     const assertion = await this.assertionProvider();
@@ -400,7 +397,7 @@ export class KmsSigner extends ethers.AbstractSigner {
       this._address,
       this.kmsManager,
       this.assertionProvider,
-      provider,
+      provider
     );
   }
 }

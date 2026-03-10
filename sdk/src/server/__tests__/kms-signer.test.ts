@@ -65,7 +65,7 @@ describe("KmsManager", () => {
           headers: expect.objectContaining({
             "x-api-key": API_KEY,
           }),
-        }),
+        })
       );
     });
 
@@ -84,9 +84,7 @@ describe("KmsManager", () => {
   describe("createKey", () => {
     it("throws when KMS is not enabled", async () => {
       const m = new KmsManager({ kmsEndpoint: ENDPOINT, kmsEnabled: false });
-      await expect(m.createKey("desc", "0xpubkey")).rejects.toThrow(
-        "KMS service is not enabled",
-      );
+      await expect(m.createKey("desc", "0xpubkey")).rejects.toThrow("KMS service is not enabled");
     });
 
     it("POSTs to /CreateKey with x-amz-target header and PasskeyPublicKey", async () => {
@@ -117,7 +115,7 @@ describe("KmsManager", () => {
           headers: expect.objectContaining({
             "x-amz-target": "TrentService.CreateKey",
           }),
-        }),
+        })
       );
       expect(result.KeyMetadata.KeyId).toBe("key-abc");
     });
@@ -126,9 +124,9 @@ describe("KmsManager", () => {
   describe("signHash", () => {
     it("throws when KMS is not enabled", async () => {
       const m = new KmsManager({ kmsEndpoint: ENDPOINT });
-      await expect(
-        m.signHash("0xhash", MOCK_ASSERTION, { Address: ADDRESS }),
-      ).rejects.toThrow("KMS service is not enabled");
+      await expect(m.signHash("0xhash", MOCK_ASSERTION, { Address: ADDRESS })).rejects.toThrow(
+        "KMS service is not enabled"
+      );
     });
 
     it("adds 0x prefix to hash that lacks it", async () => {
@@ -148,7 +146,7 @@ describe("KmsManager", () => {
           Address: ADDRESS,
           Passkey: MOCK_ASSERTION,
         }),
-        expect.any(Object),
+        expect.any(Object)
       );
     });
 
@@ -165,7 +163,7 @@ describe("KmsManager", () => {
       expect(mockPost).toHaveBeenCalledWith(
         "/SignHash",
         expect.objectContaining({ Hash: "0xalreadyprefixed" }),
-        expect.any(Object),
+        expect.any(Object)
       );
     });
 
@@ -182,7 +180,7 @@ describe("KmsManager", () => {
       expect(mockPost).toHaveBeenCalledWith(
         "/SignHash",
         expect.objectContaining({ KeyId: "key-1" }),
-        expect.any(Object),
+        expect.any(Object)
       );
     });
   });
@@ -250,7 +248,7 @@ describe("KmsManager", () => {
     it("throws when KMS is not enabled", () => {
       const m = new KmsManager({ kmsEndpoint: ENDPOINT });
       expect(() =>
-        m.createKmsSigner("key-1", ADDRESS, () => Promise.resolve(MOCK_ASSERTION)),
+        m.createKmsSigner("key-1", ADDRESS, () => Promise.resolve(MOCK_ASSERTION))
       ).toThrow("KMS service is not enabled");
     });
 
@@ -279,9 +277,7 @@ describe("KmsSigner", () => {
       kmsEnabled: true,
       logger: new SilentLogger(),
     });
-    signer = manager.createKmsSigner("key-1", ADDRESS, () =>
-      Promise.resolve(MOCK_ASSERTION),
-    );
+    signer = manager.createKmsSigner("key-1", ADDRESS, () => Promise.resolve(MOCK_ASSERTION));
   });
 
   it("getAddress returns the KMS-managed address", async () => {
@@ -301,7 +297,7 @@ describe("KmsSigner", () => {
         Hash: expect.stringMatching(/^0x[0-9a-f]{64}$/i),
         Passkey: MOCK_ASSERTION,
       }),
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 
@@ -327,13 +323,13 @@ describe("KmsSigner", () => {
         Address: ADDRESS,
         Passkey: MOCK_ASSERTION,
       }),
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 
   it("signTransaction throws without provider", async () => {
     await expect(signer.signTransaction({ to: ADDRESS, value: 0n })).rejects.toThrow(
-      "Provider is required",
+      "Provider is required"
     );
   });
 
