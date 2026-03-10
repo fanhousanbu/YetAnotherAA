@@ -1,9 +1,10 @@
 import { ethers } from "ethers";
 import axios from "axios";
-import { BLSManager, BLSSignatureData } from "../../core/bls";
+import { BLSManager, BLSSignatureData, CumulativeT2SignatureData, CumulativeT3SignatureData } from "../../core/bls";
+import { TierLevel } from "../../core/tier";
 import { EthereumProvider } from "../providers/ethereum-provider";
 import { IStorageAdapter } from "../interfaces/storage-adapter";
-import { ISignerAdapter } from "../interfaces/signer-adapter";
+import { ISignerAdapter, PasskeyAssertionContext } from "../interfaces/signer-adapter";
 import { ILogger, ConsoleLogger } from "../interfaces/logger";
 import { ServerConfig } from "../config";
 
@@ -56,7 +57,11 @@ export class BLSSignatureService {
     return nodes;
   }
 
-  async generateBLSSignature(userId: string, userOpHash: string): Promise<BLSSignatureData> {
+  async generateBLSSignature(
+    userId: string,
+    userOpHash: string,
+    ctx?: PasskeyAssertionContext,
+  ): Promise<BLSSignatureData> {
     const manager = await this.ensureInitialized();
 
     const activeNodes = await this.getActiveSignerNodes();
@@ -122,7 +127,7 @@ export class BLSSignatureService {
       throw new Error(`User account not found for userId: ${userId}`);
     }
 
-    const wallet = await this.signer.getSigner(userId);
+    const wallet = await this.signer.getSigner(userId, ctx);
     const walletAddress = await wallet.getAddress();
 
     if (walletAddress.toLowerCase() !== account.signerAddress.toLowerCase()) {
@@ -148,5 +153,78 @@ export class BLSSignatureService {
   async packSignature(blsData: BLSSignatureData): Promise<string> {
     const manager = await this.ensureInitialized();
     return manager.packSignature(blsData);
+  }
+
+  // ── Tiered Signature Support (M4) ─────────────────────────────
+
+  /**
+   * Generate a tiered signature based on the required tier level.
+   *
+   * - Tier 1: raw 65-byte ECDSA (no algId prefix, backwards-compat)
+   * - Tier 2: algId 0x04 — P256 + BLS aggregate + messagePoint ECDSA
+   * - Tier 3: algId 0x05 — P256 + BLS + messagePoint ECDSA + Guardian ECDSA
+   *
+   * @param tier - Required tier level (1, 2, or 3)
+   * @param userId - User ID for account lookup
+   * @param userOpHash - The UserOp hash to sign
+   * @param p256Signature - P256 passkey signature (64 bytes, required for tier 2/3)
+   * @param guardianSigner - Guardian ethers.Signer (required for tier 3)
+   * @param ctx - Optional passkey assertion context for KMS signing
+   */
+  async generateTieredSignature(params: {
+    tier: TierLevel;
+    userId: string;
+    userOpHash: string;
+    p256Signature?: string;
+    guardianSigner?: ethers.Signer;
+    ctx?: PasskeyAssertionContext;
+  }): Promise<string> {
+    const { tier, userId, userOpHash, p256Signature, guardianSigner, ctx } = params;
+    const manager = await this.ensureInitialized();
+
+    if (tier === 1) {
+      // Tier 1: raw ECDSA signature (65 bytes, no algId prefix)
+      const account = await this.storage.findAccountByUserId(userId);
+      if (!account) throw new Error(`User account not found for userId: ${userId}`);
+
+      const wallet = await this.signer.getSigner(userId, ctx);
+      return wallet.signMessage(ethers.getBytes(userOpHash));
+    }
+
+    // Tier 2 and 3 both need BLS + P256
+    if (!p256Signature) {
+      throw new Error(`P256 signature required for Tier ${tier}`);
+    }
+
+    // Get BLS components (reuse existing generateBLSSignature for node signing + aggregation)
+    const blsData = await this.generateBLSSignature(userId, userOpHash, ctx);
+
+    if (tier === 2) {
+      const t2Data: CumulativeT2SignatureData = {
+        p256Signature,
+        nodeIds: blsData.nodeIds,
+        blsSignature: blsData.signature,
+        messagePoint: blsData.messagePoint,
+        messagePointSignature: blsData.messagePointSignature,
+      };
+      return manager.packCumulativeT2Signature(t2Data);
+    }
+
+    // Tier 3: also needs guardian signature
+    if (!guardianSigner) {
+      throw new Error("Guardian signer required for Tier 3");
+    }
+
+    const guardianSignature = await guardianSigner.signMessage(ethers.getBytes(userOpHash));
+
+    const t3Data: CumulativeT3SignatureData = {
+      p256Signature,
+      nodeIds: blsData.nodeIds,
+      blsSignature: blsData.signature,
+      messagePoint: blsData.messagePoint,
+      messagePointSignature: blsData.messagePointSignature,
+      guardianSignature,
+    };
+    return manager.packCumulativeT3Signature(t3Data);
   }
 }

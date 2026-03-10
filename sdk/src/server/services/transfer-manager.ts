@@ -2,14 +2,17 @@ import { ethers } from "ethers";
 import { EthereumProvider } from "../providers/ethereum-provider";
 import { AccountManager } from "./account-manager";
 import { BLSSignatureService } from "./bls-signature-service";
+import { GuardChecker } from "./guard-checker";
 import { PaymasterManager } from "./paymaster-manager";
 import { TokenService } from "./token-service";
 import { IStorageAdapter } from "../interfaces/storage-adapter";
-import { ISignerAdapter } from "../interfaces/signer-adapter";
+import { ISignerAdapter, PasskeyAssertionContext } from "../interfaces/signer-adapter";
+import { LegacyPasskeyAssertion } from "./kms-signer";
 import { EntryPointVersion } from "../constants/entrypoint";
 import { ILogger, ConsoleLogger } from "../interfaces/logger";
 import { UserOperation, PackedUserOperation } from "../../core/types";
 import { ERC4337Utils } from "../../core/erc4337";
+import { TierLevel } from "../../core/tier";
 
 // ── Public DTOs ───────────────────────────────────────────────────
 
@@ -21,6 +24,13 @@ export interface ExecuteTransferParams {
   usePaymaster?: boolean;
   paymasterAddress?: string;
   paymasterData?: string;
+  passkeyAssertion?: LegacyPasskeyAssertion;
+  /** P256 passkey signature (64 bytes hex). Required for AirAccount Tier 2/3. */
+  p256Signature?: string;
+  /** Guardian ethers.Signer instance. Required for AirAccount Tier 3. */
+  guardianSigner?: ethers.Signer;
+  /** Enable AirAccount tiered signature routing. Default: false (legacy BLS-only). */
+  useAirAccountTiering?: boolean;
 }
 
 export interface EstimateGasParams {
@@ -55,6 +65,8 @@ function generateId(): string {
 export class TransferManager {
   private readonly logger: ILogger;
 
+  private readonly guardChecker: GuardChecker | null;
+
   constructor(
     private readonly ethereum: EthereumProvider,
     private readonly accountManager: AccountManager,
@@ -63,9 +75,11 @@ export class TransferManager {
     private readonly tokenService: TokenService,
     private readonly storage: IStorageAdapter,
     private readonly signer: ISignerAdapter,
-    logger?: ILogger
+    logger?: ILogger,
+    guardChecker?: GuardChecker,
   ) {
     this.logger = logger ?? new ConsoleLogger("[TransferManager]");
+    this.guardChecker = guardChecker ?? null;
   }
 
   async executeTransfer(userId: string, params: ExecuteTransferParams): Promise<TransferResult> {
@@ -121,9 +135,35 @@ export class TransferManager {
     // Ensure wallet exists
     await this.signer.ensureSigner(userId);
 
-    // BLS signature
-    const blsData = await this.blsService.generateBLSSignature(userId, userOpHash);
-    userOp.signature = await this.blsService.packSignature(blsData);
+    // BLS signature (pass assertion context for KMS-backed signing)
+    const assertionCtx: PasskeyAssertionContext | undefined = params.passkeyAssertion
+      ? { assertion: params.passkeyAssertion }
+      : undefined;
+
+    if (params.useAirAccountTiering && this.guardChecker) {
+      // AirAccount tiered signature routing
+      const transferValue = params.tokenAddress ? 0n : ethers.parseEther(params.amount);
+      const preCheck = await this.guardChecker.preCheck(account.address, transferValue);
+
+      if (!preCheck.ok) {
+        throw new Error(`Guard pre-check failed: ${preCheck.errors.join("; ")}`);
+      }
+
+      this.logger.log(`Tier ${preCheck.tier} selected (algId=0x${preCheck.algId.toString(16).padStart(2, "0")})`);
+
+      userOp.signature = await this.blsService.generateTieredSignature({
+        tier: preCheck.tier as TierLevel,
+        userId,
+        userOpHash,
+        p256Signature: params.p256Signature,
+        guardianSigner: params.guardianSigner,
+        ctx: assertionCtx,
+      });
+    } else {
+      // Legacy: BLS triple signature (algId 0x01)
+      const blsData = await this.blsService.generateBLSSignature(userId, userOpHash, assertionCtx);
+      userOp.signature = await this.blsService.packSignature(blsData);
+    }
 
     // Create transfer record
     const transferId = generateId();
@@ -373,19 +413,45 @@ export class TransferManager {
 
     const gasPrices = await this.ethereum.getUserOperationGasPrice();
 
-    const baseUserOp: Record<string, unknown> = {
-      sender,
-      nonce: "0x" + nonce.toString(16),
-      initCode,
-      callData,
-      callGasLimit: "0x0",
-      verificationGasLimit: "0x0",
-      preVerificationGas: "0x0",
-      maxFeePerGas: gasPrices.maxFeePerGas,
-      maxPriorityFeePerGas: gasPrices.maxPriorityFeePerGas,
-      paymasterAndData: "0x",
-      signature: "0x",
-    };
+    const isV07 = version === EntryPointVersion.V0_7 || version === EntryPointVersion.V0_8;
+
+    let baseUserOp: Record<string, unknown>;
+    if (isV07) {
+      // v0.7/v0.8: use factory/factoryData and separate paymaster fields
+      let factory: string | undefined;
+      let factoryData: string | undefined;
+      if (initCode && initCode !== "0x" && initCode.length > 2) {
+        factory = initCode.slice(0, 42);
+        factoryData = initCode.length > 42 ? "0x" + initCode.slice(42) : "0x";
+      }
+      baseUserOp = {
+        sender,
+        nonce: "0x" + nonce.toString(16),
+        ...(factory ? { factory, factoryData } : {}),
+        callData,
+        callGasLimit: "0x0",
+        verificationGasLimit: "0x0",
+        preVerificationGas: "0x0",
+        maxFeePerGas: gasPrices.maxFeePerGas,
+        maxPriorityFeePerGas: gasPrices.maxPriorityFeePerGas,
+        signature: "0x",
+      };
+    } else {
+      // v0.6: use initCode and paymasterAndData
+      baseUserOp = {
+        sender,
+        nonce: "0x" + nonce.toString(16),
+        initCode,
+        callData,
+        callGasLimit: "0x0",
+        verificationGasLimit: "0x0",
+        preVerificationGas: "0x0",
+        maxFeePerGas: gasPrices.maxFeePerGas,
+        maxPriorityFeePerGas: gasPrices.maxPriorityFeePerGas,
+        paymasterAndData: "0x",
+        signature: "0x",
+      };
+    }
 
     // Paymaster
     let paymasterAndData = "0x";
@@ -420,7 +486,24 @@ export class TransferManager {
           `Paymaster failed to provide sponsorship data. The paymaster at ${paymasterAddress} may not be configured correctly.`
         );
       }
-      baseUserOp.paymasterAndData = paymasterAndData;
+
+      if (isV07) {
+        // For v0.7, split paymasterAndData into separate fields on the baseUserOp
+        baseUserOp.paymaster = paymasterAndData.slice(0, 42);
+        if (paymasterAndData.length >= 74) {
+          baseUserOp.paymasterVerificationGasLimit =
+            "0x" + BigInt("0x" + paymasterAndData.slice(42, 74)).toString(16);
+        }
+        if (paymasterAndData.length >= 106) {
+          baseUserOp.paymasterPostOpGasLimit =
+            "0x" + BigInt("0x" + paymasterAndData.slice(74, 106)).toString(16);
+        }
+        if (paymasterAndData.length > 106) {
+          baseUserOp.paymasterData = "0x" + paymasterAndData.slice(106);
+        }
+      } else {
+        baseUserOp.paymasterAndData = paymasterAndData;
+      }
     }
 
     // Gas estimation
