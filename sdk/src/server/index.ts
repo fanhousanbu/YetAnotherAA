@@ -73,7 +73,13 @@ export type { EntryPointConfig } from "./constants/entrypoint";
 
 // ── Re-export shared types from core ──────────────────────────────
 export type { UserOperation, PackedUserOperation, GasEstimate } from "../core/types";
-export type { BLSSignatureData, BLSNode, BLSConfig, CumulativeT2SignatureData, CumulativeT3SignatureData } from "../core/bls/types";
+export type {
+  BLSSignatureData,
+  BLSNode,
+  BLSConfig,
+  CumulativeT2SignatureData,
+  CumulativeT3SignatureData,
+} from "../core/bls/types";
 
 // ── Tier routing ─────────────────────────────────────────────────
 export {

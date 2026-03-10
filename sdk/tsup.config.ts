@@ -15,5 +15,5 @@ export default defineConfig({
   clean: true,
   minify: false, // Keep readable for debugging initially
   treeshake: true,
-  external: ["ethers", "@simplewebauthn/browser", "@simplewebauthn/server"],
+  external: ["ethers", "@simplewebauthn/browser"],
 });

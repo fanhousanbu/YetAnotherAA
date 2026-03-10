@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { ISignerAdapter } from "../interfaces/signer-adapter";
+import { ISignerAdapter, PasskeyAssertionContext } from "../interfaces/signer-adapter";
 
 /**
  * Local wallet signer — backs all users with a single private key.
@@ -19,7 +19,7 @@ export class LocalWalletSigner implements ISignerAdapter {
     return this.wallet.address;
   }
 
-  async getSigner(_userId: string): Promise<ethers.Signer> {
+  async getSigner(_userId: string, _ctx?: PasskeyAssertionContext): Promise<ethers.Signer> {
     return this.wallet;
   }
 

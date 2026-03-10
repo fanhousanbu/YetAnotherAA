@@ -1,25 +1,40 @@
 import axios from "axios";
 import { ethers } from "ethers";
-import { KmsManager, KmsSigner } from "../services/kms-signer";
+import { KmsManager, KmsSigner, LegacyPasskeyAssertion } from "../services/kms-signer";
 import { SilentLogger } from "../interfaces/logger";
 
-jest.mock("axios");
-const mockAxios = axios as jest.Mocked<typeof axios>;
+// Mock axios.create to return an object with mock post/get methods
+const mockPost = jest.fn();
+const mockGet = jest.fn();
+jest.mock("axios", () => ({
+  ...jest.requireActual("axios"),
+  create: jest.fn(() => ({
+    post: mockPost,
+    get: mockGet,
+  })),
+}));
 
 const ENDPOINT = "https://kms.test.example";
 const ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+const API_KEY = "test-api-key";
 
-// A valid compact ECDSA signature (r + s components, 64 bytes each, v byte)
-// Arbitrary valid bytes — not cryptographically meaningful, just format-correct
 const FAKE_SIG_HEX =
   "1b" +
   "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
   "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
+const MOCK_ASSERTION: LegacyPasskeyAssertion = {
+  AuthenticatorData: "0xaabbcc",
+  ClientDataHash: "0xddeeff",
+  Signature: "0x112233",
+};
+
 // ── KmsManager ────────────────────────────────────────────────────────
 
 describe("KmsManager", () => {
-  afterEach(() => jest.clearAllMocks());
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 
   describe("isKmsEnabled", () => {
     it("returns false when kmsEnabled is not set", () => {
@@ -35,108 +50,208 @@ describe("KmsManager", () => {
     });
   });
 
+  describe("constructor", () => {
+    it("creates axios instance with apiKey header when provided", () => {
+      new KmsManager({
+        kmsEndpoint: ENDPOINT,
+        kmsEnabled: true,
+        kmsApiKey: API_KEY,
+        logger: new SilentLogger(),
+      });
+
+      expect(axios.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          baseURL: ENDPOINT,
+          headers: expect.objectContaining({
+            "x-api-key": API_KEY,
+          }),
+        }),
+      );
+    });
+
+    it("does not add apiKey header when not provided", () => {
+      new KmsManager({
+        kmsEndpoint: ENDPOINT,
+        kmsEnabled: true,
+        logger: new SilentLogger(),
+      });
+
+      const callArgs = (axios.create as jest.Mock).mock.calls[0][0];
+      expect(callArgs.headers).not.toHaveProperty("x-api-key");
+    });
+  });
+
   describe("createKey", () => {
     it("throws when KMS is not enabled", async () => {
       const m = new KmsManager({ kmsEndpoint: ENDPOINT, kmsEnabled: false });
-      await expect(m.createKey("desc")).rejects.toThrow("KMS service is not enabled");
+      await expect(m.createKey("desc", "0xpubkey")).rejects.toThrow(
+        "KMS service is not enabled",
+      );
     });
 
-    it("POSTs to /CreateKey and returns response data", async () => {
-      const responseData = {
-        KeyMetadata: {
-          KeyId: "key-abc",
-          Arn: "arn:aws:kms:us-east-1:123:key/key-abc",
-          CreationDate: "2024-01-01",
-          Enabled: true,
-          Description: "test",
-          KeyUsage: "SIGN_VERIFY",
-          KeySpec: "ECC_SECG_P256K1",
-          Origin: "AWS_KMS",
-          Address: ADDRESS,
+    it("POSTs to /CreateKey with x-amz-target header and PasskeyPublicKey", async () => {
+      mockPost.mockResolvedValueOnce({
+        data: {
+          KeyMetadata: { KeyId: "key-abc" },
+          Status: "deriving",
         },
-        Mnemonic: "word1 word2 word3",
-        Address: ADDRESS,
-      };
-      mockAxios.post.mockResolvedValueOnce({ data: responseData });
+      });
 
       const m = new KmsManager({
         kmsEndpoint: ENDPOINT,
         kmsEnabled: true,
         logger: new SilentLogger(),
       });
-      const result = await m.createKey("my-key");
+      const result = await m.createKey("my-key", "0xpubkey123");
 
-      expect(mockAxios.post).toHaveBeenCalledWith(
-        `${ENDPOINT}/CreateKey`,
-        expect.objectContaining({
+      expect(mockPost).toHaveBeenCalledWith(
+        "/CreateKey",
+        {
           Description: "my-key",
           KeyUsage: "SIGN_VERIFY",
           KeySpec: "ECC_SECG_P256K1",
+          Origin: "EXTERNAL_KMS",
+          PasskeyPublicKey: "0xpubkey123",
+        },
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            "x-amz-target": "TrentService.CreateKey",
+          }),
         }),
-        expect.objectContaining({ headers: expect.any(Object) })
       );
       expect(result.KeyMetadata.KeyId).toBe("key-abc");
-      expect(result.Address).toBe(ADDRESS);
     });
   });
 
   describe("signHash", () => {
     it("throws when KMS is not enabled", async () => {
       const m = new KmsManager({ kmsEndpoint: ENDPOINT });
-      await expect(m.signHash(ADDRESS, "0xhash")).rejects.toThrow("KMS service is not enabled");
+      await expect(
+        m.signHash("0xhash", MOCK_ASSERTION, { Address: ADDRESS }),
+      ).rejects.toThrow("KMS service is not enabled");
     });
 
     it("adds 0x prefix to hash that lacks it", async () => {
-      mockAxios.post.mockResolvedValueOnce({ data: { Signature: "aabbcc" } });
+      mockPost.mockResolvedValueOnce({ data: { Signature: "aabbcc" } });
 
       const m = new KmsManager({
         kmsEndpoint: ENDPOINT,
         kmsEnabled: true,
         logger: new SilentLogger(),
       });
-      await m.signHash(ADDRESS, "noprefixhash");
+      await m.signHash("noprefixhash", MOCK_ASSERTION, { Address: ADDRESS });
 
-      expect(mockAxios.post).toHaveBeenCalledWith(
-        `${ENDPOINT}/SignHash`,
-        expect.objectContaining({ Hash: "0xnoprefixhash", Address: ADDRESS }),
-        expect.any(Object)
+      expect(mockPost).toHaveBeenCalledWith(
+        "/SignHash",
+        expect.objectContaining({
+          Hash: "0xnoprefixhash",
+          Address: ADDRESS,
+          Passkey: MOCK_ASSERTION,
+        }),
+        expect.any(Object),
       );
     });
 
     it("preserves existing 0x prefix on hash", async () => {
-      mockAxios.post.mockResolvedValueOnce({ data: { Signature: "ddeeff" } });
+      mockPost.mockResolvedValueOnce({ data: { Signature: "ddeeff" } });
 
       const m = new KmsManager({
         kmsEndpoint: ENDPOINT,
         kmsEnabled: true,
         logger: new SilentLogger(),
       });
-      await m.signHash(ADDRESS, "0xalreadyprefixed");
+      await m.signHash("0xalreadyprefixed", MOCK_ASSERTION, { Address: ADDRESS });
 
-      expect(mockAxios.post).toHaveBeenCalledWith(
-        `${ENDPOINT}/SignHash`,
+      expect(mockPost).toHaveBeenCalledWith(
+        "/SignHash",
         expect.objectContaining({ Hash: "0xalreadyprefixed" }),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
-    it("returns the KMS response data", async () => {
-      mockAxios.post.mockResolvedValueOnce({ data: { Signature: FAKE_SIG_HEX } });
+    it("supports KeyId target", async () => {
+      mockPost.mockResolvedValueOnce({ data: { Signature: FAKE_SIG_HEX } });
 
       const m = new KmsManager({
         kmsEndpoint: ENDPOINT,
         kmsEnabled: true,
         logger: new SilentLogger(),
       });
-      const result = await m.signHash(ADDRESS, "0xhash");
-      expect(result.Signature).toBe(FAKE_SIG_HEX);
+      await m.signHash("0xhash", MOCK_ASSERTION, { KeyId: "key-1" });
+
+      expect(mockPost).toHaveBeenCalledWith(
+        "/SignHash",
+        expect.objectContaining({ KeyId: "key-1" }),
+        expect.any(Object),
+      );
+    });
+  });
+
+  describe("WebAuthn methods", () => {
+    it("beginRegistration POSTs to /BeginRegistration", async () => {
+      mockPost.mockResolvedValueOnce({
+        data: { ChallengeId: "ch-1", Options: {} },
+      });
+
+      const m = new KmsManager({
+        kmsEndpoint: ENDPOINT,
+        kmsEnabled: true,
+        logger: new SilentLogger(),
+      });
+      const result = await m.beginRegistration({ UserName: "test@test.com" });
+
+      expect(mockPost).toHaveBeenCalledWith("/BeginRegistration", {
+        UserName: "test@test.com",
+      });
+      expect(result.ChallengeId).toBe("ch-1");
+    });
+
+    it("beginAuthentication POSTs to /BeginAuthentication", async () => {
+      mockPost.mockResolvedValueOnce({
+        data: { ChallengeId: "ch-2", Options: {} },
+      });
+
+      const m = new KmsManager({
+        kmsEndpoint: ENDPOINT,
+        kmsEnabled: true,
+        logger: new SilentLogger(),
+      });
+      const result = await m.beginAuthentication({ Address: ADDRESS });
+
+      expect(mockPost).toHaveBeenCalledWith("/BeginAuthentication", {
+        Address: ADDRESS,
+      });
+      expect(result.ChallengeId).toBe("ch-2");
+    });
+  });
+
+  describe("getKeyStatus", () => {
+    it("GETs /KeyStatus with KeyId query param", async () => {
+      mockGet.mockResolvedValueOnce({
+        data: { KeyId: "key-1", Status: "ready", Address: ADDRESS },
+      });
+
+      const m = new KmsManager({
+        kmsEndpoint: ENDPOINT,
+        kmsEnabled: true,
+        logger: new SilentLogger(),
+      });
+      const result = await m.getKeyStatus("key-1");
+
+      expect(mockGet).toHaveBeenCalledWith("/KeyStatus", {
+        params: { KeyId: "key-1" },
+      });
+      expect(result.Status).toBe("ready");
+      expect(result.Address).toBe(ADDRESS);
     });
   });
 
   describe("createKmsSigner", () => {
     it("throws when KMS is not enabled", () => {
       const m = new KmsManager({ kmsEndpoint: ENDPOINT });
-      expect(() => m.createKmsSigner("key-1", ADDRESS)).toThrow("KMS service is not enabled");
+      expect(() =>
+        m.createKmsSigner("key-1", ADDRESS, () => Promise.resolve(MOCK_ASSERTION)),
+      ).toThrow("KMS service is not enabled");
     });
 
     it("returns a KmsSigner instance", () => {
@@ -145,7 +260,8 @@ describe("KmsManager", () => {
         kmsEnabled: true,
         logger: new SilentLogger(),
       });
-      expect(m.createKmsSigner("key-1", ADDRESS)).toBeInstanceOf(KmsSigner);
+      const s = m.createKmsSigner("key-1", ADDRESS, () => Promise.resolve(MOCK_ASSERTION));
+      expect(s).toBeInstanceOf(KmsSigner);
     });
   });
 });
@@ -157,45 +273,47 @@ describe("KmsSigner", () => {
   let signer: KmsSigner;
 
   beforeEach(() => {
-    mockAxios.post.mockReset();
+    mockPost.mockReset();
     manager = new KmsManager({
       kmsEndpoint: ENDPOINT,
       kmsEnabled: true,
       logger: new SilentLogger(),
     });
-    signer = manager.createKmsSigner("key-1", ADDRESS);
+    signer = manager.createKmsSigner("key-1", ADDRESS, () =>
+      Promise.resolve(MOCK_ASSERTION),
+    );
   });
 
   it("getAddress returns the KMS-managed address", async () => {
     expect(await signer.getAddress()).toBe(ADDRESS);
   });
 
-  it("signMessage calls signHash with EIP-191 message hash", async () => {
-    mockAxios.post.mockResolvedValueOnce({ data: { Signature: FAKE_SIG_HEX } });
+  it("signMessage calls signHash with EIP-191 message hash and assertion", async () => {
+    mockPost.mockResolvedValueOnce({ data: { Signature: FAKE_SIG_HEX } });
 
     const result = await signer.signMessage("hello");
     expect(result).toBe("0x" + FAKE_SIG_HEX);
 
-    // Should have called signHash with the EIP-191 prefixed hash
-    expect(mockAxios.post).toHaveBeenCalledWith(
-      `${ENDPOINT}/SignHash`,
+    expect(mockPost).toHaveBeenCalledWith(
+      "/SignHash",
       expect.objectContaining({
         Address: ADDRESS,
         Hash: expect.stringMatching(/^0x[0-9a-f]{64}$/i),
+        Passkey: MOCK_ASSERTION,
       }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
   it("signMessage handles Uint8Array input", async () => {
-    mockAxios.post.mockResolvedValueOnce({ data: { Signature: FAKE_SIG_HEX } });
+    mockPost.mockResolvedValueOnce({ data: { Signature: FAKE_SIG_HEX } });
     const bytes = new TextEncoder().encode("hello");
     const result = await signer.signMessage(bytes);
     expect(result).toBe("0x" + FAKE_SIG_HEX);
   });
 
   it("signTypedData calls signHash with typed data hash", async () => {
-    mockAxios.post.mockResolvedValueOnce({ data: { Signature: FAKE_SIG_HEX } });
+    mockPost.mockResolvedValueOnce({ data: { Signature: FAKE_SIG_HEX } });
 
     const domain = { name: "TestApp", version: "1", chainId: 1 };
     const types = { Message: [{ name: "content", type: "string" }] };
@@ -203,16 +321,19 @@ describe("KmsSigner", () => {
 
     const result = await signer.signTypedData(domain, types, value);
     expect(result).toBe("0x" + FAKE_SIG_HEX);
-    expect(mockAxios.post).toHaveBeenCalledWith(
-      `${ENDPOINT}/SignHash`,
-      expect.objectContaining({ Address: ADDRESS }),
-      expect.any(Object)
+    expect(mockPost).toHaveBeenCalledWith(
+      "/SignHash",
+      expect.objectContaining({
+        Address: ADDRESS,
+        Passkey: MOCK_ASSERTION,
+      }),
+      expect.any(Object),
     );
   });
 
   it("signTransaction throws without provider", async () => {
     await expect(signer.signTransaction({ to: ADDRESS, value: 0n })).rejects.toThrow(
-      "Provider is required"
+      "Provider is required",
     );
   });
 
@@ -222,7 +343,6 @@ describe("KmsSigner", () => {
 
     expect(connected).toBeInstanceOf(KmsSigner);
     expect(connected).not.toBe(signer);
-    // Verify the new signer has the provider (can call provider-requiring methods)
     expect(connected.provider).toBe(provider);
   });
 });

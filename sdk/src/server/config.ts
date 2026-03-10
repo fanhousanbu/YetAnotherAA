@@ -41,6 +41,8 @@ export interface ServerConfig {
   kmsEndpoint?: string;
   /** Whether KMS signing is enabled. */
   kmsEnabled?: boolean;
+  /** KMS API key for authenticated requests. */
+  kmsApiKey?: string;
 
   /** Storage adapter (required). */
   storage: IStorageAdapter;

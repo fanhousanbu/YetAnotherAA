@@ -76,7 +76,7 @@ export class TransferManager {
     private readonly storage: IStorageAdapter,
     private readonly signer: ISignerAdapter,
     logger?: ILogger,
-    guardChecker?: GuardChecker,
+    guardChecker?: GuardChecker
   ) {
     this.logger = logger ?? new ConsoleLogger("[TransferManager]");
     this.guardChecker = guardChecker ?? null;
@@ -149,7 +149,9 @@ export class TransferManager {
         throw new Error(`Guard pre-check failed: ${preCheck.errors.join("; ")}`);
       }
 
-      this.logger.log(`Tier ${preCheck.tier} selected (algId=0x${preCheck.algId.toString(16).padStart(2, "0")})`);
+      this.logger.log(
+        `Tier ${preCheck.tier} selected (algId=0x${preCheck.algId.toString(16).padStart(2, "0")})`
+      );
 
       userOp.signature = await this.blsService.generateTieredSignature({
         tier: preCheck.tier as TierLevel,

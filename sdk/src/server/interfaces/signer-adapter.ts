@@ -1,4 +1,13 @@
 import { ethers } from "ethers";
+import { LegacyPasskeyAssertion } from "../services/kms-signer";
+
+/**
+ * Context for passing Passkey assertion data through the signing chain.
+ * Used by KMS-backed signers to authenticate signing operations.
+ */
+export interface PasskeyAssertionContext {
+  assertion: LegacyPasskeyAssertion;
+}
 
 /**
  * Pluggable signer adapter — replaces NestJS AuthService wallet management.
@@ -9,7 +18,7 @@ export interface ISignerAdapter {
   getAddress(userId: string): Promise<string>;
 
   /** Get an ethers Signer instance for a given user. */
-  getSigner(userId: string): Promise<ethers.Signer>;
+  getSigner(userId: string, ctx?: PasskeyAssertionContext): Promise<ethers.Signer>;
 
   /**
    * Ensure a signer exists for the user (create on demand if needed).

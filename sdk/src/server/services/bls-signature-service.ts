@@ -1,6 +1,11 @@
 import { ethers } from "ethers";
 import axios from "axios";
-import { BLSManager, BLSSignatureData, CumulativeT2SignatureData, CumulativeT3SignatureData } from "../../core/bls";
+import {
+  BLSManager,
+  BLSSignatureData,
+  CumulativeT2SignatureData,
+  CumulativeT3SignatureData,
+} from "../../core/bls";
 import { TierLevel } from "../../core/tier";
 import { EthereumProvider } from "../providers/ethereum-provider";
 import { IStorageAdapter } from "../interfaces/storage-adapter";
@@ -60,7 +65,7 @@ export class BLSSignatureService {
   async generateBLSSignature(
     userId: string,
     userOpHash: string,
-    ctx?: PasskeyAssertionContext,
+    ctx?: PasskeyAssertionContext
   ): Promise<BLSSignatureData> {
     const manager = await this.ensureInitialized();
 
