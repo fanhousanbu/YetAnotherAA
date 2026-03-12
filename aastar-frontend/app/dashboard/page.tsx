@@ -579,7 +579,7 @@ function DashboardContent() {
                                 <CheckCircleIcon className="w-5 h-5 text-emerald-500 mr-2" />
                                 <div>
                                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {paymaster.name === "pimlico-sepolia"
+                                    {paymaster.name === "pimlico-optimism" || paymaster.name === "pimlico-sepolia"
                                       ? "Pimlico"
                                       : paymaster.name}
                                   </p>

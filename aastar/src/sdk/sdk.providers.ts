@@ -63,7 +63,7 @@ export const yaaaServerClientProvider: Provider = {
     const serverConfig: ServerConfig = {
       rpcUrl: configService.get<string>("ethRpcUrl"),
       bundlerRpcUrl: configService.get<string>("bundlerRpcUrl"),
-      chainId: configService.get<number>("chainId") || 11155111,
+      chainId: configService.get<number>("chainId") || 10,
       entryPoints,
       defaultVersion,
       blsSeedNodes,

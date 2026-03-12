@@ -1,7 +1,6 @@
-import { Injectable, Inject, BadRequestException, UnauthorizedException } from "@nestjs/common";
+import { Injectable, Inject, BadRequestException } from "@nestjs/common";
 import { YAAAServerClient } from "@yaaa/sdk/server";
 import { YAAA_SERVER_CLIENT } from "../sdk/sdk.providers";
-import { AuthService } from "../auth/auth.service";
 import { AddressBookService } from "./address-book.service";
 import { ExecuteTransferDto } from "./dto/execute-transfer.dto";
 import { EstimateGasDto } from "./dto/estimate-gas.dto";
@@ -10,33 +9,19 @@ import { EstimateGasDto } from "./dto/estimate-gas.dto";
 export class TransferService {
   constructor(
     @Inject(YAAA_SERVER_CLIENT) private client: YAAAServerClient,
-    private authService: AuthService,
-    private addressBookService: AddressBookService
+    private addressBookService: AddressBookService,
   ) {}
 
   async executeTransfer(userId: string, transferDto: ExecuteTransferDto) {
-    // Verify passkey before proceeding (backend-specific, SDK doesn't handle auth)
-    if (!transferDto.passkeyCredential) {
-      throw new BadRequestException("Passkey verification is required for transactions");
-    }
-
-    try {
-      const verification = await this.authService.completeTransactionVerification(
-        userId,
-        transferDto.passkeyCredential
+    if (!transferDto.passkeyAssertion) {
+      throw new BadRequestException(
+        "Passkey assertion is required for transactions",
       );
-
-      if (!verification.verified) {
-        throw new UnauthorizedException("Passkey verification failed");
-      }
-    } catch (error) {
-      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new UnauthorizedException("Transaction verification failed");
     }
 
-    // Delegate to SDK for core transfer logic
+    // Pass the Legacy assertion through to the SDK, which forwards it
+    // to BLSSignatureService → ISignerAdapter → KmsSigner → KMS SignHash.
+    // The Legacy format is reusable, enabling the two ECDSA signs needed for BLS.
     const result = await this.client.transfers.executeTransfer(userId, {
       to: transferDto.to,
       amount: transferDto.amount,
@@ -45,6 +30,7 @@ export class TransferService {
       usePaymaster: transferDto.usePaymaster,
       paymasterAddress: transferDto.paymasterAddress,
       paymasterData: transferDto.paymasterData,
+      passkeyAssertion: transferDto.passkeyAssertion,
     });
 
     // Record in address book after successful submission (fire-and-forget)
@@ -77,17 +63,16 @@ export class TransferService {
   private async recordAddressBookEntry(
     userId: string,
     to: string,
-    transferId: string
+    transferId: string,
   ): Promise<void> {
     try {
-      // Wait a bit for the transfer to potentially complete
       await new Promise(resolve => setTimeout(resolve, 5000));
       const status = await this.client.transfers.getTransferStatus(userId, transferId);
       if (status && (status as any).transactionHash) {
         await this.addressBookService.recordSuccessfulTransfer(
           userId,
           to,
-          (status as any).transactionHash
+          (status as any).transactionHash,
         );
       }
     } catch {

@@ -194,7 +194,7 @@ export class UserNFTService {
       collectionName,
       standard,
       amount: nftData.amount || 1,
-      chainId: this.configService.get<number>("chainId", 11155111),
+      chainId: this.configService.get<number>("chainId", 10),
       isActive: true,
       metadata,
       createdAt: new Date().toISOString(),

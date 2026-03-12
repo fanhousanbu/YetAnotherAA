@@ -77,6 +77,13 @@ export class JsonAdapter implements PersistenceAdapter {
     return users.find(u => u.id === id);
   }
 
+  async findUserByWalletAddress(walletAddress: string): Promise<any> {
+    const users = await this.getUsers();
+    return users.find(
+      u => u.walletAddress && u.walletAddress.toLowerCase() === walletAddress.toLowerCase(),
+    );
+  }
+
   // Accounts operations
   async getAccounts(): Promise<any[]> {
     return this.readJSON("accounts.json");

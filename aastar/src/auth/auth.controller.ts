@@ -3,9 +3,6 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
-import { PasskeyRegisterBeginDto, PasskeyRegisterDto } from "./dto/passkey-register.dto";
-import { PasskeyLoginDto } from "./dto/passkey-login.dto";
-import { DevicePasskeyBeginDto, DevicePasskeyRegisterDto } from "./dto/device-passkey.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { LocalAuthGuard } from "./guards/local-auth.guard";
 
@@ -21,7 +18,7 @@ export class AuthController {
   }
 
   @Post("login")
-  @ApiOperation({ summary: "User login" })
+  @ApiOperation({ summary: "Password login (fallback)" })
   @UseGuards(LocalAuthGuard)
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
@@ -45,59 +42,61 @@ export class AuthController {
     };
   }
 
-  // Passkey注册相关API
-  @Post("passkey/register/begin")
-  @ApiOperation({ summary: "Begin passkey registration" })
-  async beginPasskeyRegistration(@Body() beginDto: PasskeyRegisterBeginDto) {
-    return this.authService.beginPasskeyRegistration(beginDto);
+  // ── KMS Passkey Login ──────────────────────────────────────────
+
+  @Post("login/kms/begin")
+  @ApiOperation({
+    summary: "Begin KMS Passkey login",
+    description:
+      "Returns a loginHash and walletAddress. Frontend uses walletAddress " +
+      "to call KMS BeginAuthentication, then submits the credential back.",
+  })
+  async beginKmsLogin(@Body() body: { email: string }) {
+    return this.authService.generateLoginChallenge(body.email);
   }
 
-  @Post("passkey/register/complete")
-  @ApiOperation({ summary: "Complete passkey registration" })
-  async completePasskeyRegistration(@Body() registerDto: PasskeyRegisterDto) {
-    return this.authService.completePasskeyRegistration(registerDto);
+  @Post("login/kms/complete")
+  @ApiOperation({
+    summary: "Complete KMS Passkey login",
+    description:
+      "Backend calls KMS SignHash with the WebAuthn credential to verify " +
+      "the user's identity, then issues a JWT.",
+  })
+  async completeKmsLogin(
+    @Body() body: { address: string; challengeId: string; credential: any },
+  ) {
+    return this.authService.verifyKmsLogin(
+      body.address,
+      body.challengeId,
+      body.credential,
+    );
   }
 
-  // Passkey登录相关API
-  @Post("passkey/login/begin")
-  @ApiOperation({ summary: "Begin passkey login" })
-  async beginPasskeyLogin() {
-    return this.authService.beginPasskeyLogin();
-  }
+  // ── Wallet Linking ─────────────────────────────────────────────
 
-  @Post("passkey/login/complete")
-  @ApiOperation({ summary: "Complete passkey login" })
-  async completePasskeyLogin(@Body() loginDto: PasskeyLoginDto) {
-    return this.authService.completePasskeyLogin(loginDto);
-  }
-
-  // 新设备Passkey注册相关API
-  @Post("device/passkey/begin")
-  @ApiOperation({ summary: "Begin device passkey registration" })
-  async beginDevicePasskeyRegistration(@Body() beginDto: DevicePasskeyBeginDto) {
-    return this.authService.beginDevicePasskeyRegistration(beginDto);
-  }
-
-  @Post("device/passkey/complete")
-  @ApiOperation({ summary: "Complete device passkey registration" })
-  async completeDevicePasskeyRegistration(@Body() registerDto: DevicePasskeyRegisterDto) {
-    return this.authService.completeDevicePasskeyRegistration(registerDto);
-  }
-
-  // 交易Passkey验证相关API
-  @Post("transaction/verify/begin")
+  @Post("wallet/link")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Begin transaction passkey verification" })
-  async beginTransactionVerification(@Request() req) {
-    return this.authService.beginTransactionVerification(req.user.sub);
-  }
-
-  @Post("transaction/verify/complete")
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Complete transaction passkey verification" })
-  async completeTransactionVerification(@Request() req, @Body() body: { credential: any }) {
-    return this.authService.completeTransactionVerification(req.user.sub, body.credential);
+  @ApiOperation({
+    summary: "Link KMS wallet to user account",
+    description:
+      "Called after KMS key creation and address derivation. " +
+      "Associates the KMS key with the authenticated user.",
+  })
+  async linkWallet(
+    @Request() req,
+    @Body()
+    body: {
+      kmsKeyId: string;
+      address: string;
+      credentialId?: string;
+    },
+  ) {
+    return this.authService.linkWallet(
+      req.user.sub,
+      body.kmsKeyId,
+      body.address,
+      body.credentialId,
+    );
   }
 }

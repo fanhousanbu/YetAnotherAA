@@ -23,14 +23,21 @@ export class User {
   walletAddress?: string;
 
   @Column({ nullable: true })
+  kmsKeyId?: string;
+
+  /** WebAuthn credential ID stored in KMS, used for wallet association */
+  @Column({ nullable: true })
+  kmsCredentialId?: string;
+
+  /** @deprecated Kept for data migration compatibility. No longer written. */
+  @Column({ nullable: true })
   encryptedPrivateKey?: string;
 
+  /** @deprecated Kept for data migration compatibility. No longer written. */
   @Column({ nullable: true })
   mnemonic?: string;
 
-  @Column({ nullable: true })
-  kmsKeyId?: string;
-
+  /** @deprecated Always true for new users. Kept for migration compatibility. */
   @Column({ default: false })
   useKms: boolean;
 

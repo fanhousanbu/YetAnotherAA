@@ -5,6 +5,7 @@ export interface PersistenceAdapter {
   updateUser(id: string, updates: any): Promise<void>;
   findUserByEmail(email: string): Promise<any>;
   findUserById(id: string): Promise<any>;
+  findUserByWalletAddress(walletAddress: string): Promise<any>;
 
   // Accounts
   getAccounts(): Promise<any[]>;

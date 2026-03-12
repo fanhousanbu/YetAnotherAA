@@ -40,35 +40,15 @@ export const authAPI = {
 
   getProfile: () => api.get("/auth/profile"),
 
-  // Passkey registration
-  beginPasskeyRegistration: (data: { email: string; username?: string; password: string }) =>
-    api.post("/auth/passkey/register/begin", data),
+  // KMS Passkey login
+  beginKmsLogin: (email: string) => api.post("/auth/login/kms/begin", { email }),
 
-  completePasskeyRegistration: (data: {
-    email: string;
-    username?: string;
-    password: string;
-    credential: any;
-  }) => api.post("/auth/passkey/register/complete", data),
+  completeKmsLogin: (data: { address: string; challengeId: string; credential: any }) =>
+    api.post("/auth/login/kms/complete", data),
 
-  // Passkey login
-  beginPasskeyLogin: () => api.post("/auth/passkey/login/begin"),
-
-  completePasskeyLogin: (data: { credential: any }) =>
-    api.post("/auth/passkey/login/complete", data),
-
-  // Device passkey registration
-  beginDevicePasskeyRegistration: (data: { email: string; password: string }) =>
-    api.post("/auth/device/passkey/begin", data),
-
-  completeDevicePasskeyRegistration: (data: { email: string; password: string; credential: any }) =>
-    api.post("/auth/device/passkey/complete", data),
-
-  // Transaction verification
-  beginTransactionVerification: () => api.post("/auth/transaction/verify/begin"),
-
-  completeTransactionVerification: (credential: any) =>
-    api.post("/auth/transaction/verify/complete", { credential }),
+  // Wallet linking (JWT-protected)
+  linkWallet: (data: { kmsKeyId: string; address: string; credentialId?: string }) =>
+    api.post("/auth/wallet/link", data),
 };
 
 // Account API
@@ -96,12 +76,15 @@ export const transferAPI = {
     to: string;
     amount: string;
     data?: string;
-    nodeIndices?: number[];
     usePaymaster?: boolean;
     paymasterAddress?: string;
     paymasterData?: string;
     tokenAddress?: string;
-    passkeyCredential: any;
+    passkeyAssertion: {
+      AuthenticatorData: string;
+      ClientDataHash: string;
+      Signature: string;
+    };
   }) => api.post("/transfer/execute", data),
 
   estimate: (data: {

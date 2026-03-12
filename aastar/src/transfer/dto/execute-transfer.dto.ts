@@ -1,5 +1,27 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, IsOptional, IsEthereumAddress, IsBoolean, IsObject } from "class-validator";
+import {
+  IsString,
+  IsOptional,
+  IsEthereumAddress,
+  IsBoolean,
+  IsObject,
+  ValidateNested,
+} from "class-validator";
+import { Type } from "class-transformer";
+
+export class PasskeyAssertionDto {
+  @ApiProperty({ description: "Authenticator data (hex)", example: "0x..." })
+  @IsString()
+  AuthenticatorData: string;
+
+  @ApiProperty({ description: "SHA-256 hash of clientDataJSON (hex)", example: "0x..." })
+  @IsString()
+  ClientDataHash: string;
+
+  @ApiProperty({ description: "P-256 signature (hex)", example: "0x..." })
+  @IsString()
+  Signature: string;
+}
 
 export class ExecuteTransferDto {
   @ApiProperty({ description: "Recipient address", example: "0x..." })
@@ -46,9 +68,13 @@ export class ExecuteTransferDto {
   paymasterData?: string;
 
   @ApiProperty({
-    description: "Passkey verification credential (required for transaction verification)",
+    description:
+      "Legacy Passkey assertion (extracted from WebAuthn authentication response). " +
+      "Reusable for BLS dual-signing.",
     required: true,
   })
   @IsObject()
-  passkeyCredential: any;
+  @ValidateNested()
+  @Type(() => PasskeyAssertionDto)
+  passkeyAssertion: PasskeyAssertionDto;
 }

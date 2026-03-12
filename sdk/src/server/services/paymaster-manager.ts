@@ -77,11 +77,48 @@ export class PaymasterManager {
       if (isV07OrV08) {
         const paymasterVerificationGasLimit = BigInt(0x30000);
         const paymasterPostOpGasLimit = BigInt(0x30000);
+
+        // Try to find a supported gas token from PaymasterV4 contract
+        let gasTokenData = "0x";
+        try {
+          const provider = this.ethereum.getProvider();
+          const pmContract = new ethers.Contract(formattedAddress, [
+            "function getSupportedGasTokens() view returns (address[])",
+            "function tokenPrices(address) view returns (uint256)",
+          ], provider);
+
+          // First try getSupportedGasTokens()
+          try {
+            const gasTokens: string[] = await pmContract.getSupportedGasTokens();
+            if (gasTokens && gasTokens.length > 0) {
+              gasTokenData = gasTokens[0];
+              this.logger.log(`PaymasterV4 gas token (from list): ${gasTokenData}`);
+            }
+          } catch {
+            // Fallback: check known gas tokens via tokenPrices
+            const knownGasTokens = [
+              "0xDf669834F04988BcEE0E3B6013B6b867Bd38778d", // aPNTs (Sepolia)
+            ];
+            for (const token of knownGasTokens) {
+              try {
+                const price = await pmContract.tokenPrices(token);
+                if (price > 0n) {
+                  gasTokenData = token;
+                  this.logger.log(`PaymasterV4 gas token (from price check): ${gasTokenData}`);
+                  break;
+                }
+              } catch { /* skip */ }
+            }
+          }
+        } catch {
+          this.logger.log("Could not query gas tokens from paymaster, proceeding without");
+        }
+
         return ethers.concat([
           formattedAddress,
           ethers.zeroPadValue(ethers.toBeHex(paymasterVerificationGasLimit), 16),
           ethers.zeroPadValue(ethers.toBeHex(paymasterPostOpGasLimit), 16),
-          "0x",
+          gasTokenData,
         ]);
       }
 
