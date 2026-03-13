@@ -1,7 +1,7 @@
-# YAAA SDK Examples
+# AirAccount SDK Examples
 
-This directory contains example code demonstrating how to use the YAAA SDK in
-your applications.
+This directory contains example code demonstrating how to use the AirAccount SDK
+(`@yaaa/sdk`) in your applications.
 
 ## Quick Start
 
@@ -11,7 +11,7 @@ your applications.
 npm install @yaaa/sdk
 ```
 
-### Basic Setup
+### Browser Client Setup
 
 ```typescript
 import { YAAAClient } from "@yaaa/sdk";
@@ -20,99 +20,116 @@ const yaaa = new YAAAClient({
   apiURL: "https://api.your-backend.com/v1",
   tokenProvider: () => localStorage.getItem("token"),
   bls: {
-    seedNodes: ["https://validator.your-domain.com"],
+    seedNodes: ["https://signer1.aastar.io"],
   },
+});
+```
+
+### Server Client Setup
+
+```typescript
+import {
+  YAAAServerClient,
+  MemoryStorage,
+  LocalWalletSigner,
+} from "@yaaa/sdk/server";
+
+const client = new YAAAServerClient({
+  rpcUrl: "https://sepolia.infura.io/v3/YOUR_KEY",
+  bundlerRpcUrl: "https://api.pimlico.io/v2/11155111/rpc?apikey=YOUR_KEY",
+  chainId: 11155111,
+  entryPoints: {
+    v07: {
+      entryPointAddress: "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+      factoryAddress: "0x914db0a849f55e68a726c72fd02b7114b1176d88",
+    },
+  },
+  defaultVersion: "0.7",
+  storage: new MemoryStorage(),
+  signer: new LocalWalletSigner("0xYOUR_PRIVATE_KEY"),
 });
 ```
 
 ## Examples
 
-### 1. Passkey Registration
+### Browser / Frontend (`basic-usage.ts`)
 
-See: `basic-usage.ts` - `registerWithPasskey()`
+Demonstrates the browser-side SDK:
 
-```typescript
-const result = await yaaa.passkey.register({
-  email: "user@example.com",
-  username: "JohnDoe",
-});
+- **KMS Passkey Registration** — WebAuthn registration backed by hardware KMS
+- **KMS Passkey Login** — Biometric login with KMS key verification
+- **Transaction with Passkey Assertion** — Sign & send with
+  `LegacyPasskeyAssertion` format
+- **BLS Node Discovery** — Find available BLS validator nodes
+- **React/Next.js Integration** — Component example with state management
 
-// Save the token
-localStorage.setItem("token", result.token);
-```
+### Server / Backend (`server-usage.ts`)
 
-### 2. Passkey Login
+Demonstrates the server-side SDK:
 
-See: `basic-usage.ts` - `loginWithPasskey()`
-
-```typescript
-const result = await yaaa.passkey.authenticate();
-localStorage.setItem("token", result.token);
-```
-
-### 3. Transaction with Passkey Verification
-
-See: `basic-usage.ts` - `sendTransaction()`
-
-```typescript
-// Step 1: Verify with Passkey
-const verification = await yaaa.passkey.verifyTransaction({
-  to: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
-  value: "0.01",
-});
-
-// Step 2: Send to your backend
-const response = await fetch("/api/transfer", {
-  method: "POST",
-  body: JSON.stringify({
-    to: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
-    amount: "0.01",
-    passkeyCredential: verification.credential,
-  }),
-});
-```
+- **Quick Start** — Minimal setup with MemoryStorage + LocalWalletSigner
+- **M4 Account Factory** — Using `createAccountWithDefaults` with guardian
+  support
+- **KMS Signer Integration** — Hardware-backed signing with `KmsManager` and
+  `KmsSigner`
+- **Custom ISignerAdapter** — Per-user KMS signing with `PasskeyAssertionContext`
+- **Custom IStorageAdapter** — PostgreSQL adapter example
+- **Account Management** — Create, query, multi-version accounts
+- **Token Operations** — ERC20 info, balance, transfer calldata
+- **Transfers** — ETH, ERC20, gasless (paymaster), KMS-signed, tiered (M4)
+- **Paymaster Management** — Custom, Pimlico, SuperPaymaster (auto-detected)
+- **BLS & Tiered Signatures** — Tier 1/2/3 signature routing for AirAccount
+- **Guard Checker** — On-chain tier limits and daily allowance pre-validation
+- **Multi-Version EntryPoint** — v0.6, v0.7, v0.8 side by side
+- **Express.js Integration** — Full REST API example
 
 ## Architecture
 
 ```
 ┌─────────────┐
-│   Browser   │
-│   (SDK)     │
-└──────┬──────┘
+│   Browser    │  @yaaa/sdk (YAAAClient)
+│   (SDK)      │  - PasskeyManager (WebAuthn)
+└──────┬───────┘  - BLSManager
        │ HTTPS
        ▼
 ┌─────────────┐
-│  Your API   │
-│  (Backend)  │
-└──────┬──────┘
-       │
+│  Your API   │  @yaaa/sdk/server (YAAAServerClient)
+│  (Backend)  │  - AccountManager
+└──────┬───────┘  - TransferManager
+       │          - BLSSignatureService
        ├─────► Bundler (Pimlico/Alchemy)
-       │
-       └─────► Paymaster (Gas Sponsorship)
+       ├─────► Paymaster / SuperPaymaster
+       ├─────► BLS Validators (gossip network)
+       └─────► KMS (kms1.aastar.io) — Hardware key mgmt
 ```
 
 ## Key Concepts
 
-### Passkey Flow
+### KMS WebAuthn Flow
 
-1. **Registration**: SDK calls your backend → backend generates challenge →
-   browser shows biometric prompt → backend verifies and creates account
-2. **Login**: Similar flow but for authentication
-3. **Transaction**: User confirms transaction via biometric → SDK gets
-   credential → backend verifies and submits to blockchain
+1. **Registration**: Backend → KMS `BeginRegistration` → Browser WebAuthn prompt
+   → KMS `CompleteRegistration` → KMS creates signing key
+2. **Login**: Backend → KMS `BeginAuthentication` → Browser WebAuthn prompt →
+   Backend verifies credential
+3. **Signing**: Every signing operation requires a `LegacyPasskeyAssertion`
+   (AuthenticatorData + ClientDataHash + Signature in hex format)
 
-### BLS Signatures
+### Signature Routing (M4 AirAccount)
 
-The SDK provides utilities for BLS signature operations, but actual signing is
-coordinated by your backend with BLS validator nodes.
+| Tier | AlgId  | Signature Components            | Use Case              |
+| ---- | ------ | ------------------------------- | --------------------- |
+| 1    | `0x02` | Raw ECDSA (65 bytes)            | Small transactions    |
+| 2    | `0x04` | P256 + BLS aggregate            | Medium transactions   |
+| 3    | `0x05` | P256 + BLS + Guardian ECDSA     | Large transactions    |
+| BLS  | `0x01` | Legacy BLS (prepended to pack)  | Default (non-tiered)  |
 
-### No Private Keys in Browser
+### Pluggable Adapters
 
-The SDK never handles private keys directly. All sensitive operations are:
+The server SDK is framework-agnostic. You provide:
 
-- Passkey: Handled by browser's secure enclave
-- BLS: Handled by backend validator nodes
-- Smart Account: Deployed on-chain, controlled by Passkey signatures
+- **`IStorageAdapter`** — Your database (Postgres, Mongo, in-memory, etc.)
+- **`ISignerAdapter`** — Your key management (KMS, HSM, local wallet, etc.)
+- **`ILogger`** — Your logging (console, Winston, Pino, etc.)
 
 ## Running Examples
 
@@ -121,17 +138,21 @@ The SDK never handles private keys directly. All sensitive operations are:
 cd sdk
 npm install
 
-# Run the example (requires backend running)
+# Run the basic example (requires backend running)
 npx ts-node examples/basic-usage.ts
+
+# Run the server example
+npx ts-node examples/server-usage.ts
 ```
 
 ## Integration Checklist
 
-- [ ] Backend API running and accessible
-- [ ] BLS validator nodes configured
-- [ ] Bundler RPC endpoint configured
+- [ ] Backend API running with `@yaaa/sdk/server`
+- [ ] KMS endpoint configured (`kms1.aastar.io`)
+- [ ] Bundler RPC endpoint configured (Pimlico/Alchemy)
+- [ ] (Optional) BLS validator nodes configured
 - [ ] (Optional) Paymaster configured for gasless transactions
-- [ ] HTTPS enabled in production (required for Passkey)
+- [ ] HTTPS enabled in production (required for WebAuthn/Passkey)
 - [ ] CORS configured to allow your frontend domain
 
 ## Troubleshooting
@@ -141,19 +162,19 @@ npx ts-node examples/basic-usage.ts
 - Ensure you're using HTTPS (localhost is OK for development)
 - Check browser compatibility (Chrome 67+, Safari 13+, Edge 18+)
 
+### "KMS signing failed"
+
+- Verify `KMS_API_KEY` is set correctly
+- Check KMS key status (must be "ready")
+- Ensure the passkey assertion is in Legacy hex format
+
 ### "Network request failed"
 
-- Verify `apiURL` is correct
+- Verify `apiURL` / `rpcUrl` is correct
 - Check CORS settings on your backend
 - Ensure backend is running
 
 ### "BLS nodes unavailable"
 
-- Check `seedNodes` configuration
+- Check `blsSeedNodes` configuration
 - Verify BLS validator nodes are running and accessible
-
-## Next Steps
-
-- Read the [API Documentation](../README.md)
-- Check out the [Implementation Plan](../../SDK_IMPLEMENTATION_PLAN.md)
-- See the [Detailed Design](../../YAAA_SDK_DETAILED_DESIGN.md)

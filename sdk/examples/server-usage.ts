@@ -1,9 +1,9 @@
 /**
- * YAAA Server SDK - Usage Examples
+ * AirAccount Server SDK - Usage Examples
  *
- * This example demonstrates how to integrate the YAAA Server SDK
- * into your own Node.js backend (Express, Fastify, Koa, etc.)
- * without any NestJS dependency.
+ * This example demonstrates how to integrate the AirAccount Server SDK
+ * into your own Node.js backend (Express, Fastify, Koa, NestJS, etc.)
+ * without any framework coupling.
  *
  * Install: npm install @yaaa/sdk
  * Import:  import { ... } from '@yaaa/sdk/server';
@@ -15,6 +15,7 @@ import {
   LocalWalletSigner,
   ConsoleLogger,
   EntryPointVersion,
+  KmsManager,
 } from "@yaaa/sdk/server";
 
 import type {
@@ -26,7 +27,11 @@ import type {
   PaymasterRecord,
   BlsConfigRecord,
   TokenInfo,
+  PasskeyAssertionContext,
+  LegacyPasskeyAssertion,
 } from "@yaaa/sdk/server";
+
+import { ethers } from "ethers";
 
 // ============================================
 // 1. Basic Setup — Quick Start
@@ -63,20 +68,158 @@ async function quickStart() {
   console.log("UserOp Hash:", result.userOpHash);
 
   // Poll transfer status
-  const status = await client.transfers.getTransferStatus("user-123", result.transferId);
+  const status = await client.transfers.getTransferStatus(
+    "user-123",
+    result.transferId
+  );
   console.log("Status:", status.statusDescription);
 }
 
 // ============================================
-// 2. Production Setup — Custom Adapters
+// 2. M4 Account Factory Setup
 // ============================================
 
 /**
- * In production you'll want a real database and a secure key management system.
- * Implement IStorageAdapter and ISignerAdapter for your stack.
+ * M4 accounts use a different factory with built-in guardian support
+ * and daily spending limits. No separate validator contract needed.
  */
+async function m4Setup() {
+  const client = new YAAAServerClient({
+    rpcUrl: "https://sepolia.infura.io/v3/YOUR_KEY",
+    bundlerRpcUrl: "https://api.pimlico.io/v2/11155111/rpc?apikey=YOUR_KEY",
+    chainId: 11155111,
+    entryPoints: {
+      // M4 factory — uses createAccountWithDefaults/getAddressWithDefaults
+      v07: {
+        entryPointAddress: "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+        factoryAddress: "0x914db0a849f55e68a726c72fd02b7114b1176d88",
+        // No validatorAddress → M4 ECDSA path (raw 65-byte signature)
+      },
+    },
+    defaultVersion: "0.7",
+    storage: new MemoryStorage(),
+    signer: new LocalWalletSigner("0xPRIVATE_KEY"),
+  });
 
-// Example: PostgreSQL storage adapter (pseudo-code)
+  // M4 factory predicts address with: owner, salt, guardian1, guardian2, dailyLimit
+  const account = await client.accounts.createAccount("user-m4");
+  console.log("M4 account:", account.address);
+
+  return client;
+}
+
+// ============================================
+// 3. KMS Signer Integration
+// ============================================
+
+/**
+ * KMS (kms1.aastar.io) provides hardware-backed key management
+ * with WebAuthn passkey authentication for every signing operation.
+ *
+ * The KmsSigner requires a passkey assertion for each sign call,
+ * passed via the assertionProvider callback.
+ */
+async function kmsSetup() {
+  const kmsManager = new KmsManager({
+    kmsEndpoint: "https://kms1.aastar.io",
+    kmsApiKey: process.env.KMS_API_KEY,
+    kmsEnabled: true,
+  });
+
+  // Create a KMS-backed signer
+  // assertionProvider returns a LegacyPasskeyAssertion for each signing operation
+  const kmsSigner = kmsManager.createKmsSigner(
+    "key-id-from-kms", // KMS key ID
+    "0xDerivedAddress", // Address from KMS
+    async () => {
+      // In production, this comes from the request context
+      // (the user's WebAuthn assertion passed through the API)
+      return {
+        AuthenticatorData: "0x...",
+        ClientDataHash: "0x...",
+        Signature: "0x...",
+      } satisfies LegacyPasskeyAssertion;
+    }
+  );
+
+  // KmsSigner is an ethers.AbstractSigner — use it anywhere ethers expects a Signer
+  const address = await kmsSigner.getAddress();
+  console.log("KMS signer address:", address);
+
+  // KMS key lifecycle
+  const keyStatus = await kmsManager.getKeyStatus("key-id");
+  console.log("Key status:", keyStatus.Status); // "creating" | "deriving" | "ready" | "error"
+
+  // Wait for key to be ready after creation
+  // const readyKey = await kmsManager.pollUntilReady("key-id", 30000);
+}
+
+// ============================================
+// 4. Custom ISignerAdapter with KMS
+// ============================================
+
+/**
+ * Implement ISignerAdapter for KMS-backed per-user signing.
+ * The getSigner() method accepts an optional PasskeyAssertionContext,
+ * which carries the user's WebAuthn assertion through the signing chain.
+ */
+class KmsSignerAdapter implements ISignerAdapter {
+  private kmsManager: KmsManager;
+
+  constructor(
+    private userKeyMapping: Map<string, { keyId: string; address: string }>,
+    kmsEndpoint: string,
+    kmsApiKey: string
+  ) {
+    this.kmsManager = new KmsManager({
+      kmsEndpoint,
+      kmsApiKey,
+      kmsEnabled: true,
+    });
+  }
+
+  async getAddress(userId: string): Promise<string> {
+    const keyInfo = this.userKeyMapping.get(userId);
+    if (!keyInfo) throw new Error(`No KMS key for user ${userId}`);
+    return keyInfo.address;
+  }
+
+  async getSigner(
+    userId: string,
+    ctx?: PasskeyAssertionContext
+  ): Promise<ethers.Signer> {
+    const keyInfo = this.userKeyMapping.get(userId);
+    if (!keyInfo) throw new Error(`No KMS key for user ${userId}`);
+
+    return this.kmsManager.createKmsSigner(
+      keyInfo.keyId,
+      keyInfo.address,
+      async () => {
+        if (!ctx?.passkeyAssertion) {
+          throw new Error("Passkey assertion required for KMS signing");
+        }
+        return ctx.passkeyAssertion;
+      }
+    );
+  }
+
+  async ensureSigner(
+    userId: string
+  ): Promise<{ signer: ethers.Signer; address: string }> {
+    const address = await this.getAddress(userId);
+    const signer = await this.getSigner(userId);
+    return { signer, address };
+  }
+}
+
+// ============================================
+// 5. Custom IStorageAdapter (PostgreSQL)
+// ============================================
+
+/**
+ * In production you'll want a real database.
+ * Implement IStorageAdapter for your stack (PostgreSQL, MongoDB, etc.)
+ */
 class PostgresStorage implements IStorageAdapter {
   constructor(private pool: any /* pg.Pool */) {}
 
@@ -107,13 +250,17 @@ class PostgresStorage implements IStorageAdapter {
   }
 
   async findAccountByUserId(userId: string): Promise<AccountRecord | null> {
-    const { rows } = await this.pool.query("SELECT * FROM accounts WHERE user_id = $1 LIMIT 1", [
-      userId,
-    ]);
+    const { rows } = await this.pool.query(
+      "SELECT * FROM accounts WHERE user_id = $1 LIMIT 1",
+      [userId]
+    );
     return rows[0] ?? null;
   }
 
-  async updateAccount(userId: string, updates: Partial<AccountRecord>): Promise<void> {
+  async updateAccount(
+    userId: string,
+    updates: Partial<AccountRecord>
+  ): Promise<void> {
     const setClauses: string[] = [];
     const values: unknown[] = [];
     let idx = 1;
@@ -129,27 +276,41 @@ class PostgresStorage implements IStorageAdapter {
   }
 
   async saveTransfer(transfer: TransferRecord): Promise<void> {
-    // ... INSERT INTO transfers
-    void transfer;
+    void transfer; // ... INSERT INTO transfers
   }
   async findTransfersByUserId(userId: string): Promise<TransferRecord[]> {
-    const { rows } = await this.pool.query("SELECT * FROM transfers WHERE user_id = $1", [userId]);
+    const { rows } = await this.pool.query(
+      "SELECT * FROM transfers WHERE user_id = $1",
+      [userId]
+    );
     return rows;
   }
   async findTransferById(id: string): Promise<TransferRecord | null> {
-    const { rows } = await this.pool.query("SELECT * FROM transfers WHERE id = $1", [id]);
+    const { rows } = await this.pool.query(
+      "SELECT * FROM transfers WHERE id = $1",
+      [id]
+    );
     return rows[0] ?? null;
   }
-  async updateTransfer(id: string, updates: Partial<TransferRecord>): Promise<void> {
+  async updateTransfer(
+    id: string,
+    updates: Partial<TransferRecord>
+  ): Promise<void> {
     void id;
     void updates;
   }
 
   async getPaymasters(userId: string): Promise<PaymasterRecord[]> {
-    const { rows } = await this.pool.query("SELECT * FROM paymasters WHERE user_id = $1", [userId]);
+    const { rows } = await this.pool.query(
+      "SELECT * FROM paymasters WHERE user_id = $1",
+      [userId]
+    );
     return rows;
   }
-  async savePaymaster(userId: string, paymaster: PaymasterRecord): Promise<void> {
+  async savePaymaster(
+    userId: string,
+    paymaster: PaymasterRecord
+  ): Promise<void> {
     void userId;
     void paymaster;
   }
@@ -170,65 +331,11 @@ class PostgresStorage implements IStorageAdapter {
 }
 
 function camelToSnake(str: string): string {
-  return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-}
-
-// Example: AWS KMS signer adapter (pseudo-code)
-import { ethers } from "ethers";
-
-class AwsKmsSignerAdapter implements ISignerAdapter {
-  constructor(
-    private kmsKeyMapping: Map<string, string>, // userId → KMS key ID
-    private rpcUrl: string
-  ) {}
-
-  async getAddress(userId: string): Promise<string> {
-    // Derive address from KMS public key
-    const keyId = this.kmsKeyMapping.get(userId);
-    if (!keyId) throw new Error(`No KMS key for user ${userId}`);
-    // ... call AWS KMS GetPublicKey, derive ETH address
-    return "0x...";
-  }
-
-  async getSigner(userId: string): Promise<ethers.Signer> {
-    // Return a custom AbstractSigner backed by KMS
-    // You can use the built-in KmsSigner from the SDK:
-    //   import { KmsSigner } from '@yaaa/sdk/server';
-    void userId;
-    throw new Error("Implement with KmsSigner or custom AbstractSigner");
-  }
-
-  async ensureSigner(userId: string): Promise<{ signer: ethers.Signer; address: string }> {
-    const address = await this.getAddress(userId);
-    const signer = await this.getSigner(userId);
-    return { signer, address };
-  }
-}
-
-async function productionSetup() {
-  const pool = null as any; // your pg.Pool instance
-
-  const client = new YAAAServerClient({
-    rpcUrl: process.env.RPC_URL!,
-    bundlerRpcUrl: process.env.BUNDLER_RPC_URL!,
-    chainId: Number(process.env.CHAIN_ID),
-    entryPoints: {
-      v06: {
-        entryPointAddress: "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
-        factoryAddress: process.env.FACTORY_ADDRESS!,
-        validatorAddress: process.env.VALIDATOR_ADDRESS!,
-      },
-    },
-    storage: new PostgresStorage(pool),
-    signer: new AwsKmsSignerAdapter(new Map(), process.env.RPC_URL!),
-    logger: new ConsoleLogger("[MyApp]"),
-  });
-
-  return client;
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 
 // ============================================
-// 3. Account Management
+// 6. Account Management
 // ============================================
 
 async function accountManagement(client: YAAAServerClient) {
@@ -238,19 +345,27 @@ async function accountManagement(client: YAAAServerClient) {
   console.log("Deployed:", account.deployed);
   console.log("EntryPoint version:", account.entryPointVersion);
 
-  // Get existing account
-  const existing = await client.accounts.getAccountByUserId("user-abc");
+  // Create account with specific version
+  const v6Account = await client.accounts.createAccount("user-v6", {
+    entryPointVersion: EntryPointVersion.V0_6,
+  });
+  console.log("v0.6 account:", v6Account.address);
+
+  // Get existing account with balance and nonce
+  const existing = await client.accounts.getAccount("user-abc");
   if (existing) {
-    console.log("Found existing account:", existing.address);
+    console.log("Found:", existing.address);
+    console.log("Balance:", existing.balance, "ETH");
+    console.log("Nonce:", existing.nonce);
   }
 
-  // Get wallet (EOA) address for a user
+  // Get wallet (EOA/KMS) address for a user
   const walletAddress = await client.wallets.getAddress("user-abc");
-  console.log("Wallet (EOA) address:", walletAddress);
+  console.log("Wallet (EOA/KMS) address:", walletAddress);
 }
 
 // ============================================
-// 4. Token Operations
+// 7. Token Operations
 // ============================================
 
 async function tokenOperations(client: YAAAServerClient) {
@@ -261,28 +376,34 @@ async function tokenOperations(client: YAAAServerClient) {
   console.log(`${info.symbol} (${info.name}) — ${info.decimals} decimals`);
 
   // Check token balance
-  const balance = await client.tokens.getTokenBalance(USDC, "0xYourSmartAccount");
+  const balance = await client.tokens.getTokenBalance(
+    USDC,
+    "0xYourSmartAccount"
+  );
   console.log("USDC balance (raw):", balance);
 
   // Formatted balance
-  const formatted = await client.tokens.getFormattedTokenBalance(USDC, "0xYourSmartAccount");
+  const formatted = await client.tokens.getFormattedTokenBalance(
+    USDC,
+    "0xYourSmartAccount"
+  );
   console.log(`Balance: ${formatted.formattedBalance} ${formatted.token.symbol}`);
 
   // Validate a token address
   const valid = await client.tokens.validateToken(USDC);
   console.log("Is valid ERC20:", valid);
 
-  // Generate ERC20 transfer calldata (useful for building custom UserOps)
+  // Generate ERC20 transfer calldata
   const calldata = client.tokens.generateTransferCalldata(
     "0xRecipient",
-    "100.5", // human-readable amount
+    "100.5",
     6 // USDC decimals
   );
   console.log("Transfer calldata:", calldata);
 }
 
 // ============================================
-// 5. Transfers (ETH & ERC20)
+// 8. Transfers (ETH & ERC20)
 // ============================================
 
 async function transfers(client: YAAAServerClient) {
@@ -291,14 +412,14 @@ async function transfers(client: YAAAServerClient) {
   // --- ETH transfer ---
   const ethTransfer = await client.transfers.executeTransfer(userId, {
     to: "0xRecipientAddress",
-    amount: "0.01", // in ETH
+    amount: "0.01",
   });
   console.log("ETH Transfer:", ethTransfer.transferId);
 
   // --- ERC20 token transfer ---
   const tokenTransfer = await client.transfers.executeTransfer(userId, {
     to: "0xRecipientAddress",
-    amount: "50", // in token units (e.g., 50 USDC)
+    amount: "50",
     tokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
   });
   console.log("Token Transfer:", tokenTransfer.transferId);
@@ -312,8 +433,33 @@ async function transfers(client: YAAAServerClient) {
   });
   console.log("Gasless Transfer:", gaslessTransfer.transferId);
 
+  // --- Transfer with KMS passkey assertion ---
+  const kmsTransfer = await client.transfers.executeTransfer(userId, {
+    to: "0xRecipientAddress",
+    amount: "0.01",
+    passkeyAssertion: {
+      AuthenticatorData: "0x...",
+      ClientDataHash: "0x...",
+      Signature: "0x...",
+    },
+  });
+  console.log("KMS Transfer:", kmsTransfer.transferId);
+
+  // --- AirAccount tiered transfer (M4) ---
+  const tieredTransfer = await client.transfers.executeTransfer(userId, {
+    to: "0xRecipientAddress",
+    amount: "0.01",
+    useAirAccountTiering: true, // Enable tier-based signature routing
+    p256Signature: "0x...", // Required for Tier 2/3
+    // guardianSigner: guardianEthSigner, // Required for Tier 3 only
+  });
+  console.log("Tiered Transfer:", tieredTransfer.transferId);
+
   // --- Check transfer status ---
-  const status = await client.transfers.getTransferStatus(userId, ethTransfer.transferId);
+  const status = await client.transfers.getTransferStatus(
+    userId,
+    ethTransfer.transferId
+  );
   console.log("Status:", status.statusDescription);
   // Possible statuses:
   //   pending   → "Preparing transaction and generating signatures"
@@ -327,11 +473,14 @@ async function transfers(client: YAAAServerClient) {
 
   // --- Transfer history with pagination ---
   const history = await client.transfers.getTransferHistory(userId, 1, 10);
-  console.log(`Page 1: ${history.transfers.length} of ${history.total} transfers`);
-  console.log(`Total pages: ${history.totalPages}`);
+  console.log(
+    `Page 1: ${history.transfers.length} of ${history.total} transfers`
+  );
 
   for (const tx of history.transfers) {
-    console.log(`  ${tx.id}: ${tx.amount} ${tx.tokenSymbol ?? "ETH"} → ${tx.to} [${tx.status}]`);
+    console.log(
+      `  ${tx.id}: ${tx.amount} ${tx.tokenSymbol ?? "ETH"} → ${tx.to} [${tx.status}]`
+    );
   }
 
   // --- Gas estimation ---
@@ -343,7 +492,7 @@ async function transfers(client: YAAAServerClient) {
 }
 
 // ============================================
-// 6. Paymaster Management
+// 9. Paymaster Management (SuperPaymaster)
 // ============================================
 
 async function paymasterManagement(client: YAAAServerClient) {
@@ -363,7 +512,7 @@ async function paymasterManagement(client: YAAAServerClient) {
     "pimlico-pm",
     "0xPimlicoPaymasterAddress",
     "pimlico",
-    "pm_api_key_xxx" // apiKey
+    "pm_api_key_xxx"
   );
 
   // List available paymasters
@@ -373,47 +522,85 @@ async function paymasterManagement(client: YAAAServerClient) {
   }
 
   // Remove a paymaster
-  const removed = await client.paymaster.removeCustomPaymaster(userId, "my-paymaster");
+  const removed = await client.paymaster.removeCustomPaymaster(
+    userId,
+    "my-paymaster"
+  );
   console.log("Removed:", removed);
+
+  // Note: SuperPaymaster (v0.7/v0.8) is auto-detected on M4 deployments
+  // and returns packed paymaster data format automatically
 }
 
 // ============================================
-// 7. BLS Signature Service
+// 10. BLS Signatures & Tiered Signing
 // ============================================
 
 async function blsSignatures(client: YAAAServerClient) {
   // BLS signatures require seed nodes for the gossip network.
-  // Configure them in the ServerConfig:
-  const blsClient = new YAAAServerClient({
-    rpcUrl: "https://sepolia.infura.io/v3/YOUR_KEY",
-    bundlerRpcUrl: "https://api.pimlico.io/v2/11155111/rpc?apikey=YOUR_KEY",
-    chainId: 11155111,
-    entryPoints: {
-      v06: {
-        entryPointAddress: "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
-        factoryAddress: "0xFACTORY",
-        validatorAddress: "0xVALIDATOR",
-      },
-    },
-    blsSeedNodes: ["https://signer1.aastar.io", "https://signer2.aastar.io"],
-    blsDiscoveryTimeout: 5000, // ms
-    storage: new MemoryStorage(),
-    signer: new LocalWalletSigner("0xPRIVATE_KEY"),
-  });
+  // Configure them in the ServerConfig.
 
   // Generate BLS signature for a UserOp hash
-  // (Usually called internally by TransferManager, but available for advanced use)
-  const userOpHash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
-  const blsData = await blsClient.bls.generateBLSSignature("user-abc", userOpHash);
+  const userOpHash =
+    "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+  const blsData = await client.bls.generateBLSSignature(
+    "user-abc",
+    userOpHash
+  );
   console.log("BLS signature data:", blsData);
 
   // Pack signature for on-chain verification
-  const packed = await blsClient.bls.packSignature(blsData);
+  const packed = await client.bls.packSignature(blsData);
   console.log("Packed signature:", packed);
+
+  // Generate tiered signature (AirAccount M4)
+  // Tier 1: raw ECDSA (algId 0x02)
+  // Tier 2: P256 + BLS aggregate (algId 0x04)
+  // Tier 3: P256 + BLS + Guardian ECDSA (algId 0x05)
+  const tieredSig = await client.bls.generateTieredSignature({
+    tier: 2,
+    userId: "user-abc",
+    userOpHash,
+    p256Signature: "0x...", // 64-byte P256 signature
+  });
+  console.log("Tiered (T2) signature:", tieredSig);
 }
 
 // ============================================
-// 8. Multi-Version EntryPoint Support
+// 11. Guard Checker (On-Chain Pre-Validation)
+// ============================================
+
+/**
+ * GuardChecker reads tier limits and guard status from the AirAccount contract
+ * to determine which signature tier is required for a transaction.
+ */
+async function guardCheckerExample(client: YAAAServerClient) {
+  const accountAddress = "0xYourSmartAccount";
+
+  // Fetch tier configuration from contract
+  // const tierConfig = await guardChecker.fetchTierConfig(accountAddress);
+  // console.log("Tier 1 limit:", tierConfig.tier1Limit);
+  // console.log("Tier 2 limit:", tierConfig.tier2Limit);
+
+  // Fetch guard status
+  // const guardStatus = await guardChecker.fetchGuardStatus(accountAddress);
+  // console.log("Has guard:", guardStatus.hasGuard);
+  // console.log("Daily remaining:", guardStatus.dailyRemaining);
+
+  // Pre-check a transaction (determines required tier + algId)
+  // const preCheck = await guardChecker.preCheck(accountAddress, ethers.parseEther("0.5"));
+  // console.log("OK:", preCheck.ok);
+  // console.log("Required tier:", preCheck.tier);
+  // console.log("AlgId:", preCheck.algId);
+
+  console.log(
+    "GuardChecker is used internally by TransferManager for AirAccount tiering"
+  );
+  void accountAddress;
+}
+
+// ============================================
+// 12. Multi-Version EntryPoint Support
 // ============================================
 
 async function multiVersion() {
@@ -433,7 +620,7 @@ async function multiVersion() {
         validatorAddress: "0xVALIDATOR_V7",
       },
     },
-    defaultVersion: "0.7", // default to v0.7 when not specified
+    defaultVersion: "0.7",
     storage: new MemoryStorage(),
     signer: new LocalWalletSigner("0xPRIVATE_KEY"),
   });
@@ -453,7 +640,7 @@ async function multiVersion() {
 }
 
 // ============================================
-// 9. Express.js Integration Example
+// 13. Express.js Integration Example
 // ============================================
 
 /*
@@ -468,12 +655,16 @@ const client = new YAAAServerClient({
   bundlerRpcUrl: process.env.BUNDLER_RPC_URL!,
   chainId: 11155111,
   entryPoints: {
-    v06: {
-      entryPointAddress: '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789',
+    v07: {
+      entryPointAddress: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
       factoryAddress: process.env.FACTORY_ADDRESS!,
-      validatorAddress: process.env.VALIDATOR_ADDRESS!,
+      // No validatorAddress → M4 ECDSA path
     },
   },
+  defaultVersion: '0.7',
+  kmsEndpoint: process.env.KMS_ENDPOINT,
+  kmsApiKey: process.env.KMS_API_KEY,
+  kmsEnabled: true,
   storage: new MemoryStorage(), // Replace with your DB adapter
   signer: new LocalWalletSigner(process.env.PRIVATE_KEY!),
 });
@@ -489,16 +680,16 @@ app.post('/api/accounts', async (req, res) => {
   }
 });
 
-// Execute transfer
+// Execute transfer (with passkey assertion from frontend)
 app.post('/api/transfers', async (req, res) => {
   try {
-    const { userId, to, amount, tokenAddress, usePaymaster, paymasterAddress } = req.body;
+    const { userId, to, amount, tokenAddress, usePaymaster, passkeyAssertion } = req.body;
     const result = await client.transfers.executeTransfer(userId, {
       to,
       amount,
       tokenAddress,
       usePaymaster,
-      paymasterAddress,
+      passkeyAssertion,  // LegacyPasskeyAssertion from KMS
     });
     res.json(result);
   } catch (err: any) {
@@ -530,27 +721,6 @@ app.get('/api/transfers/:userId', async (req, res) => {
   }
 });
 
-// Token info
-app.get('/api/tokens/:address', async (req, res) => {
-  try {
-    const info = await client.tokens.getTokenInfo(req.params.address);
-    res.json(info);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// Paymaster management
-app.post('/api/paymasters', async (req, res) => {
-  try {
-    const { userId, name, address, type, apiKey } = req.body;
-    await client.paymaster.addCustomPaymaster(userId, name, address, type, apiKey);
-    res.json({ success: true });
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
 app.listen(3000, () => console.log('Server running on :3000'));
 */
 
@@ -560,11 +730,13 @@ app.listen(3000, () => console.log('Server running on :3000'));
 
 export {
   quickStart,
-  productionSetup,
+  m4Setup,
+  kmsSetup,
   accountManagement,
   tokenOperations,
   transfers,
   paymasterManagement,
   blsSignatures,
+  guardCheckerExample,
   multiVersion,
 };
