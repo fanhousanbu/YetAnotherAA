@@ -140,7 +140,29 @@ export class TransferManager {
       ? { assertion: params.passkeyAssertion }
       : undefined;
 
-    if (params.useAirAccountTiering && this.guardChecker) {
+    // M4 accounts: check if validator is set; if not, use ECDSA instead of BLS
+    let useECDSA = false;
+    if (version === EntryPointVersion.V0_7 || version === EntryPointVersion.V0_8) {
+      try {
+        const provider = this.ethereum.getProvider();
+        const accountCode = await provider.getCode(account.address);
+        if (accountCode === "0x") {
+          useECDSA = true;
+        } else {
+          const acc = new ethers.Contract(account.address, ["function validator() view returns (address)"], provider);
+          const v = await acc.validator();
+          if (v === ethers.ZeroAddress) useECDSA = true;
+        }
+      } catch { useECDSA = true; }
+    }
+
+    if (useECDSA) {
+      // M4 ECDSA path: raw 65-byte sig, no validator needed
+      this.logger.log("M4: using ECDSA signature (validator not set)");
+      const signer = await this.signer.getSigner(userId, assertionCtx);
+      const ecdsaSig = await signer.signMessage(ethers.getBytes(userOpHash));
+      userOp.signature = ecdsaSig;
+    } else if (params.useAirAccountTiering && this.guardChecker) {
       // AirAccount tiered signature routing
       const transferValue = params.tokenAddress ? 0n : ethers.parseEther(params.amount);
       const preCheck = await this.guardChecker.preCheck(account.address, transferValue);
@@ -162,9 +184,11 @@ export class TransferManager {
         ctx: assertionCtx,
       });
     } else {
-      // Legacy: BLS triple signature (algId 0x01)
+      // BLS triple signature with algId 0x01 prefix for M4 account routing
       const blsData = await this.blsService.generateBLSSignature(userId, userOpHash, assertionCtx);
-      userOp.signature = await this.blsService.packSignature(blsData);
+      const packedBls = await this.blsService.packSignature(blsData);
+      // Prepend algId=0x01 byte for M4 _validateSignature routing
+      userOp.signature = "0x01" + packedBls.slice(2);
     }
 
     // Create transfer record
@@ -374,18 +398,25 @@ export class TransferManager {
         const factory = this.ethereum.getFactoryContract(version);
         const factoryAddress = await factory.getAddress();
 
-        const methodName =
-          version === EntryPointVersion.V0_7 || version === EntryPointVersion.V0_8
-            ? "createAccount"
-            : "createAccountWithAAStarValidator";
-
-        const deployCalldata = factory.interface.encodeFunctionData(methodName, [
-          account.signerAddress,
-          account.signerAddress,
-          account.validatorAddress,
-          true,
-          account.salt,
-        ]);
+        let deployCalldata: string;
+        if (version === EntryPointVersion.V0_7 || version === EntryPointVersion.V0_8) {
+          // New M4 factory: createAccountWithDefaults(owner, salt, guardian1, guardian2, dailyLimit)
+          deployCalldata = factory.interface.encodeFunctionData("createAccountWithDefaults", [
+            account.signerAddress,
+            account.salt,
+            ethers.ZeroAddress,
+            ethers.ZeroAddress,
+            ethers.parseEther("1000"),
+          ]);
+        } else {
+          deployCalldata = factory.interface.encodeFunctionData("createAccountWithAAStarValidator", [
+            account.signerAddress,
+            account.signerAddress,
+            account.validatorAddress,
+            true,
+            account.salt,
+          ]);
+        }
 
         initCode = ethers.concat([factoryAddress, deployCalldata]);
       }

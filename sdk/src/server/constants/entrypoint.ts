@@ -94,6 +94,8 @@ export const AIRACCOUNT_ABI = [
 export const AIRACCOUNT_FACTORY_ABI = [
   "function createAccount(address owner, uint256 salt, tuple(address[3] guardians, uint256 dailyLimit, uint8[] approvedAlgIds) config) external returns (address)",
   "function getAddress(address owner, uint256 salt, tuple(address[3] guardians, uint256 dailyLimit, uint8[] approvedAlgIds) config) external view returns (address)",
+  "function createAccountWithDefaults(address owner, uint256 salt, address guardian1, address guardian2, uint256 dailyLimit) external returns (address)",
+  "function getAddressWithDefaults(address owner, uint256 salt, address guardian1, address guardian2, uint256 dailyLimit) external view returns (address)",
 ];
 
 export const GLOBAL_GUARD_ABI = [

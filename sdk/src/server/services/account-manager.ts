@@ -47,13 +47,15 @@ export class AccountManager {
     const { address: signerAddress } = await this.signer.ensureSigner(userId);
     const salt = options?.salt ?? Math.floor(Math.random() * 1000000);
 
-    // Predict account address (unified architecture: creator = signer)
-    const accountAddress = await factory["getAddress(address,address,address,bool,uint256)"](
+    // Predict account address using new M4 factory (createAccountWithDefaults)
+    const zeroAddr = ethers.ZeroAddress;
+    const defaultDailyLimit = ethers.parseEther("1000"); // 1000 ETH daily limit
+    const accountAddress = await factory.getAddressWithDefaults(
       signerAddress,
-      signerAddress,
-      validatorAddress,
-      true,
-      salt
+      salt,
+      zeroAddr,
+      zeroAddr,
+      defaultDailyLimit
     );
 
     // Check deployment status

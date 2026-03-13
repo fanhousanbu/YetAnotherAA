@@ -87,6 +87,21 @@ export class KmsService {
 
   /** POST with x-amz-target header (required for wallet/signing operations). */
   private async amzPost<T>(path: string, target: string, body: unknown): Promise<T> {
+    // Log full curl command for debugging
+    const url = `${this.kmsEndpoint}${path}`;
+    const apiKey = this.configService.get<string>("kmsApiKey");
+    const bodyJson = JSON.stringify(body);
+    const curlParts = [
+      `curl -v -X POST '${url}'`,
+      `-H 'Content-Type: application/x-amz-json-1.1'`,
+      `-H 'x-amz-target: ${target}'`,
+    ];
+    if (apiKey) {
+      curlParts.push(`-H 'x-api-key: ${apiKey}'`);
+    }
+    curlParts.push(`-d '${bodyJson}'`);
+    this.logger.warn(`[KMS CURL] ${curlParts.join(" \\\n  ")}`);
+
     const response = await this.http.post(path, body, {
       headers: {
         "Content-Type": "application/x-amz-json-1.1",
