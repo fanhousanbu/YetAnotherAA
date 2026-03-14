@@ -83,5 +83,8 @@ export default () => {
     mysbtAddress: process.env.MYSBT_ADDRESS,
     apntsAddress: process.env.APNTS_ADDRESS,
     priceFeedAddress: process.env.PRICE_FEED_ADDRESS,
+    // Sale contract addresses
+    gTokenSaleAddress: process.env.GTOKEN_SALE_ADDRESS,
+    aPNTsSaleAddress: process.env.APNTS_SALE_ADDRESS,
   };
 };

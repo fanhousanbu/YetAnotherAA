@@ -19,6 +19,7 @@ import { RegistryModule } from "./registry/registry.module";
 import { CommunityModule } from "./community/community.module";
 import { OperatorModule } from "./operator/operator.module";
 import { AdminModule } from "./admin/admin.module";
+import { SaleModule } from "./sale/sale.module";
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { AdminModule } from "./admin/admin.module";
     CommunityModule,
     OperatorModule,
     AdminModule,
+    SaleModule,
   ],
   controllers: [AppController],
   providers: [AppService],

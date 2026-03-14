@@ -129,6 +129,12 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                   Protocol
                 </button>
                 <button
+                  onClick={() => router.push("/sale")}
+                  className={getNavButtonClass("/sale", pathname.startsWith("/sale"))}
+                >
+                  Sale
+                </button>
+                <button
                   onClick={() => router.push("/transfer")}
                   className={getNavButtonClass("/transfer", pathname.startsWith("/transfer"))}
                 >
