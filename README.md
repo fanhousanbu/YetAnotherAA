@@ -367,6 +367,88 @@ docker exec <container_id> pm2 logs
 docker exec <container_id> pm2 monit
 ```
 
+## 🏛️ AAStar Management Portal
+
+The `feature/aastar-management-portal` branch adds a **multi-role management interface** for the AAStar ecosystem, integrating live Sepolia on-chain data via `@aastar/core`.
+
+### New Frontend Routes
+
+| Route | Role | Description |
+|-------|------|-------------|
+| `/role` | Any | Check roles for any address, navigate to role portals |
+| `/community` | Community Admin | Status, token info, address lookup, member list |
+| `/operator` | SPO / V4 Operator | SPO + V4 status, metric cards, registration guides |
+| `/admin` | Protocol Admin | Registry stats, role configs, GToken stats, all addresses |
+| `/sale` | Any | GToken bonding-curve price chart, aPNTs fixed-price calculator |
+
+All routes are included in both desktop nav and mobile bottom nav.
+
+### Starting the App (with Management Portal)
+
+The existing start commands automatically include all new modules — no extra steps needed:
+
+```bash
+# Install dependencies (once)
+npm install
+
+# Start backend (port 3000) — includes registry, community, operator, admin, sale modules
+npm run start:dev -w aastar
+
+# Start frontend (port 8080) — includes all 5 new routes
+npm run dev -w aastar-frontend
+```
+
+### Required Environment Variables
+
+Copy `.env.example` to `aastar/.env` and fill in:
+
+```bash
+# Required for all management portal features
+ETH_RPC_URL=https://sepolia.infura.io/v3/YOUR_KEY   # or any Sepolia RPC
+
+# Optional — applyConfig() provides canonical Sepolia defaults if omitted
+REGISTRY_ADDRESS=0x...
+GTOKEN_ADDRESS=0x...
+STAKING_ADDRESS=0x...
+SUPER_PAYMASTER_ADDRESS=0x...
+PAYMASTER_FACTORY_ADDRESS=0x...
+XPNTS_FACTORY_ADDRESS=0x...
+
+# Required for /sale portal (portal shows "not configured" if absent)
+GTOKEN_SALE_ADDRESS=0x...    # GTokenSaleContract (bonding curve)
+APNTS_SALE_ADDRESS=0x...     # APNTsSaleContract (fixed price $0.02)
+```
+
+### New API Endpoints
+
+```
+GET /api/v1/registry/info          — role counts (community/SPO/V4/enduser)
+GET /api/v1/registry/role?address= — user role flags
+GET /api/v1/community/list         — all community admins + xPNTs token info
+GET /api/v1/community/dashboard    — community admin dashboard (JWT)
+GET /api/v1/operator/spo/list      — all SPO operators
+GET /api/v1/operator/v4/list       — all V4 operators
+GET /api/v1/operator/dashboard     — operator dashboard (JWT)
+GET /api/v1/admin/protocol         — registry stats + role counts
+GET /api/v1/admin/roles            — role configs (minStake, exitFeePercent)
+GET /api/v1/admin/gtoken           — GToken total supply + staking balance
+GET /api/v1/sale/overview          — GToken + aPNTs sale status
+GET /api/v1/sale/gtoken/status     — price, stage, sold%, eligibility
+GET /api/v1/sale/apnts/quote?usdAmount= — aPNTs amount for USD input
+```
+
+### Test Results
+
+```
+NestJS unit tests:  34/34 PASS  (registry, community, operator, admin, sale)
+Foundry tests:      62/62 PASS  (SaleContract 24 + GovernanceToken 10 + APNTsSaleContract 28)
+Frontend build:     18 routes compiled successfully (Next.js)
+```
+
+See [`MANAGEMENT_PORTAL_ACCEPTANCE.md`](MANAGEMENT_PORTAL_ACCEPTANCE.md) for the full acceptance report.
+
+---
+
 ## 📄 License
 
 MIT License - See LICENSE file for details
