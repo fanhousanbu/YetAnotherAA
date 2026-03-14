@@ -1,0 +1,294 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ServerStackIcon,
+  CurrencyDollarIcon,
+  CheckBadgeIcon,
+  XCircleIcon,
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
+import { operatorAPI } from "@/lib/api";
+
+interface SPOStatus {
+  hasRole: boolean;
+  isConfigured: boolean;
+  balance: string;
+  exchangeRate: string;
+  treasury: string;
+  stakeAmount: string;
+}
+
+interface V4Status {
+  paymasterAddress: string | null;
+  balance: string;
+  hasRole: boolean;
+}
+
+interface Dashboard {
+  address: string;
+  isSPO: boolean;
+  isV4Operator: boolean;
+  gtokenBalance: string;
+  spoStatus: SPOStatus | null;
+  v4Status: V4Status;
+  registryAddress: string;
+  superPaymasterAddress: string;
+  paymasterFactoryAddress: string;
+  stakingAddress: string;
+}
+
+function shortenAddr(addr: string) {
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+}
+
+function StatusBadge({ active, label }: { active: boolean; label: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+        active
+          ? "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"
+          : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+      }`}
+    >
+      {active ? (
+        <CheckBadgeIcon className="h-3.5 w-3.5" />
+      ) : (
+        <XCircleIcon className="h-3.5 w-3.5" />
+      )}
+      {label}
+    </span>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+  unit,
+  sub,
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  sub?: string;
+}) {
+  return (
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
+      <p className="text-xs text-gray-500 mb-1">{label}</p>
+      <p className="text-xl font-bold text-gray-900 dark:text-white">
+        {parseFloat(value || "0").toFixed(4)}
+      </p>
+      {unit && <p className="text-xs text-gray-400">{unit}</p>}
+      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+    </div>
+  );
+}
+
+export default function OperatorPage() {
+  const router = useRouter();
+  const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [spoList, setSpoList] = useState<string[]>([]);
+  const [v4List, setV4List] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/auth/login");
+      return;
+    }
+
+    Promise.all([
+      operatorAPI.getDashboard().then(r => setDashboard(r.data)),
+      operatorAPI.getSPOList().then(r => setSpoList(r.data)),
+      operatorAPI.getV4List().then(r => setV4List(r.data)),
+    ])
+      .catch(err => {
+        if (err.response?.status === 401) router.push("/auth/login");
+        else setError("Failed to load operator data");
+      })
+      .finally(() => setLoading(false));
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <ArrowPathIcon className="h-8 w-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <ServerStackIcon className="h-7 w-7 text-indigo-500" />
+        Operator Portal
+      </h1>
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-300">
+          {error}
+        </div>
+      )}
+
+      {/* My Operator Status */}
+      {dashboard && (
+        <section className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              My Operator Status
+            </h2>
+            <div className="flex gap-2">
+              <StatusBadge active={dashboard.isSPO} label="SPO" />
+              <StatusBadge active={dashboard.isV4Operator} label="V4 Operator" />
+            </div>
+          </div>
+
+          {/* GToken Balance */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <MetricCard
+              label="GToken Balance"
+              value={dashboard.gtokenBalance}
+              unit="GTOKEN"
+            />
+
+            {dashboard.isSPO && dashboard.spoStatus && (
+              <>
+                <MetricCard
+                  label="SPO Stake"
+                  value={dashboard.spoStatus.stakeAmount}
+                  unit="GTOKEN"
+                />
+                <MetricCard
+                  label="SP Balance"
+                  value={dashboard.spoStatus.balance}
+                  unit="aPNTs"
+                  sub={dashboard.spoStatus.isConfigured ? "Configured ✓" : "Not configured"}
+                />
+                <MetricCard
+                  label="Exchange Rate"
+                  value={dashboard.spoStatus.exchangeRate}
+                  unit="aPNTs/GWEI"
+                />
+              </>
+            )}
+
+            {dashboard.v4Status.paymasterAddress && (
+              <MetricCard
+                label="V4 Paymaster ETH"
+                value={dashboard.v4Status.balance}
+                unit="ETH"
+                sub={shortenAddr(dashboard.v4Status.paymasterAddress)}
+              />
+            )}
+          </div>
+
+          {/* SPO Registration Guide */}
+          {!dashboard.isSPO && (
+            <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">
+                Register as SPO (SuperPaymaster Operator)
+              </p>
+              <ol className="text-xs text-blue-600 dark:text-blue-400 space-y-1 list-decimal list-inside">
+                <li>Approve GToken to GTokenStaking contract</li>
+                <li>
+                  Call{" "}
+                  <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">
+                    registerRoleSelf
+                  </code>{" "}
+                  on Registry with ROLE_PAYMASTER_AOA
+                </li>
+                <li>Deposit aPNTs to SuperPaymaster via depositFor</li>
+                <li>Call configureOperator with xPNTs token + treasury + exchange rate</li>
+              </ol>
+            </div>
+          )}
+
+          {/* SPO configured but not V4 */}
+          {!dashboard.v4Status.paymasterAddress && (
+            <div className="mt-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-1">
+                Deploy V4 Paymaster
+              </p>
+              <ol className="text-xs text-amber-600 dark:text-amber-400 space-y-1 list-decimal list-inside">
+                <li>
+                  Call{" "}
+                  <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">
+                    deployPaymaster
+                  </code>{" "}
+                  on PaymasterFactory
+                </li>
+                <li>
+                  Register with{" "}
+                  <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">
+                    ROLE_PAYMASTER_SUPER
+                  </code>{" "}
+                  on Registry
+                </li>
+              </ol>
+            </div>
+          )}
+
+          {/* Contract Addresses */}
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+            <p className="text-xs text-gray-500 mb-2">Contract Addresses</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-mono">
+              {[
+                ["Registry", dashboard.registryAddress],
+                ["SuperPaymaster", dashboard.superPaymasterAddress],
+                ["PaymasterFactory", dashboard.paymasterFactoryAddress],
+                ["GTokenStaking", dashboard.stakingAddress],
+              ].map(([label, addr]) => (
+                <div key={label} className="flex gap-2 text-gray-600 dark:text-gray-400">
+                  <span className="text-gray-400 w-32 shrink-0">{label}:</span>
+                  <span className="truncate">{addr}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Operator Lists */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <section className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
+            SPO Operators
+            <span className="ml-2 text-sm font-normal text-gray-400">({spoList.length})</span>
+          </h2>
+          {spoList.length === 0 ? (
+            <p className="text-sm text-gray-400">None registered</p>
+          ) : (
+            <ul className="space-y-1">
+              {spoList.map(addr => (
+                <li key={addr} className="text-xs font-mono text-gray-600 dark:text-gray-300">
+                  {addr}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
+            V4 Operators
+            <span className="ml-2 text-sm font-normal text-gray-400">({v4List.length})</span>
+          </h2>
+          {v4List.length === 0 ? (
+            <p className="text-sm text-gray-400">None registered</p>
+          ) : (
+            <ul className="space-y-1">
+              {v4List.map(addr => (
+                <li key={addr} className="text-xs font-mono text-gray-600 dark:text-gray-300">
+                  {addr}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}

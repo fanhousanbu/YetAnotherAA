@@ -254,6 +254,18 @@ export const registryAPI = {
   getCommunity: (name: string) => api.get("/registry/community", { params: { name } }),
 };
 
+// Operator API
+export const operatorAPI = {
+  getAddresses: () => api.get("/operator/addresses"),
+  getSPOList: () => api.get("/operator/spo/list"),
+  getV4List: () => api.get("/operator/v4/list"),
+  getStatus: (address: string) => api.get("/operator/status", { params: { address } }),
+  getDashboard: (address?: string) =>
+    api.get("/operator/dashboard", { params: address ? { address } : undefined }),
+  getGTokenBalance: (address?: string) =>
+    api.get("/operator/gtoken-balance", { params: address ? { address } : undefined }),
+};
+
 // Community API
 export const communityAPI = {
   getList: () => api.get("/community/list"),

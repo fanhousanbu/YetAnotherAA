@@ -17,6 +17,7 @@ import { SdkModule } from "./sdk/sdk.module";
 import { GuardianModule } from "./guardian/guardian.module";
 import { RegistryModule } from "./registry/registry.module";
 import { CommunityModule } from "./community/community.module";
+import { OperatorModule } from "./operator/operator.module";
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { CommunityModule } from "./community/community.module";
     GuardianModule,
     RegistryModule,
     CommunityModule,
+    OperatorModule,
   ],
   controllers: [AppController],
   providers: [AppService],

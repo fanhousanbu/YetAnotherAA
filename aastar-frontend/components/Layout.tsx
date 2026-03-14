@@ -19,6 +19,7 @@ import {
   BookOpenIcon,
   ShieldCheckIcon,
   UserGroupIcon,
+  ServerStackIcon,
 } from "@heroicons/react/24/outline";
 
 interface LayoutProps {
@@ -114,6 +115,12 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                   className={getNavButtonClass("/community", pathname.startsWith("/community"))}
                 >
                   Community
+                </button>
+                <button
+                  onClick={() => router.push("/operator")}
+                  className={getNavButtonClass("/operator", pathname.startsWith("/operator"))}
+                >
+                  Operator
                 </button>
                 <button
                   onClick={() => router.push("/transfer")}
@@ -259,6 +266,15 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
             >
               <UserGroupIcon className="h-6 w-6 mb-1" />
               <span className="text-xs font-medium">Community</span>
+            </button>
+
+            {/* Operator */}
+            <button
+              onClick={() => router.push("/operator")}
+              className={getBottomNavButtonClass("/operator", pathname.startsWith("/operator"))}
+            >
+              <ServerStackIcon className="h-6 w-6 mb-1" />
+              <span className="text-xs font-medium">Operator</span>
             </button>
 
             {/* Transfer */}
