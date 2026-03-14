@@ -62,6 +62,10 @@ export class DatabaseService implements OnModuleInit, PersistenceAdapter {
     return this.adapter.findUserById(id);
   }
 
+  async findUserByWalletAddress(walletAddress: string): Promise<any> {
+    return this.adapter.findUserByWalletAddress(walletAddress);
+  }
+
   // Accounts operations
   async getAccounts(): Promise<any[]> {
     return this.adapter.getAccounts();

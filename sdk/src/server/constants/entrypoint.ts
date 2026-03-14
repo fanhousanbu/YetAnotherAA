@@ -11,19 +11,22 @@ export interface EntryPointConfig {
   validatorAddress: string;
 }
 
-/** Default EntryPoint addresses (same on Sepolia and Mainnet). */
+/** Default EntryPoint addresses (same on Sepolia, Mainnet, and OP Mainnet). */
 export const ENTRYPOINT_ADDRESSES = {
   [EntryPointVersion.V0_6]: {
     sepolia: "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
     mainnet: "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
+    optimism: "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
   },
   [EntryPointVersion.V0_7]: {
     sepolia: "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
     mainnet: "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+    optimism: "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
   },
   [EntryPointVersion.V0_8]: {
     sepolia: "0x0576a174D229E3cFA37253523E645A78A0C91B57",
     mainnet: "0x0576a174D229E3cFA37253523E645A78A0C91B57",
+    optimism: "0x0576a174D229E3cFA37253523E645A78A0C91B57",
   },
 };
 
@@ -57,6 +60,49 @@ export const ACCOUNT_ABI = [
 
 export const VALIDATOR_ABI = [
   "function getGasEstimate(uint256 nodeCount) external pure returns (uint256 gasEstimate)",
+];
+
+// ── AirAccount M4 Contract Addresses (Sepolia) ──────────────────
+
+export const AIRACCOUNT_ADDRESSES = {
+  sepolia: {
+    factory: "0x914db0a849f55e68a726c72fd02b7114b1176d88",
+    validatorRouter: "0x730a162Ce3202b94cC5B74181B75b11eBB3045B1",
+    blsAlgorithm: "0xc2096E8D04beb3C337bb388F5352710d62De0287",
+    superPaymaster: "0x16cE0c7d846f9446bbBeb9C5a84A4D140fAeD94A",
+  },
+};
+
+// ── AirAccount ABIs ──────────────────────────────────────────────
+
+export const AIRACCOUNT_ABI = [
+  "function execute(address dest, uint256 value, bytes calldata func) external",
+  "function executeBatch(address[] calldata dest, uint256[] calldata value, bytes[] calldata func) external",
+  "function owner() external view returns (address)",
+  "function validator() external view returns (address)",
+  "function setValidator(address _validator) external",
+  "function setP256Key(bytes32 _x, bytes32 _y) external",
+  "function setTierLimits(uint256 _tier1, uint256 _tier2) external",
+  "function tier1Limit() external view returns (uint256)",
+  "function tier2Limit() external view returns (uint256)",
+  "function p256KeyX() external view returns (bytes32)",
+  "function p256KeyY() external view returns (bytes32)",
+  "function guardianCount() external view returns (uint8)",
+  "function getConfigDescription() external view returns (tuple(address accountOwner, address guardAddress, uint256 dailyLimit, uint256 dailyRemaining, uint256 tier1Limit, uint256 tier2Limit, address[3] guardianAddresses, uint8 guardianCount, bool hasP256Key, bool hasValidator))",
+];
+
+export const AIRACCOUNT_FACTORY_ABI = [
+  "function createAccount(address owner, uint256 salt, tuple(address[3] guardians, uint256 dailyLimit, uint8[] approvedAlgIds) config) external returns (address)",
+  "function getAddress(address owner, uint256 salt, tuple(address[3] guardians, uint256 dailyLimit, uint8[] approvedAlgIds) config) external view returns (address)",
+  "function createAccountWithDefaults(address owner, uint256 salt, address guardian1, address guardian2, uint256 dailyLimit) external returns (address)",
+  "function getAddressWithDefaults(address owner, uint256 salt, address guardian1, address guardian2, uint256 dailyLimit) external view returns (address)",
+];
+
+export const GLOBAL_GUARD_ABI = [
+  "function remainingDailyAllowance() external view returns (uint256)",
+  "function dailyLimit() external view returns (uint256)",
+  "function approvedAlgorithms(uint8 algId) external view returns (bool)",
+  "function account() external view returns (address)",
 ];
 
 export const ERC20_ABI = [

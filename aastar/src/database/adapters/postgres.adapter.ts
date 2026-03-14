@@ -54,6 +54,10 @@ export class PostgresAdapter implements PersistenceAdapter {
     return this.userRepository.findOne({ where: { id } });
   }
 
+  async findUserByWalletAddress(walletAddress: string): Promise<any> {
+    return this.userRepository.findOne({ where: { walletAddress } });
+  }
+
   // Accounts operations
   async getAccounts(): Promise<any[]> {
     return this.accountRepository.find();

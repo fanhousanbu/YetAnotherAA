@@ -6,7 +6,8 @@ import Layout from "@/components/Layout";
 import TokenSelector from "@/components/TokenSelector";
 import TransferSkeleton from "@/components/TransferSkeleton";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { transferAPI, tokenAPI, paymasterAPI, addressBookAPI, authAPI } from "@/lib/api";
+import { transferAPI, tokenAPI, paymasterAPI, addressBookAPI } from "@/lib/api";
+import { kmsClient } from "@/lib/yaaa";
 import { GasEstimate, Token, TokenBalance } from "@/lib/types";
 import toast from "react-hot-toast";
 import { startAuthentication } from "@simplewebauthn/browser";
@@ -199,26 +200,28 @@ export default function TransferPage() {
       return;
     }
 
-    // Check if amount exceeds available balance
+    // Check if amount exceeds available balance (skip when using paymaster)
     const transferAmount = parseFloat(formData.amount);
 
-    if (!selectedToken || selectedToken.address === "ETH") {
-      // ETH transfer validation
-      const availableBalance = parseFloat(account?.balance || "0");
-      if (transferAmount > availableBalance) {
-        toast.error(
-          `Insufficient balance: Trying to send ${transferAmount} ETH but only ${availableBalance} ETH available`
-        );
-        return;
-      }
-    } else {
-      // Token transfer validation
-      const availableBalance = parseFloat(tokenBalance?.formattedBalance || "0");
-      if (transferAmount > availableBalance) {
-        toast.error(
-          `Insufficient balance: Trying to send ${transferAmount} ${selectedToken.symbol} but only ${availableBalance} ${selectedToken.symbol} available`
-        );
-        return;
+    if (!formData.usePaymaster) {
+      if (!selectedToken || selectedToken.address === "ETH") {
+        // ETH transfer validation
+        const availableBalance = parseFloat(account?.balance || "0");
+        if (transferAmount > availableBalance) {
+          toast.error(
+            `Insufficient balance: Trying to send ${transferAmount} ETH but only ${availableBalance} ETH available`
+          );
+          return;
+        }
+      } else {
+        // Token transfer validation
+        const availableBalance = parseFloat(tokenBalance?.formattedBalance || "0");
+        if (transferAmount > availableBalance) {
+          toast.error(
+            `Insufficient balance: Trying to send ${transferAmount} ${selectedToken.symbol} but only ${availableBalance} ${selectedToken.symbol} available`
+          );
+          return;
+        }
       }
     }
 
@@ -229,21 +232,24 @@ export default function TransferPage() {
 
     setLoading(prev => ({ ...prev, transfer: true }));
 
-    let passkeyCredential = null;
     let loadingToast: string | null = null;
 
     try {
-      // Step 1: Begin passkey verification
+      // Step 1: KMS Passkey authentication
       loadingToast = toast.loading("Starting transaction verification...");
-      const beginResponse = await authAPI.beginTransactionVerification();
-      const options = beginResponse.data;
+      const authResponse = await kmsClient.beginAuthentication({
+        Address: account?.signerAddress,
+      });
 
-      // Step 2: Authenticate with passkey
+      // Step 2: Browser WebAuthn authentication ceremony
       toast.dismiss(loadingToast);
       loadingToast = toast.loading("Please verify with your passkey...");
-      passkeyCredential = await startAuthentication(options);
+      const credential = await startAuthentication(authResponse.Options as any);
 
-      // Step 3: Continue with transfer
+      // Step 3: Extract Legacy assertion (reusable for BLS dual-signing)
+      const passkeyAssertion = await kmsClient.extractLegacyAssertion(credential);
+
+      // Step 4: Execute transfer with Legacy assertion
       toast.dismiss(loadingToast);
       loadingToast = toast.loading("Processing transfer...");
       const requestData = {
@@ -254,8 +260,8 @@ export default function TransferPage() {
           formData.usePaymaster && formData.paymasterAddress
             ? formData.paymasterAddress
             : undefined,
-        tokenAddress: selectedToken?.address === "ETH" ? undefined : selectedToken?.address, // undefined = ETH transfer
-        passkeyCredential: passkeyCredential, // Add passkey credential
+        tokenAddress: selectedToken?.address === "ETH" ? undefined : selectedToken?.address,
+        passkeyAssertion,
       };
 
       const response = await transferAPI.execute(requestData);
@@ -419,7 +425,10 @@ export default function TransferPage() {
     }
 
     const transferAmount = parseFloat(formData.amount);
-    if (transferAmount <= 0) return true;
+    if (transferAmount < 0) return true;
+
+    // When using paymaster, skip balance checks (paymaster sponsors gas)
+    if (formData.usePaymaster) return false;
 
     // For ETH transfers, check ETH balance
     if (!selectedToken || selectedToken.address === "ETH") {
@@ -1167,8 +1176,15 @@ export default function TransferPage() {
                     {(() => {
                       if (!formData.amount) return "Send Transfer";
                       const transferAmount = parseFloat(formData.amount);
+                      const symbol =
+                        !selectedToken || selectedToken.address === "ETH"
+                          ? "ETH"
+                          : selectedToken.symbol;
 
-                      if (!selectedToken || selectedToken.address === "ETH") {
+                      // When using paymaster, always show send button
+                      if (formData.usePaymaster) return `Send ${symbol}`;
+
+                      if (symbol === "ETH") {
                         return transferAmount > parseFloat(account?.balance || "0")
                           ? "Insufficient ETH Balance"
                           : "Send ETH";
@@ -1178,8 +1194,8 @@ export default function TransferPage() {
                         tokenBalance?.formattedBalance || "0"
                       );
                       return transferAmount > availableTokenBalance
-                        ? `Insufficient ${selectedToken.symbol} Balance`
-                        : `Send ${selectedToken.symbol}`;
+                        ? `Insufficient ${selectedToken!.symbol} Balance`
+                        : `Send ${selectedToken!.symbol}`;
                     })()}
                   </button>
                 </div>

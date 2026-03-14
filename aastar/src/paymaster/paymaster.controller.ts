@@ -21,7 +21,7 @@ export class PaymasterController {
       items: {
         type: "object",
         properties: {
-          name: { type: "string", example: "pimlico-sepolia" },
+          name: { type: "string", example: "pimlico-optimism" },
           address: { type: "string", example: "0x..." },
           configured: { type: "boolean", example: true },
         },

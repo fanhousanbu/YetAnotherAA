@@ -75,13 +75,91 @@ export class PaymasterManager {
         entryPoint.toLowerCase() === "0x0576a174D229E3cFA37253523E645A78A0C91B57".toLowerCase();
 
       if (isV07OrV08) {
+        const provider = this.ethereum.getProvider();
+
+        // Detect SuperPaymaster vs PaymasterV4
+        let isSuperPaymaster = false;
+        let operatorAddress = "0x";
+        try {
+          const spContract = new ethers.Contract(
+            formattedAddress,
+            [
+              "function owner() view returns (address)",
+              "function operators(address) view returns (bool,uint256,address,uint256)",
+            ],
+            provider
+          );
+          const owner = await spContract.owner();
+          const opInfo = await spContract.operators(owner);
+          if (opInfo && opInfo[0] === true) {
+            isSuperPaymaster = true;
+            operatorAddress = owner;
+            this.logger.log(`SuperPaymaster detected, operator: ${operatorAddress}`);
+          }
+        } catch {
+          /* not SuperPaymaster */
+        }
+
+        if (isSuperPaymaster) {
+          const verGas = BigInt(80000);
+          const postGas = BigInt(100000);
+          const maxRate = (BigInt(1) << BigInt(256)) - BigInt(1);
+          return ethers.concat([
+            formattedAddress,
+            ethers.zeroPadValue(ethers.toBeHex(verGas), 16),
+            ethers.zeroPadValue(ethers.toBeHex(postGas), 16),
+            operatorAddress,
+            ethers.zeroPadValue(ethers.toBeHex(maxRate), 32),
+          ]);
+        }
+
+        // PaymasterV4 path
         const paymasterVerificationGasLimit = BigInt(0x30000);
         const paymasterPostOpGasLimit = BigInt(0x30000);
+
+        let gasTokenData = "0x";
+        try {
+          const pmContract = new ethers.Contract(
+            formattedAddress,
+            [
+              "function getSupportedGasTokens() view returns (address[])",
+              "function tokenPrices(address) view returns (uint256)",
+            ],
+            provider
+          );
+
+          try {
+            const gasTokens: string[] = await pmContract.getSupportedGasTokens();
+            if (gasTokens && gasTokens.length > 0) {
+              gasTokenData = gasTokens[0];
+              this.logger.log(`PaymasterV4 gas token (from list): ${gasTokenData}`);
+            }
+          } catch {
+            const knownGasTokens = [
+              "0xDf669834F04988BcEE0E3B6013B6b867Bd38778d", // aPNTs (Sepolia)
+            ];
+            for (const token of knownGasTokens) {
+              try {
+                const price = await pmContract.tokenPrices(token);
+                if (price > 0n) {
+                  gasTokenData = token;
+                  this.logger.log(`PaymasterV4 gas token (from price check): ${gasTokenData}`);
+                  break;
+                }
+              } catch {
+                /* skip */
+              }
+            }
+          }
+        } catch {
+          this.logger.log("Could not query gas tokens from paymaster, proceeding without");
+        }
+
         return ethers.concat([
           formattedAddress,
           ethers.zeroPadValue(ethers.toBeHex(paymasterVerificationGasLimit), 16),
           ethers.zeroPadValue(ethers.toBeHex(paymasterPostOpGasLimit), 16),
-          "0x",
+          gasTokenData,
         ]);
       }
 

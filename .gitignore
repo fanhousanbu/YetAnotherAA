@@ -117,3 +117,4 @@ temp/
 ehthumbs.db
 Thumbs.db
 .secret
+.playwright-mcp

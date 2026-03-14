@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import { authAPI } from "@/lib/api";
+import { kmsClient } from "@/lib/yaaa";
 import { setStoredAuth } from "@/lib/auth";
 import toast from "react-hot-toast";
 import { startRegistration } from "@simplewebauthn/browser";
@@ -17,6 +18,7 @@ export default function RegisterPage() {
     confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
+  const [walletStatus, setWalletStatus] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,40 +49,72 @@ export default function RegisterPage() {
     let loadingToast: string | null = null;
 
     try {
-      // 第一步：开始Passkey注册
-      loadingToast = toast.loading("Starting passkey registration...");
-      const beginResponse = await authAPI.beginPasskeyRegistration({
+      // Step 1: Register user account (email/password) → get JWT
+      loadingToast = toast.loading("Creating account...");
+      const registerResponse = await authAPI.register({
         email: formData.email,
         username: formData.username || undefined,
         password: formData.password,
       });
 
-      const { options } = beginResponse.data;
+      const { access_token, user } = registerResponse.data;
+      setStoredAuth(access_token, user);
 
-      // 第二步：调用WebAuthn API
+      // Step 2: Begin KMS WebAuthn registration
+      toast.dismiss(loadingToast);
+      loadingToast = toast.loading("Starting passkey registration...");
+
+      const beginResponse = await kmsClient.beginRegistration({
+        Description: user.id,
+        UserName: formData.email,
+        UserDisplayName: formData.username || formData.email.split("@")[0],
+      });
+
+      // Step 3: Browser WebAuthn registration ceremony
       toast.dismiss(loadingToast);
       loadingToast = toast.loading("Please complete the passkey setup with your authenticator...");
-      const credential = await startRegistration(options);
+      const credential = await startRegistration(beginResponse.Options as any);
 
-      // 第三步：完成注册
+      // Step 4: Complete KMS registration → get KeyId
       toast.dismiss(loadingToast);
-      loadingToast = toast.loading("Completing registration...");
-      const completeResponse = await authAPI.completePasskeyRegistration({
-        email: formData.email,
-        username: formData.username || undefined,
-        password: formData.password,
-        credential,
+      loadingToast = toast.loading("Completing passkey registration...");
+
+      const completeResponse = await kmsClient.completeRegistration({
+        ChallengeId: beginResponse.ChallengeId,
+        Credential: credential,
+        Description: user.id,
       });
 
-      const { access_token, user } = completeResponse.data;
+      const { KeyId, CredentialId } = completeResponse;
+
+      // Step 5: Poll for key readiness (address derivation takes 60-75s on STM32)
+      toast.dismiss(loadingToast);
+      setWalletStatus("Creating your wallet... This may take up to 2 minutes.");
+      loadingToast = toast.loading("Deriving wallet address (this may take a moment)...");
+
+      const keyStatus = await kmsClient.pollUntilReady(KeyId, 150_000, 3_000);
+
+      if (!keyStatus.Address) {
+        throw new Error("Key derivation completed but no address returned");
+      }
+
+      // Step 6: Link wallet to user account
+      toast.dismiss(loadingToast);
+      loadingToast = toast.loading("Linking wallet to your account...");
+
+      await authAPI.linkWallet({
+        kmsKeyId: KeyId,
+        address: keyStatus.Address,
+        credentialId: CredentialId,
+      });
 
       toast.dismiss(loadingToast);
-      setStoredAuth(access_token, user);
-      toast.success("Account created successfully with passkey!");
+      setWalletStatus(null);
+      toast.success("Account created with passkey wallet!");
       router.push("/dashboard");
     } catch (error: any) {
-      console.error("Passkey registration error:", error);
-      let message = "Passkey registration failed";
+      console.error("Registration error:", error);
+      let message = "Registration failed";
 
       if (error.response?.data?.message) {
         message = error.response.data.message;
@@ -90,11 +124,14 @@ export default function RegisterPage() {
         message = "Passkeys are not supported on this device";
       } else if (error.name === "SecurityError") {
         message = "Security error during passkey registration";
+      } else if (error.message) {
+        message = error.message;
       }
 
       if (loadingToast) {
         toast.dismiss(loadingToast);
       }
+      setWalletStatus(null);
       toast.error(message);
     } finally {
       setLoading(false);
@@ -149,6 +186,16 @@ export default function RegisterPage() {
               Join us with secure passkey authentication
             </p>
           </div>
+
+          {/* Wallet creation status banner */}
+          {walletStatus && (
+            <div className="mb-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 dark:border-blue-400 mr-3"></div>
+                <p className="text-sm text-blue-800 dark:text-blue-300">{walletStatus}</p>
+              </div>
+            </div>
+          )}
 
           {/* Main Card */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
@@ -295,12 +342,12 @@ export default function RegisterPage() {
                   </div>
                   <div className="ml-3 flex-1">
                     <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      Step 1 of 2: Account Details
+                      Step 1 of 3: Account Details
                     </h3>
                     <div className="mt-1 text-sm text-slate-700 dark:text-slate-300">
                       <p>
-                        After submitting, you&apos;ll set up a passkey using your device&apos;s
-                        authenticator (Face ID, Touch ID, etc.).
+                        After submitting, you&apos;ll set up a passkey, then your wallet will be
+                        created automatically (takes ~1 minute).
                       </p>
                     </div>
                   </div>

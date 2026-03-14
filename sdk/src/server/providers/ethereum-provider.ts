@@ -5,7 +5,7 @@ import {
   ENTRYPOINT_ABI_V6,
   ENTRYPOINT_ABI_V7_V8,
   FACTORY_ABI_V6,
-  FACTORY_ABI_V7_V8,
+  AIRACCOUNT_FACTORY_ABI,
   ACCOUNT_ABI,
   VALIDATOR_ABI,
 } from "../constants/entrypoint";
@@ -75,7 +75,7 @@ export class EthereumProvider {
 
   getFactoryContract(version: EntryPointVersion = EntryPointVersion.V0_6): ethers.Contract {
     const address = this.getFactoryAddress(version);
-    const abi = version === EntryPointVersion.V0_6 ? FACTORY_ABI_V6 : FACTORY_ABI_V7_V8;
+    const abi = version === EntryPointVersion.V0_6 ? FACTORY_ABI_V6 : AIRACCOUNT_FACTORY_ABI;
     return new ethers.Contract(address, abi, this.provider);
   }
 
@@ -163,7 +163,7 @@ export class EthereumProvider {
     } catch {
       return {
         callGasLimit: "0x249f0",
-        verificationGasLimit: "0xf4240",
+        verificationGasLimit: "0x3d0900", // 4M — enough for M4 factory deployment + BLS verification
         preVerificationGas: "0x11170",
       };
     }

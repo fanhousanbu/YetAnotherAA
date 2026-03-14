@@ -213,7 +213,7 @@ export class UserTokenService {
       decimals: tokenData.decimals,
       logoUrl: tokenData.logoUrl,
       isCustom: true,
-      chainId: this.configService.get<number>("chainId", 11155111),
+      chainId: this.configService.get<number>("chainId", 10),
       isActive: true,
       sortOrder: maxSortOrder + 1,
       createdAt: new Date().toISOString(),

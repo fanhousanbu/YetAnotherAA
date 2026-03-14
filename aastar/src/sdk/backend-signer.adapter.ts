@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { ISignerAdapter } from "@yaaa/sdk/server";
+import { ISignerAdapter, PasskeyAssertionContext } from "@yaaa/sdk/server";
 import { AuthService } from "../auth/auth.service";
 import { ethers } from "ethers";
 
@@ -9,10 +9,15 @@ export class BackendSignerAdapter implements ISignerAdapter {
 
   async getAddress(userId: string): Promise<string> {
     const wallet = await this.authService.getUserWallet(userId);
-    return wallet.address;
+    return wallet.address || (await wallet.getAddress());
   }
 
-  async getSigner(userId: string): Promise<ethers.Signer> {
+  async getSigner(userId: string, ctx?: PasskeyAssertionContext): Promise<ethers.Signer> {
+    if (ctx?.assertion) {
+      // Create a KmsSigner with the provided assertion
+      const assertionProvider = () => Promise.resolve(ctx.assertion);
+      return this.authService.getUserWallet(userId, assertionProvider);
+    }
     return this.authService.getUserWallet(userId);
   }
 

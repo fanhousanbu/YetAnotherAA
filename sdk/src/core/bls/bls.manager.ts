@@ -1,7 +1,13 @@
 import axios from "axios";
 import { ethers } from "ethers";
 import { bls12_381 as bls } from "@noble/curves/bls12-381.js";
-import { BLSConfig, BLSNode, BLSSignatureData } from "./types";
+import {
+  BLSConfig,
+  BLSNode,
+  BLSSignatureData,
+  CumulativeT2SignatureData,
+  CumulativeT3SignatureData,
+} from "./types";
 
 export class BLSManager {
   private config: BLSConfig;
@@ -116,6 +122,67 @@ export class BLSManager {
       bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
     }
     return bytes;
+  }
+
+  /**
+   * Pack cumulative Tier 2 signature (algId 0x04): P256 + BLS.
+   *
+   * Format:
+   *   [algId=0x04 (1)] [P256 r (32)] [P256 s (32)]
+   *   [nodeIdsLength (32)] [nodeIds (N×32)]
+   *   [blsAggregateSig (256)] [messagePoint (256)]
+   *   [messagePointECDSA (65)]
+   */
+  packCumulativeT2Signature(data: CumulativeT2SignatureData): string {
+    const nodeIdsLength = ethers.solidityPacked(["uint256"], [data.nodeIds.length]);
+    const nodeIdsBytes = ethers.solidityPacked(
+      Array(data.nodeIds.length).fill("bytes32"),
+      data.nodeIds
+    );
+
+    return ethers.solidityPacked(
+      ["bytes1", "bytes", "bytes", "bytes", "bytes", "bytes", "bytes"],
+      [
+        "0x04",
+        data.p256Signature,
+        nodeIdsLength,
+        nodeIdsBytes,
+        data.blsSignature,
+        data.messagePoint,
+        data.messagePointSignature,
+      ]
+    );
+  }
+
+  /**
+   * Pack cumulative Tier 3 signature (algId 0x05): P256 + BLS + Guardian.
+   *
+   * Format:
+   *   [algId=0x05 (1)] [P256 r (32)] [P256 s (32)]
+   *   [nodeIdsLength (32)] [nodeIds (N×32)]
+   *   [blsAggregateSig (256)] [messagePoint (256)]
+   *   [messagePointECDSA (65)] [guardianECDSA (65)]
+   */
+  packCumulativeT3Signature(data: CumulativeT3SignatureData): string {
+    const nodeIdsLength = ethers.solidityPacked(["uint256"], [data.nodeIds.length]);
+    const nodeIdsBytes = ethers.solidityPacked(
+      Array(data.nodeIds.length).fill("bytes32"),
+      data.nodeIds
+    );
+
+    return ethers.solidityPacked(
+      ["bytes1", "bytes", "bytes", "bytes", "bytes", "bytes", "bytes", "bytes"],
+      [
+        "0x05",
+        data.p256Signature,
+        nodeIdsLength,
+        nodeIdsBytes,
+        data.blsSignature,
+        data.messagePoint,
+        data.messagePointSignature,
+        data.guardianSignature,
+      ]
+    );
   }
 
   /**
