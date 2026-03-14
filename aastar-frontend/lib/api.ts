@@ -254,6 +254,14 @@ export const registryAPI = {
   getCommunity: (name: string) => api.get("/registry/community", { params: { name } }),
 };
 
+// Admin API
+export const adminAPI = {
+  getProtocol: () => api.get("/admin/protocol"),
+  getRoles: () => api.get("/admin/roles"),
+  getGToken: () => api.get("/admin/gtoken"),
+  getDashboard: () => api.get("/admin/dashboard"),
+};
+
 // Operator API
 export const operatorAPI = {
   getAddresses: () => api.get("/operator/addresses"),

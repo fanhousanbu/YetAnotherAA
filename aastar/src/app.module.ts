@@ -18,6 +18,7 @@ import { GuardianModule } from "./guardian/guardian.module";
 import { RegistryModule } from "./registry/registry.module";
 import { CommunityModule } from "./community/community.module";
 import { OperatorModule } from "./operator/operator.module";
+import { AdminModule } from "./admin/admin.module";
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { OperatorModule } from "./operator/operator.module";
     RegistryModule,
     CommunityModule,
     OperatorModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

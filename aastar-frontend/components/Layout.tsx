@@ -123,6 +123,12 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                   Operator
                 </button>
                 <button
+                  onClick={() => router.push("/admin")}
+                  className={getNavButtonClass("/admin", pathname.startsWith("/admin"))}
+                >
+                  Protocol
+                </button>
+                <button
                   onClick={() => router.push("/transfer")}
                   className={getNavButtonClass("/transfer", pathname.startsWith("/transfer"))}
                 >
