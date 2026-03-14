@@ -244,4 +244,14 @@ export const userNFTAPI = {
     api.post("/user-nfts/verify-ownership", data),
 };
 
+// Registry API
+export const registryAPI = {
+  getInfo: () => api.get("/registry/info"),
+  getRoleIds: () => api.get("/registry/role-ids"),
+  getRole: (address?: string) =>
+    api.get("/registry/role", { params: address ? { address } : undefined }),
+  getMembers: (roleId: string) => api.get("/registry/members", { params: { roleId } }),
+  getCommunity: (name: string) => api.get("/registry/community", { params: { name } }),
+};
+
 export default api;

@@ -17,6 +17,7 @@ import {
   ChevronRightIcon,
   ChevronDownIcon,
   BookOpenIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 
 interface LayoutProps {
@@ -100,6 +101,12 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                   className={getNavButtonClass("/dashboard", pathname === "/dashboard")}
                 >
                   Dashboard
+                </button>
+                <button
+                  onClick={() => router.push("/role")}
+                  className={getNavButtonClass("/role", pathname === "/role")}
+                >
+                  My Role
                 </button>
                 <button
                   onClick={() => router.push("/transfer")}
@@ -227,6 +234,15 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
             >
               <HomeIcon className="h-6 w-6 mb-1" />
               <span className="text-xs font-medium">Home</span>
+            </button>
+
+            {/* My Role */}
+            <button
+              onClick={() => router.push("/role")}
+              className={getBottomNavButtonClass("/role", pathname === "/role")}
+            >
+              <ShieldCheckIcon className="h-6 w-6 mb-1" />
+              <span className="text-xs font-medium">My Role</span>
             </button>
 
             {/* Transfer */}
