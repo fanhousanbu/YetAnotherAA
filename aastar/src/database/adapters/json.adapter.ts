@@ -80,7 +80,7 @@ export class JsonAdapter implements PersistenceAdapter {
   async findUserByWalletAddress(walletAddress: string): Promise<any> {
     const users = await this.getUsers();
     return users.find(
-      u => u.walletAddress && u.walletAddress.toLowerCase() === walletAddress.toLowerCase(),
+      u => u.walletAddress && u.walletAddress.toLowerCase() === walletAddress.toLowerCase()
     );
   }
 

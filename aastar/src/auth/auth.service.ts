@@ -18,10 +18,7 @@ import * as crypto from "crypto";
 @Injectable()
 export class AuthService {
   /** Temporary store for KMS login challenges (address → { loginHash, expiresAt }) */
-  private loginChallengeStore = new Map<
-    string,
-    { loginHash: string; expiresAt: number }
-  >();
+  private loginChallengeStore = new Map<string, { loginHash: string; expiresAt: number }>();
 
   /** Cleanup interval for expired challenges */
   private cleanupInterval: ReturnType<typeof setInterval>;
@@ -30,7 +27,7 @@ export class AuthService {
     private databaseService: DatabaseService,
     private jwtService: JwtService,
     private configService: ConfigService,
-    private kmsService: KmsService,
+    private kmsService: KmsService
   ) {
     // Clean up expired challenges every 60 seconds
     this.cleanupInterval = setInterval(() => this.cleanupExpiredChallenges(), 60_000);
@@ -120,9 +117,7 @@ export class AuthService {
     }
 
     if (!user.walletAddress) {
-      throw new BadRequestException(
-        "User has no wallet linked. Please register a Passkey first.",
-      );
+      throw new BadRequestException("User has no wallet linked. Please register a Passkey first.");
     }
 
     // Generate random 32-byte login hash
@@ -145,11 +140,7 @@ export class AuthService {
    * credential to sign the loginHash, then verifies the signature matches
    * the user's wallet address.
    */
-  async verifyKmsLogin(
-    address: string,
-    challengeId: string,
-    credential: unknown,
-  ) {
+  async verifyKmsLogin(address: string, challengeId: string, credential: unknown) {
     const normalizedAddress = address.toLowerCase();
     const challenge = this.loginChallengeStore.get(normalizedAddress);
 
@@ -168,7 +159,7 @@ export class AuthService {
         address,
         challenge.loginHash,
         challengeId,
-        credential,
+        credential
       );
 
       // Verify the signature matches the expected address
@@ -205,12 +196,7 @@ export class AuthService {
    * Link a KMS wallet to a user account. Called after KMS key creation
    * and address derivation are complete.
    */
-  async linkWallet(
-    userId: string,
-    kmsKeyId: string,
-    walletAddress: string,
-    credentialId?: string,
-  ) {
+  async linkWallet(userId: string, kmsKeyId: string, walletAddress: string, credentialId?: string) {
     const user = await this.databaseService.findUserById(userId);
     if (!user) {
       throw new UnauthorizedException("User not found");
@@ -243,15 +229,11 @@ export class AuthService {
 
     if (!user.walletAddress || !user.kmsKeyId) {
       throw new Error(
-        `User wallet not initialized for userId: ${userId}. Link a KMS wallet first.`,
+        `User wallet not initialized for userId: ${userId}. Link a KMS wallet first.`
       );
     }
 
-    return this.kmsService.createKmsSigner(
-      user.kmsKeyId,
-      user.walletAddress,
-      assertionProvider,
-    );
+    return this.kmsService.createKmsSigner(user.kmsKeyId, user.walletAddress, assertionProvider);
   }
 
   /**
@@ -271,7 +253,7 @@ export class AuthService {
     }
 
     throw new Error(
-      `User has no KMS wallet. Register a Passkey via KMS and call linkWallet first.`,
+      `User has no KMS wallet. Register a Passkey via KMS and call linkWallet first.`
     );
   }
 

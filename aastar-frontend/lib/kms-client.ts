@@ -73,7 +73,7 @@ function bytesToHex(bytes: Uint8Array): string {
   return (
     "0x" +
     Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, "0"))
+      .map(b => b.toString(16).padStart(2, "0"))
       .join("")
   );
 }
@@ -114,19 +114,19 @@ export class KmsClient {
   // ── WebAuthn Ceremonies ───────────────────────────────────────
 
   async beginRegistration(
-    params: KmsBeginRegistrationRequest,
+    params: KmsBeginRegistrationRequest
   ): Promise<KmsBeginRegistrationResponse> {
     return this.request("/BeginRegistration", params);
   }
 
   async completeRegistration(
-    params: KmsCompleteRegistrationRequest,
+    params: KmsCompleteRegistrationRequest
   ): Promise<KmsCompleteRegistrationResponse> {
     return this.request("/CompleteRegistration", params);
   }
 
   async beginAuthentication(
-    params: KmsBeginAuthenticationRequest,
+    params: KmsBeginAuthenticationRequest
   ): Promise<KmsBeginAuthenticationResponse> {
     return this.request("/BeginAuthentication", params);
   }
@@ -139,10 +139,9 @@ export class KmsClient {
       headers["x-api-key"] = this.apiKey;
     }
 
-    const response = await fetch(
-      `${this.baseUrl}/KeyStatus?KeyId=${encodeURIComponent(keyId)}`,
-      { headers },
-    );
+    const response = await fetch(`${this.baseUrl}/KeyStatus?KeyId=${encodeURIComponent(keyId)}`, {
+      headers,
+    });
 
     if (!response.ok) {
       const text = await response.text().catch(() => "");
@@ -159,7 +158,7 @@ export class KmsClient {
   async pollUntilReady(
     keyId: string,
     timeoutMs: number = 120_000,
-    intervalMs: number = 3_000,
+    intervalMs: number = 3_000
   ): Promise<KmsKeyStatusResponse> {
     const deadline = Date.now() + timeoutMs;
 
@@ -173,7 +172,7 @@ export class KmsClient {
         throw new Error(`KMS key derivation failed: ${status.Error ?? "unknown error"}`);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      await new Promise(resolve => setTimeout(resolve, intervalMs));
     }
 
     throw new Error(`KMS key derivation timed out after ${timeoutMs}ms`);
@@ -200,9 +199,7 @@ export class KmsClient {
     // SHA-256 hash of clientDataJSON — copy to a plain ArrayBuffer for SubtleCrypto
     const jsonArrayBuffer = new ArrayBuffer(clientDataJSONBytes.byteLength);
     new Uint8Array(jsonArrayBuffer).set(clientDataJSONBytes);
-    const clientDataHash = new Uint8Array(
-      await crypto.subtle.digest("SHA-256", jsonArrayBuffer),
-    );
+    const clientDataHash = new Uint8Array(await crypto.subtle.digest("SHA-256", jsonArrayBuffer));
 
     return {
       AuthenticatorData: bytesToHex(authenticatorDataBytes),

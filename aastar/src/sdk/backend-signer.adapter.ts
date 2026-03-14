@@ -12,10 +12,7 @@ export class BackendSignerAdapter implements ISignerAdapter {
     return wallet.address || (await wallet.getAddress());
   }
 
-  async getSigner(
-    userId: string,
-    ctx?: PasskeyAssertionContext,
-  ): Promise<ethers.Signer> {
+  async getSigner(userId: string, ctx?: PasskeyAssertionContext): Promise<ethers.Signer> {
     if (ctx?.assertion) {
       // Create a KmsSigner with the provided assertion
       const assertionProvider = () => Promise.resolve(ctx.assertion);
@@ -24,9 +21,7 @@ export class BackendSignerAdapter implements ISignerAdapter {
     return this.authService.getUserWallet(userId);
   }
 
-  async ensureSigner(
-    userId: string,
-  ): Promise<{ signer: ethers.Signer; address: string }> {
+  async ensureSigner(userId: string): Promise<{ signer: ethers.Signer; address: string }> {
     const wallet = await this.authService.ensureUserWallet(userId);
     const address = wallet.address || (await wallet.getAddress());
     return { signer: wallet, address };

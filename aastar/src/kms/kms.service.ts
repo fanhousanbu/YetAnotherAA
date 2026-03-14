@@ -50,8 +50,7 @@ export class KmsService {
   private readonly http: AxiosInstance;
 
   constructor(private configService: ConfigService) {
-    this.kmsEndpoint =
-      this.configService.get<string>("kmsEndpoint") || "https://kms1.aastar.io";
+    this.kmsEndpoint = this.configService.get<string>("kmsEndpoint") || "https://kms1.aastar.io";
     this.isEnabled = this.configService.get<boolean>("kmsEnabled") === true;
 
     const headers: Record<string, string> = {
@@ -113,10 +112,7 @@ export class KmsService {
 
   // ── Key Management ──────────────────────────────────────────────
 
-  async createKey(
-    description: string,
-    passkeyPublicKey?: string,
-  ): Promise<KmsCreateKeyResponse> {
+  async createKey(description: string, passkeyPublicKey?: string): Promise<KmsCreateKeyResponse> {
     this.ensureEnabled();
 
     const payload: Record<string, unknown> = {
@@ -153,7 +149,7 @@ export class KmsService {
   async signHashWithAssertion(
     address: string,
     hash: string,
-    assertion: LegacyPasskeyAssertion,
+    assertion: LegacyPasskeyAssertion
   ): Promise<KmsSignHashResponse> {
     this.ensureEnabled();
 
@@ -174,7 +170,7 @@ export class KmsService {
     address: string,
     hash: string,
     challengeId: string,
-    credential: unknown,
+    credential: unknown
   ): Promise<KmsSignHashResponse> {
     this.ensureEnabled();
 
@@ -191,9 +187,7 @@ export class KmsService {
 
   // ── WebAuthn Ceremonies ─────────────────────────────────────────
 
-  async beginAuthentication(
-    params: { Address?: string; KeyId?: string },
-  ): Promise<any> {
+  async beginAuthentication(params: { Address?: string; KeyId?: string }): Promise<any> {
     this.ensureEnabled();
     const response = await this.http.post("/BeginAuthentication", params);
     return response.data;
@@ -210,7 +204,7 @@ export class KmsService {
     keyId: string,
     address: string,
     assertionProvider?: () => Promise<LegacyPasskeyAssertion>,
-    provider?: ethers.Provider,
+    provider?: ethers.Provider
   ): KmsSigner {
     this.ensureEnabled();
     return new KmsSigner(keyId, address, this, assertionProvider, provider);
@@ -225,7 +219,7 @@ export class KmsSigner extends ethers.AbstractSigner {
     private readonly _address: string,
     private readonly kmsService: KmsService,
     private readonly assertionProvider?: () => Promise<LegacyPasskeyAssertion>,
-    provider?: ethers.Provider,
+    provider?: ethers.Provider
   ) {
     super(provider);
   }
@@ -236,22 +230,19 @@ export class KmsSigner extends ethers.AbstractSigner {
 
   private async getAssertion(): Promise<LegacyPasskeyAssertion> {
     if (!this.assertionProvider) {
-      throw new Error(
-        "Passkey assertion is required for signing. Provide an assertionProvider.",
-      );
+      throw new Error("Passkey assertion is required for signing. Provide an assertionProvider.");
     }
     return this.assertionProvider();
   }
 
   async signMessage(message: string | Uint8Array): Promise<string> {
-    const messageBytes =
-      typeof message === "string" ? ethers.toUtf8Bytes(message) : message;
+    const messageBytes = typeof message === "string" ? ethers.toUtf8Bytes(message) : message;
     const messageHash = ethers.hashMessage(messageBytes);
     const assertion = await this.getAssertion();
     const signResponse = await this.kmsService.signHashWithAssertion(
       this._address,
       messageHash,
-      assertion,
+      assertion
     );
     return "0x" + signResponse.Signature;
   }
@@ -272,7 +263,7 @@ export class KmsSigner extends ethers.AbstractSigner {
     const signResponse = await this.kmsService.signHashWithAssertion(
       this._address,
       txHash,
-      assertion,
+      assertion
     );
 
     const sig = ethers.Signature.from("0x" + signResponse.Signature);
@@ -283,14 +274,14 @@ export class KmsSigner extends ethers.AbstractSigner {
   async signTypedData(
     domain: ethers.TypedDataDomain,
     types: Record<string, ethers.TypedDataField[]>,
-    value: Record<string, any>,
+    value: Record<string, any>
   ): Promise<string> {
     const hash = ethers.TypedDataEncoder.hash(domain, types, value);
     const assertion = await this.getAssertion();
     const signResponse = await this.kmsService.signHashWithAssertion(
       this._address,
       hash,
-      assertion,
+      assertion
     );
     return "0x" + signResponse.Signature;
   }
@@ -301,7 +292,7 @@ export class KmsSigner extends ethers.AbstractSigner {
       this._address,
       this.kmsService,
       this.assertionProvider,
-      provider,
+      provider
     );
   }
 }

@@ -155,9 +155,7 @@ export default function LoginPage() {
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome Back</h2>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              Sign in to your account
-            </p>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Sign in to your account</p>
           </div>
 
           {/* Mode Toggle */}
@@ -203,7 +201,7 @@ export default function LoginPage() {
                       autoComplete="email"
                       required
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={e => setEmail(e.target.value)}
                       className="appearance-none block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 focus:border-transparent transition-all sm:text-sm"
                       placeholder="your.email@example.com"
                     />
@@ -279,7 +277,7 @@ export default function LoginPage() {
                       autoComplete="email"
                       required
                       value={passwordFormData.email}
-                      onChange={(e) =>
+                      onChange={e =>
                         setPasswordFormData({ ...passwordFormData, email: e.target.value })
                       }
                       className="appearance-none block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 focus:border-transparent transition-all sm:text-sm"
@@ -301,7 +299,7 @@ export default function LoginPage() {
                       autoComplete="current-password"
                       required
                       value={passwordFormData.password}
-                      onChange={(e) =>
+                      onChange={e =>
                         setPasswordFormData({ ...passwordFormData, password: e.target.value })
                       }
                       className="appearance-none block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 focus:border-transparent transition-all sm:text-sm"

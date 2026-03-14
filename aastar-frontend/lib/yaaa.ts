@@ -7,7 +7,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/a
 const KMS_URL =
   typeof window !== "undefined"
     ? "/kms-api" // browser: use Next.js proxy
-    : (process.env.NEXT_PUBLIC_KMS_URL || "https://kms1.aastar.io");
+    : process.env.NEXT_PUBLIC_KMS_URL || "https://kms1.aastar.io";
 const KMS_API_KEY = process.env.NEXT_PUBLIC_KMS_API_KEY || undefined;
 
 export const yaaa = new YAAAClient({

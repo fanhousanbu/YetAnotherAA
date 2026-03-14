@@ -244,10 +244,4 @@ function LoginPage() {
 // Export for module usage
 // ============================================
 
-export {
-  yaaa,
-  registerWithPasskey,
-  loginWithPasskey,
-  sendTransaction,
-  demonstrateBLS,
-};
+export { yaaa, registerWithPasskey, loginWithPasskey, sendTransaction, demonstrateBLS };

@@ -62,14 +62,8 @@ export class AuthController {
       "Backend calls KMS SignHash with the WebAuthn credential to verify " +
       "the user's identity, then issues a JWT.",
   })
-  async completeKmsLogin(
-    @Body() body: { address: string; challengeId: string; credential: any },
-  ) {
-    return this.authService.verifyKmsLogin(
-      body.address,
-      body.challengeId,
-      body.credential,
-    );
+  async completeKmsLogin(@Body() body: { address: string; challengeId: string; credential: any }) {
+    return this.authService.verifyKmsLogin(body.address, body.challengeId, body.credential);
   }
 
   // ── Wallet Linking ─────────────────────────────────────────────
@@ -90,13 +84,13 @@ export class AuthController {
       kmsKeyId: string;
       address: string;
       credentialId?: string;
-    },
+    }
   ) {
     return this.authService.linkWallet(
       req.user.sub,
       body.kmsKeyId,
       body.address,
-      body.credentialId,
+      body.credentialId
     );
   }
 }

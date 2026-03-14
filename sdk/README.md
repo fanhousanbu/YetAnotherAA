@@ -1,6 +1,7 @@
 # @yaaa/sdk — AirAccount SDK
 
-> ERC-4337 Account Abstraction SDK with KMS WebAuthn, BLS Aggregate Signatures, and Tiered Signature Routing
+> ERC-4337 Account Abstraction SDK with KMS WebAuthn, BLS Aggregate Signatures,
+> and Tiered Signature Routing
 
 A framework-agnostic, production-ready SDK for building Web3 applications with
 hardware-backed passkey authentication and ERC-4337 smart accounts.
@@ -11,7 +12,8 @@ hardware-backed passkey authentication and ERC-4337 smart accounts.
 - **BLS Aggregate Signatures** — Multi-node BLS signing with gossip discovery
 - **ERC-4337 Account Abstraction** — Smart contract wallets (v0.6 / v0.7 / v0.8)
 - **M4 Account Factory** — Built-in guardian support and daily spending limits
-- **Tiered Signature Routing** — Tier 1 (ECDSA) / Tier 2 (P256+BLS) / Tier 3 (P256+BLS+Guardian)
+- **Tiered Signature Routing** — Tier 1 (ECDSA) / Tier 2 (P256+BLS) / Tier 3
+  (P256+BLS+Guardian)
 - **SuperPaymaster** — Auto-detected on M4 deployments for gasless transactions
 - **Pluggable Adapters** — Bring your own storage, signer, and logger
 - **TypeScript First** — Full type safety and IntelliSense support
@@ -95,10 +97,10 @@ const result = await client.transfers.executeTransfer("user-123", {
 const yaaa = new YAAAClient(config: YAAAConfig);
 ```
 
-| Property       | Type              | Description                          |
-| -------------- | ----------------- | ------------------------------------ |
-| `yaaa.passkey` | `PasskeyManager`  | WebAuthn passkey authentication      |
-| `yaaa.bls`     | `BLSManager`      | BLS node discovery & message points  |
+| Property       | Type             | Description                         |
+| -------------- | ---------------- | ----------------------------------- |
+| `yaaa.passkey` | `PasskeyManager` | WebAuthn passkey authentication     |
+| `yaaa.bls`     | `BLSManager`     | BLS node discovery & message points |
 
 #### YAAAConfig
 
@@ -121,15 +123,15 @@ interface YAAAConfig {
 const client = new YAAAServerClient(config: ServerConfig);
 ```
 
-| Property            | Type                  | Description                              |
-| ------------------- | --------------------- | ---------------------------------------- |
-| `client.accounts`   | `AccountManager`      | Smart account creation & queries         |
-| `client.transfers`  | `TransferManager`     | ETH/ERC20 transfers, gas estimation      |
-| `client.bls`        | `BLSSignatureService` | BLS signing & tiered signatures          |
-| `client.paymaster`  | `PaymasterManager`    | Paymaster config, SuperPaymaster         |
-| `client.tokens`     | `TokenService`        | ERC20 info, balances, calldata           |
-| `client.wallets`    | `WalletManager`       | EOA/KMS wallet management                |
-| `client.ethereum`   | `EthereumProvider`    | RPC, bundler, contract interactions      |
+| Property           | Type                  | Description                         |
+| ------------------ | --------------------- | ----------------------------------- |
+| `client.accounts`  | `AccountManager`      | Smart account creation & queries    |
+| `client.transfers` | `TransferManager`     | ETH/ERC20 transfers, gas estimation |
+| `client.bls`       | `BLSSignatureService` | BLS signing & tiered signatures     |
+| `client.paymaster` | `PaymasterManager`    | Paymaster config, SuperPaymaster    |
+| `client.tokens`    | `TokenService`        | ERC20 info, balances, calldata      |
+| `client.wallets`   | `WalletManager`       | EOA/KMS wallet management           |
+| `client.ethereum`  | `EthereumProvider`    | RPC, bundler, contract interactions |
 
 #### ServerConfig
 
@@ -186,8 +188,13 @@ interface IStorageAdapter {
 ```typescript
 interface ISignerAdapter {
   getAddress(userId: string): Promise<string>;
-  getSigner(userId: string, ctx?: PasskeyAssertionContext): Promise<ethers.Signer>;
-  ensureSigner(userId: string): Promise<{ signer: ethers.Signer; address: string }>;
+  getSigner(
+    userId: string,
+    ctx?: PasskeyAssertionContext
+  ): Promise<ethers.Signer>;
+  ensureSigner(
+    userId: string
+  ): Promise<{ signer: ethers.Signer; address: string }>;
 }
 ```
 
@@ -237,25 +244,25 @@ interface ExecuteTransferParams {
   to: string;
   amount: string;
   data?: string;
-  tokenAddress?: string;           // ERC20 token address
+  tokenAddress?: string; // ERC20 token address
   usePaymaster?: boolean;
   paymasterAddress?: string;
   paymasterData?: string;
-  passkeyAssertion?: LegacyPasskeyAssertion;  // KMS signing
-  p256Signature?: string;          // Tier 2/3
-  guardianSigner?: ethers.Signer;  // Tier 3
-  useAirAccountTiering?: boolean;  // Enable tiered routing
+  passkeyAssertion?: LegacyPasskeyAssertion; // KMS signing
+  p256Signature?: string; // Tier 2/3
+  guardianSigner?: ethers.Signer; // Tier 3
+  useAirAccountTiering?: boolean; // Enable tiered routing
 }
 ```
 
 ### Signature Tiers (M4 AirAccount)
 
-| Tier | AlgId  | Components                       | Use Case            |
-| ---- | ------ | -------------------------------- | ------------------- |
-| 1    | `0x02` | Raw ECDSA (65 bytes)             | Small transactions  |
-| 2    | `0x04` | P256 + BLS aggregate             | Medium transactions |
-| 3    | `0x05` | P256 + BLS + Guardian ECDSA      | Large transactions  |
-| BLS  | `0x01` | Legacy BLS (prepended to pack)   | Default non-tiered  |
+| Tier | AlgId  | Components                     | Use Case            |
+| ---- | ------ | ------------------------------ | ------------------- |
+| 1    | `0x02` | Raw ECDSA (65 bytes)           | Small transactions  |
+| 2    | `0x04` | P256 + BLS aggregate           | Medium transactions |
+| 3    | `0x05` | P256 + BLS + Guardian ECDSA    | Large transactions  |
+| BLS  | `0x01` | Legacy BLS (prepended to pack) | Default non-tiered  |
 
 ### ERC-4337 Utilities
 
@@ -272,20 +279,23 @@ ERC4337Utils.unpackUserOperation(packedOp);
 
 ### Built-in Adapters
 
-| Adapter              | Description                                    |
-| -------------------- | ---------------------------------------------- |
-| `MemoryStorage`      | In-memory storage (dev/testing)                |
-| `LocalWalletSigner`  | Single private key signer (dev/testing)        |
-| `ConsoleLogger`      | Console output with prefix                     |
-| `SilentLogger`       | No-op logger                                   |
+| Adapter             | Description                             |
+| ------------------- | --------------------------------------- |
+| `MemoryStorage`     | In-memory storage (dev/testing)         |
+| `LocalWalletSigner` | Single private key signer (dev/testing) |
+| `ConsoleLogger`     | Console output with prefix              |
+| `SilentLogger`      | No-op logger                            |
 
 ## Examples
 
 See the [examples](./examples) directory for complete usage:
 
-- [Basic Usage](./examples/basic-usage.ts) — Browser: registration, login, transactions
-- [Server Usage](./examples/server-usage.ts) — Backend: accounts, transfers, KMS, tiering, Express.js
-- [Examples README](./examples/README.md) — Full guide with architecture and troubleshooting
+- [Basic Usage](./examples/basic-usage.ts) — Browser: registration, login,
+  transactions
+- [Server Usage](./examples/server-usage.ts) — Backend: accounts, transfers,
+  KMS, tiering, Express.js
+- [Examples README](./examples/README.md) — Full guide with architecture and
+  troubleshooting
 
 ## Architecture
 

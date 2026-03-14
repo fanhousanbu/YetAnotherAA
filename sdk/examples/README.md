@@ -72,7 +72,8 @@ Demonstrates the server-side SDK:
   support
 - **KMS Signer Integration** — Hardware-backed signing with `KmsManager` and
   `KmsSigner`
-- **Custom ISignerAdapter** — Per-user KMS signing with `PasskeyAssertionContext`
+- **Custom ISignerAdapter** — Per-user KMS signing with
+  `PasskeyAssertionContext`
 - **Custom IStorageAdapter** — PostgreSQL adapter example
 - **Account Management** — Create, query, multi-version accounts
 - **Token Operations** — ERC20 info, balance, transfer calldata
@@ -116,12 +117,12 @@ Demonstrates the server-side SDK:
 
 ### Signature Routing (M4 AirAccount)
 
-| Tier | AlgId  | Signature Components            | Use Case              |
-| ---- | ------ | ------------------------------- | --------------------- |
-| 1    | `0x02` | Raw ECDSA (65 bytes)            | Small transactions    |
-| 2    | `0x04` | P256 + BLS aggregate            | Medium transactions   |
-| 3    | `0x05` | P256 + BLS + Guardian ECDSA     | Large transactions    |
-| BLS  | `0x01` | Legacy BLS (prepended to pack)  | Default (non-tiered)  |
+| Tier | AlgId  | Signature Components           | Use Case             |
+| ---- | ------ | ------------------------------ | -------------------- |
+| 1    | `0x02` | Raw ECDSA (65 bytes)           | Small transactions   |
+| 2    | `0x04` | P256 + BLS aggregate           | Medium transactions  |
+| 3    | `0x05` | P256 + BLS + Guardian ECDSA    | Large transactions   |
+| BLS  | `0x01` | Legacy BLS (prepended to pack) | Default (non-tiered) |
 
 ### Pluggable Adapters
 

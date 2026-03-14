@@ -9,14 +9,12 @@ import { EstimateGasDto } from "./dto/estimate-gas.dto";
 export class TransferService {
   constructor(
     @Inject(YAAA_SERVER_CLIENT) private client: YAAAServerClient,
-    private addressBookService: AddressBookService,
+    private addressBookService: AddressBookService
   ) {}
 
   async executeTransfer(userId: string, transferDto: ExecuteTransferDto) {
     if (!transferDto.passkeyAssertion) {
-      throw new BadRequestException(
-        "Passkey assertion is required for transactions",
-      );
+      throw new BadRequestException("Passkey assertion is required for transactions");
     }
 
     // Pass the Legacy assertion through to the SDK, which forwards it
@@ -63,7 +61,7 @@ export class TransferService {
   private async recordAddressBookEntry(
     userId: string,
     to: string,
-    transferId: string,
+    transferId: string
   ): Promise<void> {
     try {
       await new Promise(resolve => setTimeout(resolve, 5000));
@@ -72,7 +70,7 @@ export class TransferService {
         await this.addressBookService.recordSuccessfulTransfer(
           userId,
           to,
-          (status as any).transactionHash,
+          (status as any).transactionHash
         );
       }
     } catch {

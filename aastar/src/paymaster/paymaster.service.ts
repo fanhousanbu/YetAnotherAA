@@ -13,7 +13,8 @@ export class PaymasterService {
     private configService: ConfigService
   ) {
     this.provider = new ethers.JsonRpcProvider(
-      this.configService.get<string>("ethRpcUrl") || "https://optimism-mainnet.infura.io/v3/YOUR_PROJECT_ID"
+      this.configService.get<string>("ethRpcUrl") ||
+        "https://optimism-mainnet.infura.io/v3/YOUR_PROJECT_ID"
     );
   }
 

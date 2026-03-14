@@ -68,10 +68,7 @@ async function quickStart() {
   console.log("UserOp Hash:", result.userOpHash);
 
   // Poll transfer status
-  const status = await client.transfers.getTransferStatus(
-    "user-123",
-    result.transferId
-  );
+  const status = await client.transfers.getTransferStatus("user-123", result.transferId);
   console.log("Status:", status.statusDescription);
 }
 
@@ -184,28 +181,19 @@ class KmsSignerAdapter implements ISignerAdapter {
     return keyInfo.address;
   }
 
-  async getSigner(
-    userId: string,
-    ctx?: PasskeyAssertionContext
-  ): Promise<ethers.Signer> {
+  async getSigner(userId: string, ctx?: PasskeyAssertionContext): Promise<ethers.Signer> {
     const keyInfo = this.userKeyMapping.get(userId);
     if (!keyInfo) throw new Error(`No KMS key for user ${userId}`);
 
-    return this.kmsManager.createKmsSigner(
-      keyInfo.keyId,
-      keyInfo.address,
-      async () => {
-        if (!ctx?.passkeyAssertion) {
-          throw new Error("Passkey assertion required for KMS signing");
-        }
-        return ctx.passkeyAssertion;
+    return this.kmsManager.createKmsSigner(keyInfo.keyId, keyInfo.address, async () => {
+      if (!ctx?.passkeyAssertion) {
+        throw new Error("Passkey assertion required for KMS signing");
       }
-    );
+      return ctx.passkeyAssertion;
+    });
   }
 
-  async ensureSigner(
-    userId: string
-  ): Promise<{ signer: ethers.Signer; address: string }> {
+  async ensureSigner(userId: string): Promise<{ signer: ethers.Signer; address: string }> {
     const address = await this.getAddress(userId);
     const signer = await this.getSigner(userId);
     return { signer, address };
@@ -250,17 +238,13 @@ class PostgresStorage implements IStorageAdapter {
   }
 
   async findAccountByUserId(userId: string): Promise<AccountRecord | null> {
-    const { rows } = await this.pool.query(
-      "SELECT * FROM accounts WHERE user_id = $1 LIMIT 1",
-      [userId]
-    );
+    const { rows } = await this.pool.query("SELECT * FROM accounts WHERE user_id = $1 LIMIT 1", [
+      userId,
+    ]);
     return rows[0] ?? null;
   }
 
-  async updateAccount(
-    userId: string,
-    updates: Partial<AccountRecord>
-  ): Promise<void> {
+  async updateAccount(userId: string, updates: Partial<AccountRecord>): Promise<void> {
     const setClauses: string[] = [];
     const values: unknown[] = [];
     let idx = 1;
@@ -279,38 +263,23 @@ class PostgresStorage implements IStorageAdapter {
     void transfer; // ... INSERT INTO transfers
   }
   async findTransfersByUserId(userId: string): Promise<TransferRecord[]> {
-    const { rows } = await this.pool.query(
-      "SELECT * FROM transfers WHERE user_id = $1",
-      [userId]
-    );
+    const { rows } = await this.pool.query("SELECT * FROM transfers WHERE user_id = $1", [userId]);
     return rows;
   }
   async findTransferById(id: string): Promise<TransferRecord | null> {
-    const { rows } = await this.pool.query(
-      "SELECT * FROM transfers WHERE id = $1",
-      [id]
-    );
+    const { rows } = await this.pool.query("SELECT * FROM transfers WHERE id = $1", [id]);
     return rows[0] ?? null;
   }
-  async updateTransfer(
-    id: string,
-    updates: Partial<TransferRecord>
-  ): Promise<void> {
+  async updateTransfer(id: string, updates: Partial<TransferRecord>): Promise<void> {
     void id;
     void updates;
   }
 
   async getPaymasters(userId: string): Promise<PaymasterRecord[]> {
-    const { rows } = await this.pool.query(
-      "SELECT * FROM paymasters WHERE user_id = $1",
-      [userId]
-    );
+    const { rows } = await this.pool.query("SELECT * FROM paymasters WHERE user_id = $1", [userId]);
     return rows;
   }
-  async savePaymaster(
-    userId: string,
-    paymaster: PaymasterRecord
-  ): Promise<void> {
+  async savePaymaster(userId: string, paymaster: PaymasterRecord): Promise<void> {
     void userId;
     void paymaster;
   }
@@ -331,7 +300,7 @@ class PostgresStorage implements IStorageAdapter {
 }
 
 function camelToSnake(str: string): string {
-  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+  return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
 }
 
 // ============================================
@@ -376,17 +345,11 @@ async function tokenOperations(client: YAAAServerClient) {
   console.log(`${info.symbol} (${info.name}) — ${info.decimals} decimals`);
 
   // Check token balance
-  const balance = await client.tokens.getTokenBalance(
-    USDC,
-    "0xYourSmartAccount"
-  );
+  const balance = await client.tokens.getTokenBalance(USDC, "0xYourSmartAccount");
   console.log("USDC balance (raw):", balance);
 
   // Formatted balance
-  const formatted = await client.tokens.getFormattedTokenBalance(
-    USDC,
-    "0xYourSmartAccount"
-  );
+  const formatted = await client.tokens.getFormattedTokenBalance(USDC, "0xYourSmartAccount");
   console.log(`Balance: ${formatted.formattedBalance} ${formatted.token.symbol}`);
 
   // Validate a token address
@@ -456,10 +419,7 @@ async function transfers(client: YAAAServerClient) {
   console.log("Tiered Transfer:", tieredTransfer.transferId);
 
   // --- Check transfer status ---
-  const status = await client.transfers.getTransferStatus(
-    userId,
-    ethTransfer.transferId
-  );
+  const status = await client.transfers.getTransferStatus(userId, ethTransfer.transferId);
   console.log("Status:", status.statusDescription);
   // Possible statuses:
   //   pending   → "Preparing transaction and generating signatures"
@@ -473,14 +433,10 @@ async function transfers(client: YAAAServerClient) {
 
   // --- Transfer history with pagination ---
   const history = await client.transfers.getTransferHistory(userId, 1, 10);
-  console.log(
-    `Page 1: ${history.transfers.length} of ${history.total} transfers`
-  );
+  console.log(`Page 1: ${history.transfers.length} of ${history.total} transfers`);
 
   for (const tx of history.transfers) {
-    console.log(
-      `  ${tx.id}: ${tx.amount} ${tx.tokenSymbol ?? "ETH"} → ${tx.to} [${tx.status}]`
-    );
+    console.log(`  ${tx.id}: ${tx.amount} ${tx.tokenSymbol ?? "ETH"} → ${tx.to} [${tx.status}]`);
   }
 
   // --- Gas estimation ---
@@ -522,10 +478,7 @@ async function paymasterManagement(client: YAAAServerClient) {
   }
 
   // Remove a paymaster
-  const removed = await client.paymaster.removeCustomPaymaster(
-    userId,
-    "my-paymaster"
-  );
+  const removed = await client.paymaster.removeCustomPaymaster(userId, "my-paymaster");
   console.log("Removed:", removed);
 
   // Note: SuperPaymaster (v0.7/v0.8) is auto-detected on M4 deployments
@@ -541,12 +494,8 @@ async function blsSignatures(client: YAAAServerClient) {
   // Configure them in the ServerConfig.
 
   // Generate BLS signature for a UserOp hash
-  const userOpHash =
-    "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
-  const blsData = await client.bls.generateBLSSignature(
-    "user-abc",
-    userOpHash
-  );
+  const userOpHash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+  const blsData = await client.bls.generateBLSSignature("user-abc", userOpHash);
   console.log("BLS signature data:", blsData);
 
   // Pack signature for on-chain verification
@@ -593,9 +542,7 @@ async function guardCheckerExample(client: YAAAServerClient) {
   // console.log("Required tier:", preCheck.tier);
   // console.log("AlgId:", preCheck.algId);
 
-  console.log(
-    "GuardChecker is used internally by TransferManager for AirAccount tiering"
-  );
+  console.log("GuardChecker is used internally by TransferManager for AirAccount tiering");
   void accountAddress;
 }
 

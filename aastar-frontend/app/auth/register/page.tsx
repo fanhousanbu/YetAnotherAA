@@ -72,9 +72,7 @@ export default function RegisterPage() {
 
       // Step 3: Browser WebAuthn registration ceremony
       toast.dismiss(loadingToast);
-      loadingToast = toast.loading(
-        "Please complete the passkey setup with your authenticator...",
-      );
+      loadingToast = toast.loading("Please complete the passkey setup with your authenticator...");
       const credential = await startRegistration(beginResponse.Options as any);
 
       // Step 4: Complete KMS registration → get KeyId
@@ -316,22 +314,21 @@ export default function RegisterPage() {
                     className="appearance-none block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 focus:border-transparent transition-all sm:text-sm"
                     placeholder="Confirm your password"
                   />
-                  {formData.confirmPassword &&
-                    formData.password === formData.confirmPassword && (
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                        <svg
-                          className="h-5 w-5 text-emerald-500"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </div>
-                    )}
+                  {formData.confirmPassword && formData.password === formData.confirmPassword && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <svg
+                        className="h-5 w-5 text-emerald-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -349,8 +346,8 @@ export default function RegisterPage() {
                     </h3>
                     <div className="mt-1 text-sm text-slate-700 dark:text-slate-300">
                       <p>
-                        After submitting, you&apos;ll set up a passkey, then your wallet will
-                        be created automatically (takes ~1 minute).
+                        After submitting, you&apos;ll set up a passkey, then your wallet will be
+                        created automatically (takes ~1 minute).
                       </p>
                     </div>
                   </div>

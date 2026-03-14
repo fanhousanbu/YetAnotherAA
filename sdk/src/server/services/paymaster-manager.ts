@@ -81,10 +81,14 @@ export class PaymasterManager {
         let isSuperPaymaster = false;
         let operatorAddress = "0x";
         try {
-          const spContract = new ethers.Contract(formattedAddress, [
-            "function owner() view returns (address)",
-            "function operators(address) view returns (bool,uint256,address,uint256)",
-          ], provider);
+          const spContract = new ethers.Contract(
+            formattedAddress,
+            [
+              "function owner() view returns (address)",
+              "function operators(address) view returns (bool,uint256,address,uint256)",
+            ],
+            provider
+          );
           const owner = await spContract.owner();
           const opInfo = await spContract.operators(owner);
           if (opInfo && opInfo[0] === true) {
@@ -92,7 +96,9 @@ export class PaymasterManager {
             operatorAddress = owner;
             this.logger.log(`SuperPaymaster detected, operator: ${operatorAddress}`);
           }
-        } catch { /* not SuperPaymaster */ }
+        } catch {
+          /* not SuperPaymaster */
+        }
 
         if (isSuperPaymaster) {
           const verGas = BigInt(80000);
@@ -113,10 +119,14 @@ export class PaymasterManager {
 
         let gasTokenData = "0x";
         try {
-          const pmContract = new ethers.Contract(formattedAddress, [
-            "function getSupportedGasTokens() view returns (address[])",
-            "function tokenPrices(address) view returns (uint256)",
-          ], provider);
+          const pmContract = new ethers.Contract(
+            formattedAddress,
+            [
+              "function getSupportedGasTokens() view returns (address[])",
+              "function tokenPrices(address) view returns (uint256)",
+            ],
+            provider
+          );
 
           try {
             const gasTokens: string[] = await pmContract.getSupportedGasTokens();
@@ -136,7 +146,9 @@ export class PaymasterManager {
                   this.logger.log(`PaymasterV4 gas token (from price check): ${gasTokenData}`);
                   break;
                 }
-              } catch { /* skip */ }
+              } catch {
+                /* skip */
+              }
             }
           }
         } catch {

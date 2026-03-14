@@ -149,11 +149,17 @@ export class TransferManager {
         if (accountCode === "0x") {
           useECDSA = true;
         } else {
-          const acc = new ethers.Contract(account.address, ["function validator() view returns (address)"], provider);
+          const acc = new ethers.Contract(
+            account.address,
+            ["function validator() view returns (address)"],
+            provider
+          );
           const v = await acc.validator();
           if (v === ethers.ZeroAddress) useECDSA = true;
         }
-      } catch { useECDSA = true; }
+      } catch {
+        useECDSA = true;
+      }
     }
 
     if (useECDSA) {
@@ -409,13 +415,16 @@ export class TransferManager {
             ethers.parseEther("1000"),
           ]);
         } else {
-          deployCalldata = factory.interface.encodeFunctionData("createAccountWithAAStarValidator", [
-            account.signerAddress,
-            account.signerAddress,
-            account.validatorAddress,
-            true,
-            account.salt,
-          ]);
+          deployCalldata = factory.interface.encodeFunctionData(
+            "createAccountWithAAStarValidator",
+            [
+              account.signerAddress,
+              account.signerAddress,
+              account.validatorAddress,
+              true,
+              account.salt,
+            ]
+          );
         }
 
         initCode = ethers.concat([factoryAddress, deployCalldata]);
