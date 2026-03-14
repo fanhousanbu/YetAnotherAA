@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "../../node_modules/.bin/tsc -p tsconfig.build.json; exit 0",
+    "build": "../node_modules/.bin/tsc -p tsconfig.build.json; exit 0",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "start": "nest start",

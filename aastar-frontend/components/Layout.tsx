@@ -18,6 +18,7 @@ import {
   ChevronDownIcon,
   BookOpenIcon,
   ShieldCheckIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 
 interface LayoutProps {
@@ -107,6 +108,12 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                   className={getNavButtonClass("/role", pathname === "/role")}
                 >
                   My Role
+                </button>
+                <button
+                  onClick={() => router.push("/community")}
+                  className={getNavButtonClass("/community", pathname.startsWith("/community"))}
+                >
+                  Community
                 </button>
                 <button
                   onClick={() => router.push("/transfer")}
@@ -243,6 +250,15 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
             >
               <ShieldCheckIcon className="h-6 w-6 mb-1" />
               <span className="text-xs font-medium">My Role</span>
+            </button>
+
+            {/* Community */}
+            <button
+              onClick={() => router.push("/community")}
+              className={getBottomNavButtonClass("/community", pathname.startsWith("/community"))}
+            >
+              <UserGroupIcon className="h-6 w-6 mb-1" />
+              <span className="text-xs font-medium">Community</span>
             </button>
 
             {/* Transfer */}

@@ -16,6 +16,7 @@ import { DataToolsModule } from "./data-tools/data-tools.module";
 import { SdkModule } from "./sdk/sdk.module";
 import { GuardianModule } from "./guardian/guardian.module";
 import { RegistryModule } from "./registry/registry.module";
+import { CommunityModule } from "./community/community.module";
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { RegistryModule } from "./registry/registry.module";
     DataToolsModule,
     GuardianModule,
     RegistryModule,
+    CommunityModule,
   ],
   controllers: [AppController],
   providers: [AppService],

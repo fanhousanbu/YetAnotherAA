@@ -254,4 +254,16 @@ export const registryAPI = {
   getCommunity: (name: string) => api.get("/registry/community", { params: { name } }),
 };
 
+// Community API
+export const communityAPI = {
+  getList: () => api.get("/community/list"),
+  getAddresses: () => api.get("/community/addresses"),
+  getInfo: (address: string) => api.get("/community/info", { params: { address } }),
+  getToken: (address: string) => api.get("/community/token", { params: { address } }),
+  getDashboard: (address?: string) =>
+    api.get("/community/dashboard", { params: address ? { address } : undefined }),
+  getGTokenBalance: (address?: string) =>
+    api.get("/community/gtoken-balance", { params: address ? { address } : undefined }),
+};
+
 export default api;
