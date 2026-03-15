@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createPublicClient, http, formatUnits, parseAbi } from "viem";
-import { sepolia } from "viem/chains";
+import type { PublicClient } from "viem";
 import {
   registryActions,
   tokenActions,
@@ -25,8 +25,7 @@ import type { Address, Hex } from "viem";
 @Injectable()
 export class AdminService implements OnModuleInit {
   private readonly logger = new Logger(AdminService.name);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private publicClient: any;
+  private publicClient: PublicClient;
   private registryAddress: Address;
   private gtokenAddress: Address;
   private stakingAddress: Address;
@@ -42,7 +41,6 @@ export class AdminService implements OnModuleInit {
 
     const rpcUrl = this.configService.get<string>("ethRpcUrl");
     this.publicClient = createPublicClient({
-      chain: sepolia,
       transport: http(rpcUrl),
     });
 
@@ -125,59 +123,80 @@ export class AdminService implements OnModuleInit {
   // ── Registry Stats ───────────────────────────────────────────────────────────
 
   async getRegistryStats() {
-    const r = registryActions(this.registryAddress)(this.publicClient);
-    const [
-      communityCount,
-      spoCount,
-      v4Count,
-      endUserCount,
-      registryOwner,
-      registryVersion,
-    ] = await Promise.all([
-      r.getRoleUserCount({ roleId: ROLE_COMMUNITY }),
-      r.getRoleUserCount({ roleId: ROLE_PAYMASTER_AOA }),
-      r.getRoleUserCount({ roleId: ROLE_PAYMASTER_SUPER }),
-      r.getRoleUserCount({ roleId: ROLE_ENDUSER }),
-      r.owner(),
-      r.version().catch(() => "unknown"),
-    ]);
+    try {
+      const r = registryActions(this.registryAddress)(this.publicClient);
+      const [
+        communityCount,
+        spoCount,
+        v4Count,
+        endUserCount,
+        registryOwner,
+        registryVersion,
+      ] = await Promise.all([
+        r.getRoleUserCount({ roleId: ROLE_COMMUNITY }),
+        r.getRoleUserCount({ roleId: ROLE_PAYMASTER_AOA }),
+        r.getRoleUserCount({ roleId: ROLE_PAYMASTER_SUPER }),
+        r.getRoleUserCount({ roleId: ROLE_ENDUSER }),
+        r.owner(),
+        r.version().catch(() => "unknown"),
+      ]);
 
-    return {
-      registryAddress: this.registryAddress,
-      owner: registryOwner,
-      version: registryVersion,
-      roleCounts: {
-        communityAdmin: communityCount.toString(),
-        spo: spoCount.toString(),
-        v4Operator: v4Count.toString(),
-        endUser: endUserCount.toString(),
-      },
-    };
+      return {
+        registryAddress: this.registryAddress,
+        owner: registryOwner,
+        version: registryVersion,
+        roleCounts: {
+          communityAdmin: communityCount.toString(),
+          spo: spoCount.toString(),
+          v4Operator: v4Count.toString(),
+          endUser: endUserCount.toString(),
+        },
+      };
+    } catch (error) {
+      this.logger.error("Failed to fetch registry stats", error);
+      return {
+        registryAddress: this.registryAddress,
+        owner: "unknown",
+        version: "unknown",
+        roleCounts: { communityAdmin: "0", spo: "0", v4Operator: "0", endUser: "0" },
+      };
+    }
   }
 
   // ── GToken Stats ─────────────────────────────────────────────────────────────
 
   async getGTokenStats() {
-    const t = tokenActions(this.gtokenAddress)(this.publicClient);
-    const [totalSupply, name, symbol] = await Promise.all([
-      t.totalSupply({ token: this.gtokenAddress }),
-      t.name({ token: this.gtokenAddress }),
-      t.symbol({ token: this.gtokenAddress }),
-    ]);
+    try {
+      const t = tokenActions(this.gtokenAddress)(this.publicClient);
+      const [totalSupply, name, symbol] = await Promise.all([
+        t.totalSupply({ token: this.gtokenAddress }),
+        t.name({ token: this.gtokenAddress }),
+        t.symbol({ token: this.gtokenAddress }),
+      ]);
 
-    // Check staking contract GToken balance
-    const stakingBalance = await t.balanceOf({
-      token: this.gtokenAddress,
-      account: this.stakingAddress,
-    });
+      // Check staking contract GToken balance
+      const stakingBalance = await t.balanceOf({
+        token: this.gtokenAddress,
+        account: this.stakingAddress,
+      });
 
-    return {
-      address: this.gtokenAddress,
-      name,
-      symbol,
-      totalSupply: formatUnits(totalSupply, 18),
-      stakingContractBalance: formatUnits(stakingBalance, 18),
-    };
+      return {
+        address: this.gtokenAddress,
+        name,
+        symbol,
+        totalSupply: formatUnits(totalSupply, 18),
+        stakingContractBalance: formatUnits(stakingBalance, 18),
+      };
+    } catch (error) {
+      this.logger.error("Failed to fetch GToken stats", error);
+      return {
+        address: this.gtokenAddress,
+        name: "unknown",
+        symbol: "unknown",
+        totalSupply: "0",
+        stakingContractBalance: "0",
+      };
+    }
   }
 
   // ── SuperPaymaster Stats ─────────────────────────────────────────────────────

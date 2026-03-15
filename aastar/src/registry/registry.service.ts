@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createPublicClient, http } from "viem";
-import { sepolia } from "viem/chains";
+import type { PublicClient } from "viem";
 import {
   registryActions,
   tokenActions,
@@ -20,8 +20,7 @@ import type { Address, Hex } from "viem";
 @Injectable()
 export class RegistryService implements OnModuleInit {
   private readonly logger = new Logger(RegistryService.name);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private publicClient: any;
+  private publicClient: PublicClient;
   private registryAddress: Address;
   private gtokenAddress: Address;
 
@@ -32,9 +31,7 @@ export class RegistryService implements OnModuleInit {
     applyConfig({ chainId: CHAIN_SEPOLIA });
 
     const rpcUrl = this.configService.get<string>("ethRpcUrl");
-    // Cast to any to avoid viem dual-version type mismatch (@aastar/core bundles its own viem)
     this.publicClient = createPublicClient({
-      chain: sepolia,
       transport: http(rpcUrl),
     });
 
@@ -61,18 +58,23 @@ export class RegistryService implements OnModuleInit {
     isEndUser: boolean;
     roleIds: Hex[];
   }> {
-    const r = registryActions(this.registryAddress)(this.publicClient);
+    try {
+      const r = registryActions(this.registryAddress)(this.publicClient);
 
-    const [isAdmin, isCommunityAdmin, isSPO, isV4Operator, isEndUser, roleIds] = await Promise.all([
-      r.hasRole({ roleId: DEFAULT_ADMIN_ROLE, user: userAddress }),
-      r.hasRole({ roleId: ROLE_COMMUNITY, user: userAddress }),
-      r.hasRole({ roleId: ROLE_PAYMASTER_AOA, user: userAddress }),
-      r.hasRole({ roleId: ROLE_PAYMASTER_SUPER, user: userAddress }),
-      r.hasRole({ roleId: ROLE_ENDUSER, user: userAddress }),
-      r.getUserRoles({ user: userAddress }),
-    ]);
+      const [isAdmin, isCommunityAdmin, isSPO, isV4Operator, isEndUser, roleIds] = await Promise.all([
+        r.hasRole({ roleId: DEFAULT_ADMIN_ROLE, user: userAddress }),
+        r.hasRole({ roleId: ROLE_COMMUNITY, user: userAddress }),
+        r.hasRole({ roleId: ROLE_PAYMASTER_AOA, user: userAddress }),
+        r.hasRole({ roleId: ROLE_PAYMASTER_SUPER, user: userAddress }),
+        r.hasRole({ roleId: ROLE_ENDUSER, user: userAddress }),
+        r.getUserRoles({ user: userAddress }),
+      ]);
 
-    return { isAdmin, isCommunityAdmin, isSPO, isV4Operator, isEndUser, roleIds };
+      return { isAdmin, isCommunityAdmin, isSPO, isV4Operator, isEndUser, roleIds };
+    } catch (error) {
+      this.logger.error(`Failed to fetch user roles for ${userAddress}`, error);
+      return { isAdmin: false, isCommunityAdmin: false, isSPO: false, isV4Operator: false, isEndUser: false, roleIds: [] };
+    }
   }
 
   async getRoleConfig(roleId: Hex) {
@@ -105,25 +107,34 @@ export class RegistryService implements OnModuleInit {
   // ── Registry Info ───────────────────────────────────────────────────────────
 
   async getRegistryInfo() {
-    const r = registryActions(this.registryAddress)(this.publicClient);
+    try {
+      const r = registryActions(this.registryAddress)(this.publicClient);
 
-    const [communityCount, spoCount, v4Count, endUserCount] = await Promise.all([
-      r.getRoleUserCount({ roleId: ROLE_COMMUNITY }),
-      r.getRoleUserCount({ roleId: ROLE_PAYMASTER_AOA }),
-      r.getRoleUserCount({ roleId: ROLE_PAYMASTER_SUPER }),
-      r.getRoleUserCount({ roleId: ROLE_ENDUSER }),
-    ]);
+      const [communityCount, spoCount, v4Count, endUserCount] = await Promise.all([
+        r.getRoleUserCount({ roleId: ROLE_COMMUNITY }),
+        r.getRoleUserCount({ roleId: ROLE_PAYMASTER_AOA }),
+        r.getRoleUserCount({ roleId: ROLE_PAYMASTER_SUPER }),
+        r.getRoleUserCount({ roleId: ROLE_ENDUSER }),
+      ]);
 
-    return {
-      registryAddress: this.registryAddress,
-      chainId: CHAIN_SEPOLIA,
-      roleCounts: {
-        communityAdmin: communityCount.toString(),
-        spo: spoCount.toString(),
-        v4Operator: v4Count.toString(),
-        endUser: endUserCount.toString(),
-      },
-    };
+      return {
+        registryAddress: this.registryAddress,
+        chainId: CHAIN_SEPOLIA,
+        roleCounts: {
+          communityAdmin: communityCount.toString(),
+          spo: spoCount.toString(),
+          v4Operator: v4Count.toString(),
+          endUser: endUserCount.toString(),
+        },
+      };
+    } catch (error) {
+      this.logger.error("Failed to fetch registry info", error);
+      return {
+        registryAddress: this.registryAddress,
+        chainId: CHAIN_SEPOLIA,
+        roleCounts: { communityAdmin: "0", spo: "0", v4Operator: "0", endUser: "0" },
+      };
+    }
   }
 
   // ── Role IDs Exposure ───────────────────────────────────────────────────────

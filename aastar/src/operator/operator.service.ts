@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createPublicClient, http, formatUnits, parseAbi } from "viem";
-import { sepolia } from "viem/chains";
+import type { PublicClient } from "viem";
 import {
   registryActions,
   stakingActions,
@@ -22,8 +22,7 @@ import type { Address } from "viem";
 @Injectable()
 export class OperatorService implements OnModuleInit {
   private readonly logger = new Logger(OperatorService.name);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private publicClient: any;
+  private publicClient: PublicClient;
   private registryAddress: Address;
   private gtokenAddress: Address;
   private stakingAddress: Address;
@@ -37,7 +36,6 @@ export class OperatorService implements OnModuleInit {
 
     const rpcUrl = this.configService.get<string>("ethRpcUrl");
     this.publicClient = createPublicClient({
-      chain: sepolia,
       transport: http(rpcUrl),
     });
 
@@ -67,12 +65,17 @@ export class OperatorService implements OnModuleInit {
     isSPO: boolean;
     isV4Operator: boolean;
   }> {
-    const r = registryActions(this.registryAddress)(this.publicClient);
-    const [isSPO, isV4Operator] = await Promise.all([
-      r.hasRole({ roleId: ROLE_PAYMASTER_AOA, user: address }),
-      r.hasRole({ roleId: ROLE_PAYMASTER_SUPER, user: address }),
-    ]);
-    return { isSPO, isV4Operator };
+    try {
+      const r = registryActions(this.registryAddress)(this.publicClient);
+      const [isSPO, isV4Operator] = await Promise.all([
+        r.hasRole({ roleId: ROLE_PAYMASTER_AOA, user: address }),
+        r.hasRole({ roleId: ROLE_PAYMASTER_SUPER, user: address }),
+      ]);
+      return { isSPO, isV4Operator };
+    } catch (error) {
+      this.logger.error(`Failed to fetch operator roles for ${address}`, error);
+      return { isSPO: false, isV4Operator: false };
+    }
   }
 
   // ── SPO Status ───────────────────────────────────────────────────────────────

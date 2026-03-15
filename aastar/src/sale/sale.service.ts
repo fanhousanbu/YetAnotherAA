@@ -1,9 +1,7 @@
 import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createPublicClient, http, formatUnits, parseAbi } from "viem";
-import { sepolia } from "viem/chains";
-
-import type { Address } from "viem";
+import type { Address, PublicClient } from "viem";
 
 // ── ABIs ─────────────────────────────────────────────────────────────────────
 
@@ -33,8 +31,7 @@ const APNTS_SALE_ABI = parseAbi([
 @Injectable()
 export class SaleService implements OnModuleInit {
   private readonly logger = new Logger(SaleService.name);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private publicClient: any;
+  private publicClient: PublicClient;
 
   // Contract addresses from env
   private gTokenSaleAddress: Address | null = null;
@@ -45,7 +42,6 @@ export class SaleService implements OnModuleInit {
   onModuleInit() {
     const rpcUrl = this.configService.get<string>("ethRpcUrl");
     this.publicClient = createPublicClient({
-      chain: sepolia,
       transport: http(rpcUrl),
     });
 
@@ -66,62 +62,67 @@ export class SaleService implements OnModuleInit {
       return { configured: false, address: null };
     }
 
-    const [currentPrice, tokensSold, totalForSale, stage1Limit, stage2Limit, ceilingPrice] =
-      await Promise.all([
-        this.publicClient.readContract({
-          address: this.gTokenSaleAddress,
-          abi: SALE_CONTRACT_ABI,
-          functionName: "getCurrentPriceUSD",
-        }),
-        this.publicClient.readContract({
-          address: this.gTokenSaleAddress,
-          abi: SALE_CONTRACT_ABI,
-          functionName: "tokensSold",
-        }),
-        this.publicClient.readContract({
-          address: this.gTokenSaleAddress,
-          abi: SALE_CONTRACT_ABI,
-          functionName: "totalTokensForSale",
-        }),
-        this.publicClient.readContract({
-          address: this.gTokenSaleAddress,
-          abi: SALE_CONTRACT_ABI,
-          functionName: "STAGE1_TOKEN_LIMIT",
-        }),
-        this.publicClient.readContract({
-          address: this.gTokenSaleAddress,
-          abi: SALE_CONTRACT_ABI,
-          functionName: "STAGE2_TOKEN_LIMIT",
-        }),
-        this.publicClient.readContract({
-          address: this.gTokenSaleAddress,
-          abi: SALE_CONTRACT_ABI,
-          functionName: "CEILING_PRICE_USD",
-        }),
-      ]);
+    try {
+      const [currentPrice, tokensSold, totalForSale, stage1Limit, stage2Limit, ceilingPrice] =
+        await Promise.all([
+          this.publicClient.readContract({
+            address: this.gTokenSaleAddress,
+            abi: SALE_CONTRACT_ABI,
+            functionName: "getCurrentPriceUSD",
+          }),
+          this.publicClient.readContract({
+            address: this.gTokenSaleAddress,
+            abi: SALE_CONTRACT_ABI,
+            functionName: "tokensSold",
+          }),
+          this.publicClient.readContract({
+            address: this.gTokenSaleAddress,
+            abi: SALE_CONTRACT_ABI,
+            functionName: "totalTokensForSale",
+          }),
+          this.publicClient.readContract({
+            address: this.gTokenSaleAddress,
+            abi: SALE_CONTRACT_ABI,
+            functionName: "STAGE1_TOKEN_LIMIT",
+          }),
+          this.publicClient.readContract({
+            address: this.gTokenSaleAddress,
+            abi: SALE_CONTRACT_ABI,
+            functionName: "STAGE2_TOKEN_LIMIT",
+          }),
+          this.publicClient.readContract({
+            address: this.gTokenSaleAddress,
+            abi: SALE_CONTRACT_ABI,
+            functionName: "CEILING_PRICE_USD",
+          }),
+        ]);
 
-    const sold = tokensSold as bigint;
-    const total = totalForSale as bigint;
-    const stage1 = stage1Limit as bigint;
-    const stage2 = stage2Limit as bigint;
+      const sold = tokensSold as bigint;
+      const total = totalForSale as bigint;
+      const stage1 = stage1Limit as bigint;
+      const stage2 = stage2Limit as bigint;
 
-    const soldPct = total > 0n ? Number((sold * 10000n) / total) / 100 : 0;
-    const currentStage =
-      sold < stage1 ? 1 : sold < stage2 ? 2 : sold < total ? 3 : 0; // 0 = ended
+      const soldPct = total > 0n ? Number((sold * 10000n) / total) / 100 : 0;
+      const currentStage =
+        sold < stage1 ? 1 : sold < stage2 ? 2 : sold < total ? 3 : 0; // 0 = ended
 
-    return {
-      configured: true,
-      address: this.gTokenSaleAddress,
-      currentPriceUSD: formatUnits(currentPrice as bigint, 6),
-      ceilingPriceUSD: formatUnits(ceilingPrice as bigint, 6),
-      tokensSold: formatUnits(sold, 18),
-      totalForSale: formatUnits(total, 18),
-      soldPercent: soldPct,
-      currentStage,
-      saleEnded: sold >= total,
-      stage1Limit: formatUnits(stage1, 18),
-      stage2Limit: formatUnits(stage2, 18),
-    };
+      return {
+        configured: true,
+        address: this.gTokenSaleAddress,
+        currentPriceUSD: formatUnits(currentPrice as bigint, 6),
+        ceilingPriceUSD: formatUnits(ceilingPrice as bigint, 6),
+        tokensSold: formatUnits(sold, 18),
+        totalForSale: formatUnits(total, 18),
+        soldPercent: soldPct,
+        currentStage,
+        saleEnded: sold >= total,
+        stage1Limit: formatUnits(stage1, 18),
+        stage2Limit: formatUnits(stage2, 18),
+      };
+    } catch (error) {
+      this.logger.error("Failed to fetch GToken sale status", error);
+      return { configured: true, address: this.gTokenSaleAddress, error: "Contract call failed" };
+    }
   }
 
   async checkGTokenHasBought(userAddress: Address): Promise<boolean> {
@@ -162,44 +163,49 @@ export class SaleService implements OnModuleInit {
       return { configured: false, address: null };
     }
 
-    const [priceUSD, totalSold, inventory, minPurchase, maxPurchase] = await Promise.all([
-      this.publicClient.readContract({
-        address: this.aPNTsSaleAddress,
-        abi: APNTS_SALE_ABI,
-        functionName: "priceUSD",
-      }),
-      this.publicClient.readContract({
-        address: this.aPNTsSaleAddress,
-        abi: APNTS_SALE_ABI,
-        functionName: "totalSold",
-      }),
-      this.publicClient.readContract({
-        address: this.aPNTsSaleAddress,
-        abi: APNTS_SALE_ABI,
-        functionName: "availableInventory",
-      }),
-      this.publicClient.readContract({
-        address: this.aPNTsSaleAddress,
-        abi: APNTS_SALE_ABI,
-        functionName: "minPurchaseAmount",
-      }),
-      this.publicClient.readContract({
-        address: this.aPNTsSaleAddress,
-        abi: APNTS_SALE_ABI,
-        functionName: "maxPurchaseAmount",
-      }),
-    ]);
+    try {
+      const [priceUSD, totalSold, inventory, minPurchase, maxPurchase] = await Promise.all([
+        this.publicClient.readContract({
+          address: this.aPNTsSaleAddress,
+          abi: APNTS_SALE_ABI,
+          functionName: "priceUSD",
+        }),
+        this.publicClient.readContract({
+          address: this.aPNTsSaleAddress,
+          abi: APNTS_SALE_ABI,
+          functionName: "totalSold",
+        }),
+        this.publicClient.readContract({
+          address: this.aPNTsSaleAddress,
+          abi: APNTS_SALE_ABI,
+          functionName: "availableInventory",
+        }),
+        this.publicClient.readContract({
+          address: this.aPNTsSaleAddress,
+          abi: APNTS_SALE_ABI,
+          functionName: "minPurchaseAmount",
+        }),
+        this.publicClient.readContract({
+          address: this.aPNTsSaleAddress,
+          abi: APNTS_SALE_ABI,
+          functionName: "maxPurchaseAmount",
+        }),
+      ]);
 
-    return {
-      configured: true,
-      address: this.aPNTsSaleAddress,
-      priceUSD: formatUnits(priceUSD as bigint, 6),
-      totalSold: formatUnits(totalSold as bigint, 18),
-      availableInventory: formatUnits(inventory as bigint, 18),
-      minPurchaseAmount: formatUnits(minPurchase as bigint, 18),
-      maxPurchaseAmount: formatUnits(maxPurchase as bigint, 18),
-      saleActive: (inventory as bigint) > 0n,
-    };
+      return {
+        configured: true,
+        address: this.aPNTsSaleAddress,
+        priceUSD: formatUnits(priceUSD as bigint, 6),
+        totalSold: formatUnits(totalSold as bigint, 18),
+        availableInventory: formatUnits(inventory as bigint, 18),
+        minPurchaseAmount: formatUnits(minPurchase as bigint, 18),
+        maxPurchaseAmount: formatUnits(maxPurchase as bigint, 18),
+        saleActive: (inventory as bigint) > 0n,
+      };
+    } catch (error) {
+      this.logger.error("Failed to fetch aPNTs sale status", error);
+      return { configured: true, address: this.aPNTsSaleAddress, error: "Contract call failed" };
+    }
   }
 
   async getAPNTsSaleQuote(usdAmount: string) {

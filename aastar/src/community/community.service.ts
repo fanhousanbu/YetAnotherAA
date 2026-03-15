@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createPublicClient, http, formatUnits } from "viem";
-import { sepolia } from "viem/chains";
+import type { PublicClient } from "viem";
 import {
   registryActions,
   tokenActions,
@@ -18,8 +18,7 @@ import type { Address, Hex } from "viem";
 @Injectable()
 export class CommunityService implements OnModuleInit {
   private readonly logger = new Logger(CommunityService.name);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private publicClient: any;
+  private publicClient: PublicClient;
   private registryAddress: Address;
   private gtokenAddress: Address;
   private xpntsFactoryAddress: Address;
@@ -31,7 +30,6 @@ export class CommunityService implements OnModuleInit {
 
     const rpcUrl = this.configService.get<string>("ethRpcUrl");
     this.publicClient = createPublicClient({
-      chain: sepolia,
       transport: http(rpcUrl),
     });
 
@@ -132,21 +130,26 @@ export class CommunityService implements OnModuleInit {
     totalSupply: string;
     communityName: string;
     communityOwner: Address;
-  }> {
-    const t = tokenActions(tokenAddress)(this.publicClient);
-    const [name, symbol, totalSupply, metadata] = await Promise.all([
-      t.name({ token: tokenAddress }),
-      t.symbol({ token: tokenAddress }),
-      t.totalSupply({ token: tokenAddress }),
-      t.getMetadata({ token: tokenAddress }),
-    ]);
-    return {
-      name,
-      symbol,
-      totalSupply: formatUnits(totalSupply, 18),
-      communityName: metadata.communityName,
-      communityOwner: metadata.communityOwner,
-    };
+  } | null> {
+    try {
+      const t = tokenActions(tokenAddress)(this.publicClient);
+      const [name, symbol, totalSupply, metadata] = await Promise.all([
+        t.name({ token: tokenAddress }),
+        t.symbol({ token: tokenAddress }),
+        t.totalSupply({ token: tokenAddress }),
+        t.getMetadata({ token: tokenAddress }),
+      ]);
+      return {
+        name,
+        symbol,
+        totalSupply: formatUnits(totalSupply, 18),
+        communityName: metadata.communityName,
+        communityOwner: metadata.communityOwner,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to fetch token info for ${tokenAddress}`, error);
+      return null;
+    }
   }
 
   async getTokenBalance(tokenAddress: Address, userAddress: Address): Promise<string> {
