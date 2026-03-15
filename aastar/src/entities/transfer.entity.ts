@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryColumn, CreateDateColumn, ManyToOne, JoinColumn } from "typeorm";
-import { User } from "./user.entity";
+import type { User } from "./user.entity";
 
 @Entity("transfers")
 export class Transfer {
@@ -15,7 +15,7 @@ export class Transfer {
   @CreateDateColumn()
   createdAt: Date;
 
-  @ManyToOne(() => User, user => user.transfers)
+  @ManyToOne("User", "transfers")
   @JoinColumn({ name: "userId" })
   user: User;
 }

@@ -6,7 +6,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-import { User } from "./user.entity";
+import type { User } from "./user.entity";
 
 @Entity("accounts")
 export class Account {
@@ -49,7 +49,7 @@ export class Account {
   @CreateDateColumn()
   createdAt: Date;
 
-  @ManyToOne(() => User, user => user.accounts)
+  @ManyToOne("User", "accounts")
   @JoinColumn({ name: "userId" })
   user: User;
 }

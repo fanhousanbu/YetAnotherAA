@@ -6,7 +6,7 @@ import {
   CreateDateColumn,
   Index,
 } from "typeorm";
-import { User } from "./user.entity";
+import type { User } from "./user.entity";
 
 export enum NFTStandard {
   ERC721 = "ERC721",
@@ -62,6 +62,6 @@ export class UserNFT {
   @CreateDateColumn()
   createdAt: Date | string;
 
-  @ManyToOne(() => User, user => user.userNFTs)
+  @ManyToOne("User", "userNFTs")
   user: User;
 }
