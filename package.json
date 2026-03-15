@@ -63,6 +63,9 @@
   ],
   "author": "AAStar Team",
   "license": "MIT",
+  "overrides": {
+    "ox": "0.11.1"
+  },
   "engines": {
     "node": ">=20.19.0",
     "npm": ">=10.0.0"
