@@ -244,7 +244,9 @@ export default function TransferPage() {
       // Step 2: Browser WebAuthn authentication ceremony
       toast.dismiss(loadingToast);
       loadingToast = toast.loading("Please verify with your passkey...");
-      const credential = await startAuthentication(authResponse.Options as any);
+      const credential = await startAuthentication({
+        optionsJSON: authResponse.Options as any,
+      });
 
       // Step 3: Extract Legacy assertion (reusable for BLS dual-signing)
       const passkeyAssertion = await kmsClient.extractLegacyAssertion(credential);

@@ -73,7 +73,9 @@ export default function RegisterPage() {
       // Step 3: Browser WebAuthn registration ceremony
       toast.dismiss(loadingToast);
       loadingToast = toast.loading("Please complete the passkey setup with your authenticator...");
-      const credential = await startRegistration(beginResponse.Options as any);
+      const credential = await startRegistration({
+        optionsJSON: beginResponse.Options as any,
+      });
 
       // Step 4: Complete KMS registration → get KeyId
       toast.dismiss(loadingToast);
