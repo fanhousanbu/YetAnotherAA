@@ -1,7 +1,6 @@
 import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createPublicClient, http } from "viem";
-import type { PublicClient } from "viem";
 import {
   registryActions,
   tokenActions,
@@ -20,7 +19,8 @@ import type { Address, Hex } from "viem";
 @Injectable()
 export class RegistryService implements OnModuleInit {
   private readonly logger = new Logger(RegistryService.name);
-  private publicClient: PublicClient;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private publicClient: any;
   private registryAddress: Address;
   private gtokenAddress: Address;
 

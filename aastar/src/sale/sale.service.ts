@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createPublicClient, http, formatUnits, parseAbi } from "viem";
-import type { Address, PublicClient } from "viem";
+import type { Address } from "viem";
 
 // ── ABIs ─────────────────────────────────────────────────────────────────────
 
@@ -31,7 +31,8 @@ const APNTS_SALE_ABI = parseAbi([
 @Injectable()
 export class SaleService implements OnModuleInit {
   private readonly logger = new Logger(SaleService.name);
-  private publicClient: PublicClient;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private publicClient: any;
 
   // Contract addresses from env
   private gTokenSaleAddress: Address | null = null;
