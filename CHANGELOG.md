@@ -6,6 +6,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-03-15
+
+### Management Portal
+
+- **Role-Based Portal System**: Added `/role` page with role selection (Admin, Operator, Community, Sale)
+- **Admin Portal** (`/admin`): Protocol-level management — pause/unpause EntryPoint, manage validators, update factory addresses
+- **Operator Portal** (`/operator`): Bundler operations — submit/query UserOps, manage bundler nodes, view gas analytics
+- **Community Portal** (`/community`): Community management — member directory, staking stats, governance proposals
+- **Sale Portal** (`/sale`): Token sale management — APNTs sale contract interaction, whitelist management, sale status
+
+### Added
+
+- `@aastar/sdk` and `@aastar/core` integration for on-chain reads
+- Registry module with contract state queries via SDK
+- Unit tests for all management portal services (34 tests passing)
+- Dev/backend/frontend start-stop-restart scripts (`dev.sh`, `backend.sh`, `frontend.sh`)
+- Deployed sale contract addresses for Sepolia
+- `.env.sepolia.example` with full Sepolia configuration reference
+
+### Fixed
+
+- **Critical**: Removed unnecessary SWC builder that caused circular dependency errors; fixed `ox` library TS compilation via `tsconfig.build.json` paths override redirecting imports to `_types/*.d.ts`
+- **High**: Replaced `private publicClient: any` with proper `PublicClient` typing across 5 service files; added try/catch error handling around contract calls; removed hardcoded `sepolia` chain from `createPublicClient`
+- **Medium**: Fixed Tailwind CSS dynamic class names (`bg-${color}-100`) with static `ROLE_COLOR_MAP` lookup; fixed entity circular imports using `import type` + string-based `@ManyToOne` references
+- **Low**: Separated `viewport` export from `metadata` per Next.js 16 requirements; removed non-existent `icon-192.png` reference
+- **Deps**: Pinned `viem` to `2.43.3` across all workspaces to prevent `ox@0.14.5`; added root-level `ox: 0.11.1` override
+- Fixed Swagger `@ApiQuery` enum serialization (`Object.values()` + `type: 'string'`)
+
+### Documentation
+
+- Added development milestones with E2E test requirements
+- Updated plan v3.1 with SDK/contract analysis corrections
+- Fixed contract addresses to use `@aastar/core` canonical values
+- Added management portal section to README
+
 ## [0.6.0] - 2025-01-24
 
 ### ⚡ Performance Optimization: Lazy KMS EOA Creation
