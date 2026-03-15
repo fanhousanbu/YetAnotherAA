@@ -156,10 +156,23 @@ export class EthereumProvider {
     version: EntryPointVersion = EntryPointVersion.V0_6
   ): Promise<{ callGasLimit: string; verificationGasLimit: string; preVerificationGas: string }> {
     try {
-      return await this.bundlerProvider.send("eth_estimateUserOperationGas", [
+      const estimate = await this.bundlerProvider.send("eth_estimateUserOperationGas", [
         userOp,
         this.getEntryPointAddress(version),
       ]);
+
+      // Bundler estimates can be too tight for M4 AirAccount validateUserOp.
+      // Apply 3x safety multiplier on verificationGasLimit, with a 150k floor.
+      const MIN_VERIFICATION_GAS = 150_000n;
+      const VERIFICATION_GAS_MULTIPLIER = 3n;
+      const rawVerificationGas = BigInt(estimate.verificationGasLimit);
+      const boosted = rawVerificationGas * VERIFICATION_GAS_MULTIPLIER;
+      const finalVerificationGas = boosted > MIN_VERIFICATION_GAS ? boosted : MIN_VERIFICATION_GAS;
+
+      return {
+        ...estimate,
+        verificationGasLimit: "0x" + finalVerificationGas.toString(16),
+      };
     } catch {
       return {
         callGasLimit: "0x249f0",
