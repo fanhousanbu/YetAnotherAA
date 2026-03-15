@@ -30,7 +30,21 @@ export class RegistryController {
   @ApiQuery({ name: "address", required: false, description: "Ethereum address" })
   @ApiResponse({ status: 200, type: RoleResponseDto })
   async getRole(@Request() req, @Query("address") address?: string): Promise<RoleResponseDto> {
-    const targetAddress = (address || req.user?.walletAddress) as Address;
+    const targetAddress = (address || req.user?.walletAddress) as Address | undefined;
+
+    if (!targetAddress) {
+      return {
+        address: "0x" as Address,
+        isAdmin: false,
+        isCommunityAdmin: false,
+        isSPO: false,
+        isV4Operator: false,
+        isEndUser: false,
+        roleIds: [],
+        gtokenBalance: "0",
+      };
+    }
+
     const [roles, gtokenBalance] = await Promise.all([
       this.registryService.getUserRoles(targetAddress),
       this.registryService.getGTokenBalance(targetAddress),
