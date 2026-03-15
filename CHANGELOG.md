@@ -6,15 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-03-15
+
+### Fixed
+
+- **Backend**: Guard undefined `walletAddress` in community, operator, sale, and registry controllers — JWT payload lacks `walletAddress`, so endpoints now return safe defaults instead of 500 errors
+- **Frontend**: All portal pages (role, community, operator, admin, sale) now use `<Layout requireAuth>` — fixes redirect-to-dashboard bug caused by Layout's `!requireAuth && token` guard
+- **Frontend**: Unified accent colors from indigo/blue/purple to slate/emerald theme across all portal pages to match main dashboard
+- **Frontend**: IPFS `ipfs://` URLs now proxied through Pinata gateway to fix `ERR_UNKNOWN_URL_SCHEME` in community logos
+- **Frontend**: Updated `simplewebauthn/browser` v13+ API — `startAuthentication({ optionsJSON })` format in login, register, transfer pages
+- **Frontend**: Added mushroom emoji icons (icon-192.png, icon-512.png, apple-icon.png) to fix 404 errors
+- **Backend**: Updated `.env.example` to use M4 AirAccount factory address (`0x914db0...`) matching `@aastar/core` SDK constants
+
 ## [0.7.0] - 2026-03-15
 
 ### Management Portal
 
 - **Role-Based Portal System**: Added `/role` page with role selection (Admin, Operator, Community, Sale)
-- **Admin Portal** (`/admin`): Protocol-level management — pause/unpause EntryPoint, manage validators, update factory addresses
-- **Operator Portal** (`/operator`): Bundler operations — submit/query UserOps, manage bundler nodes, view gas analytics
-- **Community Portal** (`/community`): Community management — member directory, staking stats, governance proposals
-- **Sale Portal** (`/sale`): Token sale management — APNTs sale contract interaction, whitelist management, sale status
+- **Admin Portal** (`/admin`): Protocol-level management — registry overview, role configurations, GToken stats, system addresses
+- **Operator Portal** (`/operator`): SPO/V4 operator status, paymaster deployment guides, operator lists
+- **Community Portal** (`/community`): Community dashboard, address lookup, community admin list with xPNTs token info
+- **Sale Portal** (`/sale`): GToken bonding curve sale status, aPNTs fixed-price sale, eligibility check, price calculator
 
 ### Added
 
