@@ -1,7 +1,11 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "noEmitOnError": false
+    "noEmitOnError": false,
+    "paths": {
+      "ox": ["./node_modules/ox/_types/index.d.ts"],
+      "ox/*": ["./node_modules/ox/_types/*.d.ts"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "../node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]
