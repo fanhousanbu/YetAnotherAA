@@ -32,6 +32,9 @@ export interface TransferRecord {
   nodeIndices: number[];
   tokenAddress?: string;
   tokenSymbol?: string;
+  actualGasUsed?: string;
+  actualGasCost?: string;
+  retryCount?: number;
   createdAt: string;
   submittedAt?: string;
   completedAt?: string;

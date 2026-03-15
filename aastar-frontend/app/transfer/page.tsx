@@ -750,6 +750,21 @@ export default function TransferPage() {
                           </a>
                         </p>
                       )}
+                      {transferStatus?.actualGasUsed && (
+                        <p className="font-mono text-xs text-gray-600 dark:text-gray-400">
+                          Gas used: {parseInt(transferStatus.actualGasUsed, 16).toLocaleString()}
+                          {transferStatus.actualGasCost && (
+                            <span className="ml-2">
+                              Cost: {(parseInt(transferStatus.actualGasCost, 16) / 1e18).toFixed(8)} ETH
+                            </span>
+                          )}
+                          {transferStatus.retryCount > 0 && (
+                            <span className="ml-2 text-amber-600 dark:text-amber-400">
+                              (retried {transferStatus.retryCount}x)
+                            </span>
+                          )}
+                        </p>
+                      )}
                       {transferStatus?.bundlerUserOpHash && !transferStatus?.transactionHash && (
                         <p className="text-xs text-gray-600 dark:text-gray-400">
                           Bundler processing transaction...
