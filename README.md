@@ -403,21 +403,15 @@ npm run dev -w aastar-frontend
 Copy `.env.example` to `aastar/.env` and fill in:
 
 ```bash
-# Required for all management portal features
-ETH_RPC_URL=https://sepolia.infura.io/v3/YOUR_KEY   # or any Sepolia RPC
+# AAStar contract addresses — already set in .env for Sepolia canonical values
+# Management portal reads these automatically via applyConfig() from @aastar/core
 
-# Optional — applyConfig() provides canonical Sepolia defaults if omitted
-REGISTRY_ADDRESS=0x...
-GTOKEN_ADDRESS=0x...
-STAKING_ADDRESS=0x...
-SUPER_PAYMASTER_ADDRESS=0x...
-PAYMASTER_FACTORY_ADDRESS=0x...
-XPNTS_FACTORY_ADDRESS=0x...
-
-# Required for /sale portal (portal shows "not configured" if absent)
-GTOKEN_SALE_ADDRESS=0x...    # GTokenSaleContract (bonding curve)
-APNTS_SALE_ADDRESS=0x...     # APNTsSaleContract (fixed price $0.02)
+# Only needed for /sale portal (shows "not configured" if absent)
+GTOKEN_SALE_ADDRESS=0x...    # GTokenSaleContract (bonding curve) — deploy first
+APNTS_SALE_ADDRESS=0x...     # APNTsSaleContract (fixed price $0.02) — deploy first
 ```
+
+See `aastar/env.sepolia.example` for all Sepolia contract addresses.
 
 ### New API Endpoints
 
