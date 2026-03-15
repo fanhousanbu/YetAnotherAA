@@ -93,7 +93,6 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">AAStar</h1>
               </div>
 
               {/* Desktop Navigation */}
@@ -243,6 +242,11 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
 
       {/* Main content with bottom padding for mobile nav */}
       <main className={user ? "md:py-6 pb-20 md:pb-6" : ""}>{children}</main>
+
+      {/* Footer */}
+      <footer className="hidden md:block py-4 text-center text-xs text-gray-400 dark:text-gray-600">
+        Powered by AAStar 2023
+      </footer>
 
       {/* Service Status - Desktop only (mobile version is embedded in Me menu) */}
       <div className="hidden md:block">
