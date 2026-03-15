@@ -10,6 +10,7 @@ import {
   XCircleIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
+import Layout from "@/components/Layout";
 import { communityAPI } from "@/lib/api";
 
 interface CommunityMeta {
@@ -49,6 +50,13 @@ function shortenAddr(addr: string) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
+function resolveImageUrl(url: string): string {
+  if (url.startsWith("ipfs://")) {
+    return url.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/");
+  }
+  return url;
+}
+
 function CommunityCard({ entry }: { entry: CommunityEntry }) {
   const name = entry.metadata?.name || shortenAddr(entry.address);
   return (
@@ -56,7 +64,7 @@ function CommunityCard({ entry }: { entry: CommunityEntry }) {
       <div className="flex items-start gap-3">
         {entry.metadata?.logoURI ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={entry.metadata.logoURI} alt={name} className="w-10 h-10 rounded-full" />
+          <img src={resolveImageUrl(entry.metadata.logoURI)} alt={name} className="w-10 h-10 rounded-full" />
         ) : (
           <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
             <span className="text-indigo-600 dark:text-indigo-300 font-bold text-sm">
@@ -110,12 +118,6 @@ export default function CommunityPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/auth/login");
-      return;
-    }
-
     Promise.all([
       communityAPI.getDashboard().then(r => setDashboard(r.data)),
       communityAPI.getList().then(r => setCommunities(r.data)),
@@ -147,18 +149,21 @@ export default function CommunityPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
-      </div>
+      <Layout requireAuth>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600 dark:border-emerald-400" />
+        </div>
+      </Layout>
     );
   }
 
   const myName = dashboard?.metadata?.name || (dashboard?.address ? shortenAddr(dashboard.address) : "—");
 
   return (
+    <Layout requireAuth>
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-        <UserGroupIcon className="h-7 w-7 text-indigo-500" />
+        <UserGroupIcon className="h-7 w-7 text-slate-700 dark:text-emerald-400" />
         Community Portal
       </h1>
 
@@ -260,12 +265,12 @@ export default function CommunityPage() {
             onChange={e => setSearch(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleSearch()}
             placeholder="0x..."
-            className="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500"
           />
           <button
             onClick={handleSearch}
             disabled={searching}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg disabled:opacity-50"
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-sm rounded-lg disabled:opacity-50"
           >
             {searching ? "…" : "Search"}
           </button>
@@ -324,5 +329,6 @@ export default function CommunityPage() {
         )}
       </section>
     </div>
+    </Layout>
   );
 }

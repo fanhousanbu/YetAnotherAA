@@ -82,11 +82,6 @@ export default function RolePage() {
   const [querying, setQuerying] = useState(false);
 
   useEffect(() => {
-    const { user } = getStoredAuth();
-    if (!user) {
-      router.replace("/auth/login");
-      return;
-    }
     loadData();
   }, []);
 
@@ -122,7 +117,7 @@ export default function RolePage() {
   const navigateTo = (path: string) => router.push(path);
 
   return (
-    <Layout>
+    <Layout requireAuth>
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div>
@@ -178,7 +173,7 @@ export default function RolePage() {
             <button
               onClick={queryRole}
               disabled={querying}
-              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-sm rounded-lg disabled:opacity-50"
             >
               {querying ? "..." : "Query"}
             </button>

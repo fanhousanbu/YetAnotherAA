@@ -8,6 +8,7 @@ import {
   CircleStackIcon,
   CurrencyDollarIcon,
 } from "@heroicons/react/24/outline";
+import Layout from "@/components/Layout";
 import { adminAPI } from "@/lib/api";
 
 interface RoleConfig {
@@ -83,12 +84,6 @@ export default function AdminPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/auth/login");
-      return;
-    }
-
     adminAPI
       .getDashboard()
       .then(r => setDashboard(r.data))
@@ -101,9 +96,11 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <ArrowPathIcon className="h-8 w-8 animate-spin text-indigo-600" />
-      </div>
+      <Layout requireAuth>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <ArrowPathIcon className="h-8 w-8 animate-spin text-slate-600 dark:text-emerald-400" />
+        </div>
+      </Layout>
     );
   }
 
@@ -112,10 +109,11 @@ export default function AdminPage() {
   const { registryStats, roleConfigs, gtokenStats, systemAddresses } = dashboard;
 
   return (
+    <Layout requireAuth>
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <ShieldCheckIcon className="h-7 w-7 text-indigo-500" />
+          <ShieldCheckIcon className="h-7 w-7 text-slate-700 dark:text-emerald-400" />
           Protocol Admin
         </h1>
         <div className="flex items-center gap-2">
@@ -260,5 +258,6 @@ export default function AdminPage() {
         </div>
       </section>
     </div>
+    </Layout>
   );
 }

@@ -9,6 +9,7 @@ import {
   XCircleIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import Layout from "@/components/Layout";
 import { operatorAPI } from "@/lib/api";
 
 interface SPOStatus {
@@ -94,12 +95,6 @@ export default function OperatorPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/auth/login");
-      return;
-    }
-
     Promise.all([
       operatorAPI.getDashboard().then(r => setDashboard(r.data)),
       operatorAPI.getSPOList().then(r => setSpoList(r.data)),
@@ -114,16 +109,19 @@ export default function OperatorPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <ArrowPathIcon className="h-8 w-8 animate-spin text-indigo-600" />
-      </div>
+      <Layout requireAuth>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <ArrowPathIcon className="h-8 w-8 animate-spin text-slate-600 dark:text-emerald-400" />
+        </div>
+      </Layout>
     );
   }
 
   return (
+    <Layout requireAuth>
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-        <ServerStackIcon className="h-7 w-7 text-indigo-500" />
+        <ServerStackIcon className="h-7 w-7 text-slate-700 dark:text-emerald-400" />
         Operator Portal
       </h1>
 
@@ -290,5 +288,6 @@ export default function OperatorPage() {
         </section>
       </div>
     </div>
+    </Layout>
   );
 }

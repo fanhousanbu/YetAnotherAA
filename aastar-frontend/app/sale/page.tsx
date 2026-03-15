@@ -9,6 +9,7 @@ import {
   XCircleIcon,
   ArrowTrendingUpIcon,
 } from "@heroicons/react/24/outline";
+import Layout from "@/components/Layout";
 import { saleAPI } from "@/lib/api";
 
 interface GTokenSaleStatus {
@@ -78,12 +79,6 @@ export default function SalePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/auth/login");
-      return;
-    }
-
     Promise.all([
       saleAPI.getGTokenStatus().then(r => setGTokenStatus(r.data)),
       saleAPI.getAPNTsStatus().then(r => setAPNTsStatus(r.data)),
@@ -111,16 +106,19 @@ export default function SalePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <ArrowPathIcon className="h-8 w-8 animate-spin text-indigo-600" />
-      </div>
+      <Layout requireAuth>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <ArrowPathIcon className="h-8 w-8 animate-spin text-slate-600 dark:text-emerald-400" />
+        </div>
+      </Layout>
     );
   }
 
   return (
+    <Layout requireAuth>
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-        <CurrencyDollarIcon className="h-7 w-7 text-indigo-500" />
+        <CurrencyDollarIcon className="h-7 w-7 text-slate-700 dark:text-emerald-400" />
         Token Sale
       </h1>
 
@@ -326,7 +324,7 @@ export default function SalePage() {
                 <button
                   onClick={fetchQuote}
                   disabled={quoteLoading}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg disabled:opacity-50"
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-sm rounded-lg disabled:opacity-50"
                 >
                   {quoteLoading ? "…" : "Quote"}
                 </button>
@@ -353,5 +351,6 @@ export default function SalePage() {
         )}
       </section>
     </div>
+    </Layout>
   );
 }
