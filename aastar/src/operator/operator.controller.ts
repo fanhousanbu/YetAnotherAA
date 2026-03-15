@@ -47,7 +47,23 @@ export class OperatorController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get full operator dashboard for the authenticated user" })
   async getDashboard(@Request() req: any, @Query("address") address?: string) {
-    const targetAddress = (address || req.user?.walletAddress) as Address;
+    const targetAddress = (address || req.user?.walletAddress) as Address | undefined;
+
+    if (!targetAddress) {
+      return {
+        address: null,
+        isSPO: false,
+        isV4Operator: false,
+        gtokenBalance: "0",
+        spoStatus: null,
+        v4Status: { paymasterAddress: null, balance: "0", hasRole: false },
+        registryAddress: "",
+        superPaymasterAddress: "",
+        paymasterFactoryAddress: "",
+        stakingAddress: "",
+      };
+    }
+
     return this.operatorService.getOperatorDashboard(targetAddress);
   }
 
@@ -57,7 +73,12 @@ export class OperatorController {
   @ApiOperation({ summary: "Get GToken balance for an address" })
   @ApiQuery({ name: "address", required: false })
   async getGTokenBalance(@Request() req: any, @Query("address") address?: string) {
-    const target = (address || req.user?.walletAddress) as Address;
+    const target = (address || req.user?.walletAddress) as Address | undefined;
+
+    if (!target) {
+      return { address: null, balance: "0" };
+    }
+
     const balance = await this.operatorService.getGTokenBalance(target);
     return { address: target, balance };
   }

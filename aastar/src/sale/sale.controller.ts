@@ -55,8 +55,8 @@ export class SaleController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Check if authenticated user is eligible to buy GToken" })
   async checkGTokenEligibility(@Request() req: any, @Query("address") address?: string) {
-    const target = (address || req.user?.walletAddress) as Address;
-    if (!target) return { eligible: false, reason: "No wallet address" };
+    const target = (address || req.user?.walletAddress) as Address | undefined;
+    if (!target) return { address: null, eligible: false, hasBought: false, reason: "No wallet address linked" };
     const hasBought = await this.saleService.checkGTokenHasBought(target);
     return {
       address: target,

@@ -61,7 +61,20 @@ export class CommunityController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get full community dashboard for the authenticated user" })
   async getDashboard(@Request() req: any, @Query("address") address?: string) {
-    const targetAddress = (address || req.user?.walletAddress) as Address;
+    const targetAddress = (address || req.user?.walletAddress) as Address | undefined;
+
+    if (!targetAddress) {
+      return {
+        address: null,
+        isAdmin: false,
+        metadata: null,
+        gtokenBalance: "0",
+        tokenAddress: null,
+        tokenInfo: null,
+        xpntsBalance: null,
+      };
+    }
+
     return this.communityService.getCommunityDashboard(targetAddress);
   }
 
@@ -71,7 +84,12 @@ export class CommunityController {
   @ApiOperation({ summary: "Get GToken balance for an address" })
   @ApiQuery({ name: "address", required: false })
   async getGTokenBalance(@Request() req: any, @Query("address") address?: string) {
-    const target = (address || req.user?.walletAddress) as Address;
+    const target = (address || req.user?.walletAddress) as Address | undefined;
+
+    if (!target) {
+      return { address: null, balance: "0" };
+    }
+
     const balance = await this.communityService.getGTokenBalance(target);
     return { address: target, balance };
   }
