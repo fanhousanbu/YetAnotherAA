@@ -47,6 +47,7 @@ export class UserToken {
   @CreateDateColumn()
   createdAt: Date | string;
 
+  // String ref to break circular import (ox/SWC compat)
   @ManyToOne("User", "userTokens")
   user: User;
 }

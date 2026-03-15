@@ -49,6 +49,7 @@ export class Account {
   @CreateDateColumn()
   createdAt: Date;
 
+  // String ref to break circular import (ox/SWC compat)
   @ManyToOne("User", "accounts")
   @JoinColumn({ name: "userId" })
   user: User;

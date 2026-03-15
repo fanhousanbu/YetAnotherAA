@@ -62,6 +62,7 @@ export class UserNFT {
   @CreateDateColumn()
   createdAt: Date | string;
 
+  // String ref to break circular import (ox/SWC compat)
   @ManyToOne("User", "userNFTs")
   user: User;
 }

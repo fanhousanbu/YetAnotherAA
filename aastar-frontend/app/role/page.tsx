@@ -46,11 +46,20 @@ function formatGToken(wei: string): string {
   }
 }
 
+const ROLE_COLOR_MAP: Record<string, string> = {
+  purple: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+  green: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  blue: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  orange: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+  gray: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+};
+
 function RoleBadge({ label, active, color }: { label: string; active: boolean; color: string }) {
+  const activeClasses = ROLE_COLOR_MAP[color] ?? ROLE_COLOR_MAP.gray;
   return (
     <span
       className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-        active ? `bg-${color}-100 text-${color}-800 dark:bg-${color}-900 dark:text-${color}-200` : "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600"
+        active ? activeClasses : "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600"
       }`}
     >
       {active && <span className="mr-1.5">✓</span>}
