@@ -316,8 +316,9 @@ export class TransferManager {
         const isAA26 = message.includes("AA26");
 
         if (isAA26 && attempt < MAX_RETRIES && retryCtx) {
-          // AA26: verificationGasLimit too low — rebuild with 2x gas and retry
-          const multiplier = 2 * (attempt + 1); // 2x on first retry, 4x on second
+          // AA26: verificationGasLimit too low — rebuild with stepped-up gas
+          // Base defaults already include buffer, so use modest increments
+          const multiplier = attempt === 0 ? 2 : 3; // 2x on first retry, 3x on second
           this.logger.log(
             `Transfer ${transferId}: AA26 on attempt ${attempt + 1}, retrying with ${multiplier}x verificationGasLimit`
           );
