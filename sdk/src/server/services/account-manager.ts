@@ -97,6 +97,19 @@ export class AccountManager {
       // Use default
     }
 
+    // If DB says not deployed, verify on-chain and auto-correct
+    if (!account.deployed) {
+      try {
+        const code = await this.ethereum.getProvider().getCode(account.address);
+        if (code !== "0x") {
+          account.deployed = true;
+          await this.storage.updateAccount(userId, { deployed: true });
+        }
+      } catch {
+        // RPC error — keep stored value
+      }
+    }
+
     const version = (account.entryPointVersion || "0.6") as unknown as EntryPointVersion;
     const nonce = await this.ethereum.getNonce(account.address, 0, version);
 
