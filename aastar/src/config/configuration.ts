@@ -73,5 +73,18 @@ export default () => {
     kmsEnabled: process.env.KMS_ENABLED === "true",
     kmsEndpoint: process.env.KMS_ENDPOINT || "https://kms1.aastar.io",
     kmsApiKey: process.env.KMS_API_KEY,
+    // AAStar contract addresses (fallback to @aastar/core canonical after applyConfig)
+    registryAddress: process.env.REGISTRY_ADDRESS,
+    stakingAddress: process.env.STAKING_ADDRESS,
+    superPaymasterAddress: process.env.SUPER_PAYMASTER_ADDRESS,
+    gtokenAddress: process.env.GTOKEN_ADDRESS,
+    xpntsFactoryAddress: process.env.XPNTS_FACTORY_ADDRESS,
+    paymasterFactoryAddress: process.env.PAYMASTER_FACTORY_ADDRESS,
+    mysbtAddress: process.env.MYSBT_ADDRESS,
+    apntsAddress: process.env.APNTS_ADDRESS,
+    priceFeedAddress: process.env.PRICE_FEED_ADDRESS,
+    // Sale contract addresses
+    gTokenSaleAddress: process.env.GTOKEN_SALE_ADDRESS,
+    aPNTsSaleAddress: process.env.APNTS_SALE_ADDRESS,
   };
 };

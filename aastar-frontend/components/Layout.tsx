@@ -17,6 +17,9 @@ import {
   ChevronRightIcon,
   ChevronDownIcon,
   BookOpenIcon,
+  ShieldCheckIcon,
+  UserGroupIcon,
+  ServerStackIcon,
 } from "@heroicons/react/24/outline";
 
 interface LayoutProps {
@@ -90,7 +93,6 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">AAStar</h1>
               </div>
 
               {/* Desktop Navigation */}
@@ -100,6 +102,36 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
                   className={getNavButtonClass("/dashboard", pathname === "/dashboard")}
                 >
                   Dashboard
+                </button>
+                <button
+                  onClick={() => router.push("/role")}
+                  className={getNavButtonClass("/role", pathname === "/role")}
+                >
+                  My Role
+                </button>
+                <button
+                  onClick={() => router.push("/community")}
+                  className={getNavButtonClass("/community", pathname.startsWith("/community"))}
+                >
+                  Community
+                </button>
+                <button
+                  onClick={() => router.push("/operator")}
+                  className={getNavButtonClass("/operator", pathname.startsWith("/operator"))}
+                >
+                  Operator
+                </button>
+                <button
+                  onClick={() => router.push("/admin")}
+                  className={getNavButtonClass("/admin", pathname.startsWith("/admin"))}
+                >
+                  Protocol
+                </button>
+                <button
+                  onClick={() => router.push("/sale")}
+                  className={getNavButtonClass("/sale", pathname.startsWith("/sale"))}
+                >
+                  Sale
                 </button>
                 <button
                   onClick={() => router.push("/transfer")}
@@ -211,6 +243,11 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
       {/* Main content with bottom padding for mobile nav */}
       <main className={user ? "md:py-6 pb-20 md:pb-6" : ""}>{children}</main>
 
+      {/* Footer */}
+      <footer className="hidden md:block py-4 text-center text-xs text-gray-400 dark:text-gray-600">
+        Powered by AAStar 2023
+      </footer>
+
       {/* Service Status - Desktop only (mobile version is embedded in Me menu) */}
       <div className="hidden md:block">
         <ServiceStatus />
@@ -227,6 +264,33 @@ export default function Layout({ children, requireAuth = false }: LayoutProps) {
             >
               <HomeIcon className="h-6 w-6 mb-1" />
               <span className="text-xs font-medium">Home</span>
+            </button>
+
+            {/* My Role */}
+            <button
+              onClick={() => router.push("/role")}
+              className={getBottomNavButtonClass("/role", pathname === "/role")}
+            >
+              <ShieldCheckIcon className="h-6 w-6 mb-1" />
+              <span className="text-xs font-medium">My Role</span>
+            </button>
+
+            {/* Community */}
+            <button
+              onClick={() => router.push("/community")}
+              className={getBottomNavButtonClass("/community", pathname.startsWith("/community"))}
+            >
+              <UserGroupIcon className="h-6 w-6 mb-1" />
+              <span className="text-xs font-medium">Community</span>
+            </button>
+
+            {/* Operator */}
+            <button
+              onClick={() => router.push("/operator")}
+              className={getBottomNavButtonClass("/operator", pathname.startsWith("/operator"))}
+            >
+              <ServerStackIcon className="h-6 w-6 mb-1" />
+              <span className="text-xs font-medium">Operator</span>
             </button>
 
             {/* Transfer */}

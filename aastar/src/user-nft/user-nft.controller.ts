@@ -170,6 +170,7 @@ export class UserNFTController {
     name: "standard",
     required: false,
     enum: ["ERC721", "ERC1155"],
+    type: "string",
     description: "Filter by NFT standard",
   })
   @ApiQuery({

@@ -6,7 +6,7 @@ import {
   CreateDateColumn,
   Index,
 } from "typeorm";
-import { User } from "./user.entity";
+import type { User } from "./user.entity";
 
 @Entity("user_tokens")
 @Index(["userId", "address"], { unique: true }) // Prevent duplicate tokens per user
@@ -47,6 +47,7 @@ export class UserToken {
   @CreateDateColumn()
   createdAt: Date | string;
 
-  @ManyToOne(() => User, user => user.userTokens)
+  // String ref to break circular import (ox/SWC compat)
+  @ManyToOne("User", "userTokens")
   user: User;
 }

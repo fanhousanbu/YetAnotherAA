@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryColumn, CreateDateColumn, ManyToOne, JoinColumn } from "typeorm";
-import { User } from "./user.entity";
+import type { User } from "./user.entity";
 
 /**
  * @deprecated Passkey credentials are now stored in KMS.
@@ -20,7 +20,8 @@ export class Passkey {
   @CreateDateColumn()
   createdAt: Date;
 
-  @ManyToOne(() => User, user => user.passkeys)
+  // String ref to break circular import (ox/SWC compat)
+  @ManyToOne("User", "passkeys")
   @JoinColumn({ name: "userId" })
   user: User;
 }

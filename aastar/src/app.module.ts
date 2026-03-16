@@ -15,6 +15,11 @@ import { UserNFTModule } from "./user-nft/user-nft.module";
 import { DataToolsModule } from "./data-tools/data-tools.module";
 import { SdkModule } from "./sdk/sdk.module";
 import { GuardianModule } from "./guardian/guardian.module";
+import { RegistryModule } from "./registry/registry.module";
+import { CommunityModule } from "./community/community.module";
+import { OperatorModule } from "./operator/operator.module";
+import { AdminModule } from "./admin/admin.module";
+import { SaleModule } from "./sale/sale.module";
 
 @Module({
   imports: [
@@ -32,6 +37,11 @@ import { GuardianModule } from "./guardian/guardian.module";
     UserNFTModule,
     DataToolsModule,
     GuardianModule,
+    RegistryModule,
+    CommunityModule,
+    OperatorModule,
+    AdminModule,
+    SaleModule,
   ],
   controllers: [AppController],
   providers: [AppService],

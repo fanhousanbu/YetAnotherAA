@@ -115,31 +115,6 @@ export class TransferManager {
 
     const version = (account.entryPointVersion || "0.6") as unknown as EntryPointVersion;
 
-    // Build UserOperation
-    const userOp = await this.buildUserOperation(
-      userId,
-      account.address,
-      params.to,
-      params.amount,
-      params.data || "0x",
-      params.usePaymaster,
-      params.paymasterAddress,
-      params.paymasterData,
-      params.tokenAddress,
-      version
-    );
-
-    // Get hash
-    const userOpHash = await this.ethereum.getUserOpHash(userOp, version);
-
-    // Ensure wallet exists
-    await this.signer.ensureSigner(userId);
-
-    // BLS signature (pass assertion context for KMS-backed signing)
-    const assertionCtx: PasskeyAssertionContext | undefined = params.passkeyAssertion
-      ? { assertion: params.passkeyAssertion }
-      : undefined;
-
     // M4 accounts: check if validator is set; if not, use ECDSA instead of BLS
     let useECDSA = false;
     if (version === EntryPointVersion.V0_7 || version === EntryPointVersion.V0_8) {
@@ -161,6 +136,32 @@ export class TransferManager {
         useECDSA = true;
       }
     }
+
+    // Build UserOperation with ECDSA hint for gas estimation
+    const userOp = await this.buildUserOperation(
+      userId,
+      account.address,
+      params.to,
+      params.amount,
+      params.data || "0x",
+      params.usePaymaster,
+      params.paymasterAddress,
+      params.paymasterData,
+      params.tokenAddress,
+      version,
+      { useECDSA }
+    );
+
+    // Get hash
+    const userOpHash = await this.ethereum.getUserOpHash(userOp, version);
+
+    // Ensure wallet exists
+    await this.signer.ensureSigner(userId);
+
+    // BLS signature (pass assertion context for KMS-backed signing)
+    const assertionCtx: PasskeyAssertionContext | undefined = params.passkeyAssertion
+      ? { assertion: params.passkeyAssertion }
+      : undefined;
 
     if (useECDSA) {
       // M4 ECDSA path: raw 65-byte sig, no validator needed
@@ -224,8 +225,13 @@ export class TransferManager {
       tokenSymbol,
     });
 
-    // Process asynchronously
-    this.processTransferAsync(transferId, userOp, account.address, version);
+    // Process asynchronously with retry context
+    this.processTransferAsync(transferId, userOp, account.address, version, {
+      userId,
+      params,
+      useECDSA,
+      assertionCtx,
+    });
 
     return {
       success: true,
@@ -243,45 +249,129 @@ export class TransferManager {
     transferId: string,
     userOp: UserOperation | PackedUserOperation,
     from: string,
-    version: EntryPointVersion
+    version: EntryPointVersion,
+    retryCtx?: {
+      userId: string;
+      params: ExecuteTransferParams;
+      useECDSA: boolean;
+      assertionCtx?: PasskeyAssertionContext;
+    }
   ): Promise<void> {
-    try {
-      const formatted = this.formatUserOpForBundler(userOp, version);
-      const bundlerUserOpHash = await this.ethereum.sendUserOperation(formatted, version);
+    const MAX_RETRIES = 2;
 
-      await this.storage.updateTransfer(transferId, {
-        bundlerUserOpHash,
-        status: "submitted",
-        submittedAt: new Date().toISOString(),
-      } as Partial<import("../interfaces/storage-adapter").TransferRecord>);
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const formatted = this.formatUserOpForBundler(userOp, version);
+        const bundlerUserOpHash = await this.ethereum.sendUserOperation(formatted, version);
 
-      const txHash = await this.ethereum.waitForUserOp(bundlerUserOpHash);
+        await this.storage.updateTransfer(transferId, {
+          bundlerUserOpHash,
+          status: "submitted",
+          submittedAt: new Date().toISOString(),
+        } as Partial<import("../interfaces/storage-adapter").TransferRecord>);
 
-      await this.storage.updateTransfer(transferId, {
-        transactionHash: txHash,
-        status: "completed",
-        completedAt: new Date().toISOString(),
-      } as Partial<import("../interfaces/storage-adapter").TransferRecord>);
+        const txHash = await this.ethereum.waitForUserOp(bundlerUserOpHash);
 
-      // Update deployment status if first tx
-      const code = await this.ethereum.getProvider().getCode(from);
-      if (code !== "0x") {
-        const account = (await this.storage.getAccounts()).find(a => a.address === from);
-        if (account && !account.deployed) {
-          await this.storage.updateAccount(account.userId, {
-            deployed: true,
-            deploymentTxHash: txHash,
-          });
+        // Fetch receipt for gas data before updating status
+        let actualGasUsed: string | undefined;
+        let actualGasCost: string | undefined;
+        try {
+          const receipt = await this.ethereum.getUserOperationReceipt(bundlerUserOpHash);
+          if (receipt && typeof receipt === "object") {
+            const r = receipt as Record<string, unknown>;
+            actualGasUsed = r.actualGasUsed as string | undefined;
+            actualGasCost = r.actualGasCost as string | undefined;
+            this.logger.log(
+              `Transfer ${transferId} gas: actualGasUsed=${actualGasUsed}, actualGasCost=${actualGasCost}`
+            );
+          }
+        } catch {
+          // Non-critical
         }
+
+        await this.storage.updateTransfer(transferId, {
+          transactionHash: txHash,
+          status: "completed",
+          completedAt: new Date().toISOString(),
+          ...(actualGasUsed ? { actualGasUsed } : {}),
+          ...(actualGasCost ? { actualGasCost } : {}),
+          ...(attempt > 0 ? { retryCount: attempt } : {}),
+        } as Partial<import("../interfaces/storage-adapter").TransferRecord>);
+
+        // Update deployment status if first tx
+        const code = await this.ethereum.getProvider().getCode(from);
+        if (code !== "0x") {
+          const account = (await this.storage.getAccounts()).find(a => a.address === from);
+          if (account && !account.deployed) {
+            await this.storage.updateAccount(account.userId, {
+              deployed: true,
+              deploymentTxHash: txHash,
+            });
+          }
+        }
+
+        return; // Success — exit retry loop
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        const isAA26 = message.includes("AA26");
+
+        if (isAA26 && attempt < MAX_RETRIES && retryCtx) {
+          // AA26: verificationGasLimit too low — rebuild with stepped-up gas
+          // Base defaults already include buffer, so use modest increments
+          const multiplier = attempt === 0 ? 2 : 3; // 2x on first retry, 3x on second
+          this.logger.log(
+            `Transfer ${transferId}: AA26 on attempt ${attempt + 1}, retrying with ${multiplier}x verificationGasLimit`
+          );
+
+          try {
+            // Rebuild userOp with boosted gas
+            const account = await this.accountManager.getAccountByUserId(retryCtx.userId);
+            if (!account) throw new Error("Account not found for retry");
+
+            const newUserOp = await this.buildUserOperation(
+              retryCtx.userId,
+              account.address,
+              retryCtx.params.to,
+              retryCtx.params.amount,
+              retryCtx.params.data || "0x",
+              retryCtx.params.usePaymaster,
+              retryCtx.params.paymasterAddress,
+              retryCtx.params.paymasterData,
+              retryCtx.params.tokenAddress,
+              version,
+              { useECDSA: retryCtx.useECDSA, verificationGasMultiplier: multiplier }
+            );
+
+            // Re-sign
+            const newHash = await this.ethereum.getUserOpHash(newUserOp, version);
+            if (retryCtx.useECDSA) {
+              const signer = await this.signer.getSigner(retryCtx.userId, retryCtx.assertionCtx);
+              newUserOp.signature = await signer.signMessage(ethers.getBytes(newHash));
+            } else {
+              const blsData = await this.blsService.generateBLSSignature(
+                retryCtx.userId, newHash, retryCtx.assertionCtx
+              );
+              const packedBls = await this.blsService.packSignature(blsData);
+              newUserOp.signature = "0x01" + packedBls.slice(2);
+            }
+
+            userOp = newUserOp;
+            continue; // Retry with new userOp
+          } catch (retryError) {
+            const retryMsg = retryError instanceof Error ? retryError.message : String(retryError);
+            this.logger.error(`Transfer ${transferId} retry rebuild failed: ${retryMsg}`);
+          }
+        }
+
+        // Final failure — no more retries
+        await this.storage.updateTransfer(transferId, {
+          status: "failed",
+          error: message,
+          failedAt: new Date().toISOString(),
+        } as Partial<import("../interfaces/storage-adapter").TransferRecord>);
+        this.logger.error(`Transfer ${transferId} failed (attempt ${attempt + 1}/${MAX_RETRIES + 1}): ${message}`);
+        return;
       }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      await this.storage.updateTransfer(transferId, {
-        status: "failed",
-        error: message,
-        failedAt: new Date().toISOString(),
-      } as Partial<import("../interfaces/storage-adapter").TransferRecord>);
-      this.logger.error(`Transfer ${transferId} failed: ${message}`);
     }
   }
 
@@ -386,7 +476,8 @@ export class TransferManager {
     paymasterAddress?: string,
     _paymasterData?: string,
     tokenAddress?: string,
-    version: EntryPointVersion = EntryPointVersion.V0_6
+    version: EntryPointVersion = EntryPointVersion.V0_6,
+    overrides?: { useECDSA?: boolean; verificationGasMultiplier?: number }
   ): Promise<UserOperation | PackedUserOperation> {
     const accountContract = this.ethereum.getAccountContract(sender);
     const nonce = await this.ethereum.getNonce(sender, 0, version);
@@ -548,8 +639,20 @@ export class TransferManager {
       }
     }
 
-    // Gas estimation
-    const gasEstimates = await this.ethereum.estimateUserOperationGas(baseUserOp, version);
+    // Gas estimation with account-type hints
+    const isECDSA = overrides?.useECDSA ?? false;
+    const gasEstimates = await this.ethereum.estimateUserOperationGas(baseUserOp, version, {
+      needsDeployment,
+      isECDSA,
+    });
+
+    // Apply gas multiplier for retries (e.g., 2x on AA26 failure)
+    if (overrides?.verificationGasMultiplier && overrides.verificationGasMultiplier > 1) {
+      const current = BigInt(gasEstimates.verificationGasLimit);
+      const multiplied = current * BigInt(overrides.verificationGasMultiplier);
+      gasEstimates.verificationGasLimit = "0x" + multiplied.toString(16);
+      this.logger.log(`Retry: boosted verificationGasLimit to ${multiplied} (${overrides.verificationGasMultiplier}x)`);
+    }
 
     const standardUserOp: UserOperation = {
       sender,

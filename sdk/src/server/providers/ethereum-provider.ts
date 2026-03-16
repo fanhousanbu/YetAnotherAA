@@ -151,19 +151,56 @@ export class EthereumProvider {
 
   // ── Bundler RPC ─────────────────────────────────────────────────
 
+  /**
+   * Gas estimation with account-type-aware defaults.
+   * M4 AirAccount ECDSA validation needs ~100-150k verification gas,
+   * but bundler can't estimate it (AA23 revert on dummy signatures).
+   */
   async estimateUserOperationGas(
     userOp: unknown,
-    version: EntryPointVersion = EntryPointVersion.V0_6
+    version: EntryPointVersion = EntryPointVersion.V0_6,
+    hints?: { needsDeployment?: boolean; isECDSA?: boolean }
   ): Promise<{ callGasLimit: string; verificationGasLimit: string; preVerificationGas: string }> {
+    // Account-type-aware verification gas defaults:
+    // - Deployment + ECDSA: 500k (factory create + ECDSA sig verification)
+    // - Post-deployment ECDSA: 200k (ECDSA verification ~100k + account logic)
+    // - Deployment + BLS: 4M (factory + BLS verification is expensive)
+    // - Post-deployment BLS: 500k
+    const getDefaultVerificationGas = (): bigint => {
+      const isDeployment = hints?.needsDeployment ?? false;
+      const isECDSA = hints?.isECDSA ?? false;
+      if (isDeployment) return isECDSA ? 500_000n : 4_000_000n;
+      return isECDSA ? 200_000n : 500_000n;
+    };
+
     try {
-      return await this.bundlerProvider.send("eth_estimateUserOperationGas", [
+      const estimate = await this.bundlerProvider.send("eth_estimateUserOperationGas", [
         userOp,
         this.getEntryPointAddress(version),
       ]);
-    } catch {
+
+      // Bundler estimate succeeded — apply 1.5x buffer with account-aware floor
+      const rawVerificationGas = BigInt(estimate.verificationGasLimit);
+      const buffered = (rawVerificationGas * 3n) / 2n;
+      const floor = getDefaultVerificationGas();
+      const finalVerificationGas = buffered > floor ? buffered : floor;
+
+      this.logger.log(
+        `Gas estimate: bundler=${rawVerificationGas}, buffered=${buffered}, floor=${floor}, final=${finalVerificationGas}`
+      );
+
+      return {
+        ...estimate,
+        verificationGasLimit: "0x" + finalVerificationGas.toString(16),
+      };
+    } catch (err) {
+      const defaultGas = getDefaultVerificationGas();
+      this.logger.log(
+        `Bundler estimation failed (likely AA23), using default verificationGasLimit=${defaultGas}`
+      );
       return {
         callGasLimit: "0x249f0",
-        verificationGasLimit: "0x3d0900", // 4M — enough for M4 factory deployment + BLS verification
+        verificationGasLimit: "0x" + defaultGas.toString(16),
         preVerificationGas: "0x11170",
       };
     }

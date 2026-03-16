@@ -70,10 +70,34 @@ export default function TransferPage() {
         setSavedPaymasters([]);
       }
 
-      // Load address book
+      // Load address book + recent transfer recipients
       try {
-        const addressBookResponse = await addressBookAPI.getAddressBook();
-        setAddressBook(addressBookResponse.data);
+        const [addressBookResponse, historyResponse] = await Promise.all([
+          addressBookAPI.getAddressBook().catch(() => ({ data: [] })),
+          transferAPI.getHistory(1, 50).catch(() => ({ data: { transfers: [] } })),
+        ]);
+
+        const bookEntries = addressBookResponse.data || [];
+        const bookAddresses = new Set(bookEntries.map((e: any) => e.address.toLowerCase()));
+
+        // Extract unique recent recipients not already in address book
+        const recentAddresses: any[] = [];
+        const seen = new Set<string>();
+        for (const tx of historyResponse.data.transfers || []) {
+          const lower = tx.to.toLowerCase();
+          if (!bookAddresses.has(lower) && !seen.has(lower)) {
+            seen.add(lower);
+            recentAddresses.push({
+              address: tx.to,
+              name: "",
+              lastUsed: tx.createdAt,
+              usageCount: 1,
+              isRecent: true,
+            });
+          }
+        }
+
+        setAddressBook([...bookEntries, ...recentAddresses]);
       } catch (error) {
         console.error("Failed to load address book:", error);
         setAddressBook([]);
@@ -244,7 +268,9 @@ export default function TransferPage() {
       // Step 2: Browser WebAuthn authentication ceremony
       toast.dismiss(loadingToast);
       loadingToast = toast.loading("Please verify with your passkey...");
-      const credential = await startAuthentication(authResponse.Options as any);
+      const credential = await startAuthentication({
+        optionsJSON: authResponse.Options as any,
+      });
 
       // Step 3: Extract Legacy assertion (reusable for BLS dual-signing)
       const passkeyAssertion = await kmsClient.extractLegacyAssertion(credential);
@@ -724,6 +750,21 @@ export default function TransferPage() {
                           </a>
                         </p>
                       )}
+                      {transferStatus?.actualGasUsed && (
+                        <p className="font-mono text-xs text-gray-600 dark:text-gray-400">
+                          Gas used: {parseInt(transferStatus.actualGasUsed, 16).toLocaleString()}
+                          {transferStatus.actualGasCost && (
+                            <span className="ml-2">
+                              Cost: {(parseInt(transferStatus.actualGasCost, 16) / 1e18).toFixed(8)} ETH
+                            </span>
+                          )}
+                          {transferStatus.retryCount > 0 && (
+                            <span className="ml-2 text-amber-600 dark:text-amber-400">
+                              (retried {transferStatus.retryCount}x)
+                            </span>
+                          )}
+                        </p>
+                      )}
                       {transferStatus?.bundlerUserOpHash && !transferStatus?.transactionHash && (
                         <p className="text-xs text-gray-600 dark:text-gray-400">
                           Bundler processing transaction...
@@ -757,7 +798,7 @@ export default function TransferPage() {
                           className="flex items-center justify-between w-full px-4 py-3 text-base bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-400 transition-all touch-manipulation active:scale-[0.98]"
                         >
                           <span className="text-gray-700 dark:text-gray-300 font-medium">
-                            📖 Choose from address book ({addressBook.length})
+                            Choose from saved & recent addresses ({addressBook.length})
                           </span>
                           <svg
                             className={`w-5 h-5 transition-transform ${
@@ -792,11 +833,15 @@ export default function TransferPage() {
                               >
                                 <div className="flex items-center justify-between gap-3">
                                   <div className="flex-1 min-w-0">
-                                    {entry.name && (
+                                    {entry.name ? (
                                       <div className="font-semibold text-gray-900 dark:text-white truncate text-base">
                                         {entry.name}
                                       </div>
-                                    )}
+                                    ) : entry.isRecent ? (
+                                      <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                        Recent
+                                      </div>
+                                    ) : null}
                                     <div className="text-sm text-gray-500 dark:text-gray-400 font-mono truncate">
                                       {entry.address}
                                     </div>

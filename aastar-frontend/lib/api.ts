@@ -244,4 +244,59 @@ export const userNFTAPI = {
     api.post("/user-nfts/verify-ownership", data),
 };
 
+// Registry API
+export const registryAPI = {
+  getInfo: () => api.get("/registry/info"),
+  getRoleIds: () => api.get("/registry/role-ids"),
+  getRole: (address?: string) =>
+    api.get("/registry/role", { params: address ? { address } : undefined }),
+  getMembers: (roleId: string) => api.get("/registry/members", { params: { roleId } }),
+  getCommunity: (name: string) => api.get("/registry/community", { params: { name } }),
+};
+
+// Sale API
+export const saleAPI = {
+  getOverview: () => api.get("/sale/overview"),
+  getGTokenStatus: () => api.get("/sale/gtoken/status"),
+  getAPNTsStatus: () => api.get("/sale/apnts/status"),
+  getAPNTsQuote: (usdAmount: string) =>
+    api.get("/sale/apnts/quote", { params: { usdAmount } }),
+  getGTokenEvents: () => api.get("/sale/gtoken/events"),
+  getGTokenEligibility: (address?: string) =>
+    api.get("/sale/gtoken/eligibility", { params: address ? { address } : undefined }),
+  getAddresses: () => api.get("/sale/addresses"),
+};
+
+// Admin API
+export const adminAPI = {
+  getProtocol: () => api.get("/admin/protocol"),
+  getRoles: () => api.get("/admin/roles"),
+  getGToken: () => api.get("/admin/gtoken"),
+  getDashboard: () => api.get("/admin/dashboard"),
+};
+
+// Operator API
+export const operatorAPI = {
+  getAddresses: () => api.get("/operator/addresses"),
+  getSPOList: () => api.get("/operator/spo/list"),
+  getV4List: () => api.get("/operator/v4/list"),
+  getStatus: (address: string) => api.get("/operator/status", { params: { address } }),
+  getDashboard: (address?: string) =>
+    api.get("/operator/dashboard", { params: address ? { address } : undefined }),
+  getGTokenBalance: (address?: string) =>
+    api.get("/operator/gtoken-balance", { params: address ? { address } : undefined }),
+};
+
+// Community API
+export const communityAPI = {
+  getList: () => api.get("/community/list"),
+  getAddresses: () => api.get("/community/addresses"),
+  getInfo: (address: string) => api.get("/community/info", { params: { address } }),
+  getToken: (address: string) => api.get("/community/token", { params: { address } }),
+  getDashboard: (address?: string) =>
+    api.get("/community/dashboard", { params: address ? { address } : undefined }),
+  getGTokenBalance: (address?: string) =>
+    api.get("/community/gtoken-balance", { params: address ? { address } : undefined }),
+};
+
 export default api;
