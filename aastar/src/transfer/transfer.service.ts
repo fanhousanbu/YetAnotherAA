@@ -17,6 +17,13 @@ export class TransferService {
       throw new BadRequestException("Passkey assertion is required for transactions");
     }
 
+    // PMv4 requires the ERC-20 gas token address appended to paymasterData.
+    // Its contract has no token() getter so we supply it explicitly.
+    const PMV4_ADDRESS = "0xd0c82dc12b7d65b03df7972f67d13f1d33469a98";
+    const APNTS_TOKEN = "0xDf669834F04988BcEE0E3B6013B6b867Bd38778d";
+    const paymasterTokenAddress =
+      transferDto.paymasterAddress?.toLowerCase() === PMV4_ADDRESS ? APNTS_TOKEN : undefined;
+
     // Pass the Legacy assertion through to the SDK, which forwards it
     // to BLSSignatureService → ISignerAdapter → KmsSigner → KMS SignHash.
     // The Legacy format is reusable, enabling the two ECDSA signs needed for BLS.
@@ -28,6 +35,7 @@ export class TransferService {
       usePaymaster: transferDto.usePaymaster,
       paymasterAddress: transferDto.paymasterAddress,
       paymasterData: transferDto.paymasterData,
+      paymasterTokenAddress,
       passkeyAssertion: transferDto.passkeyAssertion,
     });
 
