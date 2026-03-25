@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  transpilePackages: ["@aastar/airaccount"],
   // Only use standalone output when explicitly enabled (e.g., for Docker builds)
   // Set NEXT_BUILD_STANDALONE=true when building for Docker
   // This prevents warnings when using 'npm run start' locally
