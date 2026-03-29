@@ -31,7 +31,7 @@ export class KmsService {
     if (!http) return;
 
     http.interceptors.request.use((config: any) => {
-      const body = config.data ? JSON.parse(config.data) : config.data;
+      const body = typeof config.data === 'string' ? JSON.parse(config.data) : config.data;
       // Decode rpIdHash from authenticatorData if present (first 32 bytes = SHA-256 of rpId)
       const authData = body?.WebAuthn?.Credential?.response?.authenticatorData;
       let rpIdHashHex = "";

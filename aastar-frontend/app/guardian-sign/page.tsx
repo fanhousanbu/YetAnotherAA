@@ -98,7 +98,7 @@ function GuardianSignInner() {
 
       setResult({
         address: guardianAddress,
-        signature: signResponse.Signature,
+        signature: signResponse.Signature?.startsWith('0x') ? signResponse.Signature : '0x' + signResponse.Signature,
       });
     } catch (err: any) {
       console.error("Guardian sign error:", err);
