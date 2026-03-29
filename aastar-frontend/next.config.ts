@@ -6,7 +6,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  transpilePackages: ["@aastar/airaccount"],
   // Only use standalone output when explicitly enabled (e.g., for Docker builds)
   // Set NEXT_BUILD_STANDALONE=true when building for Docker
   // This prevents warnings when using 'npm run start' locally
@@ -14,10 +13,12 @@ const nextConfig: NextConfig = {
     output: "standalone",
     outputFileTracingRoot: path.join(__dirname, ".."),
   }),
-  // Fix for monorepo setup with Next.js 16+
-  // Point to monorepo root where node_modules/next is located
-  turbopack: {
-    root: path.join(__dirname, ".."),
+  webpack(config) {
+    const sdkRoot = path.resolve(__dirname, "../../aastar-sdk/packages/airaccount");
+    // Use "$" for exact match so the base alias doesn't shadow subpath imports
+    config.resolve.alias["@aastar/airaccount$"] = path.join(sdkRoot, "dist/index.js");
+    config.resolve.alias["@aastar/airaccount/server"] = path.join(sdkRoot, "dist/server/index.js");
+    return config;
   },
   async rewrites() {
     const backendUrl = process.env.BACKEND_API_URL || "http://127.0.0.1:3000";

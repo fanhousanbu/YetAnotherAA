@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 5173",
+    "dev": "next dev -p 5173 --webpack",
     "build": "next build",
     "start": "next start -p 5173",
     "start:prod": "next start -p 80",
@@ -16,7 +16,7 @@
     "test:ci": "echo \"⚠️  No tests yet - skipping\""
   },
   "dependencies": {
-    "@aastar/airaccount": "^0.17.7",
+    "@aastar/airaccount": "^0.18.0",
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
     "@simplewebauthn/browser": "^13.2.2",
