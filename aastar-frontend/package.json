@@ -16,13 +16,13 @@
     "test:ci": "echo \"⚠️  No tests yet - skipping\""
   },
   "dependencies": {
+    "@aastar/airaccount": "^0.18.0",
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
     "@simplewebauthn/browser": "^13.2.2",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@yaaa/sdk": "^0.1.0",
     "axios": "^1.13.1",
     "next": "^16.1.1",
     "react": "19.2.0",

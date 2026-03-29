@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [aastar, aastar-frontend, sdk]
+        project: [aastar, aastar-frontend]
     steps:
       - uses: actions/checkout@v5
 
@@ -100,8 +100,6 @@ jobs:
             build-command: npm run build
           - project: aastar-frontend
             build-command: npm run build
-          - project: sdk
-            build-command: npm run build
     steps:
       - uses: actions/checkout@v5
 
@@ -112,11 +110,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      # Build SDK first if this is not the SDK build itself
-      - name: Build SDK (dependency)
-        if: matrix.project != 'sdk'
-        run: npm run build --workspace=sdk
 
       - name: Build project
         run: npm run build --workspace=${{ matrix.project }}
@@ -154,7 +147,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [aastar, aastar-frontend, sdk]
+        project: [aastar, aastar-frontend]
     steps:
       - uses: actions/checkout@v5
 
@@ -165,11 +158,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      # Build SDK first if this is not the SDK type check itself
-      - name: Build SDK (dependency)
-        if: matrix.project != 'sdk'
-        run: npm run build --workspace=sdk
 
       - name: Run TypeScript compiler
         run: |
