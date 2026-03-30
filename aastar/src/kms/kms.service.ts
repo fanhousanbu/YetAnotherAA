@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { KmsManager, KmsSigner, LegacyPasskeyAssertion } from "@aastar/airaccount/server";
@@ -48,8 +49,8 @@ export class KmsService {
           `  Body: ${JSON.stringify(body, null, 2)}\n` +
           (rpIdHashHex
             ? `  rpIdHash (from authenticatorData): ${rpIdHashHex}\n` +
-              `  (SHA256("localhost") = ${require("crypto").createHash("sha256").update("localhost").digest("hex")})\n` +
-              `  (SHA256("aastar.io") = ${require("crypto").createHash("sha256").update("aastar.io").digest("hex")})`
+              `  (SHA256("localhost") = ${createHash("sha256").update("localhost").digest("hex")})\n` +
+              `  (SHA256("aastar.io") = ${createHash("sha256").update("aastar.io").digest("hex")})`
             : "")
       );
       return config;
