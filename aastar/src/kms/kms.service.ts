@@ -31,7 +31,7 @@ export class KmsService {
     if (!http) return;
 
     http.interceptors.request.use((config: any) => {
-      const body = typeof config.data === 'string' ? JSON.parse(config.data) : config.data;
+      const body = typeof config.data === "string" ? JSON.parse(config.data) : config.data;
       // Decode rpIdHash from authenticatorData if present (first 32 bytes = SHA-256 of rpId)
       const authData = body?.WebAuthn?.Credential?.response?.authenticatorData;
       let rpIdHashHex = "";
@@ -43,10 +43,12 @@ export class KmsService {
       }
       console.log(
         `[KMS DIAG] ▶ ${config.method?.toUpperCase()} ${config.baseURL}${config.url}\n` +
-        `  Body: ${JSON.stringify(body, null, 2)}\n` +
-        (rpIdHashHex ? `  rpIdHash (from authenticatorData): ${rpIdHashHex}\n` +
-        `  (SHA256("localhost") = ${require("crypto").createHash("sha256").update("localhost").digest("hex")})\n` +
-        `  (SHA256("aastar.io") = ${require("crypto").createHash("sha256").update("aastar.io").digest("hex")})` : "")
+          `  Body: ${JSON.stringify(body, null, 2)}\n` +
+          (rpIdHashHex
+            ? `  rpIdHash (from authenticatorData): ${rpIdHashHex}\n` +
+              `  (SHA256("localhost") = ${require("crypto").createHash("sha256").update("localhost").digest("hex")})\n` +
+              `  (SHA256("aastar.io") = ${require("crypto").createHash("sha256").update("aastar.io").digest("hex")})`
+            : "")
       );
       return config;
     });
@@ -55,7 +57,7 @@ export class KmsService {
       (response: any) => {
         console.log(
           `[KMS DIAG] ◀ HTTP ${response.status} ${response.config?.url}\n` +
-          `  Response: ${JSON.stringify(response.data)}`
+            `  Response: ${JSON.stringify(response.data)}`
         );
         return response;
       },
@@ -64,7 +66,7 @@ export class KmsService {
         const body = error.response?.data ?? error.message;
         console.error(
           `[KMS DIAG] ✗ HTTP ${status} ${error.config?.url}\n` +
-          `  Error response: ${JSON.stringify(body)}`
+            `  Error response: ${JSON.stringify(body)}`
         );
         return Promise.reject(error);
       }

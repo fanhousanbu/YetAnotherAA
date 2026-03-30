@@ -410,7 +410,11 @@ export default function CreateAccountDialog({
     creating: "Creating Account...",
   };
 
-  const stepKeys: Array<"config" | "guardian1" | "guardian2"> = ["config", "guardian1", "guardian2"];
+  const stepKeys: Array<"config" | "guardian1" | "guardian2"> = [
+    "config",
+    "guardian1",
+    "guardian2",
+  ];
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
@@ -475,8 +479,7 @@ export default function CreateAccountDialog({
                         {idx < stepKeys.length - 1 && (
                           <div
                             className={`w-8 h-0.5 mx-1 ${
-                              idx <
-                              stepKeys.indexOf(step as "config" | "guardian1" | "guardian2")
+                              idx < stepKeys.indexOf(step as "config" | "guardian1" | "guardian2")
                                 ? "bg-green-500"
                                 : "bg-gray-200 dark:bg-gray-600"
                             }`}

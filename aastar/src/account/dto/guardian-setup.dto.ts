@@ -43,7 +43,9 @@ export class CreateWithGuardiansDto {
   @IsString()
   guardian2Sig: string;
 
-  @ApiProperty({ description: "Daily spending limit in wei (string to avoid bigint precision loss)" })
+  @ApiProperty({
+    description: "Daily spending limit in wei (string to avoid bigint precision loss)",
+  })
   @IsString()
   dailyLimit: string;
 

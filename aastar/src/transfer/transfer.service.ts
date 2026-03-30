@@ -60,8 +60,8 @@ export class TransferService {
       if (isBLSNodeError) {
         console.warn(
           `[TransferService] BLS seed node unreachable (${msg}). ` +
-          `Falling back to legacy BLS-only signing. ` +
-          `To resolve, ensure the BLS node at https://v1.aastar.io is reachable.`
+            `Falling back to legacy BLS-only signing. ` +
+            `To resolve, ensure the BLS node at https://v1.aastar.io is reachable.`
         );
         try {
           result = await this.client.transfers.executeTransfer(userId, {
@@ -77,10 +77,11 @@ export class TransferService {
             // useAirAccountTiering omitted → legacy BLS path
           });
         } catch (fallbackError: unknown) {
-          const fallbackMsg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+          const fallbackMsg =
+            fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
           throw new Error(
             `Transfer failed on both tiered and legacy BLS paths. ` +
-            `Tiering error: ${msg}. Legacy BLS error: ${fallbackMsg}`
+              `Tiering error: ${msg}. Legacy BLS error: ${fallbackMsg}`
           );
         }
       } else {

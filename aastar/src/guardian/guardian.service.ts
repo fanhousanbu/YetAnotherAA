@@ -45,7 +45,7 @@ export class GuardianService {
 
   constructor(
     private databaseService: DatabaseService,
-    private configService: ConfigService,
+    private configService: ConfigService
   ) {}
 
   // ─── Internal helpers ────────────────────────────────────────────────────
@@ -68,10 +68,13 @@ export class GuardianService {
    */
   private getRelaySigner(): ethers.Wallet {
     const privateKey = this.configService.get<string>("ethPrivateKey");
-    if (!privateKey || privateKey === "0x0000000000000000000000000000000000000000000000000000000000000001") {
+    if (
+      !privateKey ||
+      privateKey === "0x0000000000000000000000000000000000000000000000000000000000000001"
+    ) {
       throw new InternalServerErrorException(
         "ETH_PRIVATE_KEY is not configured or still set to the placeholder value. " +
-          "Please set a funded Sepolia EOA private key in .env to send on-chain recovery transactions.",
+          "Please set a funded Sepolia EOA private key in .env to send on-chain recovery transactions."
       );
     }
     const provider = this.getProvider();
@@ -116,7 +119,7 @@ export class GuardianService {
       // If the contract does not exist on-chain (e.g. account not yet deployed)
       // treat it as no active recovery rather than crashing.
       this.logger.warn(
-        `Could not fetch on-chain activeRecovery for ${accountAddress}: ${(err as Error).message}`,
+        `Could not fetch on-chain activeRecovery for ${accountAddress}: ${(err as Error).message}`
       );
       return null;
     }
@@ -327,7 +330,7 @@ export class GuardianService {
 
     if (supporters.length < RECOVERY_QUORUM) {
       throw new BadRequestException(
-        `Recovery requires at least ${RECOVERY_QUORUM} guardian confirmations (current: ${supporters.length})`,
+        `Recovery requires at least ${RECOVERY_QUORUM} guardian confirmations (current: ${supporters.length})`
       );
     }
 
@@ -335,13 +338,13 @@ export class GuardianService {
     if (Date.now() < executeAfter) {
       const remaining = Math.ceil((executeAfter - Date.now()) / 1000 / 60);
       throw new BadRequestException(
-        `Recovery time lock has not expired yet. Please wait ${remaining} more minutes.`,
+        `Recovery time lock has not expired yet. Please wait ${remaining} more minutes.`
       );
     }
 
     // ── 2. On-chain executeRecovery() ─────────────────────────────────────
     this.logger.log(
-      `Executing on-chain recovery for account=${accountAddress} newOwner=${request.newSignerAddress}`,
+      `Executing on-chain recovery for account=${accountAddress} newOwner=${request.newSignerAddress}`
     );
 
     let txHash: string;
@@ -357,11 +360,11 @@ export class GuardianService {
       const receipt = await tx.wait(1);
       if (!receipt || receipt.status !== 1) {
         throw new Error(
-          `Transaction ${txHash} was mined but reverted (status=${receipt?.status ?? "unknown"})`,
+          `Transaction ${txHash} was mined but reverted (status=${receipt?.status ?? "unknown"})`
         );
       }
       this.logger.log(
-        `On-chain executeRecovery confirmed in block ${receipt.blockNumber} (tx=${txHash})`,
+        `On-chain executeRecovery confirmed in block ${receipt.blockNumber} (tx=${txHash})`
       );
     } catch (err) {
       // On-chain failure: do NOT update the database — the request stays
@@ -369,7 +372,7 @@ export class GuardianService {
       const message = (err as Error).message ?? String(err);
       this.logger.error(`On-chain executeRecovery failed for ${accountAddress}: ${message}`);
       throw new InternalServerErrorException(
-        `On-chain executeRecovery transaction failed: ${message}`,
+        `On-chain executeRecovery transaction failed: ${message}`
       );
     }
 
@@ -409,7 +412,7 @@ export class GuardianService {
 
     if (!isGuardian && !isSigner) {
       throw new ForbiddenException(
-        "Only an active guardian or the account signer can cancel a recovery",
+        "Only an active guardian or the account signer can cancel a recovery"
       );
     }
 
@@ -446,9 +449,8 @@ export class GuardianService {
             active: true,
             newOwner: onChainRecovery.newOwner,
             proposedAt: new Date(Number(onChainRecovery.proposedAt) * 1000).toISOString(),
-            approvalCount: [...onChainRecovery.approvalBitmap.toString(2)].filter(
-              b => b === "1",
-            ).length,
+            approvalCount: [...onChainRecovery.approvalBitmap.toString(2)].filter(b => b === "1")
+              .length,
           }
         : { active: false },
     };

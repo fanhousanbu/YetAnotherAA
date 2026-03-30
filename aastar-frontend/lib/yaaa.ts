@@ -44,7 +44,12 @@ function base64urlToBytes(base64url: string): Uint8Array {
 }
 
 function bytesToHex(bytes: Uint8Array): string {
-  return "0x" + Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+  return (
+    "0x" +
+    Array.from(bytes)
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("")
+  );
 }
 
 export async function extractLegacyAssertion(credential: {

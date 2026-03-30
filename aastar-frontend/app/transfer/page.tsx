@@ -1002,9 +1002,8 @@ export default function TransferPage() {
                           </p>
                           {exceedsDailyLimit && (
                             <p className="mt-2 text-xs font-medium">
-                              Guardian at{" "}
-                              <span className="font-mono">0x51eD...2E114</span>{" "}
-                              must co-sign this transaction.
+                              Guardian at <span className="font-mono">0x51eD...2E114</span> must
+                              co-sign this transaction.
                             </p>
                           )}
                         </div>
