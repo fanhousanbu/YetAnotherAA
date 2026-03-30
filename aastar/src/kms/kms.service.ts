@@ -39,7 +39,9 @@ export class KmsService {
         try {
           const buf = Buffer.from(authData.replace(/-/g, "+").replace(/_/g, "/"), "base64");
           rpIdHashHex = buf.subarray(0, 32).toString("hex");
-        } catch (_) {}
+        } catch {
+          // ignore parse errors; rpIdHashHex stays empty
+        }
       }
       console.log(
         `[KMS DIAG] ▶ ${config.method?.toUpperCase()} ${config.baseURL}${config.url}\n` +

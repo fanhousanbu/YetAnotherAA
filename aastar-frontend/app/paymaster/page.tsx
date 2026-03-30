@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
-import { paymasterAPI, accountAPI } from "@/lib/api";
+import { paymasterAPI } from "@/lib/api";
 import SwipeableListItem from "@/components/SwipeableListItem";
 import toast from "react-hot-toast";
 import { PlusIcon, CheckCircleIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline";
