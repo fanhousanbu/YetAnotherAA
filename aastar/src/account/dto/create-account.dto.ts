@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsOptional, IsNumber, IsBoolean, IsString, IsEnum } from "class-validator";
+import { IsOptional, IsNumber, IsBoolean, IsString, IsEnum, IsPositive } from "class-validator";
 
 export enum EntryPointVersionDto {
   V0_6 = "0.6",
@@ -32,4 +32,17 @@ export class CreateAccountDto {
   @IsOptional()
   @IsEnum(EntryPointVersionDto)
   entryPointVersion?: EntryPointVersionDto;
+
+  @ApiProperty({
+    description:
+      "Daily transfer limit in ETH. " +
+      "When set (> 0), the account is created with on-chain guard enforcement. " +
+      "Tier 3 transfers above this limit require guardian ECDSA approval. " +
+      "Default: 0 (no limit / no guard).",
+    example: "1.0",
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  dailyLimit?: string;
 }

@@ -5,8 +5,7 @@
   "private": true,
   "workspaces": [
     "aastar",
-    "aastar-frontend",
-    "sdk"
+    "aastar-frontend"
   ],
   "scripts": {
     "format": "prettier --write .",

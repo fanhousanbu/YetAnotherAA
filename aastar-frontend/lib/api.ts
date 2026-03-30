@@ -68,6 +68,20 @@ export const accountAPI = {
 
   // fundAccount and sponsorAccount removed - not needed with Paymaster
   // All transactions are sponsored automatically
+
+  // Guardian setup flow (M7)
+  prepareGuardianSetup: (data: { entryPointVersion?: string; salt?: number }) =>
+    api.post("/account/guardian-setup/prepare", data),
+
+  createWithGuardians: (data: {
+    guardian1: string;
+    guardian1Sig: string;
+    guardian2: string;
+    guardian2Sig: string;
+    dailyLimit: string;
+    salt?: number;
+    entryPointVersion?: string;
+  }) => api.post("/account/create-with-guardians", data),
 };
 
 // Transfer API
