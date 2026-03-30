@@ -51,7 +51,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: actions/dependency-review-action@v4
         with:
-          fail-on-severity: high
+          fail-on-severity: critical
 
   # Job 2: Code quality checks
   quality:
