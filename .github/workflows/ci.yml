@@ -51,7 +51,10 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: actions/dependency-review-action@v4
         with:
-          fail-on-severity: critical
+          fail-on-severity: high
+          # Temporary: axios high vuln in @ledgerhq optional deps (via @aastar/airaccount).
+          # No non-breaking fix available until ledgerhq updates their axios dependency.
+          allow-ghsas: GHSA-43fc-jf86-j433
 
   # Job 2: Code quality checks
   quality:
