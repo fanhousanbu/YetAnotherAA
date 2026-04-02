@@ -79,32 +79,117 @@ export default function CreateTaskPage() {
 
     setSubmitting(true);
     try {
-      // Step 1: Check and approve token allowance
-      const { parseUnits } = await import("viem");
-      const { DEFAULT_REWARD_TOKEN_DECIMALS } = await import("@/lib/contracts/task-config");
+      const { parseUnits, createPublicClient, http } = await import("viem");
+      const {
+        DEFAULT_REWARD_TOKEN_DECIMALS,
+        DEFAULT_REWARD_TOKEN,
+        TASK_ESCROW_ADDRESS,
+        SUPPORTED_CHAIN,
+        RPC_URL,
+      } = await import("@/lib/contracts/task-config");
+      const { ERC20_ABI, TASK_ESCROW_ABI } = await import("@/lib/contracts/task-escrow-abi");
+
       const rewardWei = parseUnits(form.rewardAmount, DEFAULT_REWARD_TOKEN_DECIMALS);
-
-      const addresses = await walletClient.getAddresses();
+      const addresses = await walletClient.requestAddresses();
       const ownerAddress = addresses[0];
-      const currentAllowance = await checkAllowance(ownerAddress);
 
-      if (currentAllowance < rewardWei) {
-        setStep("approve");
-        toast.loading("Approving token spend...", { id: "approve" });
-        const approved = await approveToken(rewardWei, walletClient);
-        toast.dismiss("approve");
-        if (!approved) {
-          toast.error("Token approval failed");
-          setStep("form");
-          return;
+      const metadata = JSON.stringify({
+        title: form.title,
+        description: form.description,
+        createdAt: Math.floor(Date.now() / 1000),
+      });
+      const deadlineBig = BigInt(Math.floor(Date.now() / 1000) + form.deadlineDays * 86400);
+
+      const publicClient = createPublicClient({ chain: SUPPORTED_CHAIN, transport: http(RPC_URL) });
+
+      // T02: Try EIP-2612 permit first (single tx, no pre-approve needed)
+      let taskId: `0x${string}` | null = null;
+      let usedPermit = false;
+
+      try {
+        const [tokenName, nonce] = await Promise.all([
+          publicClient.readContract({ address: DEFAULT_REWARD_TOKEN, abi: ERC20_ABI, functionName: "name" }),
+          publicClient.readContract({ address: DEFAULT_REWARD_TOKEN, abi: ERC20_ABI, functionName: "nonces", args: [ownerAddress] }),
+        ]);
+
+        const permitDeadline = BigInt(Math.floor(Date.now() / 1000) + 3600); // 1h
+        const chainId = await walletClient.getChainId();
+
+        const signature = await walletClient.signTypedData({
+          account: ownerAddress,
+          domain: {
+            name: tokenName as string,
+            version: "2",
+            chainId,
+            verifyingContract: DEFAULT_REWARD_TOKEN,
+          },
+          types: {
+            Permit: [
+              { name: "owner", type: "address" },
+              { name: "spender", type: "address" },
+              { name: "value", type: "uint256" },
+              { name: "nonce", type: "uint256" },
+              { name: "deadline", type: "uint256" },
+            ],
+          },
+          primaryType: "Permit",
+          message: {
+            owner: ownerAddress,
+            spender: TASK_ESCROW_ADDRESS,
+            value: rewardWei,
+            nonce: nonce as bigint,
+            deadline: permitDeadline,
+          },
+        });
+
+        // Parse v, r, s from signature
+        const r = `0x${signature.slice(2, 66)}` as `0x${string}`;
+        const s = `0x${signature.slice(66, 130)}` as `0x${string}`;
+        const v = parseInt(signature.slice(130, 132), 16);
+
+        setStep("submit");
+        toast.loading("Creating task with permit (single tx)...", { id: "create" });
+
+        const hash = await walletClient.writeContract({
+          address: TASK_ESCROW_ADDRESS,
+          abi: TASK_ESCROW_ABI,
+          functionName: "createTaskWithPermit",
+          args: [DEFAULT_REWARD_TOKEN, rewardWei, deadlineBig, metadata, form.taskType, permitDeadline, v, r, s],
+          account: ownerAddress,
+          chain: SUPPORTED_CHAIN,
+        });
+
+        const receipt = await publicClient.waitForTransactionReceipt({ hash });
+        const log = receipt.logs.find((l) => l.address.toLowerCase() === TASK_ESCROW_ADDRESS.toLowerCase());
+        if (log?.topics[1]) {
+          taskId = log.topics[1] as `0x${string}`;
+          usedPermit = true;
         }
-        toast.success("Token approved");
+      } catch {
+        // Permit not supported or signing cancelled — fall back to approve + createTask
       }
 
-      // Step 2: Create task
-      setStep("submit");
-      toast.loading("Creating task on-chain...", { id: "create" });
-      const taskId = await createTask(form, walletClient);
+      if (!usedPermit) {
+        // Fallback: approve + createTask (original flow)
+        const currentAllowance = await checkAllowance(ownerAddress);
+        if (currentAllowance < rewardWei) {
+          setStep("approve");
+          toast.loading("Approving token spend...", { id: "approve" });
+          const approved = await approveToken(rewardWei, walletClient);
+          toast.dismiss("approve");
+          if (!approved) {
+            toast.error("Token approval failed");
+            setStep("form");
+            return;
+          }
+          toast.success("Token approved");
+        }
+
+        setStep("submit");
+        toast.loading("Creating task on-chain...", { id: "create" });
+        taskId = await createTask(form, walletClient);
+      }
+
       toast.dismiss("create");
 
       if (taskId) {
@@ -288,7 +373,7 @@ export default function CreateTaskPage() {
                 : "Creating task..."
               : !walletClient
               ? "Connect wallet to post"
-              : "Post Task"}
+              : "Post Task (EIP-2612 Permit)"}
           </button>
         </div>
       </div>
