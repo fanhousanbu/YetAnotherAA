@@ -13,6 +13,8 @@ import {
   http,
   parseUnits,
   formatUnits,
+  keccak256,
+  toBytes,
   type PublicClient,
   type WalletClient,
 } from "viem";
@@ -44,6 +46,10 @@ interface TaskContextType {
   loading: boolean;
   error: string | null;
   contractConfigured: boolean;
+  // T01: Task token balance
+  taskTokenBalance: bigint | null;
+  taskTokenBalanceFormatted: string | null;
+  loadTaskTokenBalance: (address: string) => Promise<void>;
   // Actions
   loadAllTasks: () => Promise<void>;
   loadMyTasks: (address: string) => Promise<void>;
@@ -53,6 +59,9 @@ interface TaskContextType {
   approveWork: (taskId: string, walletClient: WalletClient) => Promise<boolean>;
   finalizeTask: (taskId: string, walletClient: WalletClient) => Promise<boolean>;
   cancelTask: (taskId: string, walletClient: WalletClient) => Promise<boolean>;
+  // T06: Receipts
+  getTaskReceipts: (taskId: string) => Promise<`0x${string}`[]>;
+  linkReceipt: (taskId: string, receiptId: string, receiptUri: string, walletClient: WalletClient) => Promise<boolean>;
   // Helpers
   getTask: (taskId: string) => Promise<ParsedTask | null>;
   approveToken: (amount: bigint, walletClient: WalletClient) => Promise<boolean>;
@@ -121,6 +130,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const contractConfigured = isContractsConfigured();
+  // T01: task token balance
+  const [taskTokenBalance, setTaskTokenBalance] = useState<bigint | null>(null);
+  const [taskTokenBalanceFormatted, setTaskTokenBalanceFormatted] = useState<string | null>(null);
 
   const fetchTask = useCallback(
     async (client: PublicClient, taskId: `0x${string}`): Promise<ParsedTask | null> => {
@@ -152,17 +164,17 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         address: TASK_ESCROW_ADDRESS,
         fromBlock,
         toBlock: "latest",
-        // Filter by TaskCreated event topic
         // keccak256("TaskCreated(bytes32,address,address,uint256)")
         topics: [
-          "0x9c8fd9df1dc7c1a1ce1c0fe3e8e8843b247e4cfbc4f6e06e2ab0e8b3c3cf7f92",
+          "0xc703eeeb92d845b735c767a95c30a380646ad4c4824a3a100253d4bec0294e9e",
         ],
       } as Parameters<typeof client.getLogs>[0]);
 
-      // taskId is the first indexed param (topics[1])
+      // taskId is the first indexed param (topics[1]); deduplicate in case of reorgs
+      const seen = new Set<string>();
       const taskIds = logs
         .map((l) => l.topics[1] as `0x${string}` | undefined)
-        .filter((id): id is `0x${string}` => !!id);
+        .filter((id): id is `0x${string}` => !!id && !seen.has(id) && seen.add(id) !== undefined);
       const fetched = await Promise.all(taskIds.map((id) => fetchTask(client, id)));
       const valid = fetched.filter((t): t is ParsedTask => t !== null);
       setTasks(valid);
@@ -235,7 +247,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const approveToken = useCallback(
     async (amount: bigint, walletClient: WalletClient): Promise<boolean> => {
-      const [address] = await walletClient.getAddresses();
+      const [address] = await walletClient.requestAddresses();
       try {
         const hash = await walletClient.writeContract({
           address: DEFAULT_REWARD_TOKEN,
@@ -257,7 +269,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const createTask = useCallback(
     async (form: CreateTaskForm, walletClient: WalletClient): Promise<`0x${string}` | null> => {
-      const [address] = await walletClient.getAddresses();
+      const [address] = await walletClient.requestAddresses();
       const reward = parseUnits(form.rewardAmount, DEFAULT_REWARD_TOKEN_DECIMALS);
       const deadline = BigInt(
         Math.floor(Date.now() / 1000) + form.deadlineDays * 86400
@@ -300,7 +312,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const acceptTask = useCallback(
     async (taskId: string, walletClient: WalletClient): Promise<boolean> => {
-      const [address] = await walletClient.getAddresses();
+      const [address] = await walletClient.requestAddresses();
       try {
         const hash = await walletClient.writeContract({
           address: TASK_ESCROW_ADDRESS,
@@ -322,7 +334,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const submitWork = useCallback(
     async (taskId: string, evidenceUri: string, walletClient: WalletClient): Promise<boolean> => {
-      const [address] = await walletClient.getAddresses();
+      const [address] = await walletClient.requestAddresses();
       try {
         const hash = await walletClient.writeContract({
           address: TASK_ESCROW_ADDRESS,
@@ -344,7 +356,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const approveWork = useCallback(
     async (taskId: string, walletClient: WalletClient): Promise<boolean> => {
-      const [address] = await walletClient.getAddresses();
+      const [address] = await walletClient.requestAddresses();
       try {
         const hash = await walletClient.writeContract({
           address: TASK_ESCROW_ADDRESS,
@@ -366,7 +378,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const finalizeTask = useCallback(
     async (taskId: string, walletClient: WalletClient): Promise<boolean> => {
-      const [address] = await walletClient.getAddresses();
+      const [address] = await walletClient.requestAddresses();
       try {
         const hash = await walletClient.writeContract({
           address: TASK_ESCROW_ADDRESS,
@@ -388,13 +400,76 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const cancelTask = useCallback(
     async (taskId: string, walletClient: WalletClient): Promise<boolean> => {
-      const [address] = await walletClient.getAddresses();
+      const [address] = await walletClient.requestAddresses();
       try {
         const hash = await walletClient.writeContract({
           address: TASK_ESCROW_ADDRESS,
           abi: TASK_ESCROW_ABI,
           functionName: "cancelTask",
           args: [taskId as `0x${string}`],
+          account: address,
+          chain: SUPPORTED_CHAIN,
+        });
+        const client = getPublicClient();
+        await client.waitForTransactionReceipt({ hash });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    []
+  );
+
+  // T01: load task token balance for a given address
+  const loadTaskTokenBalance = useCallback(async (address: string) => {
+    if (!DEFAULT_REWARD_TOKEN || !address) return;
+    try {
+      const client = getPublicClient();
+      const raw = await client.readContract({
+        address: DEFAULT_REWARD_TOKEN,
+        abi: ERC20_ABI,
+        functionName: "balanceOf",
+        args: [address as `0x${string}`],
+      });
+      const balance = raw as bigint;
+      setTaskTokenBalance(balance);
+      setTaskTokenBalanceFormatted(formatUnits(balance, DEFAULT_REWARD_TOKEN_DECIMALS));
+    } catch {
+      // token not deployed or address invalid — silently ignore
+    }
+  }, []);
+
+  // T06: get x402 receipts linked to a task
+  const getTaskReceipts = useCallback(async (taskId: string): Promise<`0x${string}`[]> => {
+    if (!contractConfigured) return [];
+    try {
+      const client = getPublicClient();
+      const receipts = await client.readContract({
+        address: TASK_ESCROW_ADDRESS,
+        abi: TASK_ESCROW_ABI,
+        functionName: "getTaskReceipts",
+        args: [taskId as `0x${string}`],
+      });
+      return receipts as `0x${string}`[];
+    } catch {
+      return [];
+    }
+  }, [contractConfigured]);
+
+  // T06: link a receipt to a task
+  const linkReceipt = useCallback(
+    async (taskId: string, receiptId: string, receiptUri: string, walletClient: WalletClient): Promise<boolean> => {
+      const [address] = await walletClient.requestAddresses();
+      try {
+        // receiptId must be bytes32; if it's a plain string, hash it
+        const receiptIdBytes = receiptId.startsWith("0x") && receiptId.length === 66
+          ? (receiptId as `0x${string}`)
+          : keccak256(toBytes(receiptId));
+        const hash = await walletClient.writeContract({
+          address: TASK_ESCROW_ADDRESS,
+          abi: TASK_ESCROW_ABI,
+          functionName: "linkReceipt",
+          args: [taskId as `0x${string}`, receiptIdBytes, receiptUri],
           account: address,
           chain: SUPPORTED_CHAIN,
         });
@@ -424,6 +499,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         loading,
         error,
         contractConfigured,
+        // T01
+        taskTokenBalance,
+        taskTokenBalanceFormatted,
+        loadTaskTokenBalance,
         loadAllTasks,
         loadMyTasks,
         createTask,
@@ -432,6 +511,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         approveWork,
         finalizeTask,
         cancelTask,
+        // T06
+        getTaskReceipts,
+        linkReceipt,
         getTask,
         approveToken,
         checkAllowance,

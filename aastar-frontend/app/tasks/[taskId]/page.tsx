@@ -50,17 +50,23 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function TaskDetailPage() {
   const router = useRouter();
   const { taskId } = useParams<{ taskId: string }>();
-  const { getTask, acceptTask, submitWork, approveWork, finalizeTask, cancelTask } = useTask();
+  const { getTask, acceptTask, submitWork, approveWork, finalizeTask, cancelTask, getTaskReceipts, linkReceipt } = useTask();
   const { data } = useDashboard();
 
   const [task, setTask] = useState<ParsedTask | null>(null);
   const [loading, setLoading] = useState(true);
   const [walletClient, setWalletClient] = useState<WalletClient | null>(null);
+  const [eoaAddress, setEoaAddress] = useState<string>("");
   const [actionLoading, setActionLoading] = useState(false);
   const [evidenceUri, setEvidenceUri] = useState("");
   const [showEvidenceForm, setShowEvidenceForm] = useState(false);
+  // T06: receipts
+  const [receipts, setReceipts] = useState<`0x${string}`[]>([]);
+  const [showLinkReceiptForm, setShowLinkReceiptForm] = useState(false);
+  const [receiptInput, setReceiptInput] = useState("");
 
-  const myAddress = data.account?.address?.toLowerCase() ?? "";
+  // Use MetaMask EOA for role checks — contract stores EOA, not YAA smart account
+  const myAddress = (eoaAddress || (data.account?.address ?? "")).toLowerCase();
   const isCommunity = task?.community.toLowerCase() === myAddress;
   const isTaskor = task?.taskor.toLowerCase() === myAddress;
   const isZeroAddress = (addr: string) =>
@@ -78,12 +84,18 @@ export default function TaskDetailPage() {
       const { SUPPORTED_CHAIN } = await import("@/lib/contracts/task-config");
       const provider = (window as Window & { ethereum?: unknown }).ethereum;
       if (!provider) return;
-      setWalletClient(
-        createWalletClient({
-          chain: SUPPORTED_CHAIN,
-          transport: custom(provider as Parameters<typeof custom>[0]),
-        })
-      );
+      const client = createWalletClient({
+        chain: SUPPORTED_CHAIN,
+        transport: custom(provider as Parameters<typeof custom>[0]),
+      });
+      setWalletClient(client);
+      // Fetch EOA address for role comparison (contract stores EOA, not YAA smart account)
+      try {
+        const addrs = await client.getAddresses();
+        if (addrs[0]) setEoaAddress(addrs[0].toLowerCase());
+      } catch {
+        // not connected yet — will be resolved on first requestAddresses()
+      }
     }
     loadWallet();
   }, []);
@@ -98,8 +110,26 @@ export default function TaskDetailPage() {
 
   const refresh = async () => {
     if (!taskId) return;
-    const t = await getTask(taskId);
+    const [t, r] = await Promise.all([getTask(taskId), getTaskReceipts(taskId)]);
     setTask(t);
+    setReceipts(r);
+  };
+
+  // T06: load receipts on mount
+  useEffect(() => {
+    if (taskId) {
+      getTaskReceipts(taskId).then(setReceipts);
+    }
+  }, [taskId, getTaskReceipts]);
+
+  const switchWallet = async () => {
+    if (!walletClient) return;
+    try {
+      const addrs = await walletClient.requestAddresses();
+      if (addrs[0]) setEoaAddress(addrs[0].toLowerCase());
+    } catch {
+      toast.error("Failed to switch wallet");
+    }
   };
 
   async function runAction(fn: () => Promise<boolean>, successMsg: string) {
@@ -202,6 +232,23 @@ export default function TaskDetailPage() {
           </div>
         </div>
 
+        {/* Wallet indicator */}
+        <div className="flex items-center justify-between px-1 text-xs text-gray-500 dark:text-gray-400">
+          <span>
+            Wallet:{" "}
+            {eoaAddress
+              ? <span className="font-mono">{eoaAddress.slice(0, 6)}…{eoaAddress.slice(-4)}</span>
+              : <span className="italic">not connected</span>
+            }
+          </span>
+          <button
+            onClick={switchWallet}
+            className="text-emerald-600 dark:text-emerald-400 hover:underline"
+          >
+            {eoaAddress ? "Switch wallet" : "Connect wallet"}
+          </button>
+        </div>
+
         {/* Description */}
         <Section title="Description">
           <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
@@ -268,6 +315,77 @@ export default function TaskDetailPage() {
             <p className="text-sm text-gray-700 dark:text-gray-300 break-words">
               {task.evidenceUri}
             </p>
+          </Section>
+        )}
+
+        {/* T06: x402 Receipts */}
+        {(receipts.length > 0 || (eoaAddress && (isCommunity || isTaskor))) && (
+          <Section title="x402 Receipts">
+            {receipts.length > 0 ? (
+              <div className="space-y-2">
+                {receipts.map((rid) => (
+                  <div key={rid} className="flex items-center gap-2 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                    <span className="text-xs font-mono text-gray-500 dark:text-gray-400 break-all">
+                      {rid.slice(0, 14)}…{rid.slice(-10)}
+                    </span>
+                  </div>
+                ))}
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  {receipts.length} receipt{receipts.length > 1 ? "s" : ""} linked
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400">No receipts linked yet.</p>
+            )}
+
+            {eoaAddress && (isCommunity || isTaskor) && (
+              <div className="mt-3">
+                {!showLinkReceiptForm ? (
+                  <button
+                    onClick={() => setShowLinkReceiptForm(true)}
+                    className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
+                  >
+                    + Link receipt
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={receiptInput}
+                      onChange={(e) => setReceiptInput(e.target.value)}
+                      placeholder="Receipt ID (0x…) or receipt URI"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setShowLinkReceiptForm(false); setReceiptInput(""); }}
+                        className="flex-1 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!receiptInput.trim() || !walletClient) return;
+                          const ok = await linkReceipt(task!.taskId, receiptInput.trim(), receiptInput.trim(), walletClient);
+                          if (ok) {
+                            toast.success("Receipt linked!");
+                            setShowLinkReceiptForm(false);
+                            setReceiptInput("");
+                            await refresh();
+                          } else {
+                            toast.error("Failed to link receipt");
+                          }
+                        }}
+                        disabled={!receiptInput.trim() || actionLoading}
+                        className="flex-1 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-medium"
+                      >
+                        Link
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </Section>
         )}
 
