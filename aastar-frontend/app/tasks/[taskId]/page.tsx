@@ -1,0 +1,401 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import Layout from "@/components/Layout";
+import { useTask } from "@/contexts/TaskContext";
+import { useDashboard } from "@/contexts/DashboardContext";
+import { getStoredAuth } from "@/lib/auth";
+import {
+  type ParsedTask,
+  TaskStatus,
+  TASK_STATUS_COLORS,
+} from "@/lib/task-types";
+import { DEFAULT_REWARD_TOKEN_SYMBOL } from "@/lib/contracts/task-config";
+import {
+  ArrowLeftIcon,
+  UserIcon,
+  CurrencyDollarIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
+import { formatDate, formatDateTime } from "@/lib/date-utils";
+import toast from "react-hot-toast";
+import type { WalletClient } from "viem";
+
+function AddressRow({ label, addr }: { label: string; addr: string }) {
+  if (!addr || addr === "0x0000000000000000000000000000000000000000") return null;
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+      <span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>
+      <span className="text-sm font-mono text-gray-900 dark:text-white">
+        {addr.slice(0, 8)}…{addr.slice(-6)}
+      </span>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+      <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+        {title}
+      </h2>
+      {children}
+    </div>
+  );
+}
+
+export default function TaskDetailPage() {
+  const router = useRouter();
+  const { taskId } = useParams<{ taskId: string }>();
+  const { getTask, acceptTask, submitWork, approveWork, finalizeTask, cancelTask } = useTask();
+  const { data } = useDashboard();
+
+  const [task, setTask] = useState<ParsedTask | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [walletClient, setWalletClient] = useState<WalletClient | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [evidenceUri, setEvidenceUri] = useState("");
+  const [showEvidenceForm, setShowEvidenceForm] = useState(false);
+
+  const myAddress = data.account?.address?.toLowerCase() ?? "";
+  const isCommunity = task?.community.toLowerCase() === myAddress;
+  const isTaskor = task?.taskor.toLowerCase() === myAddress;
+  const isZeroAddress = (addr: string) =>
+    addr === "0x0000000000000000000000000000000000000000";
+
+  useEffect(() => {
+    const { token } = getStoredAuth();
+    if (!token) router.push("/auth/login");
+  }, [router]);
+
+  useEffect(() => {
+    async function loadWallet() {
+      if (typeof window === "undefined") return;
+      const { createWalletClient, custom } = await import("viem");
+      const { SUPPORTED_CHAIN } = await import("@/lib/contracts/task-config");
+      const provider = (window as Window & { ethereum?: unknown }).ethereum;
+      if (!provider) return;
+      setWalletClient(
+        createWalletClient({
+          chain: SUPPORTED_CHAIN,
+          transport: custom(provider as Parameters<typeof custom>[0]),
+        })
+      );
+    }
+    loadWallet();
+  }, []);
+
+  useEffect(() => {
+    if (!taskId) return;
+    setLoading(true);
+    getTask(taskId)
+      .then((t) => setTask(t))
+      .finally(() => setLoading(false));
+  }, [taskId, getTask]);
+
+  const refresh = async () => {
+    if (!taskId) return;
+    const t = await getTask(taskId);
+    setTask(t);
+  };
+
+  async function runAction(fn: () => Promise<boolean>, successMsg: string) {
+    if (!walletClient) {
+      toast.error("No wallet connected");
+      return;
+    }
+    setActionLoading(true);
+    const toastId = toast.loading("Sending transaction...");
+    try {
+      const ok = await fn();
+      toast.dismiss(toastId);
+      if (ok) {
+        toast.success(successMsg);
+        await refresh();
+      } else {
+        toast.error("Transaction failed");
+      }
+    } catch (err) {
+      toast.dismiss(toastId);
+      toast.error(err instanceof Error ? err.message : "Error");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  function getTitle(uri: string): string {
+    try {
+      return JSON.parse(uri).title ?? "Untitled Task";
+    } catch {
+      return uri.slice(0, 60) || "Untitled Task";
+    }
+  }
+
+  function getDescription(uri: string): string {
+    try {
+      return JSON.parse(uri).description ?? "";
+    } catch {
+      return uri;
+    }
+  }
+
+  if (loading) {
+    return (
+      <Layout requireAuth>
+        <div className="flex justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!task) {
+    return (
+      <Layout requireAuth>
+        <div className="max-w-2xl mx-auto px-4 py-12 text-center">
+          <p className="text-gray-500 dark:text-gray-400">Task not found</p>
+          <button
+            onClick={() => router.push("/tasks")}
+            className="mt-4 text-emerald-600 dark:text-emerald-400 hover:underline text-sm"
+          >
+            ← Back to market
+          </button>
+        </div>
+      </Layout>
+    );
+  }
+
+  const isOpen = task.status === TaskStatus.Open;
+  const isAccepted = task.status === TaskStatus.Accepted || task.status === TaskStatus.InProgress;
+  const isSubmitted = task.status === TaskStatus.Submitted;
+  const isFinalized = task.status === TaskStatus.Finalized;
+  const isRefunded = task.status === TaskStatus.Refunded;
+
+  return (
+    <Layout requireAuth>
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+        {/* Header */}
+        <div className="flex items-start gap-3">
+          <button
+            onClick={() => router.push("/tasks")}
+            className="mt-1 p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0"
+          >
+            <ArrowLeftIcon className="w-5 h-5" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                {getTitle(task.metadataUri)}
+              </h1>
+              <span
+                className={`text-xs font-medium px-2 py-1 rounded-full ${TASK_STATUS_COLORS[task.status]}`}
+              >
+                {task.statusLabel}
+              </span>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {task.taskTypeLabel} · Posted {formatDate(task.createdAt)}
+            </p>
+          </div>
+        </div>
+
+        {/* Description */}
+        <Section title="Description">
+          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+            {getDescription(task.metadataUri) || "No description provided."}
+          </p>
+        </Section>
+
+        {/* Reward & Deadline */}
+        <Section title="Details">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <CurrencyDollarIcon className="w-4 h-4" />
+                Reward
+              </div>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                {task.rewardFormatted} {DEFAULT_REWARD_TOKEN_SYMBOL}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <ClockIcon className="w-4 h-4" />
+                Deadline
+              </div>
+              <span
+                className={`text-sm font-medium ${
+                  task.isExpired
+                    ? "text-red-500"
+                    : "text-gray-900 dark:text-white"
+                }`}
+              >
+                {formatDateTime(task.deadline)}
+                {task.isExpired && " (expired)"}
+              </span>
+            </div>
+            {task.challengeDeadline && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <ExclamationTriangleIcon className="w-4 h-4" />
+                  Challenge period ends
+                </div>
+                <span className="text-sm text-gray-900 dark:text-white">
+                  {formatDateTime(task.challengeDeadline)}
+                </span>
+              </div>
+            )}
+          </div>
+        </Section>
+
+        {/* Participants */}
+        <Section title="Participants">
+          <AddressRow label="Community (Publisher)" addr={task.community} />
+          {!isZeroAddress(task.taskor) && (
+            <AddressRow label="Taskor (Executor)" addr={task.taskor} />
+          )}
+          {!isZeroAddress(task.supplier) && (
+            <AddressRow label="Supplier" addr={task.supplier} />
+          )}
+        </Section>
+
+        {/* Evidence (if submitted) */}
+        {task.evidenceUri && (
+          <Section title="Submitted Evidence">
+            <p className="text-sm text-gray-700 dark:text-gray-300 break-words">
+              {task.evidenceUri}
+            </p>
+          </Section>
+        )}
+
+        {/* Actions */}
+        <div className="space-y-3">
+          {/* Claim task (Open → Accepted) */}
+          {isOpen && !isCommunity && !task.isExpired && (
+            <button
+              onClick={() =>
+                runAction(() => acceptTask(task.taskId, walletClient!), "Task claimed!")
+              }
+              disabled={actionLoading}
+              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold text-sm transition-colors"
+            >
+              {actionLoading ? "Processing..." : "Claim This Task"}
+            </button>
+          )}
+
+          {/* Submit evidence (Accepted → Submitted) */}
+          {isAccepted && isTaskor && (
+            <>
+              {!showEvidenceForm ? (
+                <button
+                  onClick={() => setShowEvidenceForm(true)}
+                  className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors"
+                >
+                  Submit Work
+                </button>
+              ) : (
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Submit your evidence
+                  </p>
+                  <textarea
+                    value={evidenceUri}
+                    onChange={(e) => setEvidenceUri(e.target.value)}
+                    placeholder="Describe your work, or paste a link to your deliverable..."
+                    rows={4}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowEvidenceForm(false)}
+                      className="flex-1 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!evidenceUri.trim()) return;
+                        runAction(
+                          () => submitWork(task.taskId, evidenceUri.trim(), walletClient!),
+                          "Work submitted!"
+                        );
+                        setShowEvidenceForm(false);
+                      }}
+                      disabled={!evidenceUri.trim() || actionLoading}
+                      className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium transition-colors"
+                    >
+                      Submit
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Community: approve work (Submitted → Finalized) */}
+          {isSubmitted && isCommunity && (
+            <div className="space-y-2">
+              <button
+                onClick={() =>
+                  runAction(() => approveWork(task.taskId, walletClient!), "Work approved! Reward distributed.")
+                }
+                disabled={actionLoading}
+                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                <CheckCircleIcon className="w-5 h-5" />
+                {actionLoading ? "Processing..." : "Approve & Pay Out"}
+              </button>
+              <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                Or wait for the 3-day challenge period to expire for auto-settlement
+              </p>
+            </div>
+          )}
+
+          {/* Anyone: finalize after challenge period */}
+          {task.canFinalize && (
+            <button
+              onClick={() =>
+                runAction(() => finalizeTask(task.taskId, walletClient!), "Task finalized!")
+              }
+              disabled={actionLoading}
+              className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 disabled:opacity-60 text-white font-semibold text-sm transition-colors"
+            >
+              {actionLoading ? "Processing..." : "Finalize (Challenge Period Expired)"}
+            </button>
+          )}
+
+          {/* Community: cancel open task */}
+          {isOpen && isCommunity && (
+            <button
+              onClick={() =>
+                runAction(() => cancelTask(task.taskId, walletClient!), "Task cancelled. Reward refunded.")
+              }
+              disabled={actionLoading}
+              className="w-full py-3 rounded-xl border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium text-sm transition-colors"
+            >
+              Cancel Task
+            </button>
+          )}
+
+          {/* Finalized */}
+          {isFinalized && (
+            <div className="flex items-center justify-center gap-2 py-4 text-emerald-600 dark:text-emerald-400">
+              <CheckCircleIcon className="w-5 h-5" />
+              <span className="font-medium text-sm">Task completed and reward distributed</span>
+            </div>
+          )}
+
+          {/* Refunded */}
+          {isRefunded && (
+            <div className="flex items-center justify-center gap-2 py-4 text-gray-500 dark:text-gray-400">
+              <span className="text-sm">Task cancelled — reward returned to publisher</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </Layout>
+  );
+}
