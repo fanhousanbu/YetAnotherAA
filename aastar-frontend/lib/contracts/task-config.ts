@@ -82,6 +82,23 @@ export const ALL_TASK_TYPES = [
   { value: TASK_TYPE_RESEARCH, label: "Research" },
 ];
 
+// ====== x402 API Server ======
+
+/** Base URL of the MyTask x402 API server. Empty string = not configured. */
+export const X402_API_URL = (
+  process.env.NEXT_PUBLIC_X402_API_URL ?? ""
+).replace(/\/$/, ""); // strip trailing slash
+
+export const REWARD_TOKEN_NAME =
+  process.env.NEXT_PUBLIC_REWARD_TOKEN_NAME ?? "USDC";
+
+export const REWARD_TOKEN_VERSION =
+  process.env.NEXT_PUBLIC_REWARD_TOKEN_VERSION ?? "2";
+
+export function isX402Configured(): boolean {
+  return X402_API_URL.length > 0;
+}
+
 export function isContractsConfigured(): boolean {
   return (
     !!TASK_ESCROW_ADDRESS &&
