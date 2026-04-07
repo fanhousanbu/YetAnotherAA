@@ -30,7 +30,7 @@ const DEADLINE_OPTIONS = [
 export default function CreateTaskPage() {
   const router = useRouter();
   const { createTask, approveToken, checkAllowance, contractConfigured, linkReceipt } = useTask();
-  const { data } = useDashboard();
+  useDashboard();
 
   const [form, setForm] = useState<CreateTaskForm>({
     title: "",

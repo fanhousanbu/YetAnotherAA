@@ -1,11 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import {
-  IsOptional,
-  IsNumber,
-  IsString,
-  IsEnum,
-  IsEthereumAddress,
-} from "class-validator";
+import { IsOptional, IsNumber, IsString, IsEnum, IsEthereumAddress } from "class-validator";
 import { EntryPointVersionDto } from "./create-account.dto";
 
 export class GuardianSetupPrepareDto {
