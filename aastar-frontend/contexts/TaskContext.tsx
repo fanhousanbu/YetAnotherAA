@@ -16,7 +16,6 @@ import {
   TASK_ESCROW_ADDRESS,
   DEFAULT_REWARD_TOKEN,
   DEFAULT_REWARD_TOKEN_DECIMALS,
-  DEFAULT_REWARD_TOKEN_SYMBOL,
   TASK_TYPE_LABELS,
   SUPPORTED_CHAIN,
   RPC_URL,
@@ -29,7 +28,6 @@ import {
   TaskStatus,
   TASK_STATUS_LABELS,
 } from "@/lib/task-types";
-import { getStoredAuth } from "@/lib/auth";
 
 interface TaskContextType {
   // Data
