@@ -22,7 +22,8 @@ type FilterStatus = "all" | "open" | "mine" | "claimed";
 function TaskCard({ task }: { task: ParsedTask }) {
   const router = useRouter();
   const { data } = useDashboard();
-  const myAddress = data.account?.address?.toLowerCase();
+  // Contract stores EOA (signerAddress), not the YAA smart account address
+  const myAddress = data.account?.signerAddress?.toLowerCase();
   const isMine = task.community.toLowerCase() === myAddress;
   const isClaimed = task.taskor.toLowerCase() === myAddress;
 

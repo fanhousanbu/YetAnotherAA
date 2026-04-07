@@ -70,6 +70,10 @@ function GuardianSignInner() {
   const handleSignWithPasskey = async () => {
     setError("");
 
+    if (!acceptanceHash) {
+      setError("Missing acceptanceHash parameter. Please scan the QR code again.");
+      return;
+    }
     if (!guardianAddress) {
       setError("Please enter your guardian wallet address");
       return;
@@ -119,6 +123,10 @@ function GuardianSignInner() {
   const handleSignWithMetaMask = async () => {
     setError("");
 
+    if (!acceptanceHash) {
+      setError("Missing acceptanceHash parameter. Please scan the QR code again.");
+      return;
+    }
     if (!("ethereum" in window) || !window.ethereum) {
       setError("MetaMask not detected. Please install MetaMask and try again.");
       return;
