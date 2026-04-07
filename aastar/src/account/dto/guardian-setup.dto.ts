@@ -5,7 +5,6 @@ import {
   IsString,
   IsEnum,
   IsEthereumAddress,
-  IsNumberString,
 } from "class-validator";
 import { EntryPointVersionDto } from "./create-account.dto";
 

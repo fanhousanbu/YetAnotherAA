@@ -59,7 +59,7 @@ function randomBytes32(): Hex {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
   return `0x${Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
+    .map(b => b.toString(16).padStart(2, "0"))
     .join("")}` as Hex;
 }
 
@@ -86,7 +86,7 @@ export async function postTaskWithX402(
   tokenAddress: Address,
   tokenName: string,
   tokenVersion: string,
-  chainId: number,
+  chainId: number
 ): Promise<X402Receipt> {
   const addresses = await walletClient.requestAddresses();
   const from = addresses[0];
@@ -184,9 +184,7 @@ export async function postTaskWithX402(
       error?: string;
       message?: string;
     };
-    throw new Error(
-      err.message ?? err.error ?? `Payment rejected (${secondRes.status})`,
-    );
+    throw new Error(err.message ?? err.error ?? `Payment rejected (${secondRes.status})`);
   }
 
   const data = (await secondRes.json()) as {
@@ -212,7 +210,7 @@ export interface X402ReceiptDetails {
  */
 export async function fetchReceiptDetails(
   apiUrl: string,
-  receiptId: string,
+  receiptId: string
 ): Promise<X402ReceiptDetails | null> {
   try {
     const res = await fetch(`${apiUrl}/receipts/${receiptId}`);

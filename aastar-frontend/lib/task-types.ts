@@ -22,22 +22,17 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
 };
 
 export const TASK_STATUS_COLORS: Record<TaskStatus, string> = {
-  [TaskStatus.Open]:
-    "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
-  [TaskStatus.Accepted]:
-    "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  [TaskStatus.Open]: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
+  [TaskStatus.Accepted]: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
   [TaskStatus.InProgress]:
     "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
   [TaskStatus.Submitted]:
     "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
   [TaskStatus.Challenged]:
     "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
-  [TaskStatus.Finalized]:
-    "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
-  [TaskStatus.Refunded]:
-    "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  [TaskStatus.Disputed]:
-    "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  [TaskStatus.Finalized]: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+  [TaskStatus.Refunded]: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  [TaskStatus.Disputed]: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
 };
 
 // Mirrors TaskEscrowV2.sol Task struct

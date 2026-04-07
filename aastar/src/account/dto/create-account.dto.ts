@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsOptional, IsNumber, IsBoolean, IsString, IsEnum, IsPositive } from "class-validator";
+import { IsOptional, IsNumber, IsBoolean, IsString, IsEnum } from "class-validator";
 
 export enum EntryPointVersionDto {
   V0_6 = "0.6",

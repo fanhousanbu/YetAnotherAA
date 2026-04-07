@@ -52,7 +52,9 @@ export default function RecoveryPage() {
       setStep("initiate");
     } catch (err: unknown) {
       const msg =
-        (err as any)?.response?.data?.message || (err as Error).message || "Failed to register guardians";
+        (err as any)?.response?.data?.message ||
+        (err as Error).message ||
+        "Failed to register guardians";
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -72,7 +74,9 @@ export default function RecoveryPage() {
       setStep("support");
     } catch (err: unknown) {
       const msg =
-        (err as any)?.response?.data?.message || (err as Error).message || "Failed to initiate recovery";
+        (err as any)?.response?.data?.message ||
+        (err as Error).message ||
+        "Failed to initiate recovery";
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -89,7 +93,9 @@ export default function RecoveryPage() {
       setStep("execute");
     } catch (err: unknown) {
       const msg =
-        (err as any)?.response?.data?.message || (err as Error).message || "Failed to support recovery";
+        (err as any)?.response?.data?.message ||
+        (err as Error).message ||
+        "Failed to support recovery";
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -105,7 +111,9 @@ export default function RecoveryPage() {
       setStep("done");
     } catch (err: unknown) {
       const msg =
-        (err as any)?.response?.data?.message || (err as Error).message || "Failed to execute recovery";
+        (err as any)?.response?.data?.message ||
+        (err as Error).message ||
+        "Failed to execute recovery";
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -122,7 +130,9 @@ export default function RecoveryPage() {
       setPendingRecovery(null);
     } catch (err: unknown) {
       const msg =
-        (err as any)?.response?.data?.message || (err as Error).message || "Failed to cancel recovery";
+        (err as any)?.response?.data?.message ||
+        (err as Error).message ||
+        "Failed to cancel recovery";
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -186,10 +196,26 @@ export default function RecoveryPage() {
             </div>
 
             {[
-              { label: "Account Address (to recover)", field: "accountAddress" as const, placeholder: "0x... (the AirAccount)" },
-              { label: "New Signer Address", field: "newSignerAddress" as const, placeholder: "0x... (new owner)" },
-              { label: "Guardian 1 Address", field: "guardian1Address" as const, placeholder: "0x..." },
-              { label: "Guardian 2 Address", field: "guardian2Address" as const, placeholder: "0x..." },
+              {
+                label: "Account Address (to recover)",
+                field: "accountAddress" as const,
+                placeholder: "0x... (the AirAccount)",
+              },
+              {
+                label: "New Signer Address",
+                field: "newSignerAddress" as const,
+                placeholder: "0x... (new owner)",
+              },
+              {
+                label: "Guardian 1 Address",
+                field: "guardian1Address" as const,
+                placeholder: "0x...",
+              },
+              {
+                label: "Guardian 2 Address",
+                field: "guardian2Address" as const,
+                placeholder: "0x...",
+              },
             ].map(({ label, field, placeholder }) => (
               <div key={field}>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -230,11 +256,15 @@ export default function RecoveryPage() {
             <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">Account</span>
-                <span className="font-mono text-xs truncate max-w-[220px]">{form.accountAddress}</span>
+                <span className="font-mono text-xs truncate max-w-[220px]">
+                  {form.accountAddress}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">New Signer</span>
-                <span className="font-mono text-xs truncate max-w-[220px]">{form.newSignerAddress}</span>
+                <span className="font-mono text-xs truncate max-w-[220px]">
+                  {form.newSignerAddress}
+                </span>
               </div>
             </div>
 
@@ -276,7 +306,9 @@ export default function RecoveryPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Supporters</span>
-                  <span>{pendingRecovery.supportCount} / {pendingRecovery.quorumRequired}</span>
+                  <span>
+                    {pendingRecovery.supportCount} / {pendingRecovery.quorumRequired}
+                  </span>
                 </div>
               </div>
             )}
@@ -305,8 +337,8 @@ export default function RecoveryPage() {
             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-sm text-green-800 dark:text-green-300">
               <p className="font-semibold mb-1">Quorum Reached</p>
               <p>
-                Both guardians have approved. After the 48-hour time lock expires, click Execute
-                to complete the recovery on-chain.
+                Both guardians have approved. After the 48-hour time lock expires, click Execute to
+                complete the recovery on-chain.
               </p>
             </div>
 
@@ -351,19 +383,31 @@ export default function RecoveryPage() {
         {step === "done" && (
           <div className="text-center space-y-4 py-8">
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-8 h-8 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
-            <p className="text-lg font-semibold text-gray-900 dark:text-white">
-              Account Recovered
-            </p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-white">Account Recovered</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               The account signer has been updated to{" "}
               <span className="font-mono">{form.newSignerAddress}</span>.
             </p>
             <button
-              onClick={() => { setStep("setup"); setForm(ZERO); setPendingRecovery(null); }}
+              onClick={() => {
+                setStep("setup");
+                setForm(ZERO);
+                setPendingRecovery(null);
+              }}
               className="mt-4 px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold"
             >
               Start Over

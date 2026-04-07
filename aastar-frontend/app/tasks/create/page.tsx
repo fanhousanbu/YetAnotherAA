@@ -6,7 +6,15 @@ import Layout from "@/components/Layout";
 import { useTask } from "@/contexts/TaskContext";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { getStoredAuth } from "@/lib/auth";
-import { ALL_TASK_TYPES, DEFAULT_REWARD_TOKEN_SYMBOL, TASK_TYPE_GENERAL, X402_API_URL, isX402Configured, REWARD_TOKEN_NAME, REWARD_TOKEN_VERSION } from "@/lib/contracts/task-config";
+import {
+  ALL_TASK_TYPES,
+  DEFAULT_REWARD_TOKEN_SYMBOL,
+  TASK_TYPE_GENERAL,
+  X402_API_URL,
+  isX402Configured,
+  REWARD_TOKEN_NAME,
+  REWARD_TOKEN_VERSION,
+} from "@/lib/contracts/task-config";
 import { postTaskWithX402, type X402Receipt } from "@/lib/x402-client";
 import { type CreateTaskForm } from "@/lib/task-types";
 import { ArrowLeftIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
@@ -59,11 +67,8 @@ export default function CreateTaskPage() {
     loadWallet();
   }, []);
 
-  const handleUpdate = <K extends keyof CreateTaskForm>(
-    key: K,
-    value: CreateTaskForm[K]
-  ) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+  const handleUpdate = <K extends keyof CreateTaskForm>(key: K, value: CreateTaskForm[K]) => {
+    setForm(prev => ({ ...prev, [key]: value }));
   };
 
   const isValid =
@@ -124,7 +129,7 @@ export default function CreateTaskPage() {
             DEFAULT_REWARD_TOKEN,
             REWARD_TOKEN_NAME,
             REWARD_TOKEN_VERSION,
-            chainId,
+            chainId
           );
           toast.dismiss("x402");
           toast.success("x402 payment signed");
@@ -134,7 +139,7 @@ export default function CreateTaskPage() {
           console.warn("[x402] Payment failed, continuing without receipt:", x402Err);
           toast.error(
             `x402 skipped: ${x402Err instanceof Error ? x402Err.message : "unknown error"}`,
-            { duration: 4000 },
+            { duration: 4000 }
           );
         }
       }
@@ -145,8 +150,17 @@ export default function CreateTaskPage() {
 
       try {
         const [tokenName, nonce] = await Promise.all([
-          publicClient.readContract({ address: DEFAULT_REWARD_TOKEN, abi: ERC20_ABI, functionName: "name" }),
-          publicClient.readContract({ address: DEFAULT_REWARD_TOKEN, abi: ERC20_ABI, functionName: "nonces", args: [ownerAddress] }),
+          publicClient.readContract({
+            address: DEFAULT_REWARD_TOKEN,
+            abi: ERC20_ABI,
+            functionName: "name",
+          }),
+          publicClient.readContract({
+            address: DEFAULT_REWARD_TOKEN,
+            abi: ERC20_ABI,
+            functionName: "nonces",
+            args: [ownerAddress],
+          }),
         ]);
 
         const permitDeadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
@@ -189,13 +203,25 @@ export default function CreateTaskPage() {
           address: TASK_ESCROW_ADDRESS,
           abi: TASK_ESCROW_ABI,
           functionName: "createTaskWithPermit",
-          args: [DEFAULT_REWARD_TOKEN, rewardWei, deadlineBig, metadata, form.taskType, permitDeadline, v, r, s],
+          args: [
+            DEFAULT_REWARD_TOKEN,
+            rewardWei,
+            deadlineBig,
+            metadata,
+            form.taskType,
+            permitDeadline,
+            v,
+            r,
+            s,
+          ],
           account: ownerAddress,
           chain: SUPPORTED_CHAIN,
         });
 
         const receipt = await publicClient.waitForTransactionReceipt({ hash });
-        const log = receipt.logs.find((l) => l.address.toLowerCase() === TASK_ESCROW_ADDRESS.toLowerCase());
+        const log = receipt.logs.find(
+          l => l.address.toLowerCase() === TASK_ESCROW_ADDRESS.toLowerCase()
+        );
         if (log?.topics[1]) {
           taskId = log.topics[1] as `0x${string}`;
           usedPermit = true;
@@ -230,11 +256,18 @@ export default function CreateTaskPage() {
       if (taskId && x402Receipt) {
         setStep("linking");
         toast.loading("Linking x402 receipt on-chain...", { id: "link" });
-        const linked = await linkReceipt(taskId, x402Receipt.receiptId, x402Receipt.receiptUri, walletClient);
+        const linked = await linkReceipt(
+          taskId,
+          x402Receipt.receiptId,
+          x402Receipt.receiptUri,
+          walletClient
+        );
         toast.dismiss("link");
         if (!linked) {
           // Non-fatal: task was created, receipt just wasn't linked
-          toast.error("Receipt linking failed — you can link it manually on the task page", { duration: 5000 });
+          toast.error("Receipt linking failed — you can link it manually on the task page", {
+            duration: 5000,
+          });
         }
       }
 
@@ -253,7 +286,8 @@ export default function CreateTaskPage() {
     }
   }
 
-  const hasEthereum = typeof window !== "undefined" && !!(window as Window & { ethereum?: unknown }).ethereum;
+  const hasEthereum =
+    typeof window !== "undefined" && !!(window as Window & { ethereum?: unknown }).ethereum;
 
   return (
     <Layout requireAuth>
@@ -267,9 +301,7 @@ export default function CreateTaskPage() {
             <ArrowLeftIcon className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-              Post a Task
-            </h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Post a Task</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Describe what you need done and set a reward
             </p>
@@ -295,7 +327,7 @@ export default function CreateTaskPage() {
             <input
               type="text"
               value={form.title}
-              onChange={(e) => handleUpdate("title", e.target.value)}
+              onChange={e => handleUpdate("title", e.target.value)}
               placeholder="e.g. Design a landing page for our community"
               maxLength={100}
               className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -309,7 +341,7 @@ export default function CreateTaskPage() {
             </label>
             <textarea
               value={form.description}
-              onChange={(e) => handleUpdate("description", e.target.value)}
+              onChange={e => handleUpdate("description", e.target.value)}
               placeholder="Describe what needs to be done, any requirements or constraints..."
               rows={5}
               className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
@@ -322,7 +354,7 @@ export default function CreateTaskPage() {
               Category
             </label>
             <div className="flex flex-wrap gap-2">
-              {ALL_TASK_TYPES.map((t) => (
+              {ALL_TASK_TYPES.map(t => (
                 <button
                   key={t.value}
                   onClick={() => handleUpdate("taskType", t.value)}
@@ -347,7 +379,7 @@ export default function CreateTaskPage() {
               <input
                 type="number"
                 value={form.rewardAmount}
-                onChange={(e) => handleUpdate("rewardAmount", e.target.value)}
+                onChange={e => handleUpdate("rewardAmount", e.target.value)}
                 placeholder="0.00"
                 min="0"
                 step="0.01"
@@ -368,7 +400,7 @@ export default function CreateTaskPage() {
               Deadline
             </label>
             <div className="flex gap-2">
-              {DEADLINE_OPTIONS.map((opt) => (
+              {DEADLINE_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
                   onClick={() => handleUpdate("deadlineDays", opt.value)}
@@ -417,15 +449,15 @@ export default function CreateTaskPage() {
               ? step === "x402"
                 ? "Signing x402 payment..."
                 : step === "approve"
-                ? "Approving token..."
-                : step === "linking"
-                ? "Linking receipt..."
-                : "Creating task..."
+                  ? "Approving token..."
+                  : step === "linking"
+                    ? "Linking receipt..."
+                    : "Creating task..."
               : !walletClient
-              ? "Connect wallet to post"
-              : isX402Configured()
-              ? "Post Task (x402 + Permit)"
-              : "Post Task (EIP-2612 Permit)"}
+                ? "Connect wallet to post"
+                : isX402Configured()
+                  ? "Post Task (x402 + Permit)"
+                  : "Post Task (EIP-2612 Permit)"}
           </button>
         </div>
       </div>

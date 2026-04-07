@@ -222,11 +222,9 @@ export const guardianAPI = {
   executeRecovery: (data: { accountAddress: string }) =>
     api.post("/guardian/recovery/execute", data),
 
-  cancelRecovery: (data: { accountAddress: string }) =>
-    api.post("/guardian/recovery/cancel", data),
+  cancelRecovery: (data: { accountAddress: string }) => api.post("/guardian/recovery/cancel", data),
 
-  getPendingRecovery: (accountAddress: string) =>
-    api.get(`/guardian/recovery/${accountAddress}`),
+  getPendingRecovery: (accountAddress: string) => api.get(`/guardian/recovery/${accountAddress}`),
 };
 
 export const addressBookAPI = {
