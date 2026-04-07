@@ -11,14 +11,15 @@ import {
   TaskStatus,
   TASK_STATUS_COLORS,
 } from "@/lib/task-types";
-import { DEFAULT_REWARD_TOKEN_SYMBOL } from "@/lib/contracts/task-config";
+import { DEFAULT_REWARD_TOKEN_SYMBOL, X402_API_URL, isX402Configured } from "@/lib/contracts/task-config";
+import { fetchReceiptDetails, type X402ReceiptDetails } from "@/lib/x402-client";
 import {
   ArrowLeftIcon,
-  UserIcon,
   CurrencyDollarIcon,
   ClockIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
+  ReceiptRefundIcon,
 } from "@heroicons/react/24/outline";
 import { formatDate, formatDateTime } from "@/lib/date-utils";
 import toast from "react-hot-toast";
@@ -62,6 +63,7 @@ export default function TaskDetailPage() {
   const [showEvidenceForm, setShowEvidenceForm] = useState(false);
   // T06: receipts
   const [receipts, setReceipts] = useState<`0x${string}`[]>([]);
+  const [receiptDetails, setReceiptDetails] = useState<Record<string, X402ReceiptDetails | null>>({});
   const [showLinkReceiptForm, setShowLinkReceiptForm] = useState(false);
   const [receiptInput, setReceiptInput] = useState("");
 
@@ -115,11 +117,19 @@ export default function TaskDetailPage() {
     setReceipts(r);
   };
 
-  // T06: load receipts on mount
+  // T06: load receipts on mount, then fetch details from API
   useEffect(() => {
-    if (taskId) {
-      getTaskReceipts(taskId).then(setReceipts);
-    }
+    if (!taskId) return;
+    getTaskReceipts(taskId).then(async (ids) => {
+      setReceipts(ids);
+      if (!isX402Configured() || ids.length === 0) return;
+      const details = await Promise.all(
+        ids.map((id) => fetchReceiptDetails(X402_API_URL, id))
+      );
+      const map: Record<string, X402ReceiptDetails | null> = {};
+      ids.forEach((id, i) => { map[id] = details[i]; });
+      setReceiptDetails(map);
+    });
   }, [taskId, getTaskReceipts]);
 
   const switchWallet = async () => {
@@ -322,16 +332,43 @@ export default function TaskDetailPage() {
         {(receipts.length > 0 || (eoaAddress && (isCommunity || isTaskor))) && (
           <Section title="x402 Receipts">
             {receipts.length > 0 ? (
-              <div className="space-y-2">
-                {receipts.map((rid) => (
-                  <div key={rid} className="flex items-center gap-2 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
-                    <span className="text-xs font-mono text-gray-500 dark:text-gray-400 break-all">
-                      {rid.slice(0, 14)}…{rid.slice(-10)}
-                    </span>
-                  </div>
-                ))}
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  {receipts.length} receipt{receipts.length > 1 ? "s" : ""} linked
+              <div className="space-y-3">
+                {receipts.map((rid) => {
+                  const detail = receiptDetails[rid];
+                  return (
+                    <div
+                      key={rid}
+                      className="rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3 space-y-1.5"
+                    >
+                      {/* Receipt ID */}
+                      <div className="flex items-center gap-2">
+                        <ReceiptRefundIcon className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <span className="text-xs font-mono text-gray-600 dark:text-gray-300 break-all">
+                          {rid.slice(0, 14)}…{rid.slice(-10)}
+                        </span>
+                      </div>
+                      {/* Details from API (if available) */}
+                      {detail ? (
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 pl-6 text-xs text-gray-500 dark:text-gray-400">
+                          <span>Payer</span>
+                          <span className="font-mono text-gray-700 dark:text-gray-300">
+                            {detail.payer.slice(0, 8)}…{detail.payer.slice(-6)}
+                          </span>
+                          <span>Time</span>
+                          <span className="text-gray-700 dark:text-gray-300">
+                            {new Date(detail.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                      ) : isX402Configured() ? (
+                        <p className="pl-6 text-xs text-gray-400 dark:text-gray-500 italic">
+                          Loading details…
+                        </p>
+                      ) : null}
+                    </div>
+                  );
+                })}
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  {receipts.length} receipt{receipts.length > 1 ? "s" : ""} linked on-chain
                 </p>
               </div>
             ) : (
@@ -345,7 +382,7 @@ export default function TaskDetailPage() {
                     onClick={() => setShowLinkReceiptForm(true)}
                     className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
                   >
-                    + Link receipt
+                    + Link receipt manually
                   </button>
                 ) : (
                   <div className="space-y-2">
