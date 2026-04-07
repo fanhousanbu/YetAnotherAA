@@ -13,25 +13,19 @@ export const RPC_URL =
 
 // ====== Contract Addresses ======
 
-export const TASK_ESCROW_ADDRESS = (
-  process.env.NEXT_PUBLIC_TASK_ESCROW_ADDRESS ?? ""
-) as `0x${string}`;
+export const TASK_ESCROW_ADDRESS = (process.env.NEXT_PUBLIC_TASK_ESCROW_ADDRESS ??
+  "") as `0x${string}`;
 
-export const JURY_CONTRACT_ADDRESS = (
-  process.env.NEXT_PUBLIC_JURY_CONTRACT_ADDRESS ?? ""
-) as `0x${string}`;
+export const JURY_CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_JURY_CONTRACT_ADDRESS ??
+  "") as `0x${string}`;
 
-export const MYSBT_ADDRESS = (
-  process.env.NEXT_PUBLIC_MYSBT_ADDRESS ?? ""
-) as `0x${string}`;
+export const MYSBT_ADDRESS = (process.env.NEXT_PUBLIC_MYSBT_ADDRESS ?? "") as `0x${string}`;
 
 // Default reward token (OpenPNTs-compatible ERC-20)
-export const DEFAULT_REWARD_TOKEN = (
-  process.env.NEXT_PUBLIC_REWARD_TOKEN_ADDRESS ?? ""
-) as `0x${string}`;
+export const DEFAULT_REWARD_TOKEN = (process.env.NEXT_PUBLIC_REWARD_TOKEN_ADDRESS ??
+  "") as `0x${string}`;
 
-export const DEFAULT_REWARD_TOKEN_SYMBOL =
-  process.env.NEXT_PUBLIC_REWARD_TOKEN_SYMBOL ?? "USDC";
+export const DEFAULT_REWARD_TOKEN_SYMBOL = process.env.NEXT_PUBLIC_REWARD_TOKEN_SYMBOL ?? "USDC";
 
 export const DEFAULT_REWARD_TOKEN_DECIMALS = parseInt(
   process.env.NEXT_PUBLIC_REWARD_TOKEN_DECIMALS ?? "6"
@@ -85,24 +79,16 @@ export const ALL_TASK_TYPES = [
 // ====== x402 API Server ======
 
 /** Base URL of the MyTask x402 API server. Empty string = not configured. */
-export const X402_API_URL = (
-  process.env.NEXT_PUBLIC_X402_API_URL ?? ""
-).replace(/\/$/, ""); // strip trailing slash
+export const X402_API_URL = (process.env.NEXT_PUBLIC_X402_API_URL ?? "").replace(/\/$/, ""); // strip trailing slash
 
-export const REWARD_TOKEN_NAME =
-  process.env.NEXT_PUBLIC_REWARD_TOKEN_NAME ?? "USDC";
+export const REWARD_TOKEN_NAME = process.env.NEXT_PUBLIC_REWARD_TOKEN_NAME ?? "USDC";
 
-export const REWARD_TOKEN_VERSION =
-  process.env.NEXT_PUBLIC_REWARD_TOKEN_VERSION ?? "2";
+export const REWARD_TOKEN_VERSION = process.env.NEXT_PUBLIC_REWARD_TOKEN_VERSION ?? "2";
 
 export function isX402Configured(): boolean {
   return X402_API_URL.length > 0;
 }
 
 export function isContractsConfigured(): boolean {
-  return (
-    !!TASK_ESCROW_ADDRESS &&
-    TASK_ESCROW_ADDRESS !== "0x" &&
-    TASK_ESCROW_ADDRESS.length === 42
-  );
+  return !!TASK_ESCROW_ADDRESS && TASK_ESCROW_ADDRESS !== "0x" && TASK_ESCROW_ADDRESS.length === 42;
 }

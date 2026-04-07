@@ -39,9 +39,7 @@ function TaskCard({ task }: { task: ParsedTask }) {
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             by {shortenAddress(task.community)}
             {isMine && (
-              <span className="ml-2 text-emerald-600 dark:text-emerald-400 font-medium">
-                (you)
-              </span>
+              <span className="ml-2 text-emerald-600 dark:text-emerald-400 font-medium">(you)</span>
             )}
           </p>
         </div>
@@ -63,9 +61,7 @@ function TaskCard({ task }: { task: ParsedTask }) {
         </div>
         <div className="flex items-center gap-1 text-gray-400 dark:text-gray-500 text-xs">
           <ClockIcon className="w-3.5 h-3.5" />
-          {task.isExpired
-            ? "Expired"
-            : `Ends ${formatDistanceToNow(task.deadline)}`}
+          {task.isExpired ? "Expired" : `Ends ${formatDistanceToNow(task.deadline)}`}
         </div>
       </div>
 
@@ -105,8 +101,16 @@ function shortenAddress(addr: string): string {
 
 export default function TasksPage() {
   const router = useRouter();
-  const { tasks, myTasks, claimedTasks, loading, error, loadAllTasks, loadMyTasks, contractConfigured } =
-    useTask();
+  const {
+    tasks,
+    myTasks,
+    claimedTasks,
+    loading,
+    error,
+    loadAllTasks,
+    loadMyTasks,
+    contractConfigured,
+  } = useTask();
   const { data } = useDashboard();
   const [filter, setFilter] = useState<FilterStatus>("all");
   const [search, setSearch] = useState("");
@@ -126,7 +130,7 @@ export default function TasksPage() {
     let list: ParsedTask[];
     switch (filter) {
       case "open":
-        list = tasks.filter((t) => t.status === TaskStatus.Open);
+        list = tasks.filter(t => t.status === TaskStatus.Open);
         break;
       case "mine":
         list = myTasks;
@@ -139,14 +143,14 @@ export default function TasksPage() {
     }
     if (!search.trim()) return list;
     const q = search.toLowerCase();
-    return list.filter((t) => {
+    return list.filter(t => {
       const title = getTitle(t.metadataUri).toLowerCase();
       const desc = getDescription(t.metadataUri).toLowerCase();
       return title.includes(q) || desc.includes(q);
     });
   })();
 
-  const openCount = tasks.filter((t) => t.status === TaskStatus.Open).length;
+  const openCount = tasks.filter(t => t.status === TaskStatus.Open).length;
 
   return (
     <Layout requireAuth>
@@ -154,9 +158,7 @@ export default function TasksPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Task Market
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Task Market</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {openCount} open {openCount === 1 ? "task" : "tasks"} available
             </p>
@@ -188,7 +190,7 @@ export default function TasksPage() {
             type="text"
             placeholder="Search tasks..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
@@ -256,7 +258,7 @@ export default function TasksPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            {displayTasks.map((task) => (
+            {displayTasks.map(task => (
               <TaskCard key={task.taskId} task={task} />
             ))}
           </div>

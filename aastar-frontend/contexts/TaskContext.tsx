@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useEffect,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import {
   createPublicClient,
   http,
@@ -61,7 +54,12 @@ interface TaskContextType {
   cancelTask: (taskId: string, walletClient: WalletClient) => Promise<boolean>;
   // T06: Receipts
   getTaskReceipts: (taskId: string) => Promise<`0x${string}`[]>;
-  linkReceipt: (taskId: string, receiptId: string, receiptUri: string, walletClient: WalletClient) => Promise<boolean>;
+  linkReceipt: (
+    taskId: string,
+    receiptId: string,
+    receiptUri: string,
+    walletClient: WalletClient
+  ) => Promise<boolean>;
   // Helpers
   getTask: (taskId: string) => Promise<ParsedTask | null>;
   approveToken: (amount: bigint, walletClient: WalletClient) => Promise<boolean>;
@@ -80,18 +78,13 @@ function parseTask(raw: Task): ParsedTask {
   const now = new Date();
   const deadline = new Date(Number(raw.deadline) * 1000);
   const challengeDeadline =
-    raw.challengeDeadline > 0n
-      ? new Date(Number(raw.challengeDeadline) * 1000)
-      : null;
+    raw.challengeDeadline > 0n ? new Date(Number(raw.challengeDeadline) * 1000) : null;
 
   const rewardFormatted = formatUnits(raw.reward, DEFAULT_REWARD_TOKEN_DECIMALS);
-  const taskTypeLabel =
-    TASK_TYPE_LABELS[raw.taskType] ?? raw.taskType.slice(0, 10);
+  const taskTypeLabel = TASK_TYPE_LABELS[raw.taskType] ?? raw.taskType.slice(0, 10);
 
   const canFinalize =
-    raw.status === TaskStatus.Submitted &&
-    challengeDeadline !== null &&
-    now > challengeDeadline;
+    raw.status === TaskStatus.Submitted && challengeDeadline !== null && now > challengeDeadline;
 
   return {
     taskId: raw.taskId,
@@ -165,17 +158,15 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         fromBlock,
         toBlock: "latest",
         // keccak256("TaskCreated(bytes32,address,address,uint256)")
-        topics: [
-          "0xc703eeeb92d845b735c767a95c30a380646ad4c4824a3a100253d4bec0294e9e",
-        ],
+        topics: ["0xc703eeeb92d845b735c767a95c30a380646ad4c4824a3a100253d4bec0294e9e"],
       } as Parameters<typeof client.getLogs>[0]);
 
       // taskId is the first indexed param (topics[1]); deduplicate in case of reorgs
       const seen = new Set<string>();
       const taskIds = logs
-        .map((l) => l.topics[1] as `0x${string}` | undefined)
+        .map(l => l.topics[1] as `0x${string}` | undefined)
         .filter((id): id is `0x${string}` => !!id && !seen.has(id) && seen.add(id) !== undefined);
-      const fetched = await Promise.all(taskIds.map((id) => fetchTask(client, id)));
+      const fetched = await Promise.all(taskIds.map(id => fetchTask(client, id)));
       const valid = fetched.filter((t): t is ParsedTask => t !== null);
       setTasks(valid);
     } catch (err) {
@@ -210,8 +201,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         ]);
 
         const [mine, claimed] = await Promise.all([
-          Promise.all((communityIds as `0x${string}`[]).map((id) => fetchTask(client, id))),
-          Promise.all((taskorIds as `0x${string}`[]).map((id) => fetchTask(client, id))),
+          Promise.all((communityIds as `0x${string}`[]).map(id => fetchTask(client, id))),
+          Promise.all((taskorIds as `0x${string}`[]).map(id => fetchTask(client, id))),
         ]);
 
         setMyTasks(mine.filter((t): t is ParsedTask => t !== null));
@@ -271,9 +262,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     async (form: CreateTaskForm, walletClient: WalletClient): Promise<`0x${string}` | null> => {
       const [address] = await walletClient.requestAddresses();
       const reward = parseUnits(form.rewardAmount, DEFAULT_REWARD_TOKEN_DECIMALS);
-      const deadline = BigInt(
-        Math.floor(Date.now() / 1000) + form.deadlineDays * 86400
-      );
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + form.deadlineDays * 86400);
 
       // Build metadataUri as inline JSON (MVP: no IPFS)
       const metadata = JSON.stringify({
@@ -297,7 +286,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
         // Extract taskId from TaskCreated event
         const log = receipt.logs.find(
-          (l) => l.address.toLowerCase() === TASK_ESCROW_ADDRESS.toLowerCase()
+          l => l.address.toLowerCase() === TASK_ESCROW_ADDRESS.toLowerCase()
         );
         if (log?.topics[1]) {
           return log.topics[1] as `0x${string}`;
@@ -440,31 +429,40 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // T06: get x402 receipts linked to a task
-  const getTaskReceipts = useCallback(async (taskId: string): Promise<`0x${string}`[]> => {
-    if (!contractConfigured) return [];
-    try {
-      const client = getPublicClient();
-      const receipts = await client.readContract({
-        address: TASK_ESCROW_ADDRESS,
-        abi: TASK_ESCROW_ABI,
-        functionName: "getTaskReceipts",
-        args: [taskId as `0x${string}`],
-      });
-      return receipts as `0x${string}`[];
-    } catch {
-      return [];
-    }
-  }, [contractConfigured]);
+  const getTaskReceipts = useCallback(
+    async (taskId: string): Promise<`0x${string}`[]> => {
+      if (!contractConfigured) return [];
+      try {
+        const client = getPublicClient();
+        const receipts = await client.readContract({
+          address: TASK_ESCROW_ADDRESS,
+          abi: TASK_ESCROW_ABI,
+          functionName: "getTaskReceipts",
+          args: [taskId as `0x${string}`],
+        });
+        return receipts as `0x${string}`[];
+      } catch {
+        return [];
+      }
+    },
+    [contractConfigured]
+  );
 
   // T06: link a receipt to a task
   const linkReceipt = useCallback(
-    async (taskId: string, receiptId: string, receiptUri: string, walletClient: WalletClient): Promise<boolean> => {
+    async (
+      taskId: string,
+      receiptId: string,
+      receiptUri: string,
+      walletClient: WalletClient
+    ): Promise<boolean> => {
       const [address] = await walletClient.requestAddresses();
       try {
         // receiptId must be bytes32; if it's a plain string, hash it
-        const receiptIdBytes = receiptId.startsWith("0x") && receiptId.length === 66
-          ? (receiptId as `0x${string}`)
-          : keccak256(toBytes(receiptId));
+        const receiptIdBytes =
+          receiptId.startsWith("0x") && receiptId.length === 66
+            ? (receiptId as `0x${string}`)
+            : keccak256(toBytes(receiptId));
         const hash = await walletClient.writeContract({
           address: TASK_ESCROW_ADDRESS,
           abi: TASK_ESCROW_ABI,

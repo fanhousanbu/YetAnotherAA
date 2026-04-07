@@ -569,7 +569,9 @@ function DashboardContent() {
                 <div className="p-5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Task Reward Balance</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Task Reward Balance
+                      </p>
                       <div className="flex items-baseline gap-2 mt-1">
                         <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                           {parseFloat(taskTokenBalanceFormatted ?? "0").toFixed(4)}

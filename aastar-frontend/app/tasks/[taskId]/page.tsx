@@ -6,12 +6,12 @@ import Layout from "@/components/Layout";
 import { useTask } from "@/contexts/TaskContext";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { getStoredAuth } from "@/lib/auth";
+import { type ParsedTask, TaskStatus, TASK_STATUS_COLORS } from "@/lib/task-types";
 import {
-  type ParsedTask,
-  TaskStatus,
-  TASK_STATUS_COLORS,
-} from "@/lib/task-types";
-import { DEFAULT_REWARD_TOKEN_SYMBOL, X402_API_URL, isX402Configured } from "@/lib/contracts/task-config";
+  DEFAULT_REWARD_TOKEN_SYMBOL,
+  X402_API_URL,
+  isX402Configured,
+} from "@/lib/contracts/task-config";
 import { fetchReceiptDetails, type X402ReceiptDetails } from "@/lib/x402-client";
 import {
   ArrowLeftIcon,
@@ -51,7 +51,16 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function TaskDetailPage() {
   const router = useRouter();
   const { taskId } = useParams<{ taskId: string }>();
-  const { getTask, acceptTask, submitWork, approveWork, finalizeTask, cancelTask, getTaskReceipts, linkReceipt } = useTask();
+  const {
+    getTask,
+    acceptTask,
+    submitWork,
+    approveWork,
+    finalizeTask,
+    cancelTask,
+    getTaskReceipts,
+    linkReceipt,
+  } = useTask();
   const { data } = useDashboard();
 
   const [task, setTask] = useState<ParsedTask | null>(null);
@@ -63,7 +72,9 @@ export default function TaskDetailPage() {
   const [showEvidenceForm, setShowEvidenceForm] = useState(false);
   // T06: receipts
   const [receipts, setReceipts] = useState<`0x${string}`[]>([]);
-  const [receiptDetails, setReceiptDetails] = useState<Record<string, X402ReceiptDetails | null>>({});
+  const [receiptDetails, setReceiptDetails] = useState<Record<string, X402ReceiptDetails | null>>(
+    {}
+  );
   const [showLinkReceiptForm, setShowLinkReceiptForm] = useState(false);
   const [receiptInput, setReceiptInput] = useState("");
 
@@ -71,8 +82,7 @@ export default function TaskDetailPage() {
   const myAddress = (eoaAddress || (data.account?.address ?? "")).toLowerCase();
   const isCommunity = task?.community.toLowerCase() === myAddress;
   const isTaskor = task?.taskor.toLowerCase() === myAddress;
-  const isZeroAddress = (addr: string) =>
-    addr === "0x0000000000000000000000000000000000000000";
+  const isZeroAddress = (addr: string) => addr === "0x0000000000000000000000000000000000000000";
 
   useEffect(() => {
     const { token } = getStoredAuth();
@@ -106,7 +116,7 @@ export default function TaskDetailPage() {
     if (!taskId) return;
     setLoading(true);
     getTask(taskId)
-      .then((t) => setTask(t))
+      .then(t => setTask(t))
       .finally(() => setLoading(false));
   }, [taskId, getTask]);
 
@@ -120,14 +130,14 @@ export default function TaskDetailPage() {
   // T06: load receipts on mount, then fetch details from API
   useEffect(() => {
     if (!taskId) return;
-    getTaskReceipts(taskId).then(async (ids) => {
+    getTaskReceipts(taskId).then(async ids => {
       setReceipts(ids);
       if (!isX402Configured() || ids.length === 0) return;
-      const details = await Promise.all(
-        ids.map((id) => fetchReceiptDetails(X402_API_URL, id))
-      );
+      const details = await Promise.all(ids.map(id => fetchReceiptDetails(X402_API_URL, id)));
       const map: Record<string, X402ReceiptDetails | null> = {};
-      ids.forEach((id, i) => { map[id] = details[i]; });
+      ids.forEach((id, i) => {
+        map[id] = details[i];
+      });
       setReceiptDetails(map);
     });
   }, [taskId, getTaskReceipts]);
@@ -246,10 +256,13 @@ export default function TaskDetailPage() {
         <div className="flex items-center justify-between px-1 text-xs text-gray-500 dark:text-gray-400">
           <span>
             Wallet:{" "}
-            {eoaAddress
-              ? <span className="font-mono">{eoaAddress.slice(0, 6)}…{eoaAddress.slice(-4)}</span>
-              : <span className="italic">not connected</span>
-            }
+            {eoaAddress ? (
+              <span className="font-mono">
+                {eoaAddress.slice(0, 6)}…{eoaAddress.slice(-4)}
+              </span>
+            ) : (
+              <span className="italic">not connected</span>
+            )}
           </span>
           <button
             onClick={switchWallet}
@@ -285,9 +298,7 @@ export default function TaskDetailPage() {
               </div>
               <span
                 className={`text-sm font-medium ${
-                  task.isExpired
-                    ? "text-red-500"
-                    : "text-gray-900 dark:text-white"
+                  task.isExpired ? "text-red-500" : "text-gray-900 dark:text-white"
                 }`}
               >
                 {formatDateTime(task.deadline)}
@@ -314,9 +325,7 @@ export default function TaskDetailPage() {
           {!isZeroAddress(task.taskor) && (
             <AddressRow label="Taskor (Executor)" addr={task.taskor} />
           )}
-          {!isZeroAddress(task.supplier) && (
-            <AddressRow label="Supplier" addr={task.supplier} />
-          )}
+          {!isZeroAddress(task.supplier) && <AddressRow label="Supplier" addr={task.supplier} />}
         </Section>
 
         {/* Evidence (if submitted) */}
@@ -333,7 +342,7 @@ export default function TaskDetailPage() {
           <Section title="x402 Receipts">
             {receipts.length > 0 ? (
               <div className="space-y-3">
-                {receipts.map((rid) => {
+                {receipts.map(rid => {
                   const detail = receiptDetails[rid];
                   return (
                     <div
@@ -389,13 +398,16 @@ export default function TaskDetailPage() {
                     <input
                       type="text"
                       value={receiptInput}
-                      onChange={(e) => setReceiptInput(e.target.value)}
+                      onChange={e => setReceiptInput(e.target.value)}
                       placeholder="Receipt ID (0x…) or receipt URI"
                       className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     />
                     <div className="flex gap-2">
                       <button
-                        onClick={() => { setShowLinkReceiptForm(false); setReceiptInput(""); }}
+                        onClick={() => {
+                          setShowLinkReceiptForm(false);
+                          setReceiptInput("");
+                        }}
                         className="flex-1 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400"
                       >
                         Cancel
@@ -403,7 +415,12 @@ export default function TaskDetailPage() {
                       <button
                         onClick={async () => {
                           if (!receiptInput.trim() || !walletClient) return;
-                          const ok = await linkReceipt(task!.taskId, receiptInput.trim(), receiptInput.trim(), walletClient);
+                          const ok = await linkReceipt(
+                            task!.taskId,
+                            receiptInput.trim(),
+                            receiptInput.trim(),
+                            walletClient
+                          );
                           if (ok) {
                             toast.success("Receipt linked!");
                             setShowLinkReceiptForm(false);
@@ -458,7 +475,7 @@ export default function TaskDetailPage() {
                   </p>
                   <textarea
                     value={evidenceUri}
-                    onChange={(e) => setEvidenceUri(e.target.value)}
+                    onChange={e => setEvidenceUri(e.target.value)}
                     placeholder="Describe your work, or paste a link to your deliverable..."
                     rows={4}
                     className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -495,7 +512,10 @@ export default function TaskDetailPage() {
             <div className="space-y-2">
               <button
                 onClick={() =>
-                  runAction(() => approveWork(task.taskId, walletClient!), "Work approved! Reward distributed.")
+                  runAction(
+                    () => approveWork(task.taskId, walletClient!),
+                    "Work approved! Reward distributed."
+                  )
                 }
                 disabled={actionLoading}
                 className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
@@ -526,7 +546,10 @@ export default function TaskDetailPage() {
           {isOpen && isCommunity && (
             <button
               onClick={() =>
-                runAction(() => cancelTask(task.taskId, walletClient!), "Task cancelled. Reward refunded.")
+                runAction(
+                  () => cancelTask(task.taskId, walletClient!),
+                  "Task cancelled. Reward refunded."
+                )
               }
               disabled={actionLoading}
               className="w-full py-3 rounded-xl border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium text-sm transition-colors"

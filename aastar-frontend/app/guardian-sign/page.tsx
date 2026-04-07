@@ -268,7 +268,10 @@ function GuardianSignInner() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => { setSignMethod("passkey"); setError(""); }}
+                  onClick={() => {
+                    setSignMethod("passkey");
+                    setError("");
+                  }}
                   className={`py-2.5 px-3 rounded-lg border text-sm font-medium transition-colors ${
                     signMethod === "passkey"
                       ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400"
@@ -279,7 +282,11 @@ function GuardianSignInner() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setSignMethod("metamask"); setGuardianAddress(""); setError(""); }}
+                  onClick={() => {
+                    setSignMethod("metamask");
+                    setGuardianAddress("");
+                    setError("");
+                  }}
                   className={`py-2.5 px-3 rounded-lg border text-sm font-medium transition-colors ${
                     signMethod === "metamask"
                       ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400"
@@ -346,9 +353,9 @@ function GuardianSignInner() {
               ) : signMethod === "metamask" ? (
                 <>
                   <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M21.49 3L13.5 9.3l1.47-3.44L21.49 3z" opacity=".8"/>
-                    <path d="M2.51 3l7.92 6.36-1.4-3.44L2.51 3zM18.62 16.27l-2.13 3.26 4.56 1.25 1.31-4.43-3.74-.08zM1.55 16.35l1.3 4.43 4.56-1.25-2.13-3.26-3.73.08z"/>
-                    <path d="M7.13 10.62L5.87 12.55l4.52.2-.15-4.87-3.11 2.74zM16.87 10.62l-3.15-2.8-.1 4.93 4.51-.2-1.26-1.93zM7.41 19.53l2.72-1.32-2.35-1.83-.37 3.15zM13.87 18.21l2.72 1.32-.36-3.15-2.36 1.83z"/>
+                    <path d="M21.49 3L13.5 9.3l1.47-3.44L21.49 3z" opacity=".8" />
+                    <path d="M2.51 3l7.92 6.36-1.4-3.44L2.51 3zM18.62 16.27l-2.13 3.26 4.56 1.25 1.31-4.43-3.74-.08zM1.55 16.35l1.3 4.43 4.56-1.25-2.13-3.26-3.73.08z" />
+                    <path d="M7.13 10.62L5.87 12.55l4.52.2-.15-4.87-3.11 2.74zM16.87 10.62l-3.15-2.8-.1 4.93 4.51-.2-1.26-1.93zM7.41 19.53l2.72-1.32-2.35-1.83-.37 3.15zM13.87 18.21l2.72 1.32-.36-3.15-2.36 1.83z" />
                   </svg>
                   Sign with MetaMask
                 </>
