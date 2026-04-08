@@ -105,7 +105,6 @@ function parseTask(raw: Task): ParsedTask {
   };
 }
 
-
 export function TaskProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<ParsedTask[]>([]);
   const [myTasks, setMyTasks] = useState<ParsedTask[]>([]);

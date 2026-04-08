@@ -423,7 +423,8 @@ export default function TaskDetailPage() {
                       </button>
                       <button
                         onClick={async () => {
-                          if (!receiptInput.trim() || !receiptUriInput.trim() || !walletClient) return;
+                          if (!receiptInput.trim() || !receiptUriInput.trim() || !walletClient)
+                            return;
                           const ok = await linkReceipt(
                             task!.taskId,
                             receiptInput.trim(),
