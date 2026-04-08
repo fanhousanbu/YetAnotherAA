@@ -77,6 +77,7 @@ export default function TaskDetailPage() {
   );
   const [showLinkReceiptForm, setShowLinkReceiptForm] = useState(false);
   const [receiptInput, setReceiptInput] = useState("");
+  const [receiptUriInput, setReceiptUriInput] = useState("");
 
   // Use MetaMask EOA for role checks — contract stores EOA, not YAA smart account
   const myAddress = (eoaAddress || (data.account?.address ?? "")).toLowerCase();
@@ -399,7 +400,14 @@ export default function TaskDetailPage() {
                       type="text"
                       value={receiptInput}
                       onChange={e => setReceiptInput(e.target.value)}
-                      placeholder="Receipt ID (0x…) or receipt URI"
+                      placeholder="Receipt ID (bytes32, 0x…)"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <input
+                      type="text"
+                      value={receiptUriInput}
+                      onChange={e => setReceiptUriInput(e.target.value)}
+                      placeholder="Receipt URI (https://…)"
                       className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     />
                     <div className="flex gap-2">
@@ -407,6 +415,7 @@ export default function TaskDetailPage() {
                         onClick={() => {
                           setShowLinkReceiptForm(false);
                           setReceiptInput("");
+                          setReceiptUriInput("");
                         }}
                         className="flex-1 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400"
                       >
@@ -414,23 +423,24 @@ export default function TaskDetailPage() {
                       </button>
                       <button
                         onClick={async () => {
-                          if (!receiptInput.trim() || !walletClient) return;
+                          if (!receiptInput.trim() || !receiptUriInput.trim() || !walletClient) return;
                           const ok = await linkReceipt(
                             task!.taskId,
                             receiptInput.trim(),
-                            receiptInput.trim(),
+                            receiptUriInput.trim(),
                             walletClient
                           );
                           if (ok) {
                             toast.success("Receipt linked!");
                             setShowLinkReceiptForm(false);
                             setReceiptInput("");
+                            setReceiptUriInput("");
                             await refresh();
                           } else {
                             toast.error("Failed to link receipt");
                           }
                         }}
-                        disabled={!receiptInput.trim() || actionLoading}
+                        disabled={!receiptInput.trim() || !receiptUriInput.trim() || actionLoading}
                         className="flex-1 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-medium"
                       >
                         Link

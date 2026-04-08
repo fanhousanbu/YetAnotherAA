@@ -169,7 +169,7 @@ export default function CreateTaskPage() {
           account: ownerAddress,
           domain: {
             name: tokenName as string,
-            version: "2",
+            version: REWARD_TOKEN_VERSION,
             chainId,
             verifyingContract: DEFAULT_REWARD_TOKEN,
           },

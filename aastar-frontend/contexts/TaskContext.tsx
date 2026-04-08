@@ -2,8 +2,6 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import {
-  createPublicClient,
-  http,
   parseUnits,
   formatUnits,
   keccak256,
@@ -18,8 +16,8 @@ import {
   DEFAULT_REWARD_TOKEN_DECIMALS,
   TASK_TYPE_LABELS,
   SUPPORTED_CHAIN,
-  RPC_URL,
   isContractsConfigured,
+  getPublicClient,
 } from "@/lib/contracts/task-config";
 import {
   type Task,
@@ -107,12 +105,6 @@ function parseTask(raw: Task): ParsedTask {
   };
 }
 
-function getPublicClient(): PublicClient {
-  return createPublicClient({
-    chain: SUPPORTED_CHAIN,
-    transport: http(RPC_URL),
-  }) as PublicClient;
-}
 
 export function TaskProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<ParsedTask[]>([]);
@@ -150,13 +142,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       const client = getPublicClient();
       // Fetch TaskCreated events from recent blocks
       const latestBlock = await client.getBlockNumber();
-      const fromBlock = latestBlock > 50000n ? latestBlock - 50000n : 0n;
+      const fromBlock = latestBlock > 200000n ? latestBlock - 200000n : 0n;
       const logs = await client.getLogs({
         address: TASK_ESCROW_ADDRESS,
         fromBlock,
         toBlock: "latest",
-        // keccak256("TaskCreated(bytes32,address,address,uint256)")
-        topics: ["0xc703eeeb92d845b735c767a95c30a380646ad4c4824a3a100253d4bec0294e9e"],
+        topics: [keccak256(toBytes("TaskCreated(bytes32,address,address,uint256)"))],
       } as Parameters<typeof client.getLogs>[0]);
 
       // taskId is the first indexed param (topics[1]); deduplicate in case of reorgs
