@@ -28,7 +28,7 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "@nestjs/cli": "^11.0.10",
+    "@nestjs/cli": "^11.0.18",
     "@nestjs/testing": "^11.1.6",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.3",
