@@ -205,6 +205,28 @@ export const userTokenAPI = {
     api.put("/user-tokens/reorder", { tokenOrders }),
 };
 
+// Guardian & Recovery API
+export const guardianAPI = {
+  getGuardians: (accountAddress: string) => api.get(`/guardian/${accountAddress}`),
+
+  addGuardian: (data: { guardianAddress: string }) => api.post("/guardian/add", data),
+
+  removeGuardian: (data: { guardianAddress: string }) => api.delete("/guardian/remove", { data }),
+
+  initiateRecovery: (data: { accountAddress: string; newSignerAddress: string }) =>
+    api.post("/guardian/recovery/initiate", data),
+
+  supportRecovery: (data: { accountAddress: string }) =>
+    api.post("/guardian/recovery/support", data),
+
+  executeRecovery: (data: { accountAddress: string }) =>
+    api.post("/guardian/recovery/execute", data),
+
+  cancelRecovery: (data: { accountAddress: string }) => api.post("/guardian/recovery/cancel", data),
+
+  getPendingRecovery: (accountAddress: string) => api.get(`/guardian/recovery/${accountAddress}`),
+};
+
 export const addressBookAPI = {
   getAddressBook: () => api.get("/address-book"),
   setAddressName: (address: string, name: string) =>

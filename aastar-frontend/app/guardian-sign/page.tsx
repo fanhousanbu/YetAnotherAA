@@ -11,11 +11,16 @@
  *   - owner: future account owner address
  *   - salt: numeric salt
  *
- * Signing flow:
+ * Signing flow (Passkey):
  *   1. Guardian enters their wallet address (KMS key address)
  *   2. KMS BeginAuthentication → browser WebAuthn ceremony
  *   3. KMS SignHash (EIP-191 prefixed hash) → returns Signature
  *   4. Page displays guardian address + signature for user to copy/paste
+ *
+ * Signing flow (MetaMask):
+ *   1. Guardian clicks "Connect MetaMask" → wallet address auto-filled
+ *   2. Guardian clicks "Sign" → MetaMask personal_sign (EIP-191 applied automatically)
+ *   3. Page displays guardian address + signature for user to copy/paste
  */
 
 import { Suspense, useState } from "react";
@@ -23,6 +28,8 @@ import { useSearchParams } from "next/navigation";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { kmsClient } from "@/lib/yaaa";
 import { ethers } from "ethers";
+
+type SignMethod = "passkey" | "metamask";
 
 // ── Helper: apply EIP-191 prefix ──────────────────────────────────────────
 // Replicates: ethers.hashMessage(ethers.getBytes(hash))
@@ -51,6 +58,7 @@ function GuardianSignInner() {
   const owner = searchParams.get("owner") || "";
   const salt = searchParams.get("salt") || "";
 
+  const [signMethod, setSignMethod] = useState<SignMethod>("passkey");
   const [guardianAddress, setGuardianAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -59,9 +67,13 @@ function GuardianSignInner() {
 
   const isValidParams = acceptanceHash && factory && chainId && owner && salt;
 
-  const handleSign = async () => {
+  const handleSignWithPasskey = async () => {
     setError("");
 
+    if (!acceptanceHash) {
+      setError("Missing acceptanceHash parameter. Please scan the QR code again.");
+      return;
+    }
     if (!guardianAddress) {
       setError("Please enter your guardian wallet address");
       return;
@@ -70,25 +82,14 @@ function GuardianSignInner() {
       setError("Not a valid Ethereum address");
       return;
     }
-    if (!acceptanceHash) {
-      setError("Missing acceptance hash in URL");
-      return;
-    }
 
     setLoading(true);
     try {
-      // Step 1: Begin WebAuthn authentication ceremony via KMS
       const authResponse = await kmsClient.beginAuthentication({
         Address: guardianAddress,
       });
-
-      // Step 2: Browser WebAuthn ceremony
       const credential = await startAuthentication({ optionsJSON: authResponse.Options as any });
-
-      // Step 3: Apply EIP-191 prefix to the acceptance hash before signing
       const hashToSign = applyEip191(acceptanceHash);
-
-      // Step 4: Sign hash via KMS with WebAuthn credential
       const signResponse = await kmsClient.signHashWithWebAuthn(
         hashToSign,
         authResponse.ChallengeId,
@@ -102,16 +103,15 @@ function GuardianSignInner() {
           ? signResponse.Signature
           : "0x" + signResponse.Signature,
       });
-    } catch (err: any) {
-      console.error("Guardian sign error:", err);
-      if (err.name === "NotAllowedError") {
-        setError("Authentication was cancelled or not allowed. Please try again.");
-      } else if (err.name === "NotSupportedError") {
-        setError("Passkeys are not supported on this device.");
-      } else if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err.message) {
-        setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        if (err.name === "NotAllowedError") {
+          setError("Authentication was cancelled or not allowed. Please try again.");
+        } else if (err.name === "NotSupportedError") {
+          setError("Passkeys are not supported on this device.");
+        } else {
+          setError(err.message || "Signing failed. Please try again.");
+        }
       } else {
         setError("Signing failed. Please try again.");
       }
@@ -119,6 +119,46 @@ function GuardianSignInner() {
       setLoading(false);
     }
   };
+
+  const handleSignWithMetaMask = async () => {
+    setError("");
+
+    if (!acceptanceHash) {
+      setError("Missing acceptanceHash parameter. Please scan the QR code again.");
+      return;
+    }
+    if (!("ethereum" in window) || !window.ethereum) {
+      setError("MetaMask not detected. Please install MetaMask and try again.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum as ethers.Eip1193Provider);
+      await provider.send("eth_requestAccounts", []);
+      const signer = await provider.getSigner();
+      const address = await signer.getAddress();
+
+      // personal_sign automatically applies EIP-191 prefix to the raw bytes
+      const signature = await signer.signMessage(ethers.getBytes(acceptanceHash));
+
+      setResult({ address, signature });
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        if (err.message.includes("user rejected") || err.message.includes("User denied")) {
+          setError("Signature request was rejected.");
+        } else {
+          setError(err.message || "Signing failed. Please try again.");
+        }
+      } else {
+        setError("Signing failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSign = signMethod === "metamask" ? handleSignWithMetaMask : handleSignWithPasskey;
 
   const handleCopy = async (field: "address" | "sig" | "both") => {
     if (!result) return;
@@ -225,23 +265,75 @@ function GuardianSignInner() {
 
         {!result ? (
           <>
-            {/* Guardian address input */}
+            {/* Signing method selector */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Your Guardian Wallet Address
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                How would you like to sign?
               </label>
-              <input
-                type="text"
-                value={guardianAddress}
-                onChange={e => setGuardianAddress(e.target.value.trim())}
-                placeholder="0x..."
-                disabled={loading}
-                className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
-              />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Enter the Ethereum address associated with your passkey on this device.
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                Choose either method — both guardians can use the same method or different ones.
               </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSignMethod("passkey");
+                    setError("");
+                  }}
+                  className={`py-2.5 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                    signMethod === "passkey"
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400"
+                      : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  Passkey (KMS)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSignMethod("metamask");
+                    setGuardianAddress("");
+                    setError("");
+                  }}
+                  className={`py-2.5 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                    signMethod === "metamask"
+                      ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400"
+                      : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  MetaMask
+                </button>
+              </div>
             </div>
+
+            {/* Address input — only for passkey mode */}
+            {signMethod === "passkey" && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Your Guardian Wallet Address
+                </label>
+                <input
+                  type="text"
+                  value={guardianAddress}
+                  onChange={e => setGuardianAddress(e.target.value.trim())}
+                  placeholder="0x..."
+                  disabled={loading}
+                  className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Enter the Ethereum address associated with your passkey on this device.
+                </p>
+              </div>
+            )}
+
+            {/* MetaMask info */}
+            {signMethod === "metamask" && (
+              <div className="rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 p-3">
+                <p className="text-sm text-orange-700 dark:text-orange-400">
+                  Your wallet address will be detected automatically when you click Sign.
+                </p>
+              </div>
+            )}
 
             {/* Error */}
             {error && (
@@ -255,12 +347,25 @@ function GuardianSignInner() {
               type="button"
               onClick={handleSign}
               disabled={loading}
-              className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+              className={`w-full flex justify-center items-center py-3.5 px-4 border border-transparent text-base font-semibold rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg ${
+                signMethod === "metamask"
+                  ? "bg-orange-500 hover:bg-orange-400 focus:ring-orange-500"
+                  : "bg-emerald-600 hover:bg-emerald-500 focus:ring-emerald-500"
+              }`}
             >
               {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-                  Authenticating...
+                  {signMethod === "metamask" ? "Waiting for MetaMask..." : "Authenticating..."}
+                </>
+              ) : signMethod === "metamask" ? (
+                <>
+                  <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M21.49 3L13.5 9.3l1.47-3.44L21.49 3z" opacity=".8" />
+                    <path d="M2.51 3l7.92 6.36-1.4-3.44L2.51 3zM18.62 16.27l-2.13 3.26 4.56 1.25 1.31-4.43-3.74-.08zM1.55 16.35l1.3 4.43 4.56-1.25-2.13-3.26-3.73.08z" />
+                    <path d="M7.13 10.62L5.87 12.55l4.52.2-.15-4.87-3.11 2.74zM16.87 10.62l-3.15-2.8-.1 4.93 4.51-.2-1.26-1.93zM7.41 19.53l2.72-1.32-2.35-1.83-.37 3.15zM13.87 18.21l2.72 1.32-.36-3.15-2.36 1.83z" />
+                  </svg>
+                  Sign with MetaMask
                 </>
               ) : (
                 <>
@@ -350,7 +455,9 @@ function GuardianSignInner() {
         {/* Info footer */}
         <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
           <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-            Signing with EIP-191. Your passkey never leaves this device.
+            {signMethod === "metamask"
+              ? "Signing with EIP-191 via MetaMask."
+              : "Signing with EIP-191. Your passkey never leaves this device."}
           </p>
         </div>
       </div>
