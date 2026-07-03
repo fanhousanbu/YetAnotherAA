@@ -68,14 +68,18 @@ export default function HomePage() {
                 Cos72 · <strong>Co</strong>operation <strong>S</strong>ystem
               </div>
               <h1 className="mt-4 text-3xl sm:text-4xl font-bold leading-tight text-gray-900 dark:text-white">
-                社区的共创系统，
+                把社区协作，
                 <br className="hidden sm:block" />
-                一套系统，七十二变
+                调到黄金比例
               </h1>
+              <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                Cos72 取自 <span className="font-mono">cos 72°</span> —— 黄金分割的角度，象征
+                <span className="font-medium text-gray-700 dark:text-gray-200">最佳协作模式</span>。
+              </p>
               <p className="mt-4 text-base text-gray-600 dark:text-gray-300 max-w-xl mx-auto sm:mx-0">
-                给你的兴趣小组配一套{" "}
+                给你的社区配一套{" "}
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  Discord + 会员积分 + 兑换商城
+                  会员账号 + 积分 + 兑换商城 + 声誉体系
                 </span>{" "}
                 —— 但{" "}
                 <span className="font-semibold text-emerald-600 dark:text-emerald-400">
