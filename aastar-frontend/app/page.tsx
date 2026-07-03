@@ -29,8 +29,8 @@ const QUESTIONS = [
     icon: "🧭",
     q: "如何 · 开始用",
     en: "HOW",
-    body: "刷脸建账户（无需助记词、无需 Gas），选一个额度画像进入你的社区。跟着小J的漫画漫游，一步步上手每个功能。",
-    analogy: "刷脸即用 · 跟着小J走",
+    body: "用 Passkey 建账户（无需助记词、无需 Gas），选一个额度画像进入你的社区。跟着小J的漫画漫游，一步步上手每个功能。",
+    analogy: "Passkey 即用 · 跟着小J走",
   },
 ];
 
@@ -75,14 +75,14 @@ export default function HomePage() {
         .cos-float { animation: cosFloat 4s ease-in-out infinite; }
       `}</style>
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-        <div className="max-w-6xl mx-auto px-4 py-8 sm:py-12">
+        <div className="max-w-6xl mx-auto px-4 pt-14 pb-10 sm:pt-20 sm:pb-16">
           {/* Hero — left: explanation · right: sign-in/up */}
           <div className="grid gap-8 lg:grid-cols-5 lg:items-center cos-fade">
             {/* Left */}
             <div className="lg:col-span-3 text-center lg:text-left">
               <div className="flex flex-wrap items-center gap-2 justify-center lg:justify-start">
                 <span className="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300 whitespace-nowrap">
-                  Cos72 · Cooperation&nbsp;System
+                  Cos72 · <strong>Co</strong>operation&nbsp;<strong>S</strong>ystem
                 </span>
                 <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300 whitespace-nowrap">
                   🚧 开发测试版 · Dev / Test
@@ -131,11 +131,11 @@ export default function HomePage() {
               <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/70 p-6 shadow-lg backdrop-blur">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">开始使用</h2>
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  刷脸即用 —— 无需助记词、无需下载钱包、无需 Gas。
+                  Passkey 即用 —— 无需助记词、无需下载钱包、无需 Gas。
                 </p>
                 <div className="mt-4 space-y-3">
                   <button onClick={() => router.push("/auth/register")} className={primaryBtn}>
-                    刷脸创建账户
+                    指纹 / 刷脸 / Passkey 创建账户
                   </button>
                   <button onClick={() => router.push("/auth/login")} className={ghostBtn}>
                     已有账户？登录
