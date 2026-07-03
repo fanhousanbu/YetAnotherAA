@@ -92,6 +92,15 @@ export default function HomePage() {
       `}</style>
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
         <div className="max-w-6xl mx-auto px-4 pt-14 pb-10 sm:pt-20 sm:pb-16">
+          {/* Language toggle (visible on the logged-out landing; persists via i18n detector). */}
+          <div className="flex justify-end -mt-6 mb-2">
+            <button
+              onClick={() => i18n.changeLanguage(zh ? "en" : "zh")}
+              className="rounded-full border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/70 px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:border-gray-500 transition"
+            >
+              {zh ? "EN" : "中文"}
+            </button>
+          </div>
           {/* Hero — left: explanation · right: sign-in/up */}
           <div className="grid gap-8 lg:grid-cols-5 lg:items-center cos-fade">
             {/* Left */}
