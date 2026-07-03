@@ -64,8 +64,13 @@ export default function HomePage() {
           {/* Hero */}
           <div className="flex flex-col-reverse sm:flex-row items-center gap-8">
             <div className="flex-1 text-center sm:text-left">
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                Cos72 · <strong>Co</strong>operation <strong>S</strong>ystem
+              <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                  Cos72 · <strong>Co</strong>operation <strong>S</strong>ystem
+                </div>
+                <div className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                  🚧 开发测试版 · Dev / Test
+                </div>
               </div>
               <h1 className="mt-4 text-3xl sm:text-4xl font-bold leading-tight text-gray-900 dark:text-white">
                 把社区协作，
