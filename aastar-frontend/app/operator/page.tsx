@@ -10,6 +10,7 @@ import {
   ArrowPathIcon,
   RocketLaunchIcon,
   WrenchScrewdriverIcon,
+  CpuChipIcon,
 } from "@heroicons/react/24/outline";
 import Layout from "@/components/Layout";
 import { operatorAPI } from "@/lib/api";
@@ -135,7 +136,7 @@ export default function OperatorPage() {
         )}
 
         {/* Quick Actions — entry points to the operator write flows */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <button
             type="button"
             onClick={() => router.push("/operator/deploy")}
@@ -165,6 +166,19 @@ export default function OperatorPage() {
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {t("operatorHub.manage.desc")}
             </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/operator/dvt-register")}
+            className="text-left bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 hover:border-emerald-400 dark:hover:border-emerald-500 transition-colors"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <CpuChipIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {t("dvtRegister.card.title")}
+              </span>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t("dvtRegister.card.desc")}</p>
           </button>
         </section>
 

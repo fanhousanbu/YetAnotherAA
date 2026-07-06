@@ -771,6 +771,81 @@
       "desc": "管理 xPNTs、为 Paymaster 充值、查看运营者状态。"
     }
   },
+  "dvtRegister": {
+    "pendingSdk": "链上操作等待 @aastar/sdk 0.37.4/0.38.0 发布(aastar-sdk#279 / PR #288)。界面已就绪,SDK 落地后自动可用。",
+    "common": {
+      "continue": "继续",
+      "back": "返回"
+    },
+    "labels": {
+      "connect": "连接",
+      "eligibility": "资格",
+      "key": "密钥与 PoP",
+      "register": "注册",
+      "done": "完成"
+    },
+    "card": {
+      "title": "DVT 节点注册",
+      "desc": "把 DVT 签名节点质押 + PoP + 注册做成引导流程,不再手搓脚本。"
+    },
+    "page": {
+      "title": "DVT 节点注册",
+      "subtitle": "引导 operator 完成质押、生成 PoP、注册 DVT 签名节点。",
+      "walletDisconnected": "钱包已断开",
+      "reconnectPrompt": "注册需要连接你的 operator 钱包,请重新开始向导。",
+      "backToStart": "回到开始"
+    },
+    "step1": {
+      "title": "连接 operator 钱包",
+      "description": "DVT 节点注册由你自己的 EOA 在浏览器内签名。",
+      "walletNotConnected": "钱包未连接",
+      "connectWallet": "连接钱包",
+      "noWalletFound": "未检测到钱包",
+      "aboutTitle": "关于 DVT 节点注册",
+      "about1": "质押门槛:ROLE_DVT + GToken ≥ 最低质押额",
+      "about2": "BLS 拥有权证明(PoP):在本地用节点私钥生成,私钥不出浏览器",
+      "about3": "一 operator 一节点,nodeId = keccak256(公钥)"
+    },
+    "step2": {
+      "title": "检查注册资格",
+      "description": "确认是否已注册,以及质押是否达标。",
+      "checking": "读取链上状态中…",
+      "alreadyRegistered": "该 operator 已绑定节点:",
+      "viewNode": "查看节点",
+      "stakeOpen": "质押注册已开放",
+      "stakeOpenYes": "是",
+      "stakeOpenNo": "否",
+      "minStake": "最低质押额",
+      "stakeHint": "若未质押 ROLE_DVT,请先通过 GTokenStaking 质押后再继续。"
+    },
+    "step3": {
+      "title": "BLS 节点密钥与 PoP",
+      "description": "生成或导入节点 BLS 私钥,本地推导 PoP 与 nodeId。",
+      "keyWarning": "⚠️ BLS 私钥属敏感数据,仅保存在本浏览器标签内,绝不上传后端。请务必离线备份,丢失将无法找回节点身份。",
+      "keyLabel": "BLS 私钥(0x + 64 位十六进制)",
+      "keyHint": "粘贴已有私钥,或点下方生成一个全新的。",
+      "import": "导入",
+      "generate": "在浏览器生成新密钥",
+      "previewTitle": "推导结果预览",
+      "nodeId": "nodeId",
+      "publicKey": "公钥(G1)"
+    },
+    "step4": {
+      "title": "提交注册",
+      "description": "构造 PoP 并调用 registerWithProof,一步完成。",
+      "submitting": "请在钱包中确认…",
+      "submitted": "注册交易已提交",
+      "register": "注册节点",
+      "hint": "交易确认后会读回 isRegistered 以确认节点已上链。"
+    },
+    "done": {
+      "title": "注册完成",
+      "description": "你的 DVT 签名节点已注册。",
+      "registerAnother": "再注册一个",
+      "backToOperator": "返回运营中心",
+      "viewTx": "查看交易"
+    }
+  },
   "operatorDashboard": {
     "title": "运营者门户",
     "loadError": "加载运营者数据失败",

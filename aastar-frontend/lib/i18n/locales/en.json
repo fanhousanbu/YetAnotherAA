@@ -771,6 +771,81 @@
       "desc": "Manage xPNTs, top up your Paymaster, and view operator status."
     }
   },
+  "dvtRegister": {
+    "pendingSdk": "On-chain actions are waiting on @aastar/sdk 0.37.4/0.38.0 (aastar-sdk#279 / PR #288). The UI is ready and will light up once the SDK ships.",
+    "common": {
+      "continue": "Continue",
+      "back": "Back"
+    },
+    "labels": {
+      "connect": "Connect",
+      "eligibility": "Eligibility",
+      "key": "Key & PoP",
+      "register": "Register",
+      "done": "Done"
+    },
+    "card": {
+      "title": "DVT node registration",
+      "desc": "Guide operators through stake + PoP + registration — no more manual scripts."
+    },
+    "page": {
+      "title": "DVT node registration",
+      "subtitle": "Guide an operator through staking, building the PoP, and registering a DVT signing node.",
+      "walletDisconnected": "Wallet disconnected",
+      "reconnectPrompt": "Registration needs your operator wallet connected. Please restart the wizard.",
+      "backToStart": "Back to start"
+    },
+    "step1": {
+      "title": "Connect operator wallet",
+      "description": "DVT node registration is signed by your own EOA in the browser.",
+      "walletNotConnected": "Wallet not connected",
+      "connectWallet": "Connect wallet",
+      "noWalletFound": "No wallet found",
+      "aboutTitle": "About DVT node registration",
+      "about1": "Stake gate: ROLE_DVT + GToken ≥ minimum stake",
+      "about2": "BLS proof-of-possession (PoP) built locally from the node key — the key never leaves the browser",
+      "about3": "One operator, one node; nodeId = keccak256(public key)"
+    },
+    "step2": {
+      "title": "Check eligibility",
+      "description": "Confirm whether you are already registered and whether your stake qualifies.",
+      "checking": "Reading on-chain state…",
+      "alreadyRegistered": "This operator already has a bound node:",
+      "viewNode": "View node",
+      "stakeOpen": "Stake registration open",
+      "stakeOpenYes": "Yes",
+      "stakeOpenNo": "No",
+      "minStake": "Minimum stake",
+      "stakeHint": "If you have not staked ROLE_DVT, stake via GTokenStaking before continuing."
+    },
+    "step3": {
+      "title": "BLS node key & PoP",
+      "description": "Generate or import the node BLS secret key; derive the PoP and nodeId locally.",
+      "keyWarning": "⚠️ The BLS secret key is sensitive. It stays only in this browser tab and is never sent to the backend. Back it up offline — losing it means losing the node identity.",
+      "keyLabel": "BLS secret key (0x + 64 hex chars)",
+      "keyHint": "Paste an existing key, or generate a fresh one below.",
+      "import": "Import",
+      "generate": "Generate a new key in the browser",
+      "previewTitle": "Derived preview",
+      "nodeId": "nodeId",
+      "publicKey": "Public key (G1)"
+    },
+    "step4": {
+      "title": "Submit registration",
+      "description": "Build the PoP and call registerWithProof in one transaction.",
+      "submitting": "Confirm in your wallet…",
+      "submitted": "Registration transaction submitted",
+      "register": "Register node",
+      "hint": "After confirmation we read isRegistered back to confirm the node is on-chain."
+    },
+    "done": {
+      "title": "Registration complete",
+      "description": "Your DVT signing node is registered.",
+      "registerAnother": "Register another",
+      "backToOperator": "Back to operator hub",
+      "viewTx": "View transaction"
+    }
+  },
   "operatorDashboard": {
     "title": "Operator Portal",
     "loadError": "Failed to load operator data",
