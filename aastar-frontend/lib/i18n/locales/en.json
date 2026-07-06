@@ -836,7 +836,8 @@
       "submitting": "Confirm in your wallet…",
       "submitted": "Registration transaction submitted",
       "register": "Register node",
-      "hint": "After confirmation we read isRegistered back to confirm the node is on-chain."
+      "hint": "After confirmation we read isRegistered back to confirm the node is on-chain.",
+      "confirmFailed": "The transaction landed, but isRegistered still reads false (possibly RPC lag). Re-check the node status in the operator hub shortly."
     },
     "done": {
       "title": "Registration complete",

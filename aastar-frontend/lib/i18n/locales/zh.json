@@ -836,7 +836,8 @@
       "submitting": "请在钱包中确认…",
       "submitted": "注册交易已提交",
       "register": "注册节点",
-      "hint": "交易确认后会读回 isRegistered 以确认节点已上链。"
+      "hint": "交易确认后会读回 isRegistered 以确认节点已上链。",
+      "confirmFailed": "交易已上链,但读回 isRegistered 暂为 false(可能是节点 RPC 有延迟)。请稍后在运营中心复查节点状态。"
     },
     "done": {
       "title": "注册完成",

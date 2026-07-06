@@ -49,9 +49,12 @@ export default function Step4Register({
     );
     if (!hash) return;
     update({ registerTxHash: hash });
-    // Best-effort read-back; failure here doesn't undo a confirmed tx.
+    // Best-effort read-back: the tx already confirmed, so a false/failed check
+    // only warns (e.g. RPC lag) — it never undoes a landed registration.
     try {
-      if (nodeId) await isDvtNodeRegistered(walletClient, nodeId);
+      if (nodeId && !(await isDvtNodeRegistered(walletClient, nodeId))) {
+        setConfirmError(t("dvtRegister.step4.confirmFailed"));
+      }
     } catch (err) {
       setConfirmError(err instanceof Error ? err.message : String(err));
     }

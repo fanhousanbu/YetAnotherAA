@@ -83,16 +83,25 @@ export function normalizeBlsSecretKey(input: string): Hex {
 }
 
 /**
- * Generate a random 32-byte BLS secret key in the browser (never leaves the tab).
- * A uniformly random 256-bit value is < the BLS12-381 scalar order with
- * overwhelming probability; on the ~2⁻¹²⁸ chance it is ≥ order, `buildDvtPop`
- * throws and the operator simply regenerates.
+ * BLS12-381 scalar field order r. A random 256-bit value is ≥ r ~55% of the time
+ * (r ≈ 0.453·2²⁵⁶), so a single draw is NOT reliably a valid secret key.
+ */
+const BLS12_381_R = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001n;
+
+/**
+ * Generate a random BLS secret key in the browser (never leaves the tab).
+ * Rejection-samples until the 256-bit draw lands in [1, r-1] — the valid scalar
+ * range `buildDvtPop` requires — so the result never trips its range check.
+ * Success probability per draw is ~45%, so this loops ~2 times on average.
  */
 export function generateBlsSecretKey(): Hex {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  const hex = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
-  return `0x${hex}` as Hex;
+  for (;;) {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    const hex = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+    const value = BigInt(`0x${hex}`);
+    if (value >= 1n && value < BLS12_381_R) return `0x${hex}` as Hex;
+  }
 }
 
 // ── SDK-backed surface (@aastar/sdk 0.38.0) ──────────────────────────────────

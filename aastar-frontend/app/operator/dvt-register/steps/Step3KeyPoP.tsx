@@ -24,11 +24,9 @@ import StepCard from "@/app/operator/deploy/components/StepCard";
 import WizardButton from "@/app/operator/deploy/components/WizardButton";
 import FormField from "@/app/operator/deploy/components/FormField";
 import {
-  DVT_SDK_READY,
   buildDvtPop,
   generateBlsSecretKey,
   normalizeBlsSecretKey,
-  type DvtPop,
   type Hex,
 } from "@/lib/sdk/dvtOperator";
 import PendingSdkNote from "../components/PendingSdkNote";
@@ -41,16 +39,15 @@ export default function Step3KeyPoP({ data, update, onNext, onBack }: DvtStepPro
 
   const applyKey = (secret: Hex) => {
     setError(undefined);
-    // buildDvtPop is pure/local once wired; keep the derived PoP alongside the key.
-    let pop: DvtPop | undefined;
-    if (DVT_SDK_READY) {
-      try {
-        pop = buildDvtPop(secret);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
-      }
+    // Only commit the key once its PoP derives — an out-of-range key (e.g. a
+    // pasted scalar ≥ curve order) must not advance the wizard to registration.
+    try {
+      const pop = buildDvtPop(secret);
+      update({ blsSecretKey: secret, pop });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      update({ blsSecretKey: undefined, pop: undefined });
     }
-    update({ blsSecretKey: secret, pop });
   };
 
   const handleGenerate = () => {
