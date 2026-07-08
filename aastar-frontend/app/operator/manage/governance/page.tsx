@@ -19,12 +19,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
-import {
-  ArrowLeftIcon,
-  ArrowPathIcon,
-  ScaleIcon,
-  WrenchIcon,
-} from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, ArrowPathIcon, ScaleIcon, WrenchIcon } from "@heroicons/react/24/outline";
 import Layout from "@/components/Layout";
 import {
   fetchSlashGovernanceState,

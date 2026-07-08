@@ -106,9 +106,14 @@ export async function fetchSlashGovernanceState(): Promise<SlashGovernanceState>
 
   const [slashPolicyAdmin, thresholdVals, slotVals] = await Promise.all([
     read("slashPolicyAdmin") as Promise<Address>,
-    Promise.all(SLASH_LEVELS.map(l => read("slashThresholds", [l.level]) as Promise<number | bigint>)),
     Promise.all(
-      Array.from({ length: MAX_SLOTS }, (_, i) => read("validatorAtSlot", [i + 1]) as Promise<Address>)
+      SLASH_LEVELS.map(l => read("slashThresholds", [l.level]) as Promise<number | bigint>)
+    ),
+    Promise.all(
+      Array.from(
+        { length: MAX_SLOTS },
+        (_, i) => read("validatorAtSlot", [i + 1]) as Promise<Address>
+      )
     ),
   ]);
 
