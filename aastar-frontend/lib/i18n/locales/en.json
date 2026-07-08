@@ -509,7 +509,9 @@
       "paymasterTitle": "AOA Paymaster",
       "paymasterDescription": "PaymasterV4 status, EntryPoint top-up and configuration.",
       "superTitle": "AOA+ SuperPaymaster",
-      "superDescription": "Shared SuperPaymaster operator account and aPNTs collateral."
+      "superDescription": "Shared SuperPaymaster operator account and aPNTs collateral.",
+      "governanceTitle": "Slash Governance",
+      "governanceDescription": "View the slash-policy admin, severity thresholds and registered validator slots."
     },
     "shared": {
       "connectPrompt": "Connect your operator wallet to manage on-chain resources.",
@@ -629,6 +631,26 @@
       "toastApprove": "Approve aPNTs in your wallet…",
       "toastConfirmDeposit": "Confirm deposit in your wallet…",
       "toastDeposited": "Deposited {{amount}} aPNTs."
+    },
+    "governance": {
+      "title": "Slash Governance Config",
+      "subtitle": "Slash-policy governance state of the SuperPaymaster BLS aggregator.",
+      "adminSection": "Threshold Admin",
+      "adminLabel": "slashPolicyAdmin",
+      "adminHint": "The address allowed to edit the threshold table. Bootstrap = deployer EOA; hand it to a multisig / TimelockController below.",
+      "aggregator": "BLS Aggregator",
+      "thresholdsSection": "Slash Thresholds",
+      "thresholdUnit": "of {{count}} validators",
+      "level": {
+        "warning": "WARNING",
+        "minor": "MINOR",
+        "major": "MAJOR"
+      },
+      "validatorsSection": "Registered Validators (slots)",
+      "slot": "Slot {{slot}}",
+      "noValidators": "No validators registered.",
+      "writeSection": "Hand Admin to Timelock",
+      "writePending": "Editing the threshold table and handing slashPolicyAdmin to a TimelockController runs through the SDK's SlashGovernance orchestrator (schedule → wait minDelay → execute). Wiring lands with the @aastar/sdk governance write API; read-only for now."
     }
   },
   "rolePage": {

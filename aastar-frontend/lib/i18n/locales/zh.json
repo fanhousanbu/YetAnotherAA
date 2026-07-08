@@ -509,7 +509,9 @@
       "paymasterTitle": "AOA Paymaster",
       "paymasterDescription": "PaymasterV4 状态、EntryPoint 充值与配置。",
       "superTitle": "AOA+ SuperPaymaster",
-      "superDescription": "共享 SuperPaymaster 运营商账户与 aPNTs 抵押品。"
+      "superDescription": "共享 SuperPaymaster 运营商账户与 aPNTs 抵押品。",
+      "governanceTitle": "Slash 治理",
+      "governanceDescription": "查看 slash 门槛表管理员、各级门槛与已注册的 validator slot。"
     },
     "shared": {
       "connectPrompt": "连接您的运营商钱包以管理链上资源。",
@@ -629,6 +631,26 @@
       "toastApprove": "请在钱包中授权 aPNTs…",
       "toastConfirmDeposit": "请在钱包中确认存入…",
       "toastDeposited": "已存入 {{amount}} aPNTs。"
+    },
+    "governance": {
+      "title": "Slash 治理配置",
+      "subtitle": "SuperPaymaster BLS 聚合器的 slash 门槛治理现态。",
+      "adminSection": "门槛表管理员",
+      "adminLabel": "slashPolicyAdmin",
+      "adminHint": "有权修改门槛表的地址。Bootstrap 期 = deployer EOA；建议在下方交给多签 / TimelockController。",
+      "aggregator": "BLS 聚合器",
+      "thresholdsSection": "Slash 门槛",
+      "thresholdUnit": "共 {{count}} 个 validator",
+      "level": {
+        "warning": "WARNING",
+        "minor": "MINOR",
+        "major": "MAJOR"
+      },
+      "validatorsSection": "已注册 Validator（slot）",
+      "slot": "Slot {{slot}}",
+      "noValidators": "暂无已注册 validator。",
+      "writeSection": "把管理员交给 Timelock",
+      "writePending": "修改门槛表、把 slashPolicyAdmin 交给 TimelockController，走 SDK 的 SlashGovernance 编排（schedule → 等 minDelay → execute）。待 @aastar/sdk 治理写侧 API 接入；当前仅只读。"
     }
   },
   "rolePage": {

@@ -15,6 +15,7 @@ import {
   CurrencyDollarIcon,
   CreditCardIcon,
   ServerStackIcon,
+  ScaleIcon,
   ArrowRightIcon,
 } from "@heroicons/react/24/outline";
 import Layout from "@/components/Layout";
@@ -102,6 +103,13 @@ export default function OperatorManagePage() {
               description={t("operatorManage.hub.superDescription")}
               flow="Flow 7"
               icon={<ServerStackIcon className="h-6 w-6" />}
+            />
+            <FlowCard
+              href="/operator/manage/governance"
+              title={t("operatorManage.hub.governanceTitle")}
+              description={t("operatorManage.hub.governanceDescription")}
+              flow="Slash"
+              icon={<ScaleIcon className="h-6 w-6" />}
             />
           </div>
         </ConnectGate>
