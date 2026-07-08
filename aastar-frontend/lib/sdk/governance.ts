@@ -6,12 +6,12 @@
  * registered DVT validator/slot table — for the operator "Slash Governance"
  * management page (`app/operator/manage/governance`).
  *
- * READ-ONLY, no SDK bump needed: the deployed BLSAggregator ABI already ships in
- * `@aastar/sdk` (`BLSAggregatorABI` + `BLS_AGGREGATOR_ADDRESS`, populated by
- * `applyConfig` via `ensureSdkConfig`). The convenience wrapper
- * `aggregatorActions().getSlashThresholds()` landed in SDK 0.39.2, but the
- * underlying views (`slashPolicyAdmin` / `slashThresholds(level)` /
- * `validatorAtSlot(slot)`) are in the deployed ABI today, so reads work now.
+ * READ-ONLY: reads the deployed BLSAggregator ABI + canonical
+ * `BLS_AGGREGATOR_ADDRESS` shipped in `@aastar/sdk` (populated by `applyConfig`
+ * via `ensureSdkConfig`). As of @aastar/sdk ≥0.39.1 the canonical address is the
+ * post-#330 aggregator (`0xF51c…8B13`) that carries the slash getters
+ * (`slashPolicyAdmin` / `slashThresholds(level)` / `validatorAtSlot(slot)`), so
+ * the earlier CC-18 stale-address env bridge is no longer needed.
  *
  * WRITE side — hand `slashPolicyAdmin` to a TimelockController and edit the
  * threshold table — goes through the SDK's `SlashGovernance` orchestrator
@@ -26,18 +26,6 @@ import { ensureSdkConfig, getPublicClient } from "./client";
 
 /** Timelock-orchestrated writes (setSlashPolicyAdmin / setSlashThreshold) not wired yet. */
 export const GOVERNANCE_WRITE_READY = false;
-
-/**
- * Temporary bridge for the CC-18 gap: SDK 0.38.0's canonical
- * `BLS_AGGREGATOR_ADDRESS` still points at the pre-#330 aggregator (which lacks
- * the slash getters), so ops can point this page at the new aggregator via
- * `NEXT_PUBLIC_BLS_AGGREGATOR_ADDRESS` until the SDK address refresh (CC-18)
- * ships. Returns undefined (→ SDK canonical) when unset.
- */
-function getAggregatorOverride(): string | undefined {
-  const v = process.env.NEXT_PUBLIC_BLS_AGGREGATOR_ADDRESS;
-  return v && /^0x[0-9a-fA-F]{40}$/.test(v) ? v : undefined;
-}
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -89,14 +77,9 @@ export async function fetchSlashGovernanceState(): Promise<SlashGovernanceState>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const client = getPublicClient() as any;
 
-  // The slash getters (slashPolicyAdmin / slashThresholds) live on the NEW
-  // BLSAggregator deployed by SP #330. SDK 0.38.0 ships that new ABI but its
-  // canonical `BLS_AGGREGATOR_ADDRESS` still points at the OLD aggregator (the
-  // address refresh is CC-18, gated on the on-chain applyBLSAggregator). Until
-  // the SDK canonical is bumped, an ops env override bridges the gap; once CC-18
-  // lands, unset the env and the SDK canonical takes over automatically. The
-  // address is never hardcoded in source.
-  const aggregator = (getAggregatorOverride() ?? BLS_AGGREGATOR_ADDRESS) as Address | undefined;
+  // Canonical post-#330 aggregator carrying the slash getters (@aastar/sdk
+  // ≥0.39.1), never hardcoded — resolved via ensureSdkConfig / applyConfig.
+  const aggregator = BLS_AGGREGATOR_ADDRESS as Address | undefined;
   if (!aggregator) {
     throw new Error("BLS aggregator address unavailable — SDK config not applied.");
   }
