@@ -1,83 +1,108 @@
-# Production Readiness — YetAnotherAA
+# Production Readiness — YAAA(Cos72) 正式版发布（全生态合并版）
 
-> 发布"正式版"的阻塞项 + 评估。最后更新：2026-07-09。口径：目前全站
-> **Sepolia**（`CHAIN_ID=11155111`）。下表已并入 jason 的决策。
+> **单一真相源**。由 YAAA 维护，源头 = 协同任务 **CC-30** 各仓回帖，随回帖同步进来。
+> 最后更新：2026-07-09。
 
-## 结论
+## 核心目标
 
-**功能层面已接近可发**：核心用户流程都验过（见「已就绪」），历史上最大的阻塞——转账走 legacy
-passkey 被 KMS 拒的 500——**已解**（转账改成 WebAuthn device-passkey
-ceremony，Tier-2/3 = algId 0x09/0x0a，链上 tier3-composite LIVE
-PASS）。后端 41 单测 + 前端 10 Playwright e2e 绿。
+发布 **YAAA（现在就是 Cos72）正式版**：**先测试网（Sepolia）→ 稳定跑 ~1 个月（期间小修）→ 主网。**
 
-真正的"卡点"不是功能，而是两个**策略决策**（现已明确为非硬阻塞）+ 少量 YAAA 侧能自收的小项。外部依赖已通过狗头（多仓协同）分发，等各仓回复。
+⚠️ **测试网 vs 主网唯一区别 = 配置**（RPC / 合约地址 / env）—— 代码逻辑**零差异**。
+每一项都标注：`[测]` 测试网就能发 · `[主]` 主网前必须补 · `[配]` 两网只差配置。
 
----
+## 参与仓 + 依赖图（本期 6 仓）
 
-## A. 策略决策（已明确，非硬阻塞）
+```
+                 ┌─────────────┐
+                 │  repo:yaaa  │  = Cos72 正式版本体（前端 Next + 后端 Nest）
+                 └──────┬──────┘
+        依赖 ↓          ↓          ↓          ↓          ↓
+   repo:kms   repo:airaccount-contract   repo:sp   repo:dvt   repo:sdk
+  (TEE 密钥)     (账户合约)          (Paymaster)  (BLS 节点)  (集成包)
+```
 
-| #   | 项                       | 决策 / 评估                                                                                                                                                                                                                                                                   |
-| --- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **网络：Sepolia → 主网** | **非阻塞 = 配置开关**。RPC 配置里已备主网，切换 = 改 `ETH_RPC_URL`/`BUNDLER_RPC_URL` 的网址（同一 RPC provider），SDK canonical 地址随链切。发主网时再切即可。USDC 目前是 **Sepolia 测试网 USDC**，用于买币流程（tok-01 gasless / tok-03 self-pay / tok-06 slippage）的测试。 |
-| 2   | **部署拓扑**             | **先单机**。当前 = 单机 cloudflared 隧道（:5173/:3000）。未来把它也部署到 **imx93 主板**、继续用 cloudflared 隧道当前端出口。非阻塞，按此推进。关联 draft #400（纯前端迁移，能干掉后端依赖，当前 PAUSED）。                                                                   |
-
----
-
-## B. YAAA 侧应做（自己能收）
-
-| #   | 项                                                               | 评估                                                                                                                                                                                                                               | 状态                        |
-| --- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| 3   | **Paymaster `validatePaymasterSignature` stub**（`return true`） | 排查后确认是**死代码**（零调用者），不在任何关键/安全路径上。正确处理 = 删除。                                                                                                                                                     | ✅ **本轮已删**（此 PR）    |
-| 4   | **治理写侧 E2E**（#427）                                         | 代码完整、build/type-check/lint 绿、`getMinDelay` 实链验过。schedule/execute 真跑需运营先把 timelock 交权到 `slashPolicyAdmin`（现为 deployer EOA）。                                                                              | ⏳ 待运营交权后 E2E         |
-| 5   | **Security Audit CI 门红**                                       | 已知：axios high 漏洞经 `@ledgerhq` 传递依赖（via `@aastar/airaccount`），无 non-breaking fix，CI 里 `allow-ghsas: GHSA-43fc-jf86-j433` 白名单放行。正式版建议：出一份"已知漏洞 + 缓解"说明，盯 ledgerhq 升级 axios 后移除白名单。 | 🟠 记录在案（见下「安全」） |
-| 6   | **生产配置验证**                                                 | 逐项过：`DB_TYPE=postgres` 真跑过一遍？KMS 板子（imx93，CC-22）provision？密钥/Secrets 管理？启动必填项（JWT_SECRET / USER_ENCRYPTION_KEY 32 字符 / ETH_RPC_URL / BUNDLER_RPC_URL）。                                              | 🟠 待逐项核对               |
+> 本期只这 6 仓。relay / launch / cos72(=yaaa) / docs(它依赖我们，最后更新) / idoris / sin90 / brood / goutou → 下一期。
 
 ---
 
-## C. 外部依赖 / 可延后（已发狗头，等回复）
+## 发布门（汇总 checklist）
 
-| #   | 项                                                        | 评估                                                                                                    | 状态                                      |
-| --- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| 7   | **CC-28 xPNTs 发行上限 + 滥发防护**                       | SP 侧经济可信度设计，影响 gasless 故事的可信度。非 YAAA 代码。                                          | 🐾 已发狗头，等 @repo:sp                  |
-| 8   | **CC-13 DVT slash 真 E2E**                                | slash "有牙齿"机制未实链跑（等 dvt1/2/3 原子部署 + 造 over-limit operator）。不挡用户流程，挡安全叙事。 | 🐾 已发狗头，等 @repo:dvt                 |
-| 9   | **建号画像 ②**（create-with-profile）                     | 前端画像卡 + 后端 prepare-create DTO（initialTokens/Configs）。增强项，非阻塞。                         | 🟢 延后                                   |
-| 10  | **CC-27 airaccount 改名落地**（→ `AAStarBLSKeyRegistry`） | 决策已定（jason 拍板），等 airaccount 下个合约版本 bump 的 rename PR。不挡 YAAA。                       | 🐾 已发狗头，等 @repo:airaccount-contract |
+### 🟢 测试网发布门（Sepolia）
+- [x] YAAA 核心流程（注册/建号/转账 T1-T3/gasless/买币）就绪
+- [x] YAAA 治理页读+写上线（#425/#426/#427）
+- [x] YAAA 测试绿（后端 41 单测 + 前端 10 e2e）
+- [ ] kms — 待回帖（板子 + 两网密钥）
+- [ ] airaccount-contract — 待回帖
+- [ ] sp — 待回帖（CC-28 / slashPolicyAdmin 交权）
+- [ ] dvt — 待回帖（CC-13 slash E2E）
+- [ ] sdk — 待回帖（两网 canonical 齐备）
 
----
-
-## ✅ 已就绪（本轮核实）
-
-- **注册** — WebAuthn passkey（e2e `register.spec.ts`）
-- **建号** — create account（#346 修过时工厂地址）
-- **转账 T1/T2/T3** — WebAuthn device-passkey ceremony（algId 0x09/0x0a），链上
-  `tier3-composite.mjs` LIVE PASS；**旧 legacy-passkey
-  500 已解**。e2e：`transfer.spec.ts` / `transfer-tier3.spec.ts` /
-  `transfer-negatives.spec.ts` / `transfer-replay.spec.ts`
-- **Gasless / Paymaster** — tok-01 gasless 验过（e2e + onchain script）
-- **买币** — /tokens 页（#357），tok-01/03/06 覆盖
-- **治理配置页** — 读侧（#425/#426，实链读 canonical
-  `0xF51c…`），写侧（#427，代码完整）
-- **测试** — 后端 41 单测；前端 10 Playwright
-  e2e（transfer/tier3/register/operator/operator-onboarding/community/guard/public/…）
+### 🔴 主网发布门（测试网跑满 ~1 月后）
+- [ ] 全 6 仓合约/服务主网部署 + 充值
+- [ ] SDK canonical 主网地址齐备（参考 CC-18 两阶段经验）
+- [ ] YAAA 配置切换：`ETH_RPC_URL` / `BUNDLER_RPC_URL` → 主网 `[配]`
+- [ ] 生产配置核对（DB/密钥/Secrets）
+- [ ] 安全：axios 漏洞缓解方案 + 各仓审计结论
 
 ---
 
-## 安全（#5 展开）
+## 各仓 Production-Ready（YAAA 已填；5 依赖仓待 CC-30 回帖后合并）
 
-| 项                                | 现状                                                | 缓解                                                                                      |
-| --------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| axios high（GHSA-43fc-jf86-j433） | 经 `@ledgerhq`（`@aastar/airaccount` 可选依赖）传入 | CI `dependency-review` 白名单放行；无 non-breaking fix；盯 ledgerhq 升 axios 后移除白名单 |
-| Security Audit CI job             | 已知常红（非其他门）                                | 除此外所有门（build/test/type-check/code-quality）必须绿                                  |
+### repo:yaaa — 账户抽象全栈（=Cos72 本体） ✅ 已盘点
+
+| 项 | 评估 | 状态 | 门 |
+|---|---|---|---|
+| 核心流程（注册/建号/转账 T1-T3/gasless/买币） | 转账旧 legacy-passkey 500 已解（WebAuthn ceremony）；tier3-composite 链上 LIVE PASS | ✅ | `[测]` |
+| 治理配置页（CC-13） | 读+写上线（#425/#426/#427） | ✅（写侧真 E2E 等运营交权 timelock） | `[测]` |
+| Paymaster 死代码 stub | 已删（#428） | ✅ | — |
+| 测试 | 后端 41 单测 + 前端 10 Playwright e2e 绿 | ✅ | `[测]` |
+| 网络切换 | 改 `ETH_RPC_URL`/`BUNDLER_RPC_URL` + SDK canonical 随链 | 🟡 发主网时 | `[配][主]` |
+| 部署拓扑 | 先单机 cloudflared，未来 imx93 | 🟡 按此推进 | `[测]` |
+| 生产配置核对 | DB_TYPE=postgres / 密钥 / 必填 env | 🟠 待逐项 | `[主]` |
+| Security Audit（axios high via @ledgerhq） | 白名单放行，无 non-breaking fix | 🟠 记录+盯升级 | `[主]` |
+
+Cos72 = YAAA 前端品牌；首页 `aastar-frontend/app/page.tsx`（#423）；交互 tour 在独立 repo `cos72-tour`（本期不含）。
+
+### repo:kms — KMS/TEE 密钥（airaccount node） ⏳ 待回帖
+
+YAAA 对它的依赖期望（供对方回帖时对照）：imx93 板子 **provision + 高可用**、**fail-closed API key**、**rpId/Origin 正确**、**两网密钥**。→ 是 YAAA 登录/签名/转账的前置。
+
+### repo:airaccount-contract — 账户合约 ⏳ 待回帖
+
+YAAA 依赖期望：**CC-27 改名(AAStarBLSKeyRegistry)落地**、**主网部署 + 审计**、**两网工厂/validator 地址**。
+
+### repo:sp — SuperPaymaster 合约 + 经济层 ⏳ 待回帖
+
+YAAA 依赖期望：**CC-28 xPNTs 滥发防护**、**slashPolicyAdmin 交多签/timelock**、**主网部署 + 充值**。→ 直接决定 YAAA gasless 能否上主网。
+
+### repo:dvt — YetAnotherAA-Validator / DVT 节点 ⏳ 待回帖
+
+YAAA 依赖期望：**CC-13 slash 真 E2E**、**节点(imx93)部署 + gossip**、**两网 validator/slot 注册**。→ YAAA 转账 T2/T3 BLS 聚合的前置。
+
+### repo:sdk — @aastar/sdk ⏳ 待回帖
+
+YAAA 依赖期望：**两网 canonical 地址/ABI 齐备**、**breaking 版本收敛**、**发版节奏**、**admin/tokens/kms 子入口就绪**。→ YAAA 前后端都吃 SDK canonical。
 
 ---
 
-## 「马上就能做」评估（10 项里）
+## 跨仓依赖矩阵（随各仓回帖补全）
 
-- **能立刻做 + 小工作量**：#3（死代码删除，✅ 本轮做了）、#5（安全说明，✅ 本文档记录）。
-- **决策已明确、发主网/上板时执行**：#1（改 RPC URL）、#2（部 imx93）。
-- **需运营/基础设施动作**：#4（timelock 交权后 E2E）、#6（生产配置核对）。
-- **外部仓、已发狗头等回复**：#7 / #8 / #10。
-- **增强、可延后**：#9。
+| 依赖方 → 被依赖 | kms | airaccount-contract | sp | dvt | sdk |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **yaaa** | 登录/签名前置 | 账户合约地址 | gasless | T2/T3 BLS | canonical 地址/ABI |
+| kms | — | ? | ? | ? | ? |
+| airaccount-contract | ? | — | ? | ? | ? |
+| sp | ? | ? | — | slash 消费 | ABI |
+| dvt | BLS 托管? | ? | slash 提案 | — | ABI |
+| sdk | ? | ABI track | ABI track | ABI track | — |
 
-**净结论**：YAAA 侧能自己收的小项，本轮已收（#3 +
-#5 文档化）。剩下的要么是"发布时的配置开关"（#1/#2），要么等运营/外部仓。
+> `?` = 等对应仓回帖补全。
+
+---
+
+## 维护说明
+
+- 本文档是**全生态发布单一真相源**，由 **repo:yaaa 维护**。
+- 各仓把 production-ready 表**回帖到 CC-30**（`[repo:X] 工兵回复`），YAAA 汇进本文档并回填门/矩阵。
+- 各仓**不再各自建文档**；一处维护，避免分叉。
+- 汇总足够后据此排：**测试网发布 → 1 月观察 → 主网发布**。
