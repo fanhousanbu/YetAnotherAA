@@ -35,12 +35,11 @@
 - [ ] airaccount-contract — 待回帖
 - [ ] sp — 待回帖（CC-28 / slashPolicyAdmin 交权）
 - [ ] dvt — 待回帖（CC-13 slash E2E）
-- [x] sdk — 测试网无 SDK 阻塞（核心 API + 两网 testnet canonical(11155111/11155420) + ABI 全就绪）
+- [x] sdk — 测试网基本可发；G2/G3/G4 ABI 门禁已清零（branch `feat/abi-sync-cc28-cc29-liveness`，待 review→发版）；单测 core 471 + paymaster 20 + tokens 20 绿
 
 ### 🔴 主网发布门（测试网跑满 ~1 月后）
-- [ ] 全 6 仓合约/服务主网部署 + 充值
-- [ ] **SDK canonical 主网地址接入** —— 现 `CANONICAL_ADDRESSES` 只覆盖两个 testnet chainId，**mainnet(1/10) 未接入** → YAAA 从 SDK 取主网地址取不到；阻塞在 4 合约仓主网部署地址（照 CC-18 两阶段：合约仓部署 + CC-30 回帖地址 active → SDK 切 canonical + patch + 链上自验）
-- [ ] SDK 主网前待办：CC-13 批B（Timelock 编排 wrapper）、#256 GuardChecker WA 预检复核、#163 buyGasless 修
+- [ ] **主网 V3→V5 全栈重部署（G1，SDK 实测的头号主网阻塞）** —— OP-Mainnet(chain 10) canonical 地址虽在，但链上是**旧 V3 栈**（SuperPaymaster-3.2.2 / Registry-3.0.2），SDK/测试网是 **V5.4.2** → @repo:sp / @repo:airaccount-contract / @repo:dvt 把 V5.4.2 全栈部署到 OP 主网 → SDK 切 canonical + `version()==5.4.2` 链上自验（CC-18 两阶段）
+- [ ] DVT 主网/本地 anvil 节点（G5，`DEFAULT_DVT_NODES` 仅 Sepolia）+ xPNTs 滥发防护主网部署（G3 真生效）+ SDK 主网前项（G6 CC-13 批B / G7 #256 / G8 #163）
 - [ ] YAAA 配置切换：`ETH_RPC_URL` / `BUNDLER_RPC_URL` → 主网 `[配]`
 - [ ] 生产配置核对（DB/密钥/Secrets）
 - [ ] 安全：axios 漏洞缓解方案 + 各仓审计结论
@@ -80,28 +79,34 @@ YAAA 依赖期望：**CC-28 xPNTs 滥发防护**、**slashPolicyAdmin 交多签/
 
 YAAA 依赖期望：**CC-13 slash 真 E2E**、**节点(imx93)部署 + gossip**、**两网 validator/slot 注册**。→ YAAA 转账 T2/T3 BLS 聚合的前置。
 
-### repo:sdk — @aastar/sdk ✅ 已盘点（0.39.4）
+### repo:sdk — @aastar/sdk ✅ 已盘点（0.39.4，3 环境全面 check）
 
-来源：CC-30 `[repo:sdk]`（2026-07-09）。**测试网现在基本可发（SDK 侧无阻塞）**；主网门见下表 + 发布门。
+来源：CC-30 `[repo:sdk]`（`81f3592c` 修正 + `1f63acba` 进度，2026-07-09）。SDK 做了本地 anvil / 测试网 / 主网**三环境实跑门禁 + 链上 `version()` 核验**（非纸面）。
 
-| 项 | 评估 | 状态 | 门 |
-|---|---|---|---|
-| 核心 API 面（role clients + gasless + DVT 注册 + slash 读 getter） | typed API 就绪，Sepolia/OP-Sepolia 链上 E2E LIVE PASS（CC-12/CC-17） | ✅ | `[测]` |
-| 两网 canonical **testnet** 地址/ABI | Sepolia 11155111 + OP-Sepolia 11155420 进 `CANONICAL_ADDRESSES`；check:addresses/abi PASS | ✅ | `[测]` |
-| 两网 canonical **mainnet** 地址 | ⚠️ 只覆盖两个 testnet chainId，**mainnet(1/10) 未接入** → YAAA 主网取不到；阻塞在 4 合约仓主网部署地址 | 🟠 主网前必补 | `[主][配]` |
-| ABI 齐备 | check:abi PASS（SP 16/16 到 v5.4.2）；DVT AAStarBLSAlgorithm tracked；同名碰撞隔离(#301/#302)；ABI 与网络无关 | ✅ | `[测]=[主]` |
-| Breaking 版本收敛 / 发版节奏 | 0.37→0.39 breaking 已收敛发布，节奏稳定 | ✅ | `[测]` |
-| 子入口就绪 | admin/tokens/kms/operator/enduser/community/paymaster/identity/dapp re-export；slash 读 getter 随 0.39.1 | ✅ | `[测]` |
-| slash 治理写侧（CC-13 批B：Timelock 编排 wrapper） | 读 getter 批A 已就位；写侧 wrapper 待开发（需 OZ TimelockController ABI 进 core） | 🟡 待开发 | `[主]` |
-| #256 GuardChecker WebAuthn algId 预检 | algIdForTier 无 WA 分支疑阻断 Tier-3；tier3-composite E2E LIVE PASS 但预检路径主网前需复核 | 🟠 主网前必确认/修 | `[主]` |
-| #163 buyGasless BuyIntent 签名 + relayer stuck pending | open，影响买币路径 | 🟠 主网前必补 | `[主]` |
-| #176 Tier2/3 额外签名收集 + tier判定/限额查询 API | API 面缺失，测试网可发但功能不全 | 🟡 补全 | `[测→主]` |
-| #220 upstream drift 告警 | 需跑 upstream-sync 核对 | 🟡 待核 | `[测]` |
-| DVT 系列 issue 收尾(#285/#279/#274/#270) | 已上链交付，仅待关闭 | 🟢 housekeeping | `[测]` |
+**🔴 主网头号阻塞 G1（链上实测）**：OP-Mainnet(chain 10) canonical 地址虽在（`listSupportedChainIds()=[10,11155111,11155420]`，check:addresses PASS），但**链上是旧 V3 栈**（SuperPaymaster-3.2.2 / Registry-3.0.2），而 SDK ABI + 测试网是 **V5.4.2** → 测试网(V5)开发后切主网(V3)会 ABI/行为不兼容。**主网必须 V5.4.2 全栈重部署** → @repo:sp / @repo:airaccount-contract / @repo:dvt。
 
-依赖：**被依赖** = @repo:yaaa（前后端吃 SDK canonical）、idoris。**SDK 依赖**（主网前需两网就绪）= @repo:airaccount-contract / @repo:sp / @repo:dvt（主网地址；SDK canonical mainnet 接入阻塞在它们主网部署）、@repo:kms（HTTP openapi，无破坏变更，仅升服务 + 回归）。
+> 更正上一帖：mainnet(10) **已在** canonical（非"未接入"）；真正问题是它指向旧 V3 部署（G1）。
 
-> ⚠️ 对 YAAA 的影响：YAAA「网络切换」那条假设"SDK canonical 随链切"——**仅 testnet 成立**；主网需 SDK 先接 mainnet canonical（阻塞在合约仓主网部署）。已并入主网发布门。
+| Gap | 项 | 状态 | 门 | owner |
+|---|---|---|---|---|
+| G1 | 主网 V3→V5 全栈重部署（头号主网阻塞） | 🔴 待 | `[主]` | @sp/@airaccount-contract/@dvt |
+| G2 | check:abi RED（LivenessRegistry + AAStarBLSKeyRegistry） | ✅ 已修 | `[测]` | sdk（branch `feat/abi-sync-cc28-cc29-liveness`）|
+| G3 | check:abi-drift RED：CC-28 xPNTs 滥发防护（issuanceCap/isOverIssued/capRatioBps…） | ✅ ABI 面已同步 | `[主]` | sdk；主网真生效需 @sp 部署 |
+| G4 | Paymaster/Registry 漂移（GasCostExceedsCap / SBTStatusSyncFailed） | ✅ 已修 | `[测]` | sdk |
+| G5 | DVT 节点只接 Sepolia（`DEFAULT_DVT_NODES` 仅 11155111；无 mainnet/anvil）→ Tier-2/3 联签本地/主网取不到节点 | 🔴 待 | `[主][配]` | @dvt（主网 validator+nodeId+本地端点）|
+| G6 | CC-13 批B slash Timelock 编排（OZ Timelock ABI 已 vendored） | 🟡 SDK 可独立做 | `[主]` | sdk |
+| G7 | #256 GuardChecker WA algId 疑阻 Tier-3 | 🟠 主网前复核 | `[主]` | sdk |
+| G8 | #163 buyGasless relayer stuck | 🟠 主网前必补 | `[主]` | sdk |
+| G9 | #176 Tier2/3 tier判定/限额 API 缺失 | 🟡 补全 | `[测→主]` | sdk |
+| G10 | config.op-mainnet vs optimism 都 chain 10、paymasterV4 值不同 → 定权威删冗余 | 🟡 SDK 可独立做 | `[配]` | sdk |
+
+门禁实跑（2026-07-09，独立项 G2/G3/G4 已清零）：check:abi ✅ / check:abi-drift ✅ / abi:sync ✅ / check:addresses ✅ / check:stubs ✅ / build ✅；单测 core 471 + paymaster 20 + tokens 20 ✅。
+
+依赖：**被依赖** = @repo:yaaa（前后端吃 SDK canonical）、idoris。**SDK 依赖**（主网前需就绪）= @repo:airaccount-contract / @repo:sp / @repo:dvt（**主网 V5 部署地址**）、@repo:kms（HTTP openapi，无破坏变更）。
+
+**SDK 结论**：测试网 🟡 基本可发（G2/G3/G4 门禁已清零，待发版）；主网 🔴 阻塞 G1（主网仍 V3）+ G5（DVT 主网节点）+ G3 主网生效（xPNTs 部署）。
+
+> ⚠️ 对 YAAA 的影响：YAAA「网络切换」看似"改 RPC 即可"，但 **SDK 主网 canonical 指向旧 V3** → YAAA 切主网前必须等上游 V5 全栈主网部署 + SDK 切 canonical + `version()==5.4.2` 自验。已并入主网发布门（G1）。
 
 ---
 
