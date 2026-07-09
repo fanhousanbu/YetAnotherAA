@@ -32,7 +32,7 @@
 - [x] YAAA 治理页读+写上线（#425/#426/#427）
 - [x] YAAA 测试绿（后端 41 单测 + 前端 10 e2e）
 - [ ] kms — 待回帖（板子 + 两网密钥）
-- [ ] airaccount-contract — 待回帖
+- [x] airaccount-contract — 测试网 beta 可发（v0.27.0 Sepolia，900 forge + 16 阶段 E2E 全绿）；⚠️ verify 9 pending 待补
 - [ ] sp — 待回帖（CC-28 / slashPolicyAdmin 交权）
 - [ ] dvt — 待回帖（CC-13 slash E2E）
 - [x] sdk — 测试网基本可发；G2/G3/G4 ABI 门禁已清零（branch `feat/abi-sync-cc28-cc29-liveness`，待 review→发版）；单测 core 471 + paymaster 20 + tokens 20 绿
@@ -40,13 +40,14 @@
 ### 🔴 主网发布门（测试网跑满 ~1 月后）
 - [ ] **主网 V3→V5 全栈重部署（G1，SDK 实测的头号主网阻塞）** —— OP-Mainnet(chain 10) canonical 地址虽在，但链上是**旧 V3 栈**（SuperPaymaster-3.2.2 / Registry-3.0.2），SDK/测试网是 **V5.4.2** → @repo:sp / @repo:airaccount-contract / @repo:dvt 把 V5.4.2 全栈部署到 OP 主网 → SDK 切 canonical + `version()==5.4.2` 链上自验（CC-18 两阶段）
 - [ ] DVT 主网/本地 anvil 节点（G5，`DEFAULT_DVT_NODES` 仅 Sepolia）+ xPNTs 滥发防护主网部署（G3 真生效）+ SDK 主网前项（G6 CC-13 批B / G7 #256 / G8 #163）
+- [ ] airaccount-contract 主网 GA：**外部安全审计(#29，GA 硬门禁)** + 主网部署脚本/Safe/keystore + verify 补齐（@repo:airaccount-contract + jason）
 - [ ] YAAA 配置切换：`ETH_RPC_URL` / `BUNDLER_RPC_URL` → 主网 `[配]`
 - [ ] 生产配置核对（DB/密钥/Secrets）
 - [ ] 安全：axios 漏洞缓解方案 + 各仓审计结论
 
 ---
 
-## 各仓 Production-Ready（YAAA + sdk 已填；kms / airaccount-contract / sp / dvt 待回帖）
+## 各仓 Production-Ready（YAAA + sdk + airaccount-contract 已填；kms / sp / dvt 待回帖）
 
 ### repo:yaaa — 账户抽象全栈（=Cos72 本体） ✅ 已盘点
 
@@ -67,9 +68,30 @@ Cos72 = YAAA 前端品牌；首页 `aastar-frontend/app/page.tsx`（#423）；�
 
 YAAA 对它的依赖期望（供对方回帖时对照）：imx93 板子 **provision + 高可用**、**fail-closed API key**、**rpId/Origin 正确**、**两网密钥**。→ 是 YAAA 登录/签名/转账的前置。
 
-### repo:airaccount-contract — 账户合约 ⏳ 待回帖
+### repo:airaccount-contract — 账户合约 ✅ 已盘点（v0.27.0）
 
-YAAA 依赖期望：**CC-27 改名(AAStarBLSKeyRegistry)落地**、**主网部署 + 审计**、**两网工厂/validator 地址**。
+来源：CC-30 `[repo:airaccount-contract]`（`7a0a6d29`，2026-07-09；本仓 PR #183）。**测试网 beta 现已可发**（v0.27.0 Sepolia 部署+验证，900 forge 测试全绿 + 16 阶段 E2E）；主网 GA 阻塞见下。
+
+| 项 | 评估 | 状态 | 门 |
+|---|---|---|---|
+| 核心账户合约栈 | v0.27.0 Sepolia 部署+验证，测试全绿 | ✅ | `[测]=[主]` |
+| CC-27 改名 AAStarBLSKeyRegistry | PR #182 已合并，CI 绿；随 release bump 部署 | 🟡 待发版 | `[主]` |
+| 切 tagged release（bump + 落地改名） | 待发版 | 🟡 | `[测]→[主]` |
+| **外部安全审计（#29）** | 未做，**GA 硬门禁** | 🔴 未开始（jason） | `[主]` |
+| Etherscan verify | Sepolia 2/11，9 pending（foundry source path 问题）；key 已有 | 🟠 未完成 | `[测]+[主]` |
+| 主网合约部署 | 脚本 `deploy-op-mainnet-alpha.ts` 待建 | 🔴 未开始 | `[主][配]` |
+| 主网 e2e_account（CC-22） | 主网 impl 部署后手工 mint 回填（智能合约账户，非 EOA） | 🟠 gated | `[主][配]` |
+| OP 主网 Gnosis Safe owner（#135/CC-31） + GA ops（EntryPoint stake + transferOwnership） | 未部署/未做 | 🔴 需配置 | `[主]` |
+| 生产 DVT 节点 nodeId/pubkey | CC-22 Variant B：KMS-TEE 托管、key-less node_state（主网不放裸 BLS 私钥） | 🟠 待 @repo:dvt/@repo:kms | `[主]` |
+| aPNTs 主网地址 | TBD | 🟠 待 @repo:sp | `[主][配]` |
+| KI-7 P256/EIP-7212 | 目标 OP 有 precompile（已决策选 OP，非以太坊主网） | ✅ | `[配]` |
+| 文档刷新（DEPLOYMENT/known-issues） | 本轮已刷 | 🟢 | `[测]` |
+
+延后非阻塞：#136/#149/#21/#20（gas/字节码）· #161/#133/#26/#27/#25/#24/#138（功能）· 跟踪伞 #112/#67/#66/#137；代码仅 1 处 TODO（KI-9 executeBatch，设计约束）。无 open PR。
+
+依赖：**被依赖** = @repo:yaaa（账户合约两网地址）、@repo:sdk（canonical 工厂/validator 主网地址，CC-18 两阶段）、@repo:kms/@repo:dvt（isValidOwnerAuth 契约 CC-23 已入 INTERFACES + 主网 e2e_account CC-22）。**依赖** = @repo:dvt（主网 validator + 生产节点 nodeId/pubkey）、@repo:kms（rpId/Origin 两网 + DVT 密钥 KMS provision）、@repo:sp（aPNTs 主网地址）、jason/配置（OP 主网 Safe / RPC / bundler / keystore / **外部审计**）。
+
+**结论**：测试网 beta ✅ 现可发；主网 GA 🔴 阻塞 = ①审计(#29) ②主网部署(脚本+Safe+keystore) ③跨仓两网就位(@dvt/@sp/@kms) ④verify 补齐。**可独立先做**（已排）：切 release + 落地改名、建主网部署脚本骨架、修 verify path、刷文档。
 
 ### repo:sp — SuperPaymaster 合约 + 经济层 ⏳ 待回帖
 
@@ -116,7 +138,7 @@ YAAA 依赖期望：**CC-13 slash 真 E2E**、**节点(imx93)部署 + gossip**�
 |---|:---:|:---:|:---:|:---:|:---:|
 | **yaaa** | 登录/签名前置 | 账户合约地址 | gasless | T2/T3 BLS | canonical 地址/ABI |
 | kms | — | ? | ? | ? | ? |
-| airaccount-contract | ? | — | ? | ? | ? |
+| airaccount-contract | rpId/Origin+密钥 | — | aPNTs 地址 | validator+节点 | — |
 | sp | ? | ? | — | slash 消费 | ABI |
 | dvt | BLS 托管? | ? | slash 提案 | — | ABI |
 | sdk | HTTP openapi | ABI track + 主网地址 | ABI track + 主网地址 | ABI track + 主网地址 | — |
