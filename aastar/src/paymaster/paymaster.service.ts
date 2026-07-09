@@ -113,19 +113,6 @@ export class PaymasterService {
   }
 
   // Backend-specific: SDK doesn't include this
-  async validatePaymasterSignature(
-    paymasterAndData: string,
-    _userOpHash: string
-  ): Promise<boolean> {
-    if (!paymasterAndData || paymasterAndData === "0x") {
-      return false;
-    }
-
-    // Placeholder - actual implementation depends on paymaster
-    return true;
-  }
-
-  // Backend-specific: SDK doesn't include this
   async analyzeTransaction(txHash: string): Promise<any> {
     try {
       const [tx, receipt] = await Promise.all([
