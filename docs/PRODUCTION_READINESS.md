@@ -31,7 +31,7 @@
 - [x] YAAA 核心流程（注册/建号/转账 T1-T3/gasless/买币）就绪
 - [x] YAAA 治理页读+写上线（#425/#426/#427）
 - [x] YAAA 测试绿（后端 41 单测 + 前端 10 e2e）
-- [ ] kms — 待回帖（板子 + 两网密钥）
+- [x] kms — 测试网就能发（v0.28.1，E2E 41/41 绿，只差 config→Sepolia）；板子明后天到货即部署
 - [x] airaccount-contract — 测试网 beta 可发（v0.27.0 Sepolia，900 forge + 16 阶段 E2E 全绿）；⚠️ verify 9 pending 待补
 - [x] sp — SP 侧零阻塞可支撑 YAAA 测试网发布（V5.4.2 + CC-28 滥发防护 + CC-29 LivenessRegistry 全在 Sepolia，1156 测试绿）
 - [ ] dvt — 待回帖（CC-13 slash E2E）
@@ -42,13 +42,14 @@
 - [ ] DVT 主网/本地 anvil 节点（G5，`DEFAULT_DVT_NODES` 仅 Sepolia）+ xPNTs 滥发防护主网部署（G3 真生效）+ SDK 主网前项（G6 CC-13 批B / G7 #256 / G8 #163）
 - [ ] airaccount-contract 主网 GA：**外部安全审计(#29，GA 硬门禁)** + 主网部署脚本/Safe/keystore + verify 补齐（@repo:airaccount-contract + jason）
 - [ ] SP：slashPolicyAdmin/owner **交社区 Safe（CC-31）** + aPNTs 主网充值 + 外部审计（@repo:sp + jason）—— CC-31 同时解锁 YAAA 治理写侧 E2E（#427）
+- [ ] KMS 硬件安全根基：**#99（RPMB+secure boot+strict flip）/ #50（防回滚 key）/ #127（最终安全复审）/ #128（生产密钥保管+事故响应）** 一趟 TA 重刷 + 一轮对抗审查（@repo:kms）；评估 KMS 单点/异地节点
 - [ ] YAAA 配置切换：`ETH_RPC_URL` / `BUNDLER_RPC_URL` → 主网 `[配]`
 - [ ] 生产配置核对（DB/密钥/Secrets）
 - [ ] 安全：axios 漏洞缓解方案 + 各仓审计结论
 
 ---
 
-## 各仓 Production-Ready（YAAA + sdk + airaccount-contract + sp 已填；kms / dvt 待回帖）
+## 各仓 Production-Ready（YAAA + sdk + airaccount-contract + sp + kms 已填；dvt 待回帖）
 
 ### repo:yaaa — 账户抽象全栈（=Cos72 本体） ✅ 已盘点
 
@@ -65,9 +66,24 @@
 
 Cos72 = YAAA 前端品牌；首页 `aastar-frontend/app/page.tsx`（#423）；交互 tour 在独立 repo `cos72-tour`（本期不含）。
 
-### repo:kms — KMS/TEE 密钥（airaccount node） ⏳ 待回帖
+### repo:kms — KMS/TEE 密钥（airaccount node） ✅ 已盘点（v0.28.1）
 
-YAAA 对它的依赖期望（供对方回帖时对照）：imx93 板子 **provision + 高可用**、**fail-closed API key**、**rpId/Origin 正确**、**两网密钥**。→ 是 YAAA 登录/签名/转账的前置。
+来源：CC-30 `[repo:kms]`（`5e92032a`，2026-07-09；本仓 doc）。双发布线：`airaccount-kms-*`（独立密钥/签名服务）+ `airaccount-node-*`（KMS+DVT 二合一）。**测试网现在就能发**（0.28.1 只差 config 指向 Sepolia）；E2E 41/41 全绿。
+
+| 项 | 状态 | 门 |
+|---|---|---|
+| 核心 KMS API（CreateKey/Sign/Grant/Revoke） | ✅ | `[配]` |
+| WebAuthn strict challenge-binding(#49) / fail-closed 认证(#145) / Stats XSS+UTF-8(#144) / E2E 签名一致性(#68,41/41) / 社区上手门户 | ✅ | `[测]` |
+| KMS+DVT 二合一基线（CC-22）+ Variant B DVT BLS TEE 托管（CC-24，PR#153 真机全绿） | ✅ KMS 侧 | `[测]`（待 @repo:dvt 确认 build 路径 + 轻接入）|
+| #99 硬件安全根基（RPMB+secure boot+strict flip）/ #50 RPMB 防回滚 / #127 主网前最终安全复审 / #128 生产密钥保管+事故响应 | 🔴 主网前必补 | `[主]` |
+| #122 CA/TA 一致性 CI 门 / #37 远程证明(Phase1) | 🟡 非阻塞 | `[测]` |
+| NXP NDA 厂商根（战略改「可复现+透明⊕DVT」） | ⚪ 不阻塞 | — |
+
+生产拓扑（社区条件受限版）：**KMS 1 份**（最稳一块板，同板 co-located DVT#1）+ **DVT 3 = 2-of-3 门限**（新 MX93=KMS+DVT#1 / 当前主板=DVT#2 / DK2=DVT#3）。⚠️ KMS 单份=可用性单点且与 DVT#1 同板、三板同地点无隔离 → **testnet 可接受**，主网前靠 #128 社恢复兜底 + 评估异地节点。
+
+依赖：**被依赖（已就绪）** = @repo:dvt（`127.0.0.1:3100` signer 契约 `POST /sign`→EIP-2537 256B 已实现）、@repo:yaaa（账户验证/签名）、@repo:airaccount-contract（isValidOwnerAuth）。**依赖** = @repo:dvt（v1.9.0 arm64 板 build CC-22 + TEE 托管 CC-24 + 发 v1.10.0）、@repo:sp（applyBLSAggregator #285、slash #139）、@repo:airaccount-contract（合并部署后一次性链上重注册 TEE 新 BLS pubkey）、@repo:sdk（Sepolia 地址同步 CC-12/CC-19）。
+
+> 关键：**KMS 测试网就绪** —— 硬件板 provision 明后天到货即部署。主网 = 补 #99/#50/#127/#128（一趟 TA 重刷 + 一轮对抗审查），代码零改动。
 
 ### repo:airaccount-contract — 账户合约 ✅ 已盘点（v0.27.0）
 
@@ -156,7 +172,7 @@ YAAA 依赖期望：**CC-13 slash 真 E2E**、**节点(imx93)部署 + gossip**�
 | 依赖方 → 被依赖 | kms | airaccount-contract | sp | dvt | sdk |
 |---|:---:|:---:|:---:|:---:|:---:|
 | **yaaa** | 登录/签名前置 | 账户合约地址 | gasless | T2/T3 BLS | canonical 地址/ABI |
-| kms | — | ? | ? | ? | ? |
+| kms | — | isValidOwnerAuth+重注册 | applyBLSAgg/slash | build路径/TEE接入/v1.10 | Sepolia 地址同步 |
 | airaccount-contract | rpId/Origin+密钥 | — | aPNTs 地址 | validator+节点 | — |
 | sp | (间接)DVT密钥 | 主网工厂/validator | — | validator+节点(slash 前置) | ABI |
 | dvt | BLS 托管? | ? | slash 提案 | — | ABI |
