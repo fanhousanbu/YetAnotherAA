@@ -33,7 +33,7 @@
 - [x] YAAA 测试绿（后端 41 单测 + 前端 10 e2e）
 - [ ] kms — 待回帖（板子 + 两网密钥）
 - [x] airaccount-contract — 测试网 beta 可发（v0.27.0 Sepolia，900 forge + 16 阶段 E2E 全绿）；⚠️ verify 9 pending 待补
-- [ ] sp — 待回帖（CC-28 / slashPolicyAdmin 交权）
+- [x] sp — SP 侧零阻塞可支撑 YAAA 测试网发布（V5.4.2 + CC-28 滥发防护 + CC-29 LivenessRegistry 全在 Sepolia，1156 测试绿）
 - [ ] dvt — 待回帖（CC-13 slash E2E）
 - [x] sdk — 测试网基本可发；G2/G3/G4 ABI 门禁已清零（branch `feat/abi-sync-cc28-cc29-liveness`，待 review→发版）；单测 core 471 + paymaster 20 + tokens 20 绿
 
@@ -41,13 +41,14 @@
 - [ ] **主网 V3→V5 全栈重部署（G1，SDK 实测的头号主网阻塞）** —— OP-Mainnet(chain 10) canonical 地址虽在，但链上是**旧 V3 栈**（SuperPaymaster-3.2.2 / Registry-3.0.2），SDK/测试网是 **V5.4.2** → @repo:sp / @repo:airaccount-contract / @repo:dvt 把 V5.4.2 全栈部署到 OP 主网 → SDK 切 canonical + `version()==5.4.2` 链上自验（CC-18 两阶段）
 - [ ] DVT 主网/本地 anvil 节点（G5，`DEFAULT_DVT_NODES` 仅 Sepolia）+ xPNTs 滥发防护主网部署（G3 真生效）+ SDK 主网前项（G6 CC-13 批B / G7 #256 / G8 #163）
 - [ ] airaccount-contract 主网 GA：**外部安全审计(#29，GA 硬门禁)** + 主网部署脚本/Safe/keystore + verify 补齐（@repo:airaccount-contract + jason）
+- [ ] SP：slashPolicyAdmin/owner **交社区 Safe（CC-31）** + aPNTs 主网充值 + 外部审计（@repo:sp + jason）—— CC-31 同时解锁 YAAA 治理写侧 E2E（#427）
 - [ ] YAAA 配置切换：`ETH_RPC_URL` / `BUNDLER_RPC_URL` → 主网 `[配]`
 - [ ] 生产配置核对（DB/密钥/Secrets）
 - [ ] 安全：axios 漏洞缓解方案 + 各仓审计结论
 
 ---
 
-## 各仓 Production-Ready（YAAA + sdk + airaccount-contract 已填；kms / sp / dvt 待回帖）
+## 各仓 Production-Ready（YAAA + sdk + airaccount-contract + sp 已填；kms / dvt 待回帖）
 
 ### repo:yaaa — 账户抽象全栈（=Cos72 本体） ✅ 已盘点
 
@@ -93,9 +94,27 @@ YAAA 对它的依赖期望（供对方回帖时对照）：imx93 板子 **provis
 
 **结论**：测试网 beta ✅ 现可发；主网 GA 🔴 阻塞 = ①审计(#29) ②主网部署(脚本+Safe+keystore) ③跨仓两网就位(@dvt/@sp/@kms) ④verify 补齐。**可独立先做**（已排）：切 release + 落地改名、建主网部署脚本骨架、修 verify path、刷文档。
 
-### repo:sp — SuperPaymaster 合约 + 经济层 ⏳ 待回帖
+### repo:sp — SuperPaymaster 合约 + 经济层 ✅ 已盘点（v5.4.2）
 
-YAAA 依赖期望：**CC-28 xPNTs 滥发防护**、**slashPolicyAdmin 交多签/timelock**、**主网部署 + 充值**。→ 直接决定 YAAA gasless 能否上主网。
+来源：CC-30 `[repo:sp]`（`bc90cc99`，2026-07-09；本仓 PR #350）。SP 是依赖枢纽。**测试网 🟢 SP 侧零阻塞，可支撑 YAAA 测试网发布**（V5.4.2 + CC-28/CC-29 全在 Sepolia）；主网 🔴 见下。
+
+| 项 | 评估 | 状态 | 门 |
+|---|---|---|---|
+| 核心 V5.4.2 全栈（SP/Registry/xPNTs/BLS/DVTValidator） | Sepolia 部署，1156 测试绿 | ✅ | `[测]=[主]` |
+| CC-28 xPNTs 滥发防护（isOverIssued） | Sepolia 已部署验证（#344/#345） | ✅ | `[测]` |
+| CC-29 LivenessRegistry | Sepolia `0x02d841F7905aFb4424DBA71680D27C0F75d36BE7` | ✅ | `[测]` |
+| **G1 主网 V3→V5 全栈重部署** | 🔴 OP 主网仍 SP-3.2.2/Registry-3.0.2（**头号阻塞**，与 SDK 判断一致） | 🔴 | `[主]` |
+| 主网 config + 多签 wiring | `config.op-mainnet` 空、无 V5 主网 config | 🔴 | `[主][配]` |
+| **slashPolicyAdmin/owner 交社区 Safe（CC-31）** | 现 EOA → 交 Safe | 🟠（GA） | `[主]` |
+| aPNTs 主网地址 + SP 充值 | 待做 | 🟠 | `[主][配]` |
+| 外部安全审计（V5.4.2 全栈） | 待 jason（GA 硬门禁） | 🔴 | `[主]` |
+| G10 config.op-mainnet vs optimism 去冗余 | 待做 | 🟠 | `[配]` |
+
+下一期（非 YAAA 正式版阻塞）：架构重构 #251-#254/#211/#212 · 功能 #300/#237/#217 · 债 #321/#299/#286/#343/#332 · 测试 #257。审计 H/M 批次已闭，剩 #328 Low。无 open PR。
+
+依赖：**被依赖** = @repo:yaaa（gasless）、@repo:sdk（ABI/主网地址）、@repo:airaccount-contract（aPNTs 主网地址随 SP 主网部署）、@repo:dvt（CC-29 LivenessRegistry 已给 + CC-13 slash 流水线就绪）。**依赖** = @repo:dvt（主网 validator + 生产节点，BLS quorum 是 slash 前置）、@repo:airaccount-contract（主网工厂/validator）、@repo:kms（间接：DVT 节点密钥）、jason（OP 主网 Safe CC-31 已有 + RPC + keystore + 外部审计）。
+
+> ⚠️ 对 YAAA 的直接影响：gasless **测试网已就绪**（可发）；**主网 gasless** 等 G1 + **slashPolicyAdmin 交多签（CC-31）** + aPNTs 充值。其中 CC-31 正是 YAAA 治理写侧 E2E（#427）在等的那次交权 —— 两件事同一步。
 
 ### repo:dvt — YetAnotherAA-Validator / DVT 节点 ⏳ 待回帖
 
@@ -139,7 +158,7 @@ YAAA 依赖期望：**CC-13 slash 真 E2E**、**节点(imx93)部署 + gossip**�
 | **yaaa** | 登录/签名前置 | 账户合约地址 | gasless | T2/T3 BLS | canonical 地址/ABI |
 | kms | — | ? | ? | ? | ? |
 | airaccount-contract | rpId/Origin+密钥 | — | aPNTs 地址 | validator+节点 | — |
-| sp | ? | ? | — | slash 消费 | ABI |
+| sp | (间接)DVT密钥 | 主网工厂/validator | — | validator+节点(slash 前置) | ABI |
 | dvt | BLS 托管? | ? | slash 提案 | — | ABI |
 | sdk | HTTP openapi | ABI track + 主网地址 | ABI track + 主网地址 | ABI track + 主网地址 | — |
 
