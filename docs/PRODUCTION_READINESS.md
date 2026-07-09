@@ -83,7 +83,7 @@ Cos72 = YAAA 前端品牌；首页 `aastar-frontend/app/page.tsx`（#423）；�
 
 依赖：**被依赖（已就绪）** = @repo:dvt（`127.0.0.1:3100` signer 契约 `POST /sign`→EIP-2537 256B 已实现）、@repo:yaaa（账户验证/签名）、@repo:airaccount-contract（isValidOwnerAuth）。**依赖** = @repo:dvt（v1.9.0 arm64 板 build CC-22 + TEE 托管 CC-24 + 发 v1.10.0）、@repo:sp（applyBLSAggregator #285、slash #139）、@repo:airaccount-contract（合并部署后一次性链上重注册 TEE 新 BLS pubkey）、@repo:sdk（Sepolia 地址同步 CC-12/CC-19）。
 
-> 关键：**KMS 测试网就绪** —— 硬件板明后天到货即部署。到货前软件侧已备齐（`4f0e597a`）：#122 CA/TA 一致性门加固（挂 mx93-build.sh）、3-node config + runbook 就绪（`kms/deploy/topology-aastar-3node/` + `kms/docs/deploy-runbook-3node.md`，填好 Sepolia validator `0x539B96…`/EntryPoint v0.7，一键切两网）、DK2 部署已交接 @repo:dvt。主网 = 补 #99/#50/#127/#128（一趟 TA 重刷 + 对抗审查），代码零改动。
+> 关键：**KMS 测试网就绪** —— 硬件板明后天到货即部署。到货前软件侧**已合入 main**（`2e9e5afe`）：#122 CA/TA 门加固（PR #166，Codex 对抗 review + 3 Low 全修）、3-node 拓扑 profiles + runbook + readiness（PR #167，填好 Sepolia validator `0x539B96…`/EntryPoint v0.7，一键切两网）、DK2 部署已交接 @repo:dvt。**SP 依赖（#285 applyBLSAggregator / #139 slash）已确认闭环** → KMS 非硬件依赖只剩 **@repo:dvt**（DK2 脚本 / CC-22 build+validator / CC-24 TEE 托管 / 发版）+ 主网前 @repo:airaccount-contract 一次性重注册 TEE 新 BLS pubkey。主网 = 补 #99/#50/#127/#128（一趟 TA 重刷 + 对抗审查），代码零改动。
 
 ### repo:airaccount-contract — 账户合约 ✅ 已盘点（v0.27.0）
 
