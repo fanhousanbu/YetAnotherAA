@@ -36,6 +36,7 @@ import {
   addrUrl,
   errMsg,
 } from "../_components/shared";
+import WritePanel from "./WritePanel";
 
 export default function OperatorGovernancePage() {
   const { t } = useTranslation();
@@ -196,8 +197,14 @@ export default function OperatorGovernancePage() {
                 )}
               </Section>
 
-              {/* Write flow — pending SDK SlashGovernance orchestrator */}
-              {!GOVERNANCE_WRITE_READY && (
+              {/* Write flow — hand admin to Timelock + edit thresholds */}
+              {GOVERNANCE_WRITE_READY ? (
+                <WritePanel
+                  slashPolicyAdmin={state.slashPolicyAdmin}
+                  thresholds={state.thresholds}
+                  onChanged={() => void load()}
+                />
+              ) : (
                 <Section title={t("operatorManage.governance.writeSection")}>
                   <div className="flex items-start gap-2 text-sm rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-3 py-2 text-amber-800 dark:text-amber-300">
                     <WrenchIcon className="h-4 w-4 shrink-0 mt-0.5" />

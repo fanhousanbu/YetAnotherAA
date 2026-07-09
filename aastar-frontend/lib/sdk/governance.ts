@@ -24,8 +24,12 @@ import type { Address } from "viem";
 import { BLSAggregatorABI, BLS_AGGREGATOR_ADDRESS } from "@aastar/sdk/core";
 import { ensureSdkConfig, getPublicClient } from "./client";
 
-/** Timelock-orchestrated writes (setSlashPolicyAdmin / setSlashThreshold) not wired yet. */
-export const GOVERNANCE_WRITE_READY = false;
+/**
+ * Timelock-orchestrated writes (hand slashPolicyAdmin to a TimelockController +
+ * edit the threshold table) are wired via `lib/sdk/governanceWrite.ts` +
+ * `WritePanel`, using `@aastar/sdk/admin`'s `SlashGovernance`.
+ */
+export const GOVERNANCE_WRITE_READY = true;
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 

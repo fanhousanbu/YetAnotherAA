@@ -650,7 +650,31 @@
       "slot": "Slot {{slot}}",
       "noValidators": "暂无已注册 validator。",
       "writeSection": "把管理员交给 Timelock",
-      "writePending": "修改门槛表、把 slashPolicyAdmin 交给 TimelockController，走 SDK 的 SlashGovernance 编排（schedule → 等 minDelay → execute）。待 @aastar/sdk 治理写侧 API 接入；当前仅只读。"
+      "writePending": "修改门槛表、把 slashPolicyAdmin 交给 TimelockController，走 SDK 的 SlashGovernance 编排（schedule → 等 minDelay → execute）。待 @aastar/sdk 治理写侧 API 接入；当前仅只读。",
+      "write": {
+        "timelockLabel": "TimelockController 地址",
+        "saveTimelock": "保存",
+        "changeTimelock": "更改",
+        "minDelay": "最小延时",
+        "needTimelock": "填入 TimelockController 地址，才能通过治理管理 slash 策略。",
+        "badTimelock": "请输入合法的 TimelockController 地址（0x…）。",
+        "handoffPrompt": "当前 slash 门槛表管理员是你连接的钱包（bootstrap）。把它交给 TimelockController，之后所有变更都走 timelock。此操作会把控制权移出你的 EOA。",
+        "handoffButton": "把管理员交给 Timelock",
+        "handoffConfirm": "再点一次确认交权",
+        "cancel": "取消",
+        "handoffSent": "交权交易已发送。",
+        "governedPrompt": "管理员已是 timelock。门槛变更需先 schedule，等过最小延时后再 execute。",
+        "levelLabel": "级别",
+        "newThreshold": "新门槛",
+        "badThreshold": "请输入 ≥ 1 的门槛。",
+        "schedule": "排期",
+        "scheduled": "变更已通过 timelock 排期。",
+        "execute": "执行",
+        "executed": "变更已执行。",
+        "readyIn": "{{eta}} 后可执行",
+        "saltNote": "schedule/execute 由本浏览器保存的 salt 绑定。请在同一浏览器执行，或重新排期生成新 salt。",
+        "notAdmin": "当前 slash 管理员是 {{admin}}——既不是你的钱包，也不是所配置的 timelock。请连接管理员钱包，或把 timelock 字段指向当前管理员。"
+      }
     }
   },
   "rolePage": {

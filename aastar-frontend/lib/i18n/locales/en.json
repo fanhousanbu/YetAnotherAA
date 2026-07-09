@@ -650,7 +650,31 @@
       "slot": "Slot {{slot}}",
       "noValidators": "No validators registered.",
       "writeSection": "Hand Admin to Timelock",
-      "writePending": "Editing the threshold table and handing slashPolicyAdmin to a TimelockController runs through the SDK's SlashGovernance orchestrator (schedule → wait minDelay → execute). Wiring lands with the @aastar/sdk governance write API; read-only for now."
+      "writePending": "Editing the threshold table and handing slashPolicyAdmin to a TimelockController runs through the SDK's SlashGovernance orchestrator (schedule → wait minDelay → execute). Wiring lands with the @aastar/sdk governance write API; read-only for now.",
+      "write": {
+        "timelockLabel": "TimelockController",
+        "saveTimelock": "Save",
+        "changeTimelock": "change",
+        "minDelay": "min delay",
+        "needTimelock": "Set the TimelockController address to manage the slash policy through governance.",
+        "badTimelock": "Enter a valid TimelockController address (0x…).",
+        "handoffPrompt": "The slash-policy admin is currently your connected wallet (bootstrap). Hand it to the TimelockController so all future changes go through the timelock. This moves control off your EOA.",
+        "handoffButton": "Hand admin to Timelock",
+        "handoffConfirm": "Click again to confirm handoff",
+        "cancel": "cancel",
+        "handoffSent": "Handoff transaction sent.",
+        "governedPrompt": "The admin is the timelock. Threshold changes are scheduled, wait the min delay, then executed.",
+        "levelLabel": "Severity",
+        "newThreshold": "New threshold",
+        "badThreshold": "Enter a threshold ≥ 1.",
+        "schedule": "Schedule",
+        "scheduled": "Change scheduled through the timelock.",
+        "execute": "Execute",
+        "executed": "Change executed.",
+        "readyIn": "Ready in {{eta}}",
+        "saltNote": "The schedule/execute pair is bound by a salt kept in this browser. Execute from the same browser, or re-schedule to mint a new one.",
+        "notAdmin": "The slash-policy admin is {{admin}} — neither your wallet nor the configured timelock. Connect the admin, or point the timelock field at the current admin."
+      }
     }
   },
   "rolePage": {
