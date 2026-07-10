@@ -41,7 +41,7 @@
 
 ### 🔴 主网发布门（测试网跑满 ~1 月后）
 - [ ] **主网 V3→V5 全栈重部署（G1，SDK 实测的头号主网阻塞）** —— OP-Mainnet(chain 10) canonical 地址虽在，但链上是**旧 V3 栈**（SuperPaymaster-3.2.2 / Registry-3.0.2），SDK/测试网是 **V5.4.2** → @repo:sp / @repo:airaccount-contract / @repo:dvt 把 V5.4.2 全栈部署到 OP 主网 → SDK 切 canonical + `version()==5.4.2` 链上自验（CC-18 两阶段）
-- [ ] DVT 主网/本地 anvil 节点（G5，`DEFAULT_DVT_NODES` 仅 Sepolia — DVT 本轮补 config 骨架，主网 nodeId 待生产板 KMS-TEE provision #106）+ **CC-32 DK2 armv7 脚本（3-node 拓扑 node2，DVT 本轮开工）** + xPNTs 滥发防护主网部署（G3 真生效）+ SDK 剩余主网前项（G8 #163 buyGasless / #176 part2 Tier-3 guardian ECDSA 收集）
+- [ ] DVT 主网/本地 anvil 节点（G5，`DEFAULT_DVT_NODES` 仅 Sepolia — DVT 本轮补 config 骨架，主网 nodeId 待生产板 KMS-TEE provision #106）+ ~~CC-32 DK2 armv7 脚本~~ ✅ **已交付（DVT PR #206，板到货即装）** + xPNTs 滥发防护主网部署（G3 真生效）+ SDK 剩余主网前项（G8 #163 buyGasless / #176 part2 Tier-3 guardian ECDSA 收集）
 - [ ] airaccount-contract 主网 GA：**外部安全审计(#29，GA 硬门禁)** + Safe/keystore（脚本骨架 `deploy-op-mainnet.ts` 已就位 #184、verify 4 核心已补 #185、CC-27 改名随 v0.28.0 落地）（@repo:airaccount-contract + jason）
 - [ ] SP：slashPolicyAdmin/owner **交社区 Safe（CC-31，`0x51eDf11f…`）** + aPNTs 主网充值 + 外部审计（@repo:sp + jason）—— SP runbook 已就位（PR #351，一条命令部署）；CC-31 同时解锁 YAAA 治理写侧 E2E（#427）
 - [ ] KMS 硬件安全根基：**#99（RPMB+secure boot+strict flip）/ #50（防回滚 key）/ #127（最终安全复审）/ #128（生产密钥保管+事故响应）** 一趟 TA 重刷 + 一轮对抗审查（@repo:kms）；评估 KMS 单点/异地节点
@@ -145,7 +145,7 @@ Cos72 = YAAA 前端品牌；首页 `aastar-frontend/app/page.tsx`（#423）；�
 | CC-22 KMS+DVT 二合一（bare-node build / key-less node_state / X-Signer-Token） | ✅ 收敛（KMS 0.28.0 板上合跑字节对齐） | 否 | `[测]` |
 | 测试网 3 节点（dvt1/2/3.aastar.io，Sepolia） | ✅ live，validator `0x539B9681aFd5BFbCaa655Fe4c6BdcFe1fa7864bC`（`deploy/sdk-dvt-config.testnet.json` 权威） | 否 | `[测]` |
 | CC-13 目标2 审计/liveness | 🟡 审计检测 + 链上 liveness keeper(CC-29)已发；slash 执行按修正模型休眠（PR #205） | 否（非测试网阻塞） | `[测]` |
-| **DK2 armv7 DVT-only 部署脚本（CC-32，node2）** | 🔴 未开始，`deploy-dvt.sh` 硬编码 arm64→armv7l 需新脚本（本轮开工） | 是（3-node 拓扑） | `[主][配]` |
+| **DK2 armv7 DVT-only 部署脚本（CC-32，node2）** | ✅ **脚本已交付**（DVT PR #206，交叉打包端到端实跑产出 armv7l bundle，板到货即装走真机） | 板到货装 | `[主][配]` |
 | **主网 `DEFAULT_DVT_NODES`（SDK G5）** | 🔴 现仅 chainId 11155111；无 mainnet(10)/本地 anvil → 主网/本地 Tier-2/3 取不到节点（本轮补 config 骨架） | 是 | `[主][配]` |
 | 主网 validator 地址 + 生产节点 nodeId/pubkey（#106） | 🟠 待主网部署（KMS-TEE provision，key-less node_state） | 是 | `[主]` |
 | gossip 生产化（#50/#201） | 🟡 SWIM hand-rolled；on-chain whitelist 验证仍 TODO；建议迁 libp2p gossipsub | 否（测试网可跑） | `[测]→[主]` |
