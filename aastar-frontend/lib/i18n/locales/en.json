@@ -713,6 +713,12 @@
     "loadError": "Failed to load registry data",
     "queryError": "Failed to query role for address"
   },
+  "nodeOnboarding": {
+    "card": {
+      "title": "Community Node Onboarding",
+      "desc": "Stake + register a KMS+DVT node in-browser (local/HSM key path available)"
+    }
+  },
   "credibilityPage": {
     "title": "Community xPNTs Credibility",
     "subtitle": "The on-chain credibility score (0–100) and over-issue status of each community's xPNTs. Computed live from on-chain economic facts — no manual input.",

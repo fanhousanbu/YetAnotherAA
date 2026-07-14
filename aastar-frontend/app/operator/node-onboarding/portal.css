@@ -1,0 +1,60 @@
+/*
+ * Node-onboarding portal styles, ported from aastar-sdk node-onboarding-portal (CC-40).
+ * Every rule is scoped under `.dvt-onboard` so the portal's semantic class names
+ * (.wrap/.panel/.st/…) can't leak into or collide with YAAA's Tailwind styles.
+ */
+.dvt-onboard {
+  --bg: #0e0f13; --panel: #16181f; --line: #262a35; --fg: #e6e8ee; --muted: #8b90a0;
+  --accent: #5e6ad2; --ok: #27a644; --err: #eb5757; --warn: #ef8b3a;
+  background: var(--bg); color: var(--fg); border-radius: 14px;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", sans-serif;
+}
+.dvt-onboard * { box-sizing: border-box; }
+.dvt-onboard .wrap { max-width: 820px; margin: 0 auto; padding: 32px 20px 40px; }
+.dvt-onboard header h1 { margin: 0 0 4px; font-size: 22px; }
+.dvt-onboard .sub { margin: 0; color: var(--muted); font-size: 13px; }
+.dvt-onboard code { background: #20242e; padding: 1px 5px; border-radius: 4px; font-size: .9em; }
+
+.dvt-onboard .stepper { list-style: none; display: flex; gap: 6px; padding: 0; margin: 24px 0; flex-wrap: wrap; }
+.dvt-onboard .st { display: flex; align-items: center; gap: 7px; padding: 7px 12px; border: 1px solid var(--line);
+  border-radius: 8px; font-size: 13px; color: var(--muted); cursor: default; }
+.dvt-onboard .st .dot { width: 20px; height: 20px; border-radius: 50%; background: #20242e; color: var(--fg);
+  display: grid; place-items: center; font-size: 12px; flex: none; }
+.dvt-onboard .st-active, .dvt-onboard .st.cur { border-color: var(--accent); color: var(--fg); }
+.dvt-onboard .st-active .dot, .dvt-onboard .st.cur .dot { background: var(--accent); }
+.dvt-onboard .st-done { border-color: var(--ok); color: var(--fg); cursor: pointer; }
+.dvt-onboard .st-done .dot { background: var(--ok); }
+.dvt-onboard .st-doing .dot { background: var(--warn); }
+.dvt-onboard .st-error { border-color: var(--err); } .dvt-onboard .st-error .dot { background: var(--err); }
+
+.dvt-onboard .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+.dvt-onboard .panel h2 { margin: 0 0 12px; font-size: 17px; }
+.dvt-onboard .panel p { color: #c4c8d4; line-height: 1.55; font-size: 14px; }
+.dvt-onboard .muted { color: var(--muted); } .dvt-onboard .warn { color: var(--warn); font-style: normal; }
+.dvt-onboard .ok { color: var(--ok); } .dvt-onboard .danger { color: var(--err); }
+.dvt-onboard .note { background: #2a2416; border: 1px solid var(--warn); border-radius: 8px; padding: 10px 13px; font-size: 13px; }
+
+.dvt-onboard .form { display: grid; gap: 14px; margin: 8px 0 18px; }
+.dvt-onboard .form label { display: grid; gap: 5px; font-size: 13px; color: var(--muted); }
+.dvt-onboard .form input, .dvt-onboard .form select { background: #0f1116; border: 1px solid var(--line); color: var(--fg);
+  padding: 9px 11px; border-radius: 7px; font-size: 14px; }
+.dvt-onboard .form input:focus, .dvt-onboard .form select:focus { outline: none; border-color: var(--accent); }
+
+.dvt-onboard .row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.dvt-onboard button { background: #20242e; color: var(--fg); border: 1px solid var(--line); padding: 9px 16px;
+  border-radius: 8px; font-size: 14px; cursor: pointer; }
+.dvt-onboard button:hover:not(:disabled) { border-color: var(--accent); }
+.dvt-onboard button:disabled { opacity: .5; cursor: not-allowed; }
+.dvt-onboard button.primary { background: var(--accent); border-color: var(--accent); }
+.dvt-onboard button.mini { padding: 1px 8px; font-size: 12px; margin-left: 8px; }
+
+.dvt-onboard .kv { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 8px; }
+.dvt-onboard .kv li { display: flex; gap: 12px; font-size: 13px; align-items: baseline; }
+.dvt-onboard .kv b { color: var(--muted); font-weight: 500; min-width: 130px; flex: none; }
+.dvt-onboard .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; word-break: break-all; }
+
+.dvt-onboard .err { background: #2a1618; border: 1px solid var(--err); color: #ffb4b4; padding: 10px 14px;
+  border-radius: 8px; margin-bottom: 16px; font-size: 13px; }
+.dvt-onboard .json { background: #0f1116; border: 1px solid var(--line); border-radius: 8px; padding: 12px;
+  overflow-x: auto; font-size: 12px; }
+.dvt-onboard footer { margin-top: 22px; color: var(--muted); font-size: 12px; text-align: center; }

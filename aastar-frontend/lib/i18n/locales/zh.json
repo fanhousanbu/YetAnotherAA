@@ -713,6 +713,12 @@
     "loadError": "加载注册表数据失败",
     "queryError": "查询该地址角色失败"
   },
+  "nodeOnboarding": {
+    "card": {
+      "title": "社区节点 Onboarding",
+      "desc": "浏览器内一键质押 + 注册 KMS+DVT 节点（本地/HSM 私钥路径可用）"
+    }
+  },
   "credibilityPage": {
     "title": "社区 xPNTs 可信度披露",
     "subtitle": "每个社区积分（xPNTs）的链上可信度分（0–100）与是否超发。分数实时由链上经济事实自动算出，无人工干预。",
