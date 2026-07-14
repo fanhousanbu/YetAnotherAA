@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { ethers } from "ethers";
+import { createPublicClient, http, parseAbi, type Address } from "viem";
 import { UserToken } from "../entities/user-token.entity";
 import { TokenService } from "../token/token.service";
 import * as fs from "fs";
@@ -22,21 +22,23 @@ export interface UpdateUserTokenDto {
 
 @Injectable()
 export class UserTokenService {
-  private provider: ethers.JsonRpcProvider;
+  private provider: any;
   private dataDir: string;
 
   // ERC20 ABI for basic token operations
-  private readonly ERC20_ABI = [
+  private readonly ERC20_ABI = parseAbi([
     "function name() view returns (string)",
     "function symbol() view returns (string)",
     "function decimals() view returns (uint8)",
-  ];
+  ]);
 
   constructor(
     private configService: ConfigService,
     private tokenService: TokenService
   ) {
-    this.provider = new ethers.JsonRpcProvider(this.configService.get<string>("ethRpcUrl"));
+    this.provider = createPublicClient({
+      transport: http(this.configService.get<string>("ethRpcUrl")),
+    });
     this.dataDir = path.join(process.cwd(), "data");
 
     // Ensure data directory exists
@@ -284,12 +286,22 @@ export class UserTokenService {
     decimals: number;
   }> {
     try {
-      const contract = new ethers.Contract(address, this.ERC20_ABI, this.provider);
-
       const [symbol, name, decimals] = await Promise.all([
-        contract.symbol(),
-        contract.name(),
-        contract.decimals(),
+        this.provider.readContract({
+          address: address as Address,
+          abi: this.ERC20_ABI,
+          functionName: "symbol",
+        }),
+        this.provider.readContract({
+          address: address as Address,
+          abi: this.ERC20_ABI,
+          functionName: "name",
+        }),
+        this.provider.readContract({
+          address: address as Address,
+          abi: this.ERC20_ABI,
+          functionName: "decimals",
+        }),
       ]);
 
       return {

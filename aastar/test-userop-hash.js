@@ -1,4 +1,11 @@
-const { ethers } = require("ethers");
+const {
+  createPublicClient,
+  http,
+  keccak256,
+  encodeAbiParameters,
+  parseAbiParameters,
+  parseAbi,
+} = require("viem");
 
 // 从失败的交易日志中提取的数据
 const userOp = {
@@ -19,53 +26,59 @@ const chainId = 11155111; // Sepolia
 
 // 方法1：使用 SDK 的方式计算（客户端）
 function calculateUserOpHashSDK() {
-  const encoded = ethers.AbiCoder.defaultAbiCoder().encode(
-    ["address", "uint256", "bytes32", "bytes32", "bytes32", "uint256", "bytes32", "bytes32"],
+  const encoded = encodeAbiParameters(
+    parseAbiParameters(
+      "address, uint256, bytes32, bytes32, bytes32, uint256, bytes32, bytes32"
+    ),
     [
       userOp.sender,
-      userOp.nonce,
-      ethers.keccak256(userOp.initCode),
-      ethers.keccak256(userOp.callData),
+      BigInt(userOp.nonce),
+      keccak256(userOp.initCode),
+      keccak256(userOp.callData),
       userOp.accountGasLimits,
-      userOp.preVerificationGas,
+      BigInt(userOp.preVerificationGas),
       userOp.gasFees,
-      ethers.keccak256(userOp.paymasterAndData),
+      keccak256(userOp.paymasterAndData),
     ]
   );
 
-  return ethers.keccak256(
-    ethers.AbiCoder.defaultAbiCoder().encode(
-      ["bytes32", "address", "uint256"],
-      [ethers.keccak256(encoded), entryPoint, chainId]
-    )
+  return keccak256(
+    encodeAbiParameters(parseAbiParameters("bytes32, address, uint256"), [
+      keccak256(encoded),
+      entryPoint,
+      BigInt(chainId),
+    ])
   );
 }
 
 // 方法2：调用 EntryPoint 合约（后端方式）
 async function calculateUserOpHashContract() {
-  const provider = new ethers.JsonRpcProvider(
-    process.env.ETH_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com"
-  );
+  const client = createPublicClient({
+    transport: http(process.env.ETH_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com"),
+  });
 
-  const entryPointABI = [
-    "function getUserOpHash((address,uint256,bytes,bytes,bytes32,uint256,bytes32,bytes,bytes) packedUserOp) external view returns (bytes32)",
-  ];
+  const entryPointABI = parseAbi([
+    "function getUserOpHash((address sender, uint256 nonce, bytes initCode, bytes callData, bytes32 accountGasLimits, uint256 preVerificationGas, bytes32 gasFees, bytes paymasterAndData, bytes signature) packedUserOp) view returns (bytes32)",
+  ]);
 
-  const entryPointContract = new ethers.Contract(entryPoint, entryPointABI, provider);
+  const packedOp = {
+    sender: userOp.sender,
+    nonce: BigInt(userOp.nonce),
+    initCode: userOp.initCode,
+    callData: userOp.callData,
+    accountGasLimits: userOp.accountGasLimits,
+    preVerificationGas: BigInt(userOp.preVerificationGas),
+    gasFees: userOp.gasFees,
+    paymasterAndData: userOp.paymasterAndData,
+    signature: "0x", // empty signature for hash calculation
+  };
 
-  const packedOpArray = [
-    userOp.sender,
-    userOp.nonce,
-    userOp.initCode,
-    userOp.callData,
-    userOp.accountGasLimits,
-    userOp.preVerificationGas,
-    userOp.gasFees,
-    userOp.paymasterAndData,
-    "0x", // empty signature for hash calculation
-  ];
-
-  return await entryPointContract.getUserOpHash(packedOpArray);
+  return await client.readContract({
+    address: entryPoint,
+    abi: entryPointABI,
+    functionName: "getUserOpHash",
+    args: [packedOp],
+  });
 }
 
 async function main() {

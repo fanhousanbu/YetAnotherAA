@@ -1,6 +1,14 @@
 import { Injectable, Inject } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { ethers } from "ethers";
+import {
+  createPublicClient,
+  http,
+  formatGwei,
+  formatEther,
+  parseAbi,
+  decodeFunctionData,
+  type Hex,
+} from "viem";
 import { AirAccountServerClient as YAAAServerClient } from "@aastar/sdk/kms";
 import { getCanonicalAddresses } from "@aastar/sdk/core";
 import { YAAA_SERVER_CLIENT } from "../sdk/sdk.providers";
@@ -18,16 +26,18 @@ export interface PaymasterPreset {
 
 @Injectable()
 export class PaymasterService {
-  private provider: ethers.JsonRpcProvider;
+  private provider: any;
 
   constructor(
     @Inject(YAAA_SERVER_CLIENT) private client: YAAAServerClient,
     private configService: ConfigService
   ) {
-    this.provider = new ethers.JsonRpcProvider(
-      this.configService.get<string>("ethRpcUrl") ||
-        "https://optimism-mainnet.infura.io/v3/YOUR_PROJECT_ID"
-    );
+    this.provider = createPublicClient({
+      transport: http(
+        this.configService.get<string>("ethRpcUrl") ||
+          "https://optimism-mainnet.infura.io/v3/YOUR_PROJECT_ID"
+      ),
+    });
   }
 
   async getAvailablePaymasters(
@@ -116,8 +126,8 @@ export class PaymasterService {
   async analyzeTransaction(txHash: string): Promise<any> {
     try {
       const [tx, receipt] = await Promise.all([
-        this.provider.getTransaction(txHash),
-        this.provider.getTransactionReceipt(txHash),
+        this.provider.getTransaction({ hash: txHash as Hex }),
+        this.provider.getTransactionReceipt({ hash: txHash as Hex }),
       ]);
 
       if (!tx || !receipt) {
@@ -141,12 +151,11 @@ export class PaymasterService {
       let userOpDetails: any = {};
 
       try {
-        const handleOpsABI = [
-          "function handleOps(tuple(address sender, uint256 nonce, bytes initCode, bytes callData, uint256 callGasLimit, uint256 verificationGasLimit, uint256 preVerificationGas, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas, bytes paymasterAndData, bytes signature)[] ops, address payable beneficiary)",
-        ];
+        const handleOpsABI = parseAbi([
+          "function handleOps((address sender, uint256 nonce, bytes initCode, bytes callData, uint256 callGasLimit, uint256 verificationGasLimit, uint256 preVerificationGas, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas, bytes paymasterAndData, bytes signature)[] ops, address beneficiary)",
+        ]);
 
-        const iface = new ethers.Interface(handleOpsABI);
-        const decoded = iface.parseTransaction({ data: tx.data });
+        const decoded: any = decodeFunctionData({ abi: handleOpsABI, data: tx.input });
 
         if (decoded && decoded.args[0] && decoded.args[0].length > 0) {
           const userOp = decoded.args[0][0];
@@ -165,8 +174,8 @@ export class PaymasterService {
             callGasLimit: userOp.callGasLimit.toString(),
             verificationGasLimit: userOp.verificationGasLimit.toString(),
             preVerificationGas: userOp.preVerificationGas.toString(),
-            maxFeePerGas: ethers.formatUnits(userOp.maxFeePerGas, "gwei") + " gwei",
-            maxPriorityFeePerGas: ethers.formatUnits(userOp.maxPriorityFeePerGas, "gwei") + " gwei",
+            maxFeePerGas: formatGwei(userOp.maxFeePerGas) + " gwei",
+            maxPriorityFeePerGas: formatGwei(userOp.maxPriorityFeePerGas) + " gwei",
             paymasterAndDataLength: paymasterAndData.length,
           };
         }
@@ -197,8 +206,10 @@ export class PaymasterService {
         },
         gasInfo: {
           gasUsed: receipt.gasUsed.toString(),
-          effectiveGasPrice: ethers.formatUnits(receipt.gasPrice || 0, "gwei") + " gwei",
-          totalCost: ethers.formatEther(receipt.gasUsed * (receipt.gasPrice || 0n)) + " ETH",
+          effectiveGasPrice: formatGwei(receipt.effectiveGasPrice || 0n) + " gwei",
+          totalCost:
+            formatEther((receipt.gasUsed as bigint) * ((receipt.effectiveGasPrice as bigint) || 0n)) +
+            " ETH",
           paidBy: gasPaidBy,
         },
         userOperation: userOpDetails,

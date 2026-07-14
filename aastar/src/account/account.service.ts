@@ -18,8 +18,7 @@ import {
 } from "./dto/guardian-setup.dto";
 import { DatabaseService } from "../database/database.service";
 import { ConfigService } from "@nestjs/config";
-import { ethers } from "ethers";
-import { createWalletClient, http } from "viem";
+import { createWalletClient, http, parseEther, isAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
@@ -40,7 +39,7 @@ export class AccountService {
   private parseDailyLimitToWei(value: string | undefined): bigint | undefined {
     if (!value || parseFloat(value) <= 0) return undefined;
     try {
-      return ethers.parseEther(value);
+      return parseEther(value);
     } catch {
       throw new BadRequestException(
         `Invalid dailyLimit value: "${value}". Expected a valid ETH amount (e.g. "1.0").`
@@ -79,7 +78,7 @@ export class AccountService {
     return {
       address: result.address,
       balance: result.balance,
-      balanceInWei: ethers.parseEther(result.balance).toString(),
+      balanceInWei: parseEther(result.balance).toString(),
     };
   }
 
@@ -436,7 +435,7 @@ export class AccountService {
    * The on-chain signer update requires a separate UserOp calling updateSigner().
    */
   async rotateSigner(userId: string, newSignerAddress: string) {
-    if (!ethers.isAddress(newSignerAddress)) {
+    if (!isAddress(newSignerAddress)) {
       throw new BadRequestException("Invalid Ethereum address for newSignerAddress");
     }
 
