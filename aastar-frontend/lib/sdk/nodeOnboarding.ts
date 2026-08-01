@@ -16,14 +16,7 @@
  *
  * @module lib/sdk/nodeOnboarding
  */
-import {
-  type Address,
-  type Hex,
-  createPublicClient,
-  createWalletClient,
-  custom,
-  http,
-} from "viem";
+import { type Address, type Hex, createPublicClient, createWalletClient, custom, http } from "viem";
 import { sepolia, optimismSepolia } from "viem/chains";
 import {
   onboardDvtNode,
@@ -89,7 +82,11 @@ export function publicClientFor(cfg: PortalConfig) {
 
 /** Wallet (write) client bound to the connected operator account via the injected provider. */
 export function operatorWalletFor(cfg: PortalConfig, operator: Address) {
-  return createWalletClient({ account: operator, chain: CHAINS[cfg.network], transport: custom(injected()) });
+  return createWalletClient({
+    account: operator,
+    chain: CHAINS[cfg.network],
+    transport: custom(injected()),
+  });
 }
 
 /**
