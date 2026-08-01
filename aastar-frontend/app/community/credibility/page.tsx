@@ -50,8 +50,12 @@ function CredibilityRow({ entry }: { entry: CommunityCredibility }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-gray-900 dark:text-white truncate">{entry.name}</span>
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{entry.symbol}</span>
+            <span className="font-semibold text-gray-900 dark:text-white truncate">
+              {entry.name}
+            </span>
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              {entry.symbol}
+            </span>
           </div>
           <div className="text-xs text-gray-400 dark:text-gray-500 font-mono mt-0.5">
             {shortenAddr(entry.token)}
@@ -79,16 +83,28 @@ function CredibilityRow({ entry }: { entry: CommunityCredibility }) {
 
       <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
         <div>
-          <dt className="text-[11px] text-gray-400 dark:text-gray-500">{t("credibilityPage.backing")}</dt>
-          <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">${formatUsd(c.backingValueUSD)}</dd>
+          <dt className="text-[11px] text-gray-400 dark:text-gray-500">
+            {t("credibilityPage.backing")}
+          </dt>
+          <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            ${formatUsd(c.backingValueUSD)}
+          </dd>
         </div>
         <div>
-          <dt className="text-[11px] text-gray-400 dark:text-gray-500">{t("credibilityPage.issued")}</dt>
-          <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">${formatUsd(c.issuedValueUSD)}</dd>
+          <dt className="text-[11px] text-gray-400 dark:text-gray-500">
+            {t("credibilityPage.issued")}
+          </dt>
+          <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            ${formatUsd(c.issuedValueUSD)}
+          </dd>
         </div>
         <div>
-          <dt className="text-[11px] text-gray-400 dark:text-gray-500">{t("credibilityPage.cap")}</dt>
-          <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">${formatUsd(c.effectiveCapUSD)}</dd>
+          <dt className="text-[11px] text-gray-400 dark:text-gray-500">
+            {t("credibilityPage.cap")}
+          </dt>
+          <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            ${formatUsd(c.effectiveCapUSD)}
+          </dd>
         </div>
       </dl>
 
@@ -115,11 +131,13 @@ function RulesDisclosure() {
         <ShieldCheckIcon className="h-4 w-4 text-gray-500" />
         {t("credibilityPage.rules.title")}
       </h2>
-      <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">{t("credibilityPage.rules.intro")}</p>
+      <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+        {t("credibilityPage.rules.intro")}
+      </p>
 
       <div className="mt-3 space-y-2">
         {Array.isArray(penalties) &&
-          penalties.map((p) => (
+          penalties.map(p => (
             <div key={p.name} className="text-xs">
               <span className="font-semibold text-gray-800 dark:text-gray-200">{p.name}</span>
               <span className="text-gray-600 dark:text-gray-400"> — {p.desc}</span>
@@ -130,7 +148,9 @@ function RulesDisclosure() {
       <p className="mt-4 text-xs font-medium text-gray-700 dark:text-gray-300">
         {t("credibilityPage.rules.formulaTitle")}
       </p>
-      <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">{t("credibilityPage.rules.formula")}</p>
+      <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+        {t("credibilityPage.rules.formula")}
+      </p>
 
       {Array.isArray(ruleList) && ruleList.length > 0 && (
         <ul className="mt-3 list-disc pl-5 space-y-1 text-xs text-gray-600 dark:text-gray-400">
@@ -140,7 +160,9 @@ function RulesDisclosure() {
         </ul>
       )}
 
-      <p className="mt-4 text-[11px] text-gray-400 dark:text-gray-500">{t("credibilityPage.rules.source")}</p>
+      <p className="mt-4 text-[11px] text-gray-400 dark:text-gray-500">
+        {t("credibilityPage.rules.source")}
+      </p>
     </section>
   );
 }
@@ -173,8 +195,12 @@ export default function CredibilityPage() {
       <div className="max-w-3xl mx-auto px-4 py-6">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">{t("credibilityPage.title")}</h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("credibilityPage.subtitle")}</p>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              {t("credibilityPage.title")}
+            </h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {t("credibilityPage.subtitle")}
+            </p>
           </div>
           <button
             onClick={() => void load()}
@@ -188,7 +214,9 @@ export default function CredibilityPage() {
 
         <div className="mt-5 space-y-3">
           {loading && (
-            <div className="text-center text-sm text-gray-400 py-10">{t("credibilityPage.loading")}</div>
+            <div className="text-center text-sm text-gray-400 py-10">
+              {t("credibilityPage.loading")}
+            </div>
           )}
           {!loading && error && (
             <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4 text-sm text-red-700 dark:text-red-300">
@@ -196,11 +224,13 @@ export default function CredibilityPage() {
             </div>
           )}
           {!loading && !error && entries.length === 0 && (
-            <div className="text-center text-sm text-gray-400 py-10">{t("credibilityPage.empty")}</div>
+            <div className="text-center text-sm text-gray-400 py-10">
+              {t("credibilityPage.empty")}
+            </div>
           )}
           {!loading &&
             !error &&
-            entries.map((entry) => <CredibilityRow key={entry.token} entry={entry} />)}
+            entries.map(entry => <CredibilityRow key={entry.token} entry={entry} />)}
         </div>
 
         <RulesDisclosure />

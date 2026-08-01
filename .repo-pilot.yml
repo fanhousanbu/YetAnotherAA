@@ -1,0 +1,22 @@
+# .repo-pilot.yml — repo-pilot skill 的分支/清理策略。放仓库根目录。
+# 脚本不解析 YAML；由 skill 用 Read 读取后作为 flag 传给脚本，保持确定简单。
+
+base_branch: master
+
+# 本仓库没有 preview/integration 分支：日常流程就是 feature 分支 → PR → squash 合入
+# master（GitHub 侧 allow_merge_commit=false、delete_branch_on_merge=true）。
+# 显式写成 master，避免 skill 走「preview 不存在 → 静默回退」那条路径。
+integration_branch: master
+
+protect_patterns:
+  - release
+  - hotfix
+  # 嵌入式 EIP-7702 实验分支，不参与主干开发流程，别被当成陈旧 feature 分支清理
+  - "7702"
+
+remote: origin
+
+# GitHub 已开 delete_branch_on_merge，远程分支合并即删；脚本无须再动远程。
+allow_remote_cleanup: false
+
+docs_dir: docs/agent
