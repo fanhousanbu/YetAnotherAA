@@ -108,8 +108,15 @@ export class GuardianService {
   }
 
   /**
-   * The viem chain object for `getChainId()`. Used for every write so viem asserts
-   * the configured RPC really is on that chain before signing.
+   * The viem chain object for `getChainId()`, used for every recovery write.
+   *
+   * NOTE: this does NOT by itself validate that ETH_RPC_URL is on that chain.
+   * viem only calls `assertCurrentChain` for json-rpc accounts; the relayer here
+   * is a local (private-key) account, and `prepareTransactionRequest` short-circuits
+   * with `if (chain) return chain.id` — it never issues `eth_chainId`. A mismatch
+   * would therefore only surface as an opaque rejection from `eth_sendRawTransaction`,
+   * after the user has already completed a passkey ceremony. `assertRpcChain()` is
+   * what actually closes that gap; call it before any recovery read/write.
    */
   private getChain(): Chain {
     try {
@@ -120,11 +127,42 @@ export class GuardianService {
   }
 
   /**
+   * Preflight: the configured chain id must be what ETH_RPC_URL actually serves.
+   *
+   * Recovery is the one flow where a silent CHAIN_ID/RPC mismatch is expensive —
+   * `prepareP256Recovery` reads the nonce and guardian slot from the RPC's chain but
+   * domain-separates the challenge with the *configured* chain id, so a mismatch hands
+   * the guardian a challenge that can never verify on-chain. Fail here, before the
+   * passkey ceremony, rather than at `eth_sendRawTransaction`.
+   */
+  private async assertRpcChain(): Promise<void> {
+    const expected = this.getChainId();
+    let actual: number;
+    try {
+      actual = await this.getProvider().getChainId();
+    } catch (err) {
+      throw new InternalServerErrorException(
+        `Could not read the chain id from ETH_RPC_URL: ${(err as Error).message}`
+      );
+    }
+    if (actual !== expected) {
+      throw new InternalServerErrorException(
+        `Chain mismatch: CHAIN_ID is ${expected} but ETH_RPC_URL serves chain ${actual}. ` +
+          "Guardian recovery signatures are domain-separated with CHAIN_ID, so they would " +
+          "never verify on the chain the transaction is broadcast to. Fix the configuration."
+      );
+    }
+  }
+
+  /**
    * Returns a Wallet client backed by ETH_PRIVATE_KEY, used as the relayer
    * for on-chain executeRecovery() calls (no guardian restriction on that
    * function — anyone may call it once conditions are met).
    */
   private getRelayWalletClient(): any {
+    // Resolved first so a bad CHAIN_ID reports itself rather than being reported as
+    // (or masked by) a key problem — and so the key hint can name the right chain.
+    const chain = this.getChain();
     const privateKey = this.configService.get<string>("ethPrivateKey");
     // The .env.example placeholder (scalar 1); rejected so a real funded key must be set.
     // Built at runtime so the 64-hex literal isn't embedded in source (secret-scan hooks).
@@ -132,14 +170,15 @@ export class GuardianService {
     if (!privateKey || privateKey === placeholderKey) {
       throw new InternalServerErrorException(
         "ETH_PRIVATE_KEY is not configured or still set to the placeholder value. " +
-          "Please set a funded Sepolia EOA private key in .env to send on-chain recovery transactions."
+          `Please set an EOA private key in .env funded on chain ${chain.id} ` +
+          "to send on-chain recovery transactions."
       );
     }
     const rpcUrl = this.configService.get<string>("ethRpcUrl");
     const account = privateKeyToAccount(
       (privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`) as Hex
     );
-    return createWalletClient({ account, chain: this.getChain(), transport: http(rpcUrl) });
+    return createWalletClient({ account, chain, transport: http(rpcUrl) });
   }
 
   /**
@@ -398,6 +437,7 @@ export class GuardianService {
 
     let txHash: string;
     try {
+      await this.assertRpcChain();
       const walletClient = this.getRelayWalletClient();
       const provider = this.getProvider();
 
@@ -559,6 +599,10 @@ export class GuardianService {
     nonce: string;
     chainId: number;
   }> {
+    // Before anything is read or handed to the passkey: the RPC must be the chain
+    // the challenge below is domain-separated for.
+    await this.assertRpcChain();
+
     const provider = this.getProvider();
     const { gIdx } = await this.resolveP256GuardianSlot(dto.accountAddress);
     const nonce: bigint = await provider.readContract({
@@ -599,6 +643,10 @@ export class GuardianService {
     gIdx: number;
     newOwner: string;
   }> {
+    // Re-checked here, not just in prepareP256Recovery: the two are separate requests
+    // and the relayer must not broadcast to a chain the guardian did not sign for.
+    await this.assertRpcChain();
+
     const { gIdx } = await this.resolveP256GuardianSlot(dto.accountAddress);
 
     // Encode + validate the assertion (low-S, webauthn.get prefix, challenge slot) —

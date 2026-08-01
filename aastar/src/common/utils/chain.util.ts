@@ -35,12 +35,16 @@ const KNOWN_CHAINS: readonly Chain[] = [
  * transaction never touches. Both sides must read the same config value, so both
  * go through here. See PR #434 review.
  *
- * Passing the resolved chain to viem also buys a runtime guarantee: `writeContract`
- * asserts the RPC endpoint's own chain id matches `chain.id` before signing, so a
- * CHAIN_ID/ETH_RPC_URL mismatch fails loudly instead of producing an unusable signature.
+ * This resolves config → Chain and nothing more. It deliberately does NOT verify that
+ * the RPC endpoint is on that chain: viem runs `assertCurrentChain` only for json-rpc
+ * accounts, and for a local (private-key) account `prepareTransactionRequest` returns
+ * `chain.id` without ever issuing `eth_chainId`. Callers that sign or broadcast must
+ * preflight the RPC themselves (see GuardianService.assertRpcChain).
  *
- * Unknown ids get a minimal descriptor — viem only needs `id` for the assertion and
- * for stamping the transaction; gas/fee details come from the RPC.
+ * Unknown ids get a minimal descriptor, which is sound only for chains with standard
+ * EVM transaction serialization and fee behavior (it carries no custom
+ * formatters/serializers) — enough for local devnets like anvil's 31337. A chain that
+ * needs viem's chain-specific handling must be added to KNOWN_CHAINS above.
  */
 export function resolveChain(chainId: number): Chain {
   if (!Number.isInteger(chainId) || chainId <= 0) {
@@ -56,8 +60,10 @@ export function resolveChain(chainId: number): Chain {
     id: chainId,
     name: `chain-${chainId}`,
     nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-    // Unused: every client in this codebase supplies its own `transport`. Present
-    // only because viem's Chain type requires it.
+    // Empty on purpose: every client in this codebase passes its own `http(rpcUrl)`
+    // transport, so this is never dereferenced. Anyone who later builds a client from
+    // `resolveChain(id)` alone — letting viem fall back to `chain.rpcUrls` — must supply
+    // a real URL here first, or they will get an unhelpful "no URL" failure.
     rpcUrls: { default: { http: [] } },
   });
 }
