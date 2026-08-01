@@ -130,3 +130,7 @@ Thumbs.db
 /aastar-frontend/test-results/
 /aastar-frontend/playwright-report/
 /aastar-frontend/e2e/.results.json
+
+# CodeGraph index — a local SQLite knowledge graph rebuilt from source on demand.
+# Machine-local, churns on every edit, and holds absolute paths; never commit it.
+/.codegraph/
