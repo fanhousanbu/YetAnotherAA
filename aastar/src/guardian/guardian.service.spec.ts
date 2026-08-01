@@ -101,6 +101,8 @@ describe("GuardianService — recovery chain consistency (PR #434)", () => {
         return args[0] === 0n ? [NON_ZERO32, NON_ZERO32] : [ZERO32, ZERO32];
       }
       if (functionName === "getRecoveryNonce") return 7n;
+      // Default: the on-chain proposal agrees with the tracked request.
+      if (functionName === "activeRecovery") return [NEW_OWNER, 0n, 0n, 0n];
       throw new Error(`unexpected readContract: ${functionName}`);
     });
     mockWriteContract.mockResolvedValue("0xtxhash");
@@ -192,6 +194,77 @@ describe("GuardianService — recovery chain consistency (PR #434)", () => {
       expect(mockWriteContract).not.toHaveBeenCalled();
       // The request must stay pending so it can be retried after the config is fixed.
       expect(mockUpdateRecoveryRequest).not.toHaveBeenCalled();
+    });
+  });
+
+  // executeRecovery() is argument-less — the contract acts on whatever proposal is
+  // active on-chain, which the passkey path or a direct proposeRecovery() call can
+  // overwrite. Executing blind would rotate the owner to an address this backend
+  // never vetted and then record the *tracked* one, desyncing the DB from the chain.
+  describe("on-chain proposal vs tracked request (issue #438)", () => {
+    const OTHER_OWNER = "0x3333333333333333333333333333333333333333";
+
+    beforeEach(async () => {
+      mockGetChainId.mockResolvedValue(11155111);
+      service = await buildService(11155111);
+    });
+
+    const expectNothingHappened = () => {
+      expect(mockWriteContract).not.toHaveBeenCalled();
+      expect(mockUpdateRecoveryRequest).not.toHaveBeenCalled();
+      expect(mockUpdateAccountByAddress).not.toHaveBeenCalled();
+    };
+
+    it("refuses when the on-chain proposal targets a different owner", async () => {
+      mockReadContract.mockImplementation(({ functionName }: any) => {
+        if (functionName === "activeRecovery") return [OTHER_OWNER, 0n, 0n, 0n];
+        throw new Error(`unexpected readContract: ${functionName}`);
+      });
+
+      await expect(service.executeRecovery(ACCOUNT)).rejects.toThrow(
+        new RegExp(`${OTHER_OWNER}.*${NEW_OWNER}`)
+      );
+      expectNothingHappened();
+    });
+
+    it("refuses when no proposal is active on-chain", async () => {
+      mockReadContract.mockImplementation(({ functionName }: any) => {
+        // newOwner === address(0) is the contract's "nothing proposed" encoding.
+        if (functionName === "activeRecovery")
+          return ["0x0000000000000000000000000000000000000000", 0n, 0n, 0n];
+        throw new Error(`unexpected readContract: ${functionName}`);
+      });
+
+      await expect(service.executeRecovery(ACCOUNT)).rejects.toThrow(/No active recovery proposal/);
+      expectNothingHappened();
+    });
+
+    it("surfaces a failed read instead of treating it as 'nothing proposed'", async () => {
+      mockReadContract.mockImplementation(({ functionName }: any) => {
+        if (functionName === "activeRecovery") throw new Error("RPC exploded");
+        throw new Error(`unexpected readContract: ${functionName}`);
+      });
+
+      await expect(service.executeRecovery(ACCOUNT)).rejects.toThrow(/RPC exploded/);
+      expectNothingHappened();
+    });
+
+    it("proceeds and records the on-chain owner when the two agree", async () => {
+      // Same address, different casing — the comparison must not care, and the value
+      // written to the DB must be the chain's, not the request's.
+      const CHECKSUMMED = NEW_OWNER.toUpperCase().replace("0X", "0x");
+      mockReadContract.mockImplementation(({ functionName }: any) => {
+        if (functionName === "activeRecovery") return [CHECKSUMMED, 0n, 0n, 0n];
+        throw new Error(`unexpected readContract: ${functionName}`);
+      });
+
+      const result = await service.executeRecovery(ACCOUNT);
+
+      expect(mockWriteContract).toHaveBeenCalledTimes(1);
+      expect(mockUpdateAccountByAddress).toHaveBeenCalledWith(ACCOUNT, {
+        signerAddress: CHECKSUMMED,
+      });
+      expect(result.newSignerAddress).toBe(CHECKSUMMED);
     });
   });
 
