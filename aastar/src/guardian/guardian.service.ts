@@ -15,10 +15,11 @@ import {
   parseAbi,
   zeroAddress,
   type Address,
+  type Chain,
   type Hex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { sepolia } from "viem/chains";
+import { resolveChain } from "../common/utils/chain.util";
 import { DatabaseService } from "../database/database.service";
 import {
   AddGuardianDto,
@@ -91,6 +92,34 @@ export class GuardianService {
   }
 
   /**
+   * The single chain id this service operates on. Every recovery signature is
+   * domain-separated with it AND every recovery transaction is broadcast to it,
+   * so the two can never diverge (PR #434 review).
+   */
+  private getChainId(): number {
+    const chainId = this.configService.get<number>("chainId");
+    if (typeof chainId !== "number" || !Number.isInteger(chainId) || chainId <= 0) {
+      throw new InternalServerErrorException(
+        `CHAIN_ID is not configured correctly (got ${JSON.stringify(chainId)}). ` +
+          "Guardian recovery needs it to domain-separate signatures and to target the right chain."
+      );
+    }
+    return chainId;
+  }
+
+  /**
+   * The viem chain object for `getChainId()`. Used for every write so viem asserts
+   * the configured RPC really is on that chain before signing.
+   */
+  private getChain(): Chain {
+    try {
+      return resolveChain(this.getChainId());
+    } catch (err) {
+      throw new InternalServerErrorException((err as Error).message);
+    }
+  }
+
+  /**
    * Returns a Wallet client backed by ETH_PRIVATE_KEY, used as the relayer
    * for on-chain executeRecovery() calls (no guardian restriction on that
    * function — anyone may call it once conditions are met).
@@ -110,7 +139,7 @@ export class GuardianService {
     const account = privateKeyToAccount(
       (privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`) as Hex
     );
-    return createWalletClient({ account, chain: sepolia, transport: http(rpcUrl) });
+    return createWalletClient({ account, chain: this.getChain(), transport: http(rpcUrl) });
   }
 
   /**
@@ -378,7 +407,7 @@ export class GuardianService {
         functionName: "executeRecovery",
         args: [],
         account: walletClient.account!,
-        chain: sepolia,
+        chain: this.getChain(),
       });
       txHash = hash;
       this.logger.log(`On-chain executeRecovery tx sent: ${txHash}`);
@@ -537,7 +566,9 @@ export class GuardianService {
       abi: AIRACCOUNT_P256_RECOVERY_ABI,
       functionName: "getRecoveryNonce",
     });
-    const chainId = this.configService.get<number>("chainId") || 11155111;
+    // Same source as getChain() — the challenge's domain and the chain
+    // submitP256Recovery() broadcasts to are the same value by construction.
+    const chainId = this.getChainId();
 
     const challenge = buildProposeRecoveryChallenge({
       chainId,
@@ -589,7 +620,7 @@ export class GuardianService {
         functionName: "proposeRecoveryWithSig",
         args: [dto.newOwner as Address, gIdx, sig as Hex],
         account: walletClient.account!,
-        chain: sepolia,
+        chain: this.getChain(),
       });
       const receipt = await provider.waitForTransactionReceipt({ hash });
       if (!receipt || receipt.status !== "success") {
