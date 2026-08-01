@@ -182,7 +182,32 @@ export class GuardianService {
   }
 
   /**
-   * Reads the on-chain activeRecovery proposal for a given account.
+   * Raw read of the on-chain activeRecovery proposal. Returns null only when no
+   * proposal is active (newOwner === address(0)) and THROWS if the read itself
+   * fails — so callers that must not confuse "nothing proposed" with "could not
+   * reach the chain" (see executeRecovery) can tell the two apart.
+   */
+  private async readActiveRecovery(accountAddress: string): Promise<{
+    newOwner: string;
+    proposedAt: bigint;
+    approvalBitmap: bigint;
+    cancellationBitmap: bigint;
+  } | null> {
+    const provider = this.getProvider();
+    const [newOwner, proposedAt, approvalBitmap, cancellationBitmap] = await provider.readContract({
+      address: accountAddress as Address,
+      abi: AIRACCOUNT_RECOVERY_ABI,
+      functionName: "activeRecovery",
+    });
+    if (newOwner === zeroAddress) {
+      return null;
+    }
+    return { newOwner, proposedAt, cancellationBitmap, approvalBitmap };
+  }
+
+  /**
+   * Lenient wrapper around readActiveRecovery for the read-only/display paths:
+   * a failed read is reported as "no active recovery" rather than propagating.
    * Returns null when no proposal is active (newOwner === address(0)).
    */
   private async fetchOnChainRecovery(accountAddress: string): Promise<{
@@ -192,17 +217,7 @@ export class GuardianService {
     cancellationBitmap: bigint;
   } | null> {
     try {
-      const provider = this.getProvider();
-      const [newOwner, proposedAt, approvalBitmap, cancellationBitmap] =
-        await provider.readContract({
-          address: accountAddress as Address,
-          abi: AIRACCOUNT_RECOVERY_ABI,
-          functionName: "activeRecovery",
-        });
-      if (newOwner === zeroAddress) {
-        return null;
-      }
-      return { newOwner, proposedAt, cancellationBitmap, approvalBitmap };
+      return await this.readActiveRecovery(accountAddress);
     } catch (err) {
       // If the contract does not exist on-chain (e.g. account not yet deployed)
       // treat it as no active recovery rather than crashing.
@@ -394,13 +409,16 @@ export class GuardianService {
    *
    * Steps:
    *  1. Validate off-chain quorum and timelock (database checks).
-   *  2. Send an on-chain executeRecovery() transaction using the backend relayer.
+   *  2. Confirm the on-chain active proposal is the one this request tracks —
+   *     executeRecovery() is argument-less and acts on whatever the chain has,
+   *     which another path may have overwritten.
+   *  3. Send an on-chain executeRecovery() transaction using the backend relayer.
    *     This function has no msg.sender restriction in the contract — anyone may
    *     call it once conditions (threshold + timelock) are met on-chain.
-   *  3. Wait for the transaction to be mined and confirm success.
-   *  4. Update the database only after on-chain success.
+   *  4. Wait for the transaction to be mined and confirm success.
+   *  5. Update the database only after on-chain success.
    *
-   * On-chain failure causes an exception; the database is NOT updated, so
+   * Any failure causes an exception; the database is NOT updated, so
    * the recovery request stays in "pending" status and can be retried.
    */
   async executeRecovery(accountAddress: string) {
@@ -430,14 +448,42 @@ export class GuardianService {
       );
     }
 
-    // ── 2. On-chain executeRecovery() ─────────────────────────────────────
+    // ── 2. The chain, not the database, decides what executeRecovery() does ──
+    // executeRecovery() takes no arguments: it executes whichever proposal is
+    // active on-chain. That need not be the one this backend tracked — the passkey
+    // path (proposeRecoveryWithSig) and a direct proposeRecovery() call can both
+    // overwrite it. Executing blind would hand the account to an owner we never
+    // vetted, and then write the *tracked* address into the database, leaving the
+    // DB permanently disagreeing with the chain about who owns the account.
+    await this.assertRpcChain();
+
+    const onChain = await this.readActiveRecovery(accountAddress).catch(err => {
+      // Distinguished from "no proposal": a read failure must not be silently
+      // downgraded into a reason to proceed or a misleading 400.
+      throw new InternalServerErrorException(
+        `Could not read the on-chain recovery proposal for ${accountAddress}: ${(err as Error).message}`
+      );
+    });
+    if (!onChain) {
+      throw new BadRequestException(
+        "No active recovery proposal on-chain for this account — it may have already been " +
+          "executed or cancelled. Refusing to call executeRecovery() blind."
+      );
+    }
+    if (onChain.newOwner.toLowerCase() !== String(request.newSignerAddress).toLowerCase()) {
+      throw new BadRequestException(
+        `On-chain recovery proposal targets ${onChain.newOwner}, but the pending request targets ` +
+          `${request.newSignerAddress}. Refusing to execute a proposal this backend did not track.`
+      );
+    }
+
+    // ── 3. On-chain executeRecovery() ─────────────────────────────────────
     this.logger.log(
-      `Executing on-chain recovery for account=${accountAddress} newOwner=${request.newSignerAddress}`
+      `Executing on-chain recovery for account=${accountAddress} newOwner=${onChain.newOwner}`
     );
 
     let txHash: string;
     try {
-      await this.assertRpcChain();
       const walletClient = this.getRelayWalletClient();
       const provider = this.getProvider();
 
@@ -452,7 +498,7 @@ export class GuardianService {
       txHash = hash;
       this.logger.log(`On-chain executeRecovery tx sent: ${txHash}`);
 
-      // ── 3. Wait for confirmation ────────────────────────────────────────
+      // ── 4. Wait for confirmation ────────────────────────────────────────
       const receipt = await provider.waitForTransactionReceipt({ hash, confirmations: 1 });
       if (!receipt || receipt.status !== "success") {
         throw new Error(
@@ -472,21 +518,23 @@ export class GuardianService {
       );
     }
 
-    // ── 4. Update database only after on-chain success ─────────────────
+    // ── 5. Update database only after on-chain success ─────────────────
     await this.databaseService.updateRecoveryRequest(request.id, {
       status: "executed",
       executedAt: new Date().toISOString(),
     });
 
-    // Update the account's signerAddress in the database to reflect the new owner
+    // Record what the chain actually did, not what the request asked for. The two
+    // are equal by the check above; using the on-chain value keeps its checksummed
+    // form and means the DB can never describe an owner the chain didn't set.
     await this.databaseService.updateAccountByAddress(accountAddress, {
-      signerAddress: request.newSignerAddress,
+      signerAddress: onChain.newOwner,
     });
 
     return {
       message: "Account recovery executed successfully (on-chain + database updated)",
       accountAddress,
-      newSignerAddress: request.newSignerAddress,
+      newSignerAddress: onChain.newOwner,
       executedAt: new Date().toISOString(),
       txHash,
     };
