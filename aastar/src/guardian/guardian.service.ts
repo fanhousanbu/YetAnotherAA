@@ -418,8 +418,14 @@ export class GuardianService {
    *  4. Wait for the transaction to be mined and confirm success.
    *  5. Update the database only after on-chain success.
    *
-   * Any failure causes an exception; the database is NOT updated, so
-   * the recovery request stays in "pending" status and can be retried.
+   * Failures BEFORE the chain moves (1-4) throw, and the database is not touched, so
+   * the request stays "pending" and can be retried.
+   *
+   * Once the chain has moved, step 5's two writes are ordered by blast radius rather
+   * than wrapped in a transaction (there isn't one). A failed `signerAddress` write
+   * throws and leaves the request pending. A failed request-status write is
+   * deliberately swallowed and logged: the recovery really did happen and the account
+   * row already says so, so raising here would report the opposite. See issue #446.
    */
   async executeRecovery(accountAddress: string) {
     // ── 1. Off-chain checks ───────────────────────────────────────────────
@@ -533,6 +539,9 @@ export class GuardianService {
     // authoritative record is a chain that cannot join a database transaction —
     // the real answer is reconciling the DB against on-chain state. See issue #446.
     const executedAt = new Date().toISOString();
+    // Resolved out here, not inside the catch below: that block exists precisely to
+    // never throw, so nothing fallible belongs in it.
+    const chainId = this.getChainId();
 
     // Record what the chain actually did, not what the request asked for. The two
     // are equal by the check above; using the on-chain value keeps its checksummed
@@ -551,10 +560,10 @@ export class GuardianService {
       // account row already reflects it. Failing the call here would tell the caller
       // the opposite. Log everything an operator needs to reconcile by hand instead.
       this.logger.error(
-        `Recovery ${request.id} executed on-chain (tx=${txHash}, account=${accountAddress} ` +
-          `-> ${onChain.newOwner}) but marking the request "executed" failed: ` +
-          `${(err as Error).message}. The account row is correct; only the request status ` +
-          `is stale — set it to "executed" manually.`
+        `Recovery ${request.id} executed on-chain (chainId=${chainId}, tx=${txHash}, ` +
+          `account=${accountAddress} -> ${onChain.newOwner}) but marking the request ` +
+          `"executed" failed: ${(err as Error).message}. The account row is correct; only ` +
+          `the request status is stale — set it to "executed" manually.`
       );
     }
 

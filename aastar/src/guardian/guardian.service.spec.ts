@@ -305,6 +305,8 @@ describe("GuardianService — recovery chain consistency (PR #434)", () => {
       expect(msg).toContain("0xtxhash");
       expect(msg).toContain(ACCOUNT);
       expect(msg).toContain(NEW_OWNER);
+      // chainId too — without it the log is ambiguous once more than one chain is in play.
+      expect(msg).toContain("chainId=11155111");
     });
 
     it("fails loudly, and leaves the request pending, when the account write fails", async () => {
