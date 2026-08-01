@@ -519,10 +519,20 @@ export class GuardianService {
     }
 
     // ── 5. Update database only after on-chain success ─────────────────
-    await this.databaseService.updateRecoveryRequest(request.id, {
-      status: "executed",
-      executedAt: new Date().toISOString(),
-    });
+    // The chain has already moved and cannot be rolled back, and PersistenceAdapter
+    // has no transaction across its two writes (neither the json nor the postgres
+    // adapter offers one). So these two are ORDERED BY BLAST RADIUS rather than
+    // wrapped: whichever one we do second is the one that can be left behind.
+    //
+    // `signerAddress` is the security-relevant record — a stale one has the database
+    // naming an owner who no longer controls the account, and it self-heals never,
+    // because a retry stops at findPendingRecovery (the request is no longer pending).
+    // The request's `status` is bookkeeping: stale is untidy, not dangerous.
+    //
+    // This narrows the window; it does not close it. Nothing can, while the
+    // authoritative record is a chain that cannot join a database transaction —
+    // the real answer is reconciling the DB against on-chain state. See issue #446.
+    const executedAt = new Date().toISOString();
 
     // Record what the chain actually did, not what the request asked for. The two
     // are equal by the check above; using the on-chain value keeps its checksummed
@@ -531,11 +541,28 @@ export class GuardianService {
       signerAddress: onChain.newOwner,
     });
 
+    try {
+      await this.databaseService.updateRecoveryRequest(request.id, {
+        status: "executed",
+        executedAt,
+      });
+    } catch (err) {
+      // Deliberately not rethrown. The recovery DID happen: it is on-chain and the
+      // account row already reflects it. Failing the call here would tell the caller
+      // the opposite. Log everything an operator needs to reconcile by hand instead.
+      this.logger.error(
+        `Recovery ${request.id} executed on-chain (tx=${txHash}, account=${accountAddress} ` +
+          `-> ${onChain.newOwner}) but marking the request "executed" failed: ` +
+          `${(err as Error).message}. The account row is correct; only the request status ` +
+          `is stale — set it to "executed" manually.`
+      );
+    }
+
     return {
       message: "Account recovery executed successfully (on-chain + database updated)",
       accountAddress,
       newSignerAddress: onChain.newOwner,
-      executedAt: new Date().toISOString(),
+      executedAt,
       txHash,
     };
   }
