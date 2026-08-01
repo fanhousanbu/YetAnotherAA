@@ -191,7 +191,9 @@ export default function OperatorPage() {
                 {t("nodeOnboarding.card.title")}
               </span>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t("nodeOnboarding.card.desc")}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {t("nodeOnboarding.card.desc")}
+            </p>
           </button>
         </section>
 
