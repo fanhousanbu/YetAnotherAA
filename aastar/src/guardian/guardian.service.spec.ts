@@ -268,6 +268,65 @@ describe("GuardianService — recovery chain consistency (PR #434)", () => {
     });
   });
 
+  // The chain has already moved and there is no transaction across the two DB writes,
+  // so they are ordered by blast radius: a stale signerAddress means the DB names an
+  // owner who no longer controls the account AND never self-heals (a retry stops at
+  // findPendingRecovery). A stale request status is only untidy. See issue #446.
+  describe("post-confirmation DB writes (issue #446)", () => {
+    beforeEach(async () => {
+      mockGetChainId.mockResolvedValue(11155111);
+      service = await buildService(11155111);
+    });
+
+    it("writes the account's signerAddress before the request status", async () => {
+      const order: string[] = [];
+      mockUpdateAccountByAddress.mockImplementation(async () => void order.push("account"));
+      mockUpdateRecoveryRequest.mockImplementation(async () => void order.push("request"));
+
+      await service.executeRecovery(ACCOUNT);
+
+      expect(order).toEqual(["account", "request"]);
+    });
+
+    it("still reports success when only the bookkeeping write fails", async () => {
+      mockUpdateRecoveryRequest.mockRejectedValue(new Error("db down"));
+      const logged = jest.spyOn((service as any).logger, "error").mockImplementation(() => {});
+
+      // The recovery is on-chain and the account row already reflects it — telling the
+      // caller it failed would be a lie.
+      const result = await service.executeRecovery(ACCOUNT);
+
+      expect(result.txHash).toBe("0xtxhash");
+      expect(mockUpdateAccountByAddress).toHaveBeenCalledWith(ACCOUNT, {
+        signerAddress: NEW_OWNER,
+      });
+      // An operator has to reconcile by hand, so the log must carry enough to do it.
+      const msg = logged.mock.calls[0][0] as string;
+      expect(msg).toContain("0xtxhash");
+      expect(msg).toContain(ACCOUNT);
+      expect(msg).toContain(NEW_OWNER);
+      // chainId too — without it the log is ambiguous once more than one chain is in play.
+      expect(msg).toContain("chainId=11155111");
+    });
+
+    it("fails loudly, and leaves the request pending, when the account write fails", async () => {
+      mockUpdateAccountByAddress.mockRejectedValue(new Error("db down"));
+
+      await expect(service.executeRecovery(ACCOUNT)).rejects.toThrow(/db down/);
+      // Must NOT be marked executed: that is what makes the inconsistency unrecoverable.
+      expect(mockUpdateRecoveryRequest).not.toHaveBeenCalled();
+    });
+
+    it("reports one executedAt, not two clock reads that can disagree", async () => {
+      const result = await service.executeRecovery(ACCOUNT);
+
+      expect(mockUpdateRecoveryRequest).toHaveBeenCalledWith("req-1", {
+        status: "executed",
+        executedAt: result.executedAt,
+      });
+    });
+  });
+
   it("refuses to build a relay wallet when chainId is unusable", async () => {
     for (const bad of [undefined, 0, -1]) {
       service = await buildService(bad);
