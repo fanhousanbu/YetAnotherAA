@@ -208,8 +208,9 @@ export class PaymasterService {
           gasUsed: receipt.gasUsed.toString(),
           effectiveGasPrice: formatGwei(receipt.effectiveGasPrice || 0n) + " gwei",
           totalCost:
-            formatEther((receipt.gasUsed as bigint) * ((receipt.effectiveGasPrice as bigint) || 0n)) +
-            " ETH",
+            formatEther(
+              (receipt.gasUsed as bigint) * ((receipt.effectiveGasPrice as bigint) || 0n)
+            ) + " ETH",
           paidBy: gasPaidBy,
         },
         userOperation: userOpDetails,
