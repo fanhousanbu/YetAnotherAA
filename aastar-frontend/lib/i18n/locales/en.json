@@ -730,9 +730,18 @@
       "title": "Where does the score come from? Audit & slash rules",
       "intro": "The credibility score is a purely informational on-chain reputation signal (not a penalty). The DVT validator network has three independent, never-conflated actions on nodes:",
       "penalties": [
-        { "name": "SLASH (burn stake)", "desc": "Burns the operator's stake, irreversible. Only for objective, attributable, globally-verifiable on-chain economic fraud, decided by BLS-quorum consensus." },
-        { "name": "JAIL (exclude)", "desc": "Stops fee and removes the node from the active set; self-heals. For objective on-chain liveness (offline) facts, auto-enforced by SuperPaymaster." },
-        { "name": "REPUTATION (score)", "desc": "This public credibility score itself — no penalty, purely informational, computed live from on-chain views." }
+        {
+          "name": "SLASH (burn stake)",
+          "desc": "Burns the operator's stake, irreversible. Only for objective, attributable, globally-verifiable on-chain economic fraud, decided by BLS-quorum consensus."
+        },
+        {
+          "name": "JAIL (exclude)",
+          "desc": "Stops fee and removes the node from the active set; self-heals. For objective on-chain liveness (offline) facts, auto-enforced by SuperPaymaster."
+        },
+        {
+          "name": "REPUTATION (score)",
+          "desc": "This public credibility score itself — no penalty, purely informational, computed live from on-chain views."
+        }
       ],
       "formulaTitle": "Credibility score formula (computed live on-chain)",
       "formula": "score = min(100, backingValue ÷ issuedValue × 100), i.e. backing coverage %; flagged over-issued when issuedValue > effectiveCap. All three USD figures are 18-decimal fixed-point accounting units.",
