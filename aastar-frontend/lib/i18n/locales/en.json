@@ -713,6 +713,39 @@
     "loadError": "Failed to load registry data",
     "queryError": "Failed to query role for address"
   },
+  "credibilityPage": {
+    "title": "Community xPNTs Credibility",
+    "subtitle": "The on-chain credibility score (0–100) and over-issue status of each community's xPNTs. Computed live from on-chain economic facts — no manual input.",
+    "refresh": "Refresh",
+    "loading": "Reading on-chain credibility…",
+    "error": "Failed to load",
+    "empty": "No community xPNTs deployed yet",
+    "overIssuedBadge": "Over-issued",
+    "overIssuedHint": "This community has issued more xPNTs value than its backing collateral — circulating value exceeds redeemable value, so holdings carry depreciation risk.",
+    "scoreLabel": "Credibility score (backing coverage)",
+    "backing": "Backing (USD)",
+    "issued": "Issued (USD)",
+    "cap": "Cap (USD)",
+    "rules": {
+      "title": "Where does the score come from? Audit & slash rules",
+      "intro": "The credibility score is a purely informational on-chain reputation signal (not a penalty). The DVT validator network has three independent, never-conflated actions on nodes:",
+      "penalties": [
+        { "name": "SLASH (burn stake)", "desc": "Burns the operator's stake, irreversible. Only for objective, attributable, globally-verifiable on-chain economic fraud, decided by BLS-quorum consensus." },
+        { "name": "JAIL (exclude)", "desc": "Stops fee and removes the node from the active set; self-heals. For objective on-chain liveness (offline) facts, auto-enforced by SuperPaymaster." },
+        { "name": "REPUTATION (score)", "desc": "This public credibility score itself — no penalty, purely informational, computed live from on-chain views." }
+      ],
+      "formulaTitle": "Credibility score formula (computed live on-chain)",
+      "formula": "score = min(100, backingValue ÷ issuedValue × 100), i.e. backing coverage %; flagged over-issued when issuedValue > effectiveCap. All three USD figures are 18-decimal fixed-point accounting units.",
+      "ruleList": [
+        "Over-issue is disclosed only as an on-chain credibility score, never slashed — the score and over-issued flag are computed by the contract and anyone can verify them directly on-chain.",
+        "Effective cap = per-industry baseline (factory-governed; a community can't self-pick a high baseline) × cap ratio + backing value.",
+        "Backing = the community's aPNTs staked in SuperPaymaster (redemption services via MyShop may be added later).",
+        "Going offline only jails (fee-stop / active-set removal), never slashes stake; an individual over their spend limit is refused at sign time, which also never slashes the operator's stake.",
+        "Forged slash proposals (proof-forgery) are not enforced — co-sign re-verification and on-chain aggregate rejection already block forgeries; residual spam falls to reputation."
+      ],
+      "source": "Basis: DVT repo docs/AUDIT_SLASH_MODEL.md (CC-28 on-chain credibility views + the corrected four-rule model)."
+    }
+  },
   "communityPage": {
     "title": "Community Portal",
     "loadError": "Failed to load community data",

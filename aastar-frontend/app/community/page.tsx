@@ -334,6 +334,29 @@ export default function CommunityPage() {
           )}
         </section>
 
+        {/* Credibility disclosure entry */}
+        <section className="mb-6">
+          <button
+            onClick={() => router.push("/community/credibility")}
+            className="w-full flex items-center justify-between gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700/60"
+          >
+            <div className="flex items-center gap-3">
+              <CheckBadgeIcon className="h-6 w-6 text-green-500 shrink-0" />
+              <div>
+                <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                  {t("credibilityPage.title")}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {t("credibilityPage.subtitle")}
+                </p>
+              </div>
+            </div>
+            <span className="text-gray-400" aria-hidden="true">
+              →
+            </span>
+          </button>
+        </section>
+
         {/* Community List */}
         <section>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
