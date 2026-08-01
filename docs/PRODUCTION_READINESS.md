@@ -1,7 +1,7 @@
 # Production Readiness — YAAA(Cos72) 正式版发布（全生态合并版）
 
 > **单一真相源**。由 YAAA 维护，源头 = 协同任务 **CC-30** 各仓回帖，随回帖同步进来。
-> 最后更新：2026-07-09。
+> 最后更新：2026-07-10（**6 仓 roster 齐**：dvt v1.11.0 回表 + airaccount-contract bump v0.28.0）。
 
 ## 核心目标
 
@@ -32,15 +32,17 @@
 - [x] YAAA 治理页读+写上线（#425/#426/#427）
 - [x] YAAA 测试绿（后端 41 单测 + 前端 10 e2e）
 - [x] kms — 测试网就能发（v0.28.1，E2E 41/41 绿，只差 config→Sepolia）；板子明后天到货即部署
-- [x] airaccount-contract — 测试网 beta 可发（v0.27.0 Sepolia，900 forge + 16 阶段 E2E 全绿）；⚠️ verify 9 pending 待补
+- [x] airaccount-contract — 测试网 beta 可发（**v0.28.0** Sepolia，900 forge + 16 阶段 E2E 全绿；verify 4 核心已补 #185）
 - [x] sp — SP 侧零阻塞可支撑 YAAA 测试网发布（V5.4.2 + CC-28 滥发防护 + CC-29 LivenessRegistry 全在 Sepolia，1156 测试绿）
-- [ ] dvt — 待回帖（CC-13 slash E2E）
+- [x] dvt — 测试网就能发（**v1.11.0**：核心 BLS 签名/聚合/验证 + owner-gate fail-closed + CC-22 KMS+DVT 合跑 + dvt1/2/3.aastar.io Sepolia live）
 - [x] sdk — 测试网就绪，**已发 0.40.0**（独立项 G2/G3/G4/G6/G7/G9-part1/G10 全清零，门禁全绿，core 471 + airaccount 872 测试）
+
+> ✅ **6 仓 roster 齐**（yaaa/kms/airaccount-contract/sp/dvt/sdk 全部回表）→ 测试网发布门全绿，可发 Cos72 测试网正式版。
 
 ### 🔴 主网发布门（测试网跑满 ~1 月后）
 - [ ] **主网 V3→V5 全栈重部署（G1，SDK 实测的头号主网阻塞）** —— OP-Mainnet(chain 10) canonical 地址虽在，但链上是**旧 V3 栈**（SuperPaymaster-3.2.2 / Registry-3.0.2），SDK/测试网是 **V5.4.2** → @repo:sp / @repo:airaccount-contract / @repo:dvt 把 V5.4.2 全栈部署到 OP 主网 → SDK 切 canonical + `version()==5.4.2` 链上自验（CC-18 两阶段）
-- [ ] DVT 主网/本地 anvil 节点（G5，`DEFAULT_DVT_NODES` 仅 Sepolia）+ xPNTs 滥发防护主网部署（G3 真生效）+ SDK 剩余主网前项（G8 #163 buyGasless / #176 part2 Tier-3 guardian ECDSA 收集）
-- [ ] airaccount-contract 主网 GA：**外部安全审计(#29，GA 硬门禁)** + 主网部署脚本/Safe/keystore + verify 补齐（@repo:airaccount-contract + jason）
+- [ ] DVT 主网/本地 anvil 节点（G5，`DEFAULT_DVT_NODES` 仅 Sepolia — DVT 本轮补 config 骨架，主网 nodeId 待生产板 KMS-TEE provision #106）+ ~~CC-32 DK2 armv7 脚本~~ ✅ **已交付（DVT PR #206，板到货即装）** + xPNTs 滥发防护主网部署（G3 真生效）+ SDK 剩余主网前项（G8 #163 buyGasless / #176 part2 Tier-3 guardian ECDSA 收集）
+- [ ] airaccount-contract 主网 GA：**外部安全审计(#29，GA 硬门禁)** + Safe/keystore（脚本骨架 `deploy-op-mainnet.ts` 已就位 #184、verify 4 核心已补 #185、CC-27 改名随 v0.28.0 落地）（@repo:airaccount-contract + jason）
 - [ ] SP：slashPolicyAdmin/owner **交社区 Safe（CC-31，`0x51eDf11f…`）** + aPNTs 主网充值 + 外部审计（@repo:sp + jason）—— SP runbook 已就位（PR #351，一条命令部署）；CC-31 同时解锁 YAAA 治理写侧 E2E（#427）
 - [ ] KMS 硬件安全根基：**#99（RPMB+secure boot+strict flip）/ #50（防回滚 key）/ #127（最终安全复审）/ #128（生产密钥保管+事故响应）** 一趟 TA 重刷 + 一轮对抗审查（@repo:kms）；评估 KMS 单点/异地节点
 - [ ] YAAA 配置切换：`ETH_RPC_URL` / `BUNDLER_RPC_URL` → 主网 `[配]`
@@ -49,7 +51,7 @@
 
 ---
 
-## 各仓 Production-Ready（YAAA + sdk + airaccount-contract + sp + kms 已填；dvt 待回帖）
+## 各仓 Production-Ready（**全 6 仓已填**：YAAA + sdk + airaccount-contract + sp + kms + dvt）
 
 ### repo:yaaa — 账户抽象全栈（=Cos72 本体） ✅ 已盘点
 
@@ -85,9 +87,9 @@ Cos72 = YAAA 前端品牌；首页 `aastar-frontend/app/page.tsx`（#423）；�
 
 > 关键：**KMS 测试网就绪** —— 硬件板明后天到货即部署。到货前软件侧**已合入 main**（`2e9e5afe`）：#122 CA/TA 门加固（PR #166，Codex 对抗 review + 3 Low 全修）、3-node 拓扑 profiles + runbook + readiness（PR #167，填好 Sepolia validator `0x539B96…`/EntryPoint v0.7，一键切两网）、DK2 部署已交接 @repo:dvt。**SP 依赖（#285 applyBLSAggregator / #139 slash）已确认闭环** → KMS 非硬件依赖只剩 **@repo:dvt**（DK2 脚本 / CC-22 build+validator / CC-24 TEE 托管 / 发版）+ 主网前 @repo:airaccount-contract 一次性重注册 TEE 新 BLS pubkey。主网 = 补 #99/#50/#127/#128（一趟 TA 重刷 + 对抗审查），代码零改动。
 
-### repo:airaccount-contract — 账户合约 ✅ 已盘点（v0.27.0）
+### repo:airaccount-contract — 账户合约 ✅ 已盘点（v0.28.0）
 
-来源：CC-30 `[repo:airaccount-contract]`（`7a0a6d29`，2026-07-09；本仓 PR #183）。**测试网 beta 现已可发**（v0.27.0 Sepolia 部署+验证，900 forge 测试全绿 + 16 阶段 E2E）；主网 GA 阻塞见下。
+来源：CC-30 `[repo:airaccount-contract]`（`7a0a6d29` 盘点 + `d824bada` 进度，2026-07-09~10；本仓 PR #183/#184/#185）。**测试网 beta 现已可发**（**v0.28.0** Sepolia 部署+验证，900 forge 测试全绿 + 16 阶段 E2E）；独立项已全部落地（release prep + CC-27 改名落地 + 主网部署脚本骨架 `scripts/deploy-op-mainnet.ts` + verify 4 核心合约 + 文档，PR #184/#185）；主网 GA 阻塞见下。
 
 | 项 | 评估 | 状态 | 门 |
 |---|---|---|---|
@@ -132,9 +134,25 @@ Cos72 = YAAA 前端品牌；首页 `aastar-frontend/app/page.tsx`（#423）；�
 
 > ⚠️ 对 YAAA 的直接影响：gasless **测试网已就绪**（可发）；**主网 gasless** 等 G1 + **slashPolicyAdmin 交多签（CC-31）** + aPNTs 充值。其中 CC-31 正是 YAAA 治理写侧 E2E（#427）在等的那次交权 —— 两件事同一步。
 
-### repo:dvt — YetAnotherAA-Validator / DVT 节点 ⏳ 待回帖
+### repo:dvt — YetAnotherAA-Validator / DVT 节点 ✅ 已盘点（v1.11.0）
 
-YAAA 依赖期望：**CC-13 slash 真 E2E**、**节点(imx93)部署 + gossip**、**两网 validator/slot 注册**。→ YAAA 转账 T2/T3 BLS 聚合的前置。
+来源：CC-30 `[repo:dvt]`（`cc9fbae0`，2026-07-10）。当前 **DVT v1.11.0**（audit 模块 + SP 5.4.2 双罚兜底 + 8 轮硬化）。**测试网 🟢**：核心签名/聚合/验证 + owner-gate + CC-22 合跑 + dvt1/2/3 Sepolia 全就绪 → 可支撑 YAAA 测试网发布。
+
+| 项 | 状态 | 阻塞主网? | 门 |
+|---|---|---|---|
+| 核心 BLS 签名/聚合/验证 + owner-gate fail-closed(403) | ✅ EIP-2537 c0/c1 序逐字节对齐 KMS/validator | 否 | `[测]=[主]` |
+| owner-gate（isValidOwnerAuth `0xa0cf00cf` 委托） | ✅ CC-22 全链路 sign 链上闭合（e2e_account `0x92EA8b02…`） | 否 | `[测]=[主]` |
+| CC-22 KMS+DVT 二合一（bare-node build / key-less node_state / X-Signer-Token） | ✅ 收敛（KMS 0.28.0 板上合跑字节对齐） | 否 | `[测]` |
+| 测试网 3 节点（dvt1/2/3.aastar.io，Sepolia） | ✅ live，validator `0x539B9681aFd5BFbCaa655Fe4c6BdcFe1fa7864bC`（`deploy/sdk-dvt-config.testnet.json` 权威） | 否 | `[测]` |
+| CC-13 目标2 审计/liveness | 🟡 审计检测 + 链上 liveness keeper(CC-29)已发；slash 执行按修正模型休眠（PR #205） | 否（非测试网阻塞） | `[测]` |
+| **DK2 armv7 DVT-only 部署脚本（CC-32，node2）** | ✅ **脚本已交付**（DVT PR #206，交叉打包端到端实跑产出 armv7l bundle，板到货即装走真机） | 板到货装 | `[主][配]` |
+| **主网 `DEFAULT_DVT_NODES`（SDK G5）** | 🔴 现仅 chainId 11155111；无 mainnet(10)/本地 anvil → 主网/本地 Tier-2/3 取不到节点（本轮补 config 骨架） | 是 | `[主][配]` |
+| 主网 validator 地址 + 生产节点 nodeId/pubkey（#106） | 🟠 待主网部署（KMS-TEE provision，key-less node_state） | 是 | `[主]` |
+| gossip 生产化（#50/#201） | 🟡 SWIM hand-rolled；on-chain whitelist 验证仍 TODO；建议迁 libp2p gossipsub | 否（测试网可跑） | `[测]→[主]` |
+
+依赖：**被依赖** = @repo:yaaa（转账 T2/T3 BLS 聚合前置）、@repo:sdk（G5 `DEFAULT_DVT_NODES` + 主网 validator/节点 nodeId）、@repo:sp（BLS quorum = slash 前置）、@repo:kms（KMS+DVT 合跑，已收敛）。**依赖** = @repo:airaccount-contract（主网 DVT validator + e2e_account）、@repo:sp（主网 V5 全栈 LivenessRegistry+BLSAggregator，随 G1）、@repo:kms（生产节点 BLS 密钥 KMS-TEE provision）、jason（OP 主网 RPC/keystore）。
+
+> **对 YAAA 的直接影响**：Tier-2/3 转账的 DVT co-sign 测试网已就绪（dvt1/2/3 Sepolia live）；主网 Tier-2/3 等 G5 主网节点 + 主网 validator（#106）。DVT 本轮起独立做 CC-32 DK2 脚本 + 主网/本地 `DEFAULT_DVT_NODES` config 骨架。
 
 ### repo:sdk — @aastar/sdk ✅ 已盘点（0.40.0，独立项全部落地并发布）
 
@@ -175,10 +193,10 @@ YAAA 依赖期望：**CC-13 slash 真 E2E**、**节点(imx93)部署 + gossip**�
 | kms | — | isValidOwnerAuth+重注册 | applyBLSAgg/slash | build路径/TEE接入/v1.10 | Sepolia 地址同步 |
 | airaccount-contract | rpId/Origin+密钥 | — | aPNTs 地址 | validator+节点 | — |
 | sp | (间接)DVT密钥 | 主网工厂/validator | — | validator+节点(slash 前置) | ABI |
-| dvt | BLS 托管? | ? | slash 提案 | — | ABI |
+| dvt | 生产节点 BLS KMS-TEE 托管 | 主网 validator+e2e_account | 主网 V5(Liveness+BLSAgg,随G1) | — | G5 DEFAULT_DVT_NODES+主网 nodeId |
 | sdk | HTTP openapi | ABI track + 主网地址 | ABI track + 主网地址 | ABI track + 主网地址 | — |
 
-> `?` = 等对应仓回帖补全。
+> 矩阵已全 6 仓补全（dvt 行来自 `cc9fbae0`）。
 
 ---
 
