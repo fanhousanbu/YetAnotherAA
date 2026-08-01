@@ -354,6 +354,15 @@ export class AccountService {
         "dailyLimit must be > 0 for a passkey-at-birth account (a guardian set enables the on-chain guard)."
       );
     }
+    // This is where the CREATE_ACCOUNT digest the user's device will sign is minted, so
+    // it is the last point at which a CHAIN_ID/ETH_RPC_URL mismatch can be caught for
+    // free. Checking only in submitCreateWithPasskey (#439) is too late — by then the
+    // one-time WebAuthn ceremony has already been spent on a digest bound to the wrong
+    // chain. See issue #445.
+    await this.assertChainMatchesRpc(
+      "The CREATE_ACCOUNT digest would be signed for a chain the account is not created on."
+    );
+
     const user = await this.databaseService.findUserById(userId);
     const ownerP256X = user?.passkeyX as `0x${string}` | undefined;
     const ownerP256Y = user?.passkeyY as `0x${string}` | undefined;

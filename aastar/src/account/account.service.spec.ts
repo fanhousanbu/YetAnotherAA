@@ -29,6 +29,8 @@ jest.mock("viem", () => {
 
 const DEPLOYER_KEY = `0x${"a".repeat(64)}`;
 const OWNER = "0x1111111111111111111111111111111111111111";
+const NON_ZERO32 = "0x" + "11".repeat(32);
+const PASSKEY_DTO = { dailyLimit: "1.0", p256Guardians: [{ x: NON_ZERO32, y: NON_ZERO32 }] };
 const FACTORY = "0x9999999999999999999999999999999999999999";
 
 describe("AccountService — chain consistency (issue #439)", () => {
@@ -37,6 +39,8 @@ describe("AccountService — chain consistency (issue #439)", () => {
   const mockEnsureSigner = jest.fn();
   const mockBuildGuardianAcceptanceHash = jest.fn();
   const mockSubmitPreparedCreateAccount = jest.fn();
+  const mockPrepareCreateAccountWithPasskey = jest.fn();
+  const mockFindUserById = jest.fn();
 
   const buildService = async (chainId: unknown) => {
     mockConfigGet.mockImplementation((key: string) => {
@@ -52,7 +56,7 @@ describe("AccountService — chain consistency (issue #439)", () => {
       providers: [
         AccountService,
         { provide: ConfigService, useValue: { get: mockConfigGet } },
-        { provide: DatabaseService, useValue: { findUserById: jest.fn() } },
+        { provide: DatabaseService, useValue: { findUserById: mockFindUserById } },
         {
           provide: YAAA_SERVER_CLIENT,
           useValue: {
@@ -61,6 +65,7 @@ describe("AccountService — chain consistency (issue #439)", () => {
             accounts: {
               buildGuardianAcceptanceHash: mockBuildGuardianAcceptanceHash,
               submitPreparedCreateAccount: mockSubmitPreparedCreateAccount,
+              prepareCreateAccountWithPasskey: mockPrepareCreateAccountWithPasskey,
             },
           },
         },
@@ -77,12 +82,23 @@ describe("AccountService — chain consistency (issue #439)", () => {
       mockEnsureSigner,
       mockBuildGuardianAcceptanceHash,
       mockSubmitPreparedCreateAccount,
+      mockPrepareCreateAccountWithPasskey,
+      mockFindUserById,
     ]) {
       m.mockReset();
     }
     mockEnsureSigner.mockResolvedValue({ address: OWNER });
     mockBuildGuardianAcceptanceHash.mockReturnValue("0xacceptance");
     mockSubmitPreparedCreateAccount.mockResolvedValue({ address: OWNER, deployed: true });
+    mockFindUserById.mockResolvedValue({ passkeyX: NON_ZERO32, passkeyY: NON_ZERO32 });
+    mockPrepareCreateAccountWithPasskey.mockResolvedValue({
+      createId: "c-1",
+      predictedAddress: OWNER,
+      challenge: "0xchallenge",
+      challengeId: "ch-1",
+      publicKeyOptions: {},
+      alreadyDeployed: false,
+    });
   });
 
   // The defect: the deployer wallet hardcoded `sepolia` while the guardian acceptance
@@ -102,6 +118,14 @@ describe("AccountService — chain consistency (issue #439)", () => {
       // 4th positional arg of buildGuardianAcceptanceHash(owner, salt, factory, chainId, limit)
       expect(mockBuildGuardianAcceptanceHash.mock.calls[0][3]).toBe(chainId);
       expect(JSON.parse(prepared.qrPayload).chainId).toBe(chainId);
+    });
+
+    it("mints the CREATE_ACCOUNT digest only after confirming the RPC chain", async () => {
+      const prep = await service.prepareCreateWithPasskey("user-1", PASSKEY_DTO as any);
+
+      expect(mockGetChainId).toHaveBeenCalled();
+      expect(mockPrepareCreateAccountWithPasskey).toHaveBeenCalledTimes(1);
+      expect(prep.challengeId).toBe("ch-1");
     });
 
     it("relays the deploy on that same chain", async () => {
@@ -130,6 +154,16 @@ describe("AccountService — chain consistency (issue #439)", () => {
         /Chain mismatch/
       );
       expect(mockBuildGuardianAcceptanceHash).not.toHaveBeenCalled();
+    });
+
+    // The one that actually delivers on "fail before the ceremony is spent" (#445):
+    // prepareCreateWithPasskey is where the digest the device signs is minted, so a
+    // mismatch has to be caught HERE. Catching it in submit only saves the broadcast.
+    it("refuses to mint a CREATE_ACCOUNT digest bound to the wrong chain", async () => {
+      await expect(service.prepareCreateWithPasskey("user-1", PASSKEY_DTO as any)).rejects.toThrow(
+        /Chain mismatch/
+      );
+      expect(mockPrepareCreateAccountWithPasskey).not.toHaveBeenCalled();
     });
 
     it("refuses to relay the deploy, before spending the one-time WebAuthn ceremony", async () => {
