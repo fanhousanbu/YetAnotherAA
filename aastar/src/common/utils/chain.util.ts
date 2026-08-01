@@ -67,3 +67,47 @@ export function resolveChain(chainId: number): Chain {
     rpcUrls: { default: { http: [] } },
   });
 }
+
+/**
+ * Validates a `chainId` read from config. `configuration.ts` always supplies a value,
+ * so a non-number here means the config wiring itself is broken — worth saying so
+ * rather than silently falling back to a hardcoded default, which is exactly how the
+ * broadcast chain drifted away from the signature domain in the first place (#434).
+ */
+export function assertValidChainId(chainId: unknown): number {
+  if (typeof chainId !== "number" || !Number.isInteger(chainId) || chainId <= 0) {
+    throw new Error(
+      `CHAIN_ID is not configured correctly (got ${JSON.stringify(chainId)}). ` +
+        "It domain-separates signatures and selects the chain transactions are sent to."
+    );
+  }
+  return chainId;
+}
+
+/**
+ * Preflight: the configured chain id must be what the RPC endpoint actually serves.
+ *
+ * `resolveChain` alone cannot give this guarantee — see its note on viem skipping
+ * `assertCurrentChain` for local accounts. Anything that signs for, or broadcasts to,
+ * a specific chain should call this first so a CHAIN_ID/ETH_RPC_URL mismatch fails
+ * immediately instead of after a user-visible signing ceremony.
+ *
+ * `why` is appended to the error to say what the mismatch would have broken.
+ */
+export async function assertRpcChain(
+  client: { getChainId: () => Promise<number> },
+  expected: number,
+  why: string
+): Promise<void> {
+  let actual: number;
+  try {
+    actual = await client.getChainId();
+  } catch (err) {
+    throw new Error(`Could not read the chain id from ETH_RPC_URL: ${(err as Error).message}`);
+  }
+  if (actual !== expected) {
+    throw new Error(
+      `Chain mismatch: CHAIN_ID is ${expected} but ETH_RPC_URL serves chain ${actual}. ${why}`
+    );
+  }
+}

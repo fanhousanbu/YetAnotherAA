@@ -1,4 +1,11 @@
-import { Injectable, Inject, NotFoundException, BadRequestException, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+  InternalServerErrorException,
+  Logger,
+} from "@nestjs/common";
 import {
   AirAccountServerClient as YAAAServerClient,
   ALG_ECDSA,
@@ -18,9 +25,9 @@ import {
 } from "./dto/guardian-setup.dto";
 import { DatabaseService } from "../database/database.service";
 import { ConfigService } from "@nestjs/config";
-import { createWalletClient, http, parseEther, isAddress } from "viem";
+import { createPublicClient, createWalletClient, http, parseEther, isAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { sepolia } from "viem/chains";
+import { assertRpcChain, assertValidChainId, resolveChain } from "../common/utils/chain.util";
 
 @Injectable()
 export class AccountService {
@@ -31,6 +38,37 @@ export class AccountService {
     private databaseService: DatabaseService,
     private configService: ConfigService
   ) {}
+
+  /**
+   * The single chain id this service operates on — it domain-separates the guardian
+   * acceptance hash and selects the chain the deploy is broadcast to. One source so
+   * the two cannot diverge (issue #439, same defect as PR #434 fixed in guardian).
+   */
+  private getChainId(): number {
+    try {
+      return assertValidChainId(this.configService.get<number>("chainId"));
+    } catch (err) {
+      throw new InternalServerErrorException((err as Error).message);
+    }
+  }
+
+  /**
+   * Preflight: ETH_RPC_URL must actually serve `getChainId()`. viem will not check
+   * this for us — for a local (private-key) account it takes `chain.id` on faith and
+   * never issues `eth_chainId` — so a mismatch would otherwise surface only as an
+   * opaque `eth_sendRawTransaction` rejection, after the user's passkey ceremony.
+   */
+  private async assertChainMatchesRpc(why: string): Promise<void> {
+    const rpcUrl = this.configService.get<string>("ethRpcUrl");
+    if (!rpcUrl) {
+      throw new InternalServerErrorException("ETH_RPC_URL is not configured");
+    }
+    try {
+      await assertRpcChain(createPublicClient({ transport: http(rpcUrl) }), this.getChainId(), why);
+    } catch (err) {
+      throw new InternalServerErrorException((err as Error).message);
+    }
+  }
 
   /**
    * Converts an ETH amount string (e.g. "1.0") to wei as bigint.
@@ -117,9 +155,17 @@ export class AccountService {
     // Resolve signer address (owner of the future account)
     const { address: owner } = await this.client.wallets.ensureSigner(userId);
 
+    // The guardian signs an acceptance hash domain-separated with this chainId, so the
+    // RPC had better be that chain — otherwise the guardian approves for one chain and
+    // the account is created on another. The `|| 11155111` that used to sit here was
+    // dead (configuration.ts defaults chainId to 10) and only hid that divergence.
+    await this.assertChainMatchesRpc(
+      "The guardian acceptance hash would be signed for a chain the account is not created on."
+    );
+
     // Pick factory + chainId from ethereum provider
     const factoryAddress = this.client.ethereum.getFactoryAddress(version);
-    const chainId = this.configService.get<number>("chainId") || 11155111;
+    const chainId = this.getChainId();
 
     // Determine salt (use provided or generate random)
     const salt = dto.salt ?? Math.floor(Math.random() * 1_000_000);
@@ -395,6 +441,13 @@ export class AccountService {
     // which requires the user's physical device. `userId` is therefore not a security check
     // here (a strict createId↔userId assertion needs an SDK-exposed binding getter); it is
     // recorded for audit. See PR #399 review H1.
+    // The CREATE_ACCOUNT digest the user's assertion signs is bound to a chain; the
+    // deploy must land on that same one. Checked before the relay so a misconfigured
+    // deployment fails here rather than burning the one-time WebAuthn ceremony.
+    await this.assertChainMatchesRpc(
+      "The signed CREATE_ACCOUNT digest would not match the chain the deploy is relayed to."
+    );
+
     const deployerKey =
       this.configService.get<string>("deployerPrivateKey") || process.env.DEPLOYER_PRIVATE_KEY;
     if (!deployerKey) {
@@ -406,7 +459,7 @@ export class AccountService {
       account: privateKeyToAccount(
         (deployerKey.startsWith("0x") ? deployerKey : `0x${deployerKey}`) as `0x${string}`
       ),
-      chain: sepolia,
+      chain: resolveChain(this.getChainId()),
       transport: http(this.configService.get<string>("ethRpcUrl")),
     });
 
