@@ -1,6 +1,6 @@
 import { Injectable, Inject } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { ethers } from "ethers";
+import { createPublicClient, http, formatUnits } from "viem";
 import { AirAccountServerClient as YAAAServerClient } from "@aastar/sdk/kms";
 import { YAAA_SERVER_CLIENT } from "../sdk/sdk.providers";
 
@@ -36,7 +36,7 @@ export interface TokenBalance {
 
 @Injectable()
 export class TokenService {
-  private provider: ethers.JsonRpcProvider;
+  private provider: any;
 
   // Pre-configured tokens for OP Mainnet
   private readonly PRESET_TOKENS: Token[] = [
@@ -132,7 +132,9 @@ export class TokenService {
     @Inject(YAAA_SERVER_CLIENT) private client: YAAAServerClient,
     private configService: ConfigService
   ) {
-    this.provider = new ethers.JsonRpcProvider(this.configService.get<string>("ethRpcUrl"));
+    this.provider = createPublicClient({
+      transport: http(this.configService.get<string>("ethRpcUrl")),
+    });
     this.chainId = this.configService.get<number>("chainId") || 10;
   }
 
@@ -231,7 +233,7 @@ export class TokenService {
   }
 
   formatTokenAmount(amount: string, decimals: number, precision = 6): string {
-    const formatted = ethers.formatUnits(amount, decimals);
+    const formatted = formatUnits(BigInt(amount), decimals);
     const num = parseFloat(formatted);
 
     if (num === 0) return "0";
@@ -339,7 +341,7 @@ export class TokenService {
         }
 
         const rawBalance = await this.client.tokens.getTokenBalance(token.address, walletAddress);
-        const formattedBalance = ethers.formatUnits(rawBalance, token.decimals);
+        const formattedBalance = formatUnits(BigInt(rawBalance), token.decimals);
 
         if (!includeZeroBalances && parseFloat(formattedBalance) === 0) {
           continue;

@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { ethers } from "ethers";
+import { createPublicClient, http, parseAbi, type Address } from "viem";
 import { UserNFT, NFTStandard } from "../entities/user-nft.entity";
 import * as fs from "fs";
 import * as path from "path";
@@ -35,26 +35,28 @@ export interface NFTMetadata {
 
 @Injectable()
 export class UserNFTService {
-  private provider: ethers.JsonRpcProvider;
+  private provider: any;
   private dataDir: string;
 
   // ERC721 ABI
-  private readonly ERC721_ABI = [
+  private readonly ERC721_ABI = parseAbi([
     "function name() view returns (string)",
     "function symbol() view returns (string)",
     "function tokenURI(uint256 tokenId) view returns (string)",
     "function ownerOf(uint256 tokenId) view returns (address)",
     "function balanceOf(address owner) view returns (uint256)",
-  ];
+  ]);
 
   // ERC1155 ABI
-  private readonly ERC1155_ABI = [
+  private readonly ERC1155_ABI = parseAbi([
     "function uri(uint256 tokenId) view returns (string)",
     "function balanceOf(address account, uint256 id) view returns (uint256)",
-  ];
+  ]);
 
   constructor(private configService: ConfigService) {
-    this.provider = new ethers.JsonRpcProvider(this.configService.get<string>("ethRpcUrl"));
+    this.provider = createPublicClient({
+      transport: http(this.configService.get<string>("ethRpcUrl")),
+    });
     this.dataDir = path.join(process.cwd(), "data");
 
     if (!fs.existsSync(this.dataDir)) {
@@ -167,12 +169,11 @@ export class UserNFTService {
       // Get collection name from contract
       if (!collectionName) {
         try {
-          const contract = new ethers.Contract(
-            nftData.contractAddress,
-            this.ERC721_ABI,
-            this.provider
-          );
-          collectionName = await contract.name();
+          collectionName = await this.provider.readContract({
+            address: nftData.contractAddress as Address,
+            abi: this.ERC721_ABI,
+            functionName: "name",
+          });
         } catch (_error) {
           collectionName = "Unknown Collection";
         }
@@ -267,12 +268,20 @@ export class UserNFTService {
   ): Promise<boolean> {
     try {
       if (standard === NFTStandard.ERC721) {
-        const contract = new ethers.Contract(contractAddress, this.ERC721_ABI, this.provider);
-        const owner = await contract.ownerOf(tokenId);
+        const owner = await this.provider.readContract({
+          address: contractAddress as Address,
+          abi: this.ERC721_ABI,
+          functionName: "ownerOf",
+          args: [BigInt(tokenId)],
+        });
         return owner.toLowerCase() === ownerAddress.toLowerCase();
       } else if (standard === NFTStandard.ERC1155) {
-        const contract = new ethers.Contract(contractAddress, this.ERC1155_ABI, this.provider);
-        const balance = await contract.balanceOf(ownerAddress, tokenId);
+        const balance = await this.provider.readContract({
+          address: contractAddress as Address,
+          abi: this.ERC1155_ABI,
+          functionName: "balanceOf",
+          args: [ownerAddress as Address, BigInt(tokenId)],
+        });
         return balance > 0n;
       }
       return false;
@@ -288,8 +297,11 @@ export class UserNFTService {
   private async detectNFTStandard(contractAddress: string): Promise<NFTStandard> {
     try {
       // Try ERC721 first
-      const erc721Contract = new ethers.Contract(contractAddress, this.ERC721_ABI, this.provider);
-      await erc721Contract.name();
+      await this.provider.readContract({
+        address: contractAddress as Address,
+        abi: this.ERC721_ABI,
+        functionName: "name",
+      });
       return NFTStandard.ERC721;
     } catch (_error) {
       // Assume ERC1155 if ERC721 fails
@@ -309,11 +321,19 @@ export class UserNFTService {
       let tokenURI = "";
 
       if (standard === NFTStandard.ERC721) {
-        const contract = new ethers.Contract(contractAddress, this.ERC721_ABI, this.provider);
-        tokenURI = await contract.tokenURI(tokenId);
+        tokenURI = await this.provider.readContract({
+          address: contractAddress as Address,
+          abi: this.ERC721_ABI,
+          functionName: "tokenURI",
+          args: [BigInt(tokenId)],
+        });
       } else if (standard === NFTStandard.ERC1155) {
-        const contract = new ethers.Contract(contractAddress, this.ERC1155_ABI, this.provider);
-        tokenURI = await contract.uri(tokenId);
+        tokenURI = await this.provider.readContract({
+          address: contractAddress as Address,
+          abi: this.ERC1155_ABI,
+          functionName: "uri",
+          args: [BigInt(tokenId)],
+        });
         // Replace {id} placeholder with actual tokenId (hex, 64 chars)
         tokenURI = tokenURI.replace("{id}", BigInt(tokenId).toString(16).padStart(64, "0"));
       }

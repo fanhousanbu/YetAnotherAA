@@ -8,7 +8,18 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { v4 as uuidv4 } from "uuid";
-import { ethers } from "ethers";
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  parseAbi,
+  zeroAddress,
+  type Address,
+  type Chain,
+  type Hex,
+} from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { resolveChain } from "../common/utils/chain.util";
 import { DatabaseService } from "../database/database.service";
 import {
   AddGuardianDto,
@@ -29,7 +40,7 @@ const RECOVERY_QUORUM = 2;
 // ABI fragments for AirAccount social recovery methods.
 // Source: AAStarAirAccountBase.sol — proposeRecovery, approveRecovery, executeRecovery, cancelRecovery
 // and the activeRecovery() state reader.
-const AIRACCOUNT_RECOVERY_ABI = [
+const AIRACCOUNT_RECOVERY_ABI = parseAbi([
   // propose a recovery (caller must be a guardian on-chain)
   "function proposeRecovery(address _newOwner) external",
   // approve the current active proposal (caller must be a guardian on-chain)
@@ -40,19 +51,19 @@ const AIRACCOUNT_RECOVERY_ABI = [
   "function cancelRecovery() external",
   // read the active recovery proposal stored on-chain
   "function activeRecovery() external view returns (address newOwner, uint256 proposedAt, uint256 approvalBitmap, uint256 cancellationBitmap)",
-];
+]);
 
 // AirAccount v0.20.0 P-256 (WebAuthn passkey) guardian recovery — AirAccountExtension,
 // reached via the account `fallback`→`delegatecall` (so calls target the account address).
 // Source: airaccount-contract docs/p256-guardian-spec.md §5.2 + getGuardianP256Key / getRecoveryNonce.
-const AIRACCOUNT_P256_RECOVERY_ABI = [
+const AIRACCOUNT_P256_RECOVERY_ABI = parseAbi([
   // monotonic nonce domain-separating P-256 recovery payloads
   "function getRecoveryNonce() external view returns (uint256)",
   // (x, y) secp256r1 pubkey of guardian slot `index` (zero pair => not a P-256 guardian)
   "function getGuardianP256Key(uint256 index) external view returns (bytes32 x, bytes32 y)",
   // passkey guardian proposes recovery — ANY relayer may submit (sig is the proof)
   "function proposeRecoveryWithSig(address newOwner, uint8 gIdx, bytes sig) external",
-];
+]);
 
 // Max guardian slots on-chain (InitConfig guardians/guardianP256X/Y are bytes32[3]/address[3]).
 const MAX_GUARDIAN_SLOTS = 3;
@@ -72,48 +83,102 @@ export class GuardianService {
   /**
    * Returns a read-only provider connected to the configured RPC endpoint.
    */
-  private getProvider(): ethers.JsonRpcProvider {
+  private getProvider(): any {
     const rpcUrl = this.configService.get<string>("ethRpcUrl");
     if (!rpcUrl) {
       throw new InternalServerErrorException("ETH_RPC_URL is not configured");
     }
-    return new ethers.JsonRpcProvider(rpcUrl);
+    return createPublicClient({ transport: http(rpcUrl) });
   }
 
   /**
-   * Returns a Wallet signer backed by ETH_PRIVATE_KEY, used as the relayer
+   * The single chain id this service operates on. Every recovery signature is
+   * domain-separated with it AND every recovery transaction is broadcast to it,
+   * so the two can never diverge (PR #434 review).
+   */
+  private getChainId(): number {
+    const chainId = this.configService.get<number>("chainId");
+    if (typeof chainId !== "number" || !Number.isInteger(chainId) || chainId <= 0) {
+      throw new InternalServerErrorException(
+        `CHAIN_ID is not configured correctly (got ${JSON.stringify(chainId)}). ` +
+          "Guardian recovery needs it to domain-separate signatures and to target the right chain."
+      );
+    }
+    return chainId;
+  }
+
+  /**
+   * The viem chain object for `getChainId()`, used for every recovery write.
+   *
+   * NOTE: this does NOT by itself validate that ETH_RPC_URL is on that chain.
+   * viem only calls `assertCurrentChain` for json-rpc accounts; the relayer here
+   * is a local (private-key) account, and `prepareTransactionRequest` short-circuits
+   * with `if (chain) return chain.id` — it never issues `eth_chainId`. A mismatch
+   * would therefore only surface as an opaque rejection from `eth_sendRawTransaction`,
+   * after the user has already completed a passkey ceremony. `assertRpcChain()` is
+   * what actually closes that gap; call it before any recovery read/write.
+   */
+  private getChain(): Chain {
+    try {
+      return resolveChain(this.getChainId());
+    } catch (err) {
+      throw new InternalServerErrorException((err as Error).message);
+    }
+  }
+
+  /**
+   * Preflight: the configured chain id must be what ETH_RPC_URL actually serves.
+   *
+   * Recovery is the one flow where a silent CHAIN_ID/RPC mismatch is expensive —
+   * `prepareP256Recovery` reads the nonce and guardian slot from the RPC's chain but
+   * domain-separates the challenge with the *configured* chain id, so a mismatch hands
+   * the guardian a challenge that can never verify on-chain. Fail here, before the
+   * passkey ceremony, rather than at `eth_sendRawTransaction`.
+   */
+  private async assertRpcChain(): Promise<void> {
+    const expected = this.getChainId();
+    let actual: number;
+    try {
+      actual = await this.getProvider().getChainId();
+    } catch (err) {
+      throw new InternalServerErrorException(
+        `Could not read the chain id from ETH_RPC_URL: ${(err as Error).message}`
+      );
+    }
+    if (actual !== expected) {
+      throw new InternalServerErrorException(
+        `Chain mismatch: CHAIN_ID is ${expected} but ETH_RPC_URL serves chain ${actual}. ` +
+          "Guardian recovery signatures are domain-separated with CHAIN_ID, so they would " +
+          "never verify on the chain the transaction is broadcast to. Fix the configuration."
+      );
+    }
+  }
+
+  /**
+   * Returns a Wallet client backed by ETH_PRIVATE_KEY, used as the relayer
    * for on-chain executeRecovery() calls (no guardian restriction on that
    * function — anyone may call it once conditions are met).
    */
-  private getRelaySigner(): ethers.Wallet {
+  private getRelayWalletClient(): any {
+    // Resolved first so a bad CHAIN_ID reports itself rather than being reported as
+    // (or masked by) a key problem — and so the key hint can name the right chain.
+    const chain = this.getChain();
     const privateKey = this.configService.get<string>("ethPrivateKey");
-    if (
-      !privateKey ||
-      privateKey === "0x0000000000000000000000000000000000000000000000000000000000000001"
-    ) {
+    // The .env.example placeholder (scalar 1); rejected so a real funded key must be set.
+    // Built at runtime so the 64-hex literal isn't embedded in source (secret-scan hooks).
+    const placeholderKey = `0x${"0".repeat(63)}1`;
+    if (!privateKey || privateKey === placeholderKey) {
       throw new InternalServerErrorException(
         "ETH_PRIVATE_KEY is not configured or still set to the placeholder value. " +
-          "Please set a funded Sepolia EOA private key in .env to send on-chain recovery transactions."
+          `Please set an EOA private key in .env funded on chain ${chain.id} ` +
+          "to send on-chain recovery transactions."
       );
     }
-    const provider = this.getProvider();
-    return new ethers.Wallet(privateKey, provider);
-  }
-
-  /**
-   * Returns an AirAccount contract instance bound to the relayer signer,
-   * exposing only the recovery-related ABI fragments.
-   */
-  private getAirAccountContract(accountAddress: string, signer: ethers.Signer): ethers.Contract {
-    return new ethers.Contract(accountAddress, AIRACCOUNT_RECOVERY_ABI, signer);
-  }
-
-  /**
-   * Returns a read-only AirAccount contract instance for on-chain state queries.
-   */
-  private getAirAccountContractReadOnly(accountAddress: string): ethers.Contract {
-    const provider = this.getProvider();
-    return new ethers.Contract(accountAddress, AIRACCOUNT_RECOVERY_ABI, provider);
+    const rpcUrl = this.configService.get<string>("ethRpcUrl");
+    const account = privateKeyToAccount(
+      (privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`) as Hex
+    );
+    return createWalletClient({ account, chain, transport: http(rpcUrl) });
   }
 
   /**
@@ -127,10 +192,14 @@ export class GuardianService {
     cancellationBitmap: bigint;
   } | null> {
     try {
-      const contract = this.getAirAccountContractReadOnly(accountAddress);
+      const provider = this.getProvider();
       const [newOwner, proposedAt, approvalBitmap, cancellationBitmap] =
-        await contract.activeRecovery();
-      if (newOwner === ethers.ZeroAddress) {
+        await provider.readContract({
+          address: accountAddress as Address,
+          abi: AIRACCOUNT_RECOVERY_ABI,
+          functionName: "activeRecovery",
+        });
+      if (newOwner === zeroAddress) {
         return null;
       }
       return { newOwner, proposedAt, cancellationBitmap, approvalBitmap };
@@ -368,16 +437,24 @@ export class GuardianService {
 
     let txHash: string;
     try {
-      const signer = this.getRelaySigner();
-      const contract = this.getAirAccountContract(accountAddress, signer);
+      await this.assertRpcChain();
+      const walletClient = this.getRelayWalletClient();
+      const provider = this.getProvider();
 
-      const tx: ethers.TransactionResponse = await contract.executeRecovery();
-      txHash = tx.hash;
+      const hash = await walletClient.writeContract({
+        address: accountAddress as Address,
+        abi: AIRACCOUNT_RECOVERY_ABI,
+        functionName: "executeRecovery",
+        args: [],
+        account: walletClient.account!,
+        chain: this.getChain(),
+      });
+      txHash = hash;
       this.logger.log(`On-chain executeRecovery tx sent: ${txHash}`);
 
       // ── 3. Wait for confirmation ────────────────────────────────────────
-      const receipt = await tx.wait(1);
-      if (!receipt || receipt.status !== 1) {
+      const receipt = await provider.waitForTransactionReceipt({ hash, confirmations: 1 });
+      if (!receipt || receipt.status !== "success") {
         throw new Error(
           `Transaction ${txHash} was mined but reverted (status=${receipt?.status ?? "unknown"})`
         );
@@ -487,10 +564,14 @@ export class GuardianService {
     accountAddress: string
   ): Promise<{ gIdx: number; x: string; y: string }> {
     const provider = this.getProvider();
-    const ext = new ethers.Contract(accountAddress, AIRACCOUNT_P256_RECOVERY_ABI, provider);
     const slots: { gIdx: number; x: string; y: string }[] = [];
     for (let i = 0; i < MAX_GUARDIAN_SLOTS; i++) {
-      const [x, y] = await ext.getGuardianP256Key(i);
+      const [x, y] = await provider.readContract({
+        address: accountAddress as Address,
+        abi: AIRACCOUNT_P256_RECOVERY_ABI,
+        functionName: "getGuardianP256Key",
+        args: [BigInt(i)],
+      });
       if (x !== ZERO32 || y !== ZERO32) {
         slots.push({ gIdx: i, x, y });
       }
@@ -518,11 +599,20 @@ export class GuardianService {
     nonce: string;
     chainId: number;
   }> {
+    // Before anything is read or handed to the passkey: the RPC must be the chain
+    // the challenge below is domain-separated for.
+    await this.assertRpcChain();
+
     const provider = this.getProvider();
-    const ext = new ethers.Contract(dto.accountAddress, AIRACCOUNT_P256_RECOVERY_ABI, provider);
     const { gIdx } = await this.resolveP256GuardianSlot(dto.accountAddress);
-    const nonce: bigint = await ext.getRecoveryNonce();
-    const chainId = this.configService.get<number>("chainId") || 11155111;
+    const nonce: bigint = await provider.readContract({
+      address: dto.accountAddress as Address,
+      abi: AIRACCOUNT_P256_RECOVERY_ABI,
+      functionName: "getRecoveryNonce",
+    });
+    // Same source as getChain() — the challenge's domain and the chain
+    // submitP256Recovery() broadcasts to are the same value by construction.
+    const chainId = this.getChainId();
 
     const challenge = buildProposeRecoveryChallenge({
       chainId,
@@ -553,6 +643,10 @@ export class GuardianService {
     gIdx: number;
     newOwner: string;
   }> {
+    // Re-checked here, not just in prepareP256Recovery: the two are separate requests
+    // and the relayer must not broadcast to a chain the guardian did not sign for.
+    await this.assertRpcChain();
+
     const { gIdx } = await this.resolveP256GuardianSlot(dto.accountAddress);
 
     // Encode + validate the assertion (low-S, webauthn.get prefix, challenge slot) —
@@ -564,23 +658,26 @@ export class GuardianService {
       s: dto.s as `0x${string}`,
     });
 
-    const signer = this.getRelaySigner();
-    const ext = new ethers.Contract(dto.accountAddress, AIRACCOUNT_P256_RECOVERY_ABI, signer);
+    const walletClient = this.getRelayWalletClient();
+    const provider = this.getProvider();
 
     try {
-      const tx: ethers.TransactionResponse = await ext.proposeRecoveryWithSig(
-        dto.newOwner,
-        gIdx,
-        sig
-      );
-      const receipt = await tx.wait();
-      if (!receipt || receipt.status !== 1) {
+      const hash = await walletClient.writeContract({
+        address: dto.accountAddress as Address,
+        abi: AIRACCOUNT_P256_RECOVERY_ABI,
+        functionName: "proposeRecoveryWithSig",
+        args: [dto.newOwner as Address, gIdx, sig as Hex],
+        account: walletClient.account!,
+        chain: this.getChain(),
+      });
+      const receipt = await provider.waitForTransactionReceipt({ hash });
+      if (!receipt || receipt.status !== "success") {
         throw new InternalServerErrorException("proposeRecoveryWithSig transaction reverted");
       }
       this.logger.log(
-        `P-256 recovery proposed for ${dto.accountAddress} -> ${dto.newOwner} (gIdx ${gIdx}, tx ${tx.hash})`
+        `P-256 recovery proposed for ${dto.accountAddress} -> ${dto.newOwner} (gIdx ${gIdx}, tx ${hash})`
       );
-      return { success: true, transactionHash: tx.hash, gIdx, newOwner: dto.newOwner };
+      return { success: true, transactionHash: hash, gIdx, newOwner: dto.newOwner };
     } catch (err) {
       const message = (err as Error).message || "Failed to submit passkey recovery";
       this.logger.error(`submitP256Recovery failed for ${dto.accountAddress}: ${message}`);

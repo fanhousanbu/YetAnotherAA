@@ -28,7 +28,7 @@ import { useSearchParams } from "next/navigation";
 import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
 import { kmsClient } from "@/lib/yaaa";
 import { createGuardianPasskey, type GuardianPasskey } from "@/lib/p256-guardian";
-import { ethers } from "ethers";
+import { createWalletClient, custom, hashMessage, toBytes } from "viem";
 
 // "passkey"   — guardian already has an AirAccount: enters their address, signs with their passkey.
 // "register"  — guardian has no account: creates a passkey (email + Face ID/fingerprint) on the fly,
@@ -43,7 +43,7 @@ type SignMethod = "passkey" | "register" | "metamask" | "p256";
 // Replicates: ethers.hashMessage(ethers.getBytes(hash))
 // Signs the EIP-191 prefixed version of the 32-byte acceptance hash.
 function applyEip191(rawHash: string): string {
-  return ethers.hashMessage(ethers.getBytes(rawHash));
+  return hashMessage({ raw: toBytes(rawHash) });
 }
 
 // ── Copy to clipboard helper ──
@@ -223,13 +223,16 @@ function GuardianSignInner() {
 
     setLoading(true);
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum as ethers.Eip1193Provider);
-      await provider.send("eth_requestAccounts", []);
-      const signer = await provider.getSigner();
-      const address = await signer.getAddress();
+      const walletClient = createWalletClient({
+        transport: custom(window.ethereum as any),
+      });
+      const [address] = await walletClient.requestAddresses();
 
       // personal_sign automatically applies EIP-191 prefix to the raw bytes
-      const signature = await signer.signMessage(ethers.getBytes(acceptanceHash));
+      const signature = await walletClient.signMessage({
+        account: address,
+        message: { raw: toBytes(acceptanceHash) },
+      });
 
       setResult({ address, signature });
     } catch (err: unknown) {

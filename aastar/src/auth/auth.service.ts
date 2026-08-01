@@ -3,7 +3,7 @@ import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { DatabaseService } from "../database/database.service";
 import { KmsService } from "../kms/kms.service";
-import { ethers } from "ethers";
+import { recoverAddress, type Hex } from "viem";
 import { EmailService } from "../email/email.service";
 import { RequestOtpDto, VerifyOtpDto } from "./dto/otp.dto";
 import { v4 as uuidv4 } from "uuid";
@@ -184,8 +184,10 @@ export class AuthService {
       );
 
       // Verify the signature matches the expected address
-      const sig = ethers.Signature.from("0x" + signResponse.Signature);
-      const recoveredAddress = ethers.recoverAddress(challenge.loginHash, sig);
+      const recoveredAddress = await recoverAddress({
+        hash: challenge.loginHash as Hex,
+        signature: ("0x" + signResponse.Signature) as Hex,
+      });
 
       if (recoveredAddress.toLowerCase() !== normalizedAddress) {
         throw new UnauthorizedException("Signature address mismatch");
