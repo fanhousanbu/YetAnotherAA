@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- YAA frontend service. Runs `next start -p 5173` behind the cloudflared tunnel.
+     Install:
+       cp scripts/ops/io.aastar.yaa-frontend.plist ~/Library/LaunchAgents/
+       launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/io.aastar.yaa-frontend.plist
+     Deploy a new build with ./deploy-frontend.sh — it kickstarts THIS agent and then
+     verifies every chunk returns 200. Never `nohup npm start`: KeepAlive will fight it
+     for :5173.
+
+     Machine-specific, same as io.aastar.yaa-monitor.plist: absolute /Users/jason paths
+     and a pinned nvm node path. Adjust both after a node upgrade or the agent will
+     silently fail to start (check ~/Library/Logs/yaa-frontend.log). -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>io.aastar.yaa-frontend</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>exec /Users/jason/.nvm/versions/node/v22.22.2/bin/npm run start -w aastar-frontend</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/jason/Dev/aastar/YetAnotherAA</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/jason/.nvm/versions/node/v22.22.2/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>/Users/jason</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+    <key>StandardOutPath</key>
+    <string>/Users/jason/Library/Logs/yaa-frontend.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/jason/Library/Logs/yaa-frontend.log</string>
+</dict>
+</plist>
