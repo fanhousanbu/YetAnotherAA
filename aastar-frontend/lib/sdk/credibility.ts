@@ -93,7 +93,9 @@ export async function getTokenMeta(
 ): Promise<{ name: string; symbol: string }> {
   const pc = client ?? getPublicClient();
   const [name, symbol] = await Promise.all([
-    pc.readContract({ address: token, abi: erc20Abi, functionName: "name" }).catch(() => shortAddr(token)),
+    pc
+      .readContract({ address: token, abi: erc20Abi, functionName: "name" })
+      .catch(() => shortAddr(token)),
     pc.readContract({ address: token, abi: erc20Abi, functionName: "symbol" }).catch(() => "xPNTs"),
   ]);
   return { name, symbol };
