@@ -1,0 +1,23 @@
+# .pilot.yml — pilot 各阶段读它取分支/清理策略。
+#
+# integration_branch 为什么必须 ≠ base_branch（PR #450 评审 High #1）：
+#   phases/run.md §1 规定，无人值守的 `pilot run` 见到 daemon 给出 APPROVED + checks 绿，
+#   就会自动 `git-guard.sh merge-pr --integration <integration_branch> --squash`。
+#   若 integration_branch 写成 master，这条自动路径就等于「daemon 批准即直接合进主干」，
+#   与 SKILL.md 硬约束 2「绝不直接合并自己的 PR 到主干」冲突。
+#   GitHub 侧的分支保护挡不住它 —— master 要求 1 个 approving review，
+#   而 daemon 提交的正是一个 approving review，条件天然满足。
+#
+# 所以：feature 分支 → PR → review → 自动合进 preview；
+#      preview → master 保留为人工决定，不由 pilot 自动完成。
+# 本仓库 #433–#449 历史上是直接合 master 的，preview 分支于 2026-08-02 从 master 建出。
+
+base_branch: master
+integration_branch: preview
+protect_patterns:
+  - release
+  - hotfix
+  - "7702" # EIP-7702 独立实验分支，不参与主线，永不清理
+remote: origin
+allow_remote_cleanup: false
+docs_dir: docs/agent
