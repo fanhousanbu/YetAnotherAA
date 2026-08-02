@@ -85,15 +85,21 @@
 
 - **优先级**：high
 - **目标**：证明「已消费的 challengeId 重放被拒绝」，把 spec 从 BLOCKED 状态放出来
-- **背景**：`aastar-frontend/e2e/transfer-replay.spec.ts` 头部注释把自己标为
+- **背景**：`aastar-frontend/e2e/transfer-replay.spec.ts` 用
+  `test.fixme(...)`（第 14 行）把用例整个禁用了，头部注释写着
   `BLOCKED by docs/CREATE_FLOW_BETA_BUG.md`（新账户第一笔转账 prepare 就失败）。该 bug 已由 T1.1.1 闭合 →
-  **这个 spec 现在应该能跑了**，注释已过期
-- **开发范围**：去掉过期的 BLOCKED 注释；实跑 spec；失败则修到通过或如实记录新的真实阻塞原因
+  **这个 spec 现在应该能跑了**，`fixme` 与注释都已过期
+- **开发范围**：把 `test.fixme` 改回
+  `test`（这是关键动作，只删注释等于什么都没做）；去掉过期的 BLOCKED 注释；实跑 spec；失败则修到通过或如实记录新的真实阻塞原因
 - **明确不做**：不扩到 D1 表的其他用例（那是 T2.2.x）
 - **依赖**：T1.1.1（已 DONE）
 - **交付物**：可跑通的 `transfer-replay.spec.ts` + 证据记录
-- **验收命令**：`npx playwright test e2e/transfer-replay.spec.ts --project=chromium`（在
-  `aastar-frontend/` 下）
+- **验收命令**（在 `aastar-frontend/` 下）：
+  `npx playwright test e2e/transfer-replay.spec.ts --project=chromium 2>&1 | grep -E "passed|skipped|failed"`
+  的输出里必须出现 `1 passed` 且不出现 `skipped` —— **必须断言
+  `1 passed`**：`test.fixme` 会被 Playwright 当 skipped 处理，裸跑
+  `playwright test` 即使用例一次都没执行也 exit
+  0，那样「验收通过」只证明了注释被删掉
 - **涉及文件**：`aastar-frontend/e2e/transfer-replay.spec.ts`
 - **风险/回滚**：会在 Sepolia 真实发一笔小额转账，需要 funded 账户；失败不影响生产
 
@@ -151,8 +157,9 @@
 
 > **来源**：`feat/registry-portal-sdk` / `fix/portal-review-269`
 > 两条分支已落后 master 134 个 commit，且改的是已被 `/tokens` 取代的
-> `app/sale/page.tsx`，rebase 成本远高于重写。决策（2026-08-02，用户拍板）：**抢救特性、废弃分支**。分支删除前已打归档 tag，原始实现可用
-> `git show <tag>` 取回，见各 Task 的「参考实现」。
+> `app/sale/page.tsx`，rebase 成本远高于重写。决策（2026-08-02，用户拍板）：**抢救特性、废弃分支**。分支删除前已打归档 tag 并**推到 origin**（`git ls-remote --tags origin | grep archive`
+> 可验证），原始实现在任意 clone 上 `git fetch --tags && git show <commit>`
+> 均可取回，见各 Task 的「参考实现」。
 
 ### T1.4.1 AA26 智能 gas 估算 + 自动重试 `READY`
 
@@ -165,11 +172,17 @@
 - **依赖**：无
 - **参考实现**：`git show 3fba02d`（智能估算+自动重试+实际 gas 展示）、`git show 2a88aa3`（温和倍率 2x/3x）、`git show f172185`（verificationGasLimit
   3x + 150k 下限）——三个 commit 由 tag `archive/registry-portal-sdk` 保活
-- **交付物**：转账重试逻辑 + 实际 gas 展示
-- **验收命令**：`npm run type-check -w aastar-frontend && npm run lint -w aastar-frontend`
-- **涉及文件**：`aastar-frontend/app/transfer/`、`aastar/src/transfer/`
+- **交付物**：转账重试逻辑 + 实际 gas 展示 +
+  **一个断言 gas 硬上限的单测**（见验收命令）
+- **验收命令**：`npm test -w aastar -- transfer`
+  —— 其中**必须包含**一条断言：给定一个会连续触发 AA26 的 mock
+  bundler，重试收敛后的 `verificationGasLimit` / `callGasLimit`
+  不超过初始估算的硬上限倍数，且重试次数不超过 cap。只跑 `type-check` + `lint`
+  **不足以验收本 task**
+  —— 那两条命令对 gas 上限一无所知，而这是本 task 唯一的涉钱风险点
+- **涉及文件**：`aastar-frontend/app/transfer/`、`aastar/src/transfer/`、`aastar/src/transfer/*.spec.ts`
 - **风险/回滚**：**涉钱**
-  —— 重试会提高 gas 上限，必须设硬上限防止无限抬价；重试次数与倍率都要有 cap，并在 PR 里写清最坏情况的 gas 上界
+  —— 重试会提高 gas 上限，必须设硬上限防止无限抬价；重试次数与倍率都要有 cap。上限值本身是产品决策（用户拍板），未定前本 task 不得转 IN_PROGRESS
 
 ### T1.4.2 最近收款人下拉 `READY`
 
@@ -256,9 +269,13 @@
 - **优先级**：mid
 - **目标**：`aastar-frontend` 目前 `npm test` 是一句 echo；至少覆盖 transfer /
   auth 的纯函数与状态逻辑
+- **开发范围**：先把 `aastar-frontend/package.json` 的 `test` 脚本从
+  `echo "⚠️ No tests yet - skipping"` 换成真实 runner，再补用例
 - **明确不做**：不做全量组件快照测试
 - **依赖**：无
-- **验收命令**：`npm test -w aastar-frontend`（不再是 echo，且通过）
+- **验收命令**：`npm test -w aastar-frontend 2>&1 | grep -qE "Tests?[[:space:]]+[1-9]"`
+  —— **必须断言至少跑了 1 条用例**：当前 `test` 脚本是一句 `echo`，裸跑
+  `npm test -w aastar-frontend` 今天就 exit 0，一条测试都不加也能「验收通过」
 
 ---
 

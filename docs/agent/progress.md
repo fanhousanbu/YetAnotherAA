@@ -8,15 +8,19 @@
 - **Milestone**：M1 Beta 上线（Sepolia）
 - **Feature**：F1.2 高优负向用例 / F1.4 转账 UX 抢救项
 - **正在开发的 Task**：无（刚完成 `pilot plan`，等 `pilot run` 挑第一个 READY）
-- **分支 / worktree**：`master`（干净，无额外 worktree）
-- **PR**：无进行中的自有 PR
+- **分支 / worktree**：`docs/pilot-plan`（无额外 worktree）
+- **PR**：[#450](https://github.com/AAStarCommunity/YetAnotherAA/pull/450)（本规划台账自身，base
+  `preview`）
 
 ## 仓库基线（2026-08-02）
 
-- 集成分支 = `master`（本仓库无 `preview`，所有 PR 直接合 master —— 已如实写进
-  `.pilot.yml`）
-- 本地分支 3 条：`master` / `refactor/pure-frontend`（PR #400 draft）/
-  `7702`（实验，保护不清理）
+- 集成分支 = `preview`（2026-08-02 从 master 建出并推到 origin）。 **PR 合进
+  `preview`，`preview` → `master` 保留为人工决定** —— 不这样的话，无人值守的
+  `pilot run` 见 daemon APPROVED 就会自动 squash 合进主干（PR #450 评审 High
+  #1）
+- 本地分支：`master` / `preview`（集成） / `docs/pilot-plan`（本 PR） /
+  `refactor/pure-frontend`（PR #400 draft，base 仍是 master，解冻时需一并改到
+  `preview`） / `7702`（实验，保护不清理）
 - pre-commit hook ✅ 生效于 `.git/hooks`
 - PR 评审 daemon ✅ 在线
 
@@ -47,7 +51,10 @@
 - 2026-08-02 `pilot plan` 建立三级规划：`roadmap.md` / `tasks.md` /
   `progress.md` + `.pilot.yml`
 - 2026-08-02
-  **陈旧分支清理**（用户拍板：抢救特性、废弃分支）。删除前均已打归档 tag，代码可取回：
+  **陈旧分支清理**（用户拍板：抢救特性、废弃分支）。删除前均已打归档 tag，**且已推到 origin**
+  ——任意 clone `git fetch --tags` 后即可 `git show <commit>`
+  取回，不依赖某一台机器的本地仓库。验证：`git ls-remote --tags origin | grep archive`
+  应返回 4 条。
 
   | 已删分支                       | 归档 tag                      | 处置                                |
   | :----------------------------- | :---------------------------- | :---------------------------------- |
@@ -62,7 +69,8 @@
 按优先级排序，`pilot run` 应从这里挑：
 
 1. **T1.2.1** 解冻并跑通 transfer-replay e2e（high）—— 依赖的 create-flow
-   bug 已闭合，spec 的 BLOCKED 注释已过期
+   bug 已闭合，spec 的 `test.fixme` 与 BLOCKED 注释都已过期；验收须断言
+   `1 passed`
 2. **T1.2.2** JWT 401 鉴权负向用例（high）
 3. **T1.3.1** 未验证能力 UI 标 experimental（high）
 4. **T1.1.5** 把已闭合的 beta 阻塞项回写进评估文档（mid）
