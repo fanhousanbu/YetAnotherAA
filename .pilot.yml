@@ -1,0 +1,14 @@
+# .pilot.yml — pilot 各阶段读它取分支/清理策略。
+# 注意：本仓库没有 preview 分支，历史上所有 PR 都直接合进 master（#433–#449 皆是）。
+# 所以 integration_branch 如实写 master —— 写 preview 会让 git-guard.sh merge-pr 拒绝一切合并。
+# 硬约束「不直推主干」依然生效：走 feature 分支 → PR → review → git-guard.sh merge-pr。
+
+base_branch: master
+integration_branch: master
+protect_patterns:
+  - release
+  - hotfix
+  - "7702" # EIP-7702 独立实验分支，不参与主线，永不清理
+remote: origin
+allow_remote_cleanup: false
+docs_dir: docs/agent
